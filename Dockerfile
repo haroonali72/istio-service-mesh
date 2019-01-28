@@ -14,6 +14,6 @@ FROM ubuntu:bionic
 WORKDIR /app
 COPY --from=build-env /go/src/IstioMesh/IstioMesh /app/
 
-EXPOSE 8000
+EXPOSE 8654
 
 CMD ./IstioMesh
