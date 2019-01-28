@@ -161,15 +161,87 @@
 			"revision": ""
 		},
 		{
-			"checksumSHA1": "DdriTFzOSlfHvbxz9WqlQhNp86I=",
+			"checksumSHA1": "wXS0OMacodY/R8vf3gGOpI7BhtM=",
 			"path": "github.com/istio/api",
-			"revision": "d0444f6849c3e442b5b1e818b29bd2c9dec8ca27",
-			"revisionTime": "2019-01-23T19:32:46Z"
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
 		},
 		{
 			"origin": "github.com/istio",
 			"path": "github.com/istio/api/..",
 			"revision": ""
+		},
+		{
+			"checksumSHA1": "u1Ss//G/g94nNbr66pDl53P4PlU=",
+			"path": "github.com/istio/api/authentication/v1alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "qNravHHQVu9EjEMc74GNKxClktU=",
+			"path": "github.com/istio/api/envoy/config/filter/http/authn/v2alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "eqlPNBURETewU5jja3avCFr3w74=",
+			"path": "github.com/istio/api/envoy/config/filter/http/jwt_auth/v2alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "6fKlT+WdvHe4RyXEgDY+oKZSZLQ=",
+			"path": "github.com/istio/api/envoy/config/filter/network/tcp_cluster_rewrite/v2alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "MXFLQWs/jFeyF8jPPnNeTBz9JIc=",
+			"path": "github.com/istio/api/mcp/v1alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "99/8pxjgGK7RW9KEA1Wo0XYA2r8=",
+			"path": "github.com/istio/api/mesh/v1alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "9hYfn04U4rQSWK4FDK30TmueXac=",
+			"path": "github.com/istio/api/mixer/adapter/model/v1beta1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "05B470+Dem5/ZMAmxR4HcR26ZSk=",
+			"path": "github.com/istio/api/mixer/v1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "7AZatgJbxCbwIjHE+mfcqqOKJ24=",
+			"path": "github.com/istio/api/mixer/v1/config/client",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "vTGwdXlMTOWiJsr8rdEaavjivHU=",
+			"path": "github.com/istio/api/networking/v1alpha3",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "GmYgJufLjAatNBt6EKo2ReAwsWc=",
+			"path": "github.com/istio/api/policy/v1beta1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
+		},
+		{
+			"checksumSHA1": "54qwnsUAp2F7JauWZ5eaCHLtdKY=",
+			"path": "github.com/istio/api/rbac/v1alpha1",
+			"revision": "825044c7e15f6723d558b7b878855670663c2e1e",
+			"revisionTime": "2019-01-27T01:31:37Z"
 		},
 		{
 			"checksumSHA1": "ZOHJwyrlDeqI9OUXEJ8PmDC72Bo=",

@@ -2,10 +2,10 @@
 FROM golang:1.11.3  AS build-env
 
 # Set our workdir to our current service in the gopath
-WORKDIR /go/src/IstioMesh/
+WORKDIR /go/src/IstioMesh/src
 # Copy the current code into our workdir
 COPY . .
-ENV GOPATH /go/
+ENV GOPATH /go/src/IstioMesh
 RUN go build -o IstioMesh src/Istio/main/main.go
 
 # final stage
