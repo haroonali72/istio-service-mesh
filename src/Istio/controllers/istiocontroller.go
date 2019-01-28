@@ -99,6 +99,8 @@ func getIstioDestinationRule(service types.Service)(v1alpha3.DestinationRule , e
 }
 func getIstioServiceEntry(service types.Service)(v1alpha3.ServiceEntry , error){
 	SE := v1alpha3.ServiceEntry{}
+	//x := v1.Service{}
+	//x.Spec = SE
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.IstioServiceEntryAttributes
