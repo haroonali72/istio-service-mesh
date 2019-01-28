@@ -1,0 +1,2 @@
+
+docker  run -d    --name istio-service-mesh   --restart always    -p 8000:8000    istio-service-mesh

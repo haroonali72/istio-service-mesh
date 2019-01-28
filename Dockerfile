@@ -6,14 +6,14 @@ WORKDIR /go/src/IstioMesh/
 # Copy the current code into our workdir
 COPY . .
 ENV GOPATH /go/
-RUN go build -o IstioMesh main/main.go
+RUN go build -o IstioMesh src/Istio/main/main.go
 
 # final stage
 FROM ubuntu:bionic
 
 WORKDIR /app
-COPY --from=build-env /go/src/IstioMesh/service-engine /app/
+COPY --from=build-env /go/src/IstioMesh/IstioMesh /app/
 
-EXPOSE 8090
+EXPOSE 8000
 
 CMD ./IstioMesh
