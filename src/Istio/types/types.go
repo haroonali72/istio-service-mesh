@@ -1,5 +1,7 @@
 package types
 
+import ("k8s.io/api/core/v1"
+v12 "k8s.io/api/apps/v1")
 
 type Route struct {
 	Host      string `json:"host"`
@@ -68,7 +70,6 @@ type IstioGatewayAttributes struct {
 type DRSubsets struct {
 	Name      string           `json:"name"`
 	Labels  map[string]string `json:"labels"`
-
 }
 type IstioDestinationRuleAttributes struct {
 	Host           string         `json:"host"`
@@ -86,7 +87,20 @@ type DockerServiceAttributes struct {
 	ImageName             string            `json:"image_name"`
 }
 
+// ```yaml
+// apiVersion: networking.istio.io/v1alpha3
+// kind: DestinationRule
+// metadata:
+//   name: bookinfo-ratings-port
+// spec:
 
+
+type IstioObject struct {
+	ApiVersion	string 	`json:"apiVersion"`
+	Kind	string 	`json:"kind"`
+	Metadata	map[string]string 	`json:"metadata"`
+	Spec	interface{} 	`json:"spec"`
+}
 type ServiceDependency struct {
 	Name              string            `json:"name"`
 	DependencyType    string            `json:"dependency_type"`
@@ -128,4 +142,30 @@ type SolutionInfo struct {
 type ServiceInput struct {
 	KubernetesPassword string            `json:"cluster_id"`
 	SolutionInfo SolutionInfo `json:"solution_info"`
+}
+
+
+type Output struct {
+	Name                  string            `json:"name"`
+	Version               string            `json:"version"`
+	PoolId               string            `json:"pool_id"`
+	Service []Service `json:"services"`
+	KubernetesIp string            `json:"kubeip"`
+	KubernetesPort string            `json:"kubeport"`
+	KubernetesUsername string            `json:"kubeusername"`
+	KubernetesPassword string            `json:"kubepassword"`
+}
+type KubernetesCred struct{
+	KubernetesURL string            `json:"url"`
+	KubernetesUsername string            `json:"username"`
+	KubernetesPassword string            `json:"password"`
+}
+type OutputServices struct {
+	Deployments   []v12.Deployment	`json:"deployment"`
+	Kubernetes   []v1.Service		`json:"kubernetes-service"`
+	Istio   []IstioObject	`json:"istio-component"`
+}
+type ServiceOutput struct {
+	ClusterInfo		 KubernetesCred            `json:"cluster_info"`
+	Services		OutputServices				`json:"serivce"`
 }

@@ -13,7 +13,6 @@ import (
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
 )
 
 func getIstioVirtualService(service types.Service)(v1alpha3.VirtualService , error){
@@ -95,6 +94,8 @@ func getIstioDestinationRule(service types.Service)(v1alpha3.DestinationRule , e
 	}
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
+	destRule.Marshal()
+	fmt.Println(destRule.String())
 	return destRule , nil
 }
 func getIstioServiceEntry(service types.Service)(v1alpha3.ServiceEntry , error){
@@ -123,109 +124,68 @@ func getIstioServiceEntry(service types.Service)(v1alpha3.ServiceEntry , error){
 
 	return SE , nil
 }
-func getIstioObject(input types.Service)(string,error){
+func getIstioObject(input types.Service)(types.IstioObject,error){
+	var istioServ types.IstioObject
+
 	switch input.SubType {
 	case "virtual-service":
 		serv , err := getIstioVirtualService(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()) , err
+			return istioServ , err
 		}
-		x, err := json.Marshal(serv)
-		if err != nil {
-			fmt.Println(err)
-			return "" , err
-		}
-		return string(x) , nil
+		istioServ.Spec = serv
+		labels := make(map[string]string)
+		labels["app"] = input.Name
+		istioServ.Metadata = labels
+		istioServ.Kind = "VirtualService"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ , nil
 	case "gateway":
 		serv , err := getIstioGateway(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()) , err
+			return istioServ , err
 		}
-		x, err := json.Marshal(serv)
-		if err != nil {
-			fmt.Println(err)
-			return "" , err
-		}
-		return string(x) , nil
+		istioServ.Spec = serv
+		labels := make(map[string]string)
+		labels["app"] = input.Name
+		istioServ.Metadata = labels
+		istioServ.Kind = "Gateway"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ , nil
+
 	case "destination-rule":
 		serv , err := getIstioDestinationRule(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()) , err
+			return istioServ , err
 		}
-		x, err := json.Marshal(serv)
-		if err != nil {
-			fmt.Println(err)
-			return "" , err
-		}
-		return string(x) , nil
+		istioServ.Spec = serv
+		labels := make(map[string]string)
+		labels["app"] = input.Name
+		istioServ.Metadata = labels
+		istioServ.Kind = "DestinationRule"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ , nil
+
 	case "service-entry":
 		serv , err := getIstioServiceEntry(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()) , err
+			return istioServ, err
 		}
-		x, err := json.Marshal(serv)
-		if err != nil {
-			fmt.Println(err)
-			return "" , err
-		}
-		return string(x) , nil
-	}
-
-	return "" , nil
-	/*
-	x := v1alpha3.DestinationRule{}
-	vService := v1alpha3.VirtualService{}
-	if input.Hostnames != nil && len(input.Hostnames) > 0 {
-		vService.Hosts = input.Hostnames
-	} else {
-		vService.Hosts = []string{input.Name}
-	}
-	var httpRoute v1alpha3.HTTPRoute
-	var destination [] *v1alpha3.HTTPRouteDestination
-
-	for _ , port := range input.ServiceAttributes.Ports {
-		var httpD v1alpha3.HTTPRouteDestination
-		if port.Container == "" && port.Host == ""{
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-		if port.Container != "" && port.Host == "" {
-			port.Host = port.Container
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		httpD.Destination = &v1alpha3.Destination{Host: input.Name , Port:&v1alpha3.PortSelector{&v1alpha3.PortSelector_Number{Number:uint32(i)}}}
-		destination = append(destination,&httpD)
-	}
-	httpRoute.Route = destination
-	vService.
-
-	var httpD v1alpha3.HTTPRouteDestination
-	httpD
-
-	//v1alpha3.VirtualService{}
-	name := input.Name
-	for _,depedency := range input.ServiceDependencyInfo {
-		if(depedency.DependencyType == "external"){
-
-		} else if(depedency.DependencyType == "routing"){
-			for _,route := range depedency.Routes{
-				route.
-			}
-		}
+		istioServ.Spec = serv
+		istioServ.Spec = serv
+		labels := make(map[string]string)
+		labels["app"] = input.Name
+		istioServ.Metadata = labels
+		istioServ.Kind = "ServiceEntry"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ , nil
 
 	}
-	*/
+	return istioServ , nil
 }
 func getDeploymentObject(service types.Service)(v12.Deployment , error){
 	var deployment = v12.Deployment{}
@@ -346,20 +306,23 @@ func getServiceObject(input types.Service)(v1.Service,error)  {
 	return service,nil
 }
 func DeployIstio(input types.ServiceInput)(string , error){
+	var finalObj types.ServiceOutput
 
-	var results []string
+	finalObj.ClusterInfo.KubernetesURL = input.SolutionInfo.KubernetesIp + ":" + input.SolutionInfo.KubernetesPort
+	finalObj.ClusterInfo.KubernetesUsername = input.SolutionInfo.KubernetesUsername
+	finalObj.ClusterInfo.KubernetesPassword = input.SolutionInfo.KubernetesPassword
 
 	for _,service :=range input.SolutionInfo.Service{
 		//**Making Service Object*//
-
 		if service.ServiceType == "mesh"{
+
 			res , err := getIstioObject(service)
 			if err != nil {
 				fmt.Println("There is error in deployment")
 				return string(err.Error()) , err
 			}
-			results = append(results , res )
-			
+			finalObj.Services.Istio = append(finalObj.Services.Istio,res)
+
 		} else if service.ServiceType == "docker"{
 			//Getting Deployment Object
 			deployment , err := getDeploymentObject(service)
@@ -367,11 +330,8 @@ func DeployIstio(input types.ServiceInput)(string , error){
 				fmt.Println("There is error in deployment")
 				return string(err.Error()) , err
 			}
-			x, err := json.Marshal(deployment)
-			if err != nil {
-				fmt.Println(err)
-			}
-			results = append(results , string(x) )
+			finalObj.Services.Deployments = append(finalObj.Services.Deployments,deployment)
+
 
 			//Getting Kubernetes Service Object
 			serv , err := getServiceObject(service)
@@ -379,18 +339,21 @@ func DeployIstio(input types.ServiceInput)(string , error){
 				fmt.Println("There is error in deployment")
 				return string(err.Error()) , err
 			}
-			x, err = json.Marshal(serv)
-			if err != nil {
-				fmt.Println(err)
-			}
-			fmt.Println(x)
-			results = append(results , string(x) )
+			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes,serv)
+		}else {
+			continue;
 		}
+
 
 
 	}
 
-	return  "["+strings.Join(results,",")+"]",nil
+
+	x, err := json.Marshal(finalObj)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return  string(x),nil
 
 }
 

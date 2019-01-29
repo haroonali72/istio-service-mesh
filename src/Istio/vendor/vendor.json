@@ -31,6 +31,60 @@
 			"revisionTime": "2017-08-10T14:37:23Z"
 		},
 		{
+			"checksumSHA1": "7nZciuhjItANNKfQIMokklsw0gw=",
+			"path": "github.com/astaxie/beego",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "qFmnMbrtRzi14+5scXmKq+/9xyU=",
+			"path": "github.com/astaxie/beego/config",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "WqXc/Kob5grLgDGu+Ru5xUSL9vo=",
+			"path": "github.com/astaxie/beego/context",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "6CUKSTe7nirUqQ7kctbv7kkF1eA=",
+			"path": "github.com/astaxie/beego/context/param",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "zNVoeKrYcNNex6/K/4sts8XIL5A=",
+			"path": "github.com/astaxie/beego/grace",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "jf/YI3zTT5/Dqvr0V2gLyWzlLbw=",
+			"path": "github.com/astaxie/beego/logs",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "1ji0miLtHwsq+4QI4ikGiFbCFDM=",
+			"path": "github.com/astaxie/beego/session",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "pjVYE2nh0XTgiXO4wY6upyhy6nQ=",
+			"path": "github.com/astaxie/beego/toolbox",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
+			"checksumSHA1": "wyz5HgdoDurteHhp63m+CwKx7zg=",
+			"path": "github.com/astaxie/beego/utils",
+			"revision": "1b6edafc96ad27b6515fafeccd7339dda3e997b1",
+			"revisionTime": "2018-11-30T13:54:26Z"
+		},
+		{
 			"checksumSHA1": "Cu5QJDINQ0Tw22UN9bklutADQ6Y=",
 			"path": "github.com/ghodss/yaml",
 			"revision": "c7ce16629ff4cd059ed96ed06419dd3856fd3577",
@@ -61,14 +115,74 @@
 			"revisionTime": "2019-01-23T16:44:36Z"
 		},
 		{
+			"checksumSHA1": "GbjJYmoJDrt4CoWZRl5aa18CCFA=",
+			"path": "github.com/go-redis/redis",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "t1th583R20+iBb05zZkIsd/3rzU=",
+			"path": "github.com/go-redis/redis/internal",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "BuzQsdMJMUXm8Zfwtuoz4QUdnZE=",
+			"path": "github.com/go-redis/redis/internal/consistenthash",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "W47jjF/WaLGsAkYbZUoVcoFCpGc=",
+			"path": "github.com/go-redis/redis/internal/hashtag",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "nSSzm3iXT5jvIw5sa2KQnYvNtHs=",
+			"path": "github.com/go-redis/redis/internal/pool",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "LhB8Z3QPg7Cpz9fn4UxRlcv5kM0=",
+			"path": "github.com/go-redis/redis/internal/proto",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "bp+tC2j9x5lIBFL+/lsS7TTH24E=",
+			"path": "github.com/go-redis/redis/internal/util",
+			"revision": "40336e5ef89189115c9897cdc8f2b13d7a470015",
+			"revisionTime": "2019-01-21T14:27:48Z"
+		},
+		{
+			"checksumSHA1": "3DfMThd4mb/yOHFkZ/ZBccHD3bw=",
+			"path": "github.com/gogo/protobuf/gogoproto",
+			"revision": "8e4a75f11384d0fb2188d872d456407e41f33fc0",
+			"revisionTime": "2018-12-31T10:04:52Z"
+		},
+		{
 			"checksumSHA1": "JzNDfksNJ3Ln/o8MAvzK8iDWiPA=",
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "8e4a75f11384d0fb2188d872d456407e41f33fc0",
 			"revisionTime": "2018-12-31T10:04:52Z"
 		},
 		{
+			"checksumSHA1": "h8g4ZPqkz3GT/HeEv5jc+hGs19o=",
+			"path": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"revision": "8e4a75f11384d0fb2188d872d456407e41f33fc0",
+			"revisionTime": "2018-12-31T10:04:52Z"
+		},
+		{
 			"checksumSHA1": "TAmqTo13FHHCLW3s7IKZjWiiNqw=",
 			"path": "github.com/gogo/protobuf/sortkeys",
+			"revision": "8e4a75f11384d0fb2188d872d456407e41f33fc0",
+			"revisionTime": "2018-12-31T10:04:52Z"
+		},
+		{
+			"checksumSHA1": "PO1xuYHAIeUe9VIm2BtzfR+e0pM=",
+			"path": "github.com/gogo/protobuf/types",
 			"revision": "8e4a75f11384d0fb2188d872d456407e41f33fc0",
 			"revisionTime": "2018-12-31T10:04:52Z"
 		},
@@ -320,6 +434,18 @@
 			"path": "github.com/urfave/cli",
 			"revision": "b67dcf995b6a7b7f14fad5fcb7cc5441b05e814b",
 			"revisionTime": "2018-10-29T21:32:00Z"
+		},
+		{
+			"checksumSHA1": "ETfjuu5F8ejF27iatik4uPga2VQ=",
+			"path": "golang.org/x/crypto/acme",
+			"revision": "54b0dbbbf4499798258d115b783fd6e1c89e39c9",
+			"revisionTime": "2019-01-29T19:45:02Z"
+		},
+		{
+			"checksumSHA1": "Yjacru/DE9yXphaefh67NrjNgAk=",
+			"path": "golang.org/x/crypto/acme/autocert",
+			"revision": "54b0dbbbf4499798258d115b783fd6e1c89e39c9",
+			"revisionTime": "2019-01-29T19:45:02Z"
 		},
 		{
 			"checksumSHA1": "BSPDVKviqHQaG2phOFN690zAKB8=",
