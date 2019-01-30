@@ -132,7 +132,7 @@ type SolutionInfo struct {
 	Name                  string            `json:"name"`
 	Version               string            `json:"version"`
 	PoolId               string            `json:"pool_id"`
-	Service []Service `json:"services"`
+	Service Service `json:"services"`
 	KubernetesIp string            `json:"kubeip"`
 	KubernetesPort string            `json:"kubeport"`
 	KubernetesUsername string            `json:"kubeusername"`
@@ -140,7 +140,7 @@ type SolutionInfo struct {
 }
 
 type ServiceInput struct {
-	KubernetesPassword string            `json:"cluster_id"`
+	ClusterId string            `json:"cluster_id"`
 	SolutionInfo SolutionInfo `json:"solution_info"`
 }
 

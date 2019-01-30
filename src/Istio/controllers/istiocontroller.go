@@ -1,18 +1,19 @@
 package controllers
 
 import (
-"Istio/types"
+	"Istio/types"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"net/http"
-	"strconv"
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"net/http"
+	"strconv"
 )
 
 func getIstioVirtualService(service types.Service)(v1alpha3.VirtualService , error){
@@ -57,7 +58,6 @@ func getIstioVirtualService(service types.Service)(v1alpha3.VirtualService , err
 	fmt.Println(vService.String())
 	return vService , nil
 }
-
 func getIstioGateway(service types.Service)(v1alpha3.Gateway , error){
 	gateway := v1alpha3.Gateway{}
 	byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -312,7 +312,8 @@ func DeployIstio(input types.ServiceInput)(string , error){
 	finalObj.ClusterInfo.KubernetesUsername = input.SolutionInfo.KubernetesUsername
 	finalObj.ClusterInfo.KubernetesPassword = input.SolutionInfo.KubernetesPassword
 
-	for _,service :=range input.SolutionInfo.Service{
+	//for _,service :=range input.SolutionInfo.Service{
+		service := input.SolutionInfo.Service
 		//**Making Service Object*//
 		if service.ServiceType == "mesh"{
 
@@ -340,23 +341,49 @@ func DeployIstio(input types.ServiceInput)(string , error){
 				return string(err.Error()) , err
 			}
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes,serv)
-		}else {
-			continue;
 		}
 
 
 
-	}
 
-
+	//Send request to Kubernetes
 	x, err := json.Marshal(finalObj)
 	if err != nil {
 		fmt.Println(err)
 	}
+	ForwardToKube(x)
 	return  string(x),nil
 
 }
+func ForwardToKube (requestBody []byte) bool {
 
+	url := "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	//tr := &http.Transport{
+	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//}
+	client := &http.Client{}
+	//client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return false
+		/*
+		Info.Println(err)
+		Info.Println(reflect.TypeOf(resp))
+		*/
+
+	} else {
+		//statusCode := resp.StatusCode
+		//Info.Printf("notification status code %d\n", statusCode)
+		fmt.Println(resp.Body)
+		resp.Body.Close()
+
+	}
+	return true
+}
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
