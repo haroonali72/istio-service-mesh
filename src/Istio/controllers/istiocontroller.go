@@ -221,7 +221,10 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName + serviceAttr.Tag
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
 	var ports []v1.ContainerPort
 	for _, port := range serviceAttr.Ports {
 		temp := v1.ContainerPort{}
