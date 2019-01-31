@@ -1,11 +1,32 @@
 package utils
 import (
+	"Istio/constants"
+	"Istio/types"
 	"bytes"
 	"encoding/json"
+	"gopkg.in/resty.v1"
 	"net/http"
 	"reflect"
 )
 
+func SendLog(msg, message_type, env_id string) (int, error) {
+
+	var data types.LoggingRequest
+
+	data.Id = env_id
+	data.Service = constants.SERVICE_NAME
+	data.Environment = "environment"
+	data.Level = message_type
+	data.Message = msg
+
+	response := PostNotify(constants.LoggingURL+constants.LOGGING_ENDPOINT, data)
+	if response.Error != nil {
+		Info.Println(response.Error)
+		return 400, response.Error
+	}
+	return response.StatusCode, response.Error
+
+}
 func Notify_Generic(state interface{}, path string) {
 
 	url := path
@@ -41,4 +62,21 @@ func Notify_Generic(state interface{}, path string) {
 
 	}
 
+}
+func PostNotify(url string, data interface{}) types.ResponseData {
+	b, err1 := json.Marshal(data)
+	if err1 != nil {
+		Info.Println(err1)
+	}
+	Info.Println("notification endpoint:", url)
+	Info.Println("notification payload:", string(b))
+	req := resty.New()
+
+	resp, err := req.R().SetBody(data).SetHeader("Content-Type", "application/json").Post(url)
+	if err != nil {
+		Error.Println(err)
+		return types.ResponseData{Error: err}
+	}
+	Info.Println("responseCode: ", resp.StatusCode(), "\n response Body", string(resp.Body()))
+	return types.ResponseData{StatusCode: resp.StatusCode(), Status: resp.Status(), Body: string(resp.Body())}
 }

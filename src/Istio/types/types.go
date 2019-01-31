@@ -3,6 +3,7 @@ package types
 import (
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	"time"
 )
 
 type Route struct {
@@ -59,7 +60,7 @@ type IstioServiceEntryAttributes struct {
 type GWServers struct {
 	Hosts    []string `json:"hosts"`
 	Labels   []string `json:"labels"`
-	Port     string   `json:"port"`
+	Port     int   `json:"port"`
 	Protocol string   `json:"protocol"`
 	Name     string   `json:"name"`
 }
@@ -142,6 +143,9 @@ type SolutionInfo struct {
 
 type ServiceInput struct {
 	ClusterId    string       `json:"cluster_id"`
+	ClusterName    string       `json:"cluster_name"`
+	EnvId    string       `json:"env_id"`
+	ProjectId    string       `json:"project_id"`
 	SolutionInfo SolutionInfo `json:"solution_info"`
 }
 
@@ -168,4 +172,33 @@ type OutputServices struct {
 type ServiceOutput struct {
 	ClusterInfo KubernetesCred `json:"cluster_info"`
 	Services    OutputServices `json:"serivce"`
+}
+type APIError struct {
+	ErrorCode    int
+	ErrorMessage string
+	CreatedAt    time.Time
+}
+
+type HTTPError struct {
+	Code    int    `json:"code" example:"400"`
+	Message string `json:"message" example:"status bad request"`
+}
+
+type Status struct {
+	Message string `json:"status" bson:"status"`
+}
+
+type ResponseData struct {
+	StatusCode int         `json:"status_code"`
+	Body       interface{} `json:"body"`
+	Error      error       `json:"error"`
+	Status     string      `json:"status"`
+}
+
+type LoggingRequest struct {
+	Message     string `json:"message"`
+	Id          string `json:"id"`
+	Environment string `json:"environment"`
+	Service     string `json:"service"`
+	Level       string `json:"level"`
 }

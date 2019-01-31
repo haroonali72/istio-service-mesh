@@ -1,21 +1,22 @@
 package main
 
 import (
+	"Istio/constants"
 	"Istio/controllers"
+	"Istio/utils"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 
 
 func main() {
-
-
-	//os.Exit(0)
+	constants.LoggingURL = "http://10.248.9.173:3500"
+	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	r := mux.NewRouter()
-	// Routes consist of a path and a handler function.
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
-	// Bind to a port and pass our router in
 	log.Fatal(http.ListenAndServe(":8654", r))
 }

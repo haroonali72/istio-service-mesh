@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"Istio/types"
+	"Istio/utils"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -67,12 +68,8 @@ func getIstioGateway(service types.Service) (v1alpha3.Gateway, error) {
 	var servers []*v1alpha3.Server
 	for _, server := range serviceAttr.Servers {
 		var serv v1alpha3.Server
-		i, err := strconv.Atoi(server.Port)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		serv.Port = &v1alpha3.Port{Name: server.Name, Protocol: server.Protocol, Number: uint32(i)}
+
+		serv.Port = &v1alpha3.Port{Name: server.Name, Protocol: server.Protocol, Number: uint32(server.Port)}
 		serv.Hosts = server.Hosts
 		servers = append(servers, &serv)
 	}
@@ -358,11 +355,11 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	ForwardToKube(x)
+	ForwardToKube(x , input.EnvId)
 	return string(x), nil
 
 }
-func ForwardToKube(requestBody []byte) bool {
+func ForwardToKube(requestBody []byte , env_id string) bool {
 
 	url := "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
@@ -376,6 +373,8 @@ func ForwardToKube(requestBody []byte) bool {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
+		utils.SendLog("Connection to kubernetes microservice failed " + err.Error(),"info",env_id)
+
 		return false
 		/*
 			Info.Println(err)
@@ -385,9 +384,14 @@ func ForwardToKube(requestBody []byte) bool {
 	} else {
 		//statusCode := resp.StatusCode
 		//Info.Printf("notification status code %d\n", statusCode)
-		fmt.Println(resp.Body)
-		resp.Body.Close()
-
+		result,err := ioutil.ReadAll(resp.Body)
+		if err != nil{
+			fmt.Println(err)
+			utils.SendLog("Response Parsing failed " + err.Error(),"error",env_id)
+		}else{
+			utils.Info.Println(string(result))
+			utils.SendLog(string(result),"info",env_id)
+		}
 	}
 	return true
 }
