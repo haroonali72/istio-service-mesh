@@ -18,6 +18,7 @@ import (
 	"strings"
 )
 
+var Notifier utils.Notifier
 func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, error) {
 	vService := v1alpha3.VirtualService{}
 	byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -68,7 +69,6 @@ func getIstioGateway(service types.Service) (v1alpha3.Gateway, error) {
 	var servers []*v1alpha3.Server
 	for _, server := range serviceAttr.Servers {
 		var serv v1alpha3.Server
-
 		serv.Port = &v1alpha3.Port{Name: server.Name, Protocol: server.Protocol, Number: uint32(server.Port)}
 		serv.Hosts = server.Hosts
 		servers = append(servers, &serv)
@@ -355,11 +355,13 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	ForwardToKube(x , input.EnvId)
+	if !ForwardToKube(x , input.EnvId){
+		return string(x) , errors.New("Kubernetes Deployment Failed")
+	}
 	return string(x), nil
 
 }
-func ForwardToKube(requestBody []byte , env_id string) bool {
+func ForwardToKube(requestBody []byte , env_id string) (bool ){
 
 	url := "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
@@ -382,15 +384,33 @@ func ForwardToKube(requestBody []byte , env_id string) bool {
 		*/
 
 	} else {
-		//statusCode := resp.StatusCode
+		statusCode := resp.StatusCode
+
 		//Info.Printf("notification status code %d\n", statusCode)
 		result,err := ioutil.ReadAll(resp.Body)
 		if err != nil{
 			fmt.Println(err)
 			utils.SendLog("Response Parsing failed " + err.Error(),"error",env_id)
+			return false
 		}else{
 			utils.Info.Println(string(result))
 			utils.SendLog(string(result),"info",env_id)
+			if statusCode != 200 {
+				return false
+			}
+			/*var kubresponse types.KubeResponse
+			err1 := json.Unmarshal(result, &kubresponse)
+			if err1 != nil {
+				utils.Info.Println(err1)
+				utils.Error.Println("Notification Parsing failed")
+				return false
+			}else{
+				if(kubresponse.Status == "service deployment failed"){
+					return false
+				}else {
+					return true
+				}
+			}*/
 		}
 	}
 	return true
@@ -413,13 +433,27 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var notification types.Notifier
+	notification.EnvId = input.EnvId
+	notification.Id = input.SolutionInfo.Service.ID
+
 	result, err := DeployIstio(input)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.Write([]byte(string(err.Error())))
+		notification.Status = "fail"
 	} else {
-
 		fmt.Println("Deployment Successful\n")
 		w.Write([]byte(result))
+		notification.Status = "success"
+	}
+	b, err1 := json.Marshal(notification)
+	if err1 != nil {
+		utils.Info.Println(err1)
+		utils.Error.Println("Notification Parsing failed")
+	}else{
+		Notifier.Notify(input.SolutionInfo.Name,string(b))
+		utils.Info.Println(string(b))
+
 	}
 }

@@ -124,6 +124,7 @@ type Service struct {
 	ServiceType           string              `json:"service_type"`
 	SubType               string              `json:"service_sub_type"`
 	Name                  string              `json:"name"`
+	ID                  string              `json:"_id"`
 	Version               string              `json:"version"`
 	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
 	ServiceAttributes     interface{}         `json:"service_attributes"`
@@ -131,6 +132,7 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
+
 	Name               string  `json:"name"`
 	Version            string  `json:"version"`
 	PoolId             string  `json:"pool_id"`
@@ -201,4 +203,13 @@ type LoggingRequest struct {
 	Environment string `json:"environment"`
 	Service     string `json:"service"`
 	Level       string `json:"level"`
+}
+type Notifier struct {
+	Id          string `json:"_id"`
+	EnvId          string `json:"env_id"`
+	Status          string `json:"status"`
+}
+type KubeResponse struct {
+	Error          string `json:"error"`
+	Status          string `json:"status"`
 }

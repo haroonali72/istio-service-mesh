@@ -5,7 +5,7 @@ var (
 	KnativeEngineURL    string
 	ServicePort         string
 	KubernetesEngineURL string
-	ClusterAPI          string)
+	NotificationURL          string)
 const (
 	SERVICE_NAME = "istio-mesh-engine"
 	LOGGING_ENDPOINT    = "/api/v1/logger"

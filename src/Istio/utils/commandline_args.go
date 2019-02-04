@@ -17,22 +17,10 @@ func InitFlags() error {
 			EnvVar:      "PORT",
 		},
 		cli.StringFlag{
-			Name:        "istio_engine_url",
-			Usage:       "ip:port",
-			Destination: &constants.IstioEngineURL,
-			EnvVar:      "ISTIO_ENGINE_URL",
-		},
-		cli.StringFlag{
 			Name:        "logging_engine_url",
 			Usage:       "logging ip:port",
 			Destination: &constants.LoggingURL,
 			EnvVar:      "LOGGING_ENGINE_URL",
-		},
-		cli.StringFlag{
-			Name:        "knative_engine_url",
-			Usage:       "knative ip:port ",
-			Destination: &constants.KnativeEngineURL,
-			EnvVar:      "KNATIVE_ENGINE_URL",
 		},
 		cli.StringFlag{
 			Name:        "kubernetes_engine_url",
@@ -41,10 +29,10 @@ func InitFlags() error {
 			EnvVar:      "KUBERNETES_ENGINE_URL",
 		},
 		cli.StringFlag{
-			Name:        "cluster_engine_url",
+			Name:        "redis_url",
 			Usage:       "cluster ip:port ",
-			Destination: &constants.ClusterAPI,
-			EnvVar:      "CLUSTER_ENGINE_URL",
+			Destination: &constants.NotificationURL,
+			EnvVar:      "REDIS_ENGINE_URL",
 		},
 	}
 	app.Action = func(c *cli.Context) error {
