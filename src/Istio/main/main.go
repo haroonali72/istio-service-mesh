@@ -17,7 +17,7 @@ func main() {
 	constants.LoggingURL = "http://10.248.9.173:3500"
 	constants.NotificationURL = "10.248.9.173:6379"
 
-	
+
 	controllers.Notifier.Init_notifier()
 	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	r := mux.NewRouter()

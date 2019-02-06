@@ -87,7 +87,11 @@ func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, e
 	for _, subset := range serviceAttr.Subsets {
 		var ss v1alpha3.Subset
 		ss.Name = subset.Name
-		ss.Labels = subset.Labels
+		var labels = make(map[string]string)
+		for _ , label := range subset.Labels{
+			labels[label.Key] = label.Value
+		}
+		ss.Labels = labels
 		subsets = append(subsets, &ss)
 	}
 	destRule.Subsets = subsets
@@ -316,9 +320,9 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 func DeployIstio(input types.ServiceInput) (string, error) {
 	var finalObj types.ServiceOutput
 
-	finalObj.ClusterInfo.KubernetesURL = input.SolutionInfo.KubernetesIp + ":" + input.SolutionInfo.KubernetesPort
-	finalObj.ClusterInfo.KubernetesUsername = input.SolutionInfo.KubernetesUsername
-	finalObj.ClusterInfo.KubernetesPassword = input.SolutionInfo.KubernetesPassword
+	finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
+	finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
+	finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
 
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service

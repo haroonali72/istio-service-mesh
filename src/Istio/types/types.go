@@ -70,7 +70,10 @@ type IstioGatewayAttributes struct {
 }
 type DRSubsets struct {
 	Name   string            `json:"name"`
-	Labels map[string]string `json:"labels"`
+	Labels  []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"labels"`
 }
 type IstioDestinationRuleAttributes struct {
 	Host    string      `json:"host"`
@@ -136,11 +139,7 @@ type SolutionInfo struct {
 	Name               string  `json:"name"`
 	Version            string  `json:"version"`
 	PoolId             string  `json:"pool_id"`
-	Service            Service `json:"services"`
-	KubernetesIp       string  `json:"kubeip"`
-	KubernetesPort     string  `json:"kubeport"`
-	KubernetesUsername string  `json:"kubeusername"`
-	KubernetesPassword string  `json:"kubepassword"`
+	Service            Service `json:"service"`
 }
 
 type ServiceInput struct {
@@ -149,6 +148,7 @@ type ServiceInput struct {
 	EnvId    string       `json:"env_id"`
 	ProjectId    string       `json:"project_id"`
 	SolutionInfo SolutionInfo `json:"solution_info"`
+	Creds        KubernetesCred `json:"kubernetes_credentials"`
 }
 
 type Output struct {
