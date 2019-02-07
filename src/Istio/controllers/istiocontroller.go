@@ -19,6 +19,7 @@ import (
 )
 
 var Notifier utils.Notifier
+
 func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, error) {
 	vService := v1alpha3.VirtualService{}
 	byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -88,7 +89,7 @@ func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, e
 		var ss v1alpha3.Subset
 		ss.Name = subset.Name
 		var labels = make(map[string]string)
-		for _ , label := range subset.Labels{
+		for _, label := range subset.Labels {
 			labels[label.Key] = label.Value
 		}
 		ss.Labels = labels
@@ -359,15 +360,15 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	if !ForwardToKube(x , input.EnvId){
-		return string(x) , errors.New("Kubernetes Deployment Failed")
+	if !ForwardToKube(x, input.EnvId) {
+		return string(x), errors.New("Kubernetes Deployment Failed")
 	}
 	return string(x), nil
 
 }
-func ForwardToKube(requestBody []byte , env_id string) (bool ){
+func ForwardToKube(requestBody []byte, env_id string) bool {
 
-	url := "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
+	url := "http://kubernetes-service-engine:8089/api/v1/kubernetes/deploy"
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -379,7 +380,7 @@ func ForwardToKube(requestBody []byte , env_id string) (bool ){
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		utils.SendLog("Connection to kubernetes microservice failed " + err.Error(),"info",env_id)
+		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 
 		return false
 		/*
@@ -391,14 +392,14 @@ func ForwardToKube(requestBody []byte , env_id string) (bool ){
 		statusCode := resp.StatusCode
 
 		//Info.Printf("notification status code %d\n", statusCode)
-		result,err := ioutil.ReadAll(resp.Body)
-		if err != nil{
+		result, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
 			fmt.Println(err)
-			utils.SendLog("Response Parsing failed " + err.Error(),"error",env_id)
+			utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
 			return false
-		}else{
+		} else {
 			utils.Info.Println(string(result))
-			utils.SendLog(string(result),"info",env_id)
+			utils.SendLog(string(result), "info", env_id)
 			if statusCode != 200 {
 				return false
 			}
@@ -455,8 +456,8 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	if err1 != nil {
 		utils.Info.Println(err1)
 		utils.Error.Println("Notification Parsing failed")
-	}else{
-		Notifier.Notify(input.SolutionInfo.Name,string(b))
+	} else {
+		Notifier.Notify(input.SolutionInfo.Name, string(b))
 		utils.Info.Println(string(b))
 
 	}

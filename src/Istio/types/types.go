@@ -60,7 +60,7 @@ type IstioServiceEntryAttributes struct {
 type GWServers struct {
 	Hosts    []string `json:"hosts"`
 	Labels   []string `json:"labels"`
-	Port     int   `json:"port"`
+	Port     int      `json:"port"`
 	Protocol string   `json:"protocol"`
 	Name     string   `json:"name"`
 }
@@ -69,8 +69,8 @@ type IstioGatewayAttributes struct {
 	Selector map[string]string `json:"selector"`
 }
 type DRSubsets struct {
-	Name   string            `json:"name"`
-	Labels  []struct {
+	Name   string `json:"name"`
+	Labels []struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"labels"`
@@ -127,7 +127,7 @@ type Service struct {
 	ServiceType           string              `json:"service_type"`
 	SubType               string              `json:"service_sub_type"`
 	Name                  string              `json:"name"`
-	ID                  string              `json:"_id"`
+	ID                    string              `json:"_id"`
 	Version               string              `json:"version"`
 	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
 	ServiceAttributes     interface{}         `json:"service_attributes"`
@@ -135,19 +135,18 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
-
-	Name               string  `json:"name"`
-	Version            string  `json:"version"`
-	PoolId             string  `json:"pool_id"`
-	Service            Service `json:"service"`
+	Name    string  `json:"name"`
+	Version string  `json:"version"`
+	PoolId  string  `json:"pool_id"`
+	Service Service `json:"service"`
 }
 
 type ServiceInput struct {
-	ClusterId    string       `json:"cluster_id"`
-	ClusterName    string       `json:"cluster_name"`
-	EnvId    string       `json:"env_id"`
-	ProjectId    string       `json:"project_id"`
-	SolutionInfo SolutionInfo `json:"solution_info"`
+	ClusterId    string         `json:"cluster_id"`
+	ClusterName  string         `json:"cluster_name"`
+	EnvId        string         `json:"env_id"`
+	ProjectId    string         `json:"project_id"`
+	SolutionInfo SolutionInfo   `json:"solution_info"`
 	Creds        KubernetesCred `json:"kubernetes_credentials"`
 }
 
@@ -205,11 +204,11 @@ type LoggingRequest struct {
 	Level       string `json:"level"`
 }
 type Notifier struct {
-	Id          string `json:"_id"`
-	EnvId          string `json:"env_id"`
-	Status          string `json:"status"`
+	Id     string `json:"_id"`
+	EnvId  string `json:"env_id"`
+	Status string `json:"status"`
 }
 type KubeResponse struct {
-	Error          string `json:"error"`
-	Status          string `json:"status"`
+	Error  string `json:"error"`
+	Status string `json:"status"`
 }
