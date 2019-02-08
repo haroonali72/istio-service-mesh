@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"Istio/constants"
 	"Istio/types"
 	"Istio/utils"
 	"bytes"
@@ -367,7 +368,7 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 }
 func ForwardToKube(requestBody []byte , env_id string) (bool ){
 
-	url := "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
+	url := constants.KubernetesEngineURL
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
 
