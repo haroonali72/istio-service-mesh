@@ -12,8 +12,6 @@ import (
 	"os"
 )
 
-
-
 func main() {
 
 	err := utils.InitFlags()

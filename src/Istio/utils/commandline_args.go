@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"Istio/constants"
 	"github.com/urfave/cli"
 	"log"
-	"Istio/constants"
 	"os"
 )
 
