@@ -171,7 +171,7 @@ type OutputServices struct {
 	Istio       []IstioObject    `json:"istio-component"`
 }
 type ServiceOutput struct {
-	ClusterInfo KubernetesCred `json:"cluster_info"`
+	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
 	Services    OutputServices `json:"serivce"`
 }
 type APIError struct {
