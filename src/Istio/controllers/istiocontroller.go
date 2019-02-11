@@ -364,6 +364,7 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	utils.SendLog("Deploying service "+service.Name, "info", input.EnvId)
 	if !ForwardToKube(x, input.EnvId) {
 		return string(x), errors.New("Kubernetes Deployment Failed")
 	}
