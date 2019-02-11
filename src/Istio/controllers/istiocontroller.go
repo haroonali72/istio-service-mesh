@@ -216,6 +216,9 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	deployment.Spec.Selector = &selector
 	deployment.Spec.Template.ObjectMeta.Labels = labels
+	deployment.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}
 	//
 
 	var container v1.Container
