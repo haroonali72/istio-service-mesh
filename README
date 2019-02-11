@@ -1,10 +1,9 @@
 docker stop istio-service-mesh
 docker rm -f istio-service-mesh
 docker build -t istio-service-mesh .
-docker run -d --name istio-service-mesh --restart always -p 8654:8654 istio-service-mesh \
--e --PORT \
--e 8654 \
--e --REDIS_ENGINE_URL \
--e "10.248.9.173:6379" \
--e --LOGGING_ENGINE_URL \
-"http://10.248.9.173:3500" --KUBERNETES_ENGINE_URL "http://10.248.9.173:8089/api/v1/kubernetes/deploy"
+docker run -d --name istio-service-mesh --restart always -p 8654:8654  \
+-e PORT=8654 \
+-e REDIS_ENGINE_URL="10.248.9.173:6379" \
+-e LOGGING_ENGINE_URL="http://10.248.9.173:3500" \
+-e KUBERNETES_ENGINE_URL="http://10.248.9.173:8089/api/v1/kubernetes/deploy" \
+istio-service-mesh
