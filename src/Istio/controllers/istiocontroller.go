@@ -322,9 +322,11 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 func DeployIstio(input types.ServiceInput) (string, error) {
 	var finalObj types.ServiceOutput
 
-	finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
-	finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
-	finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
+	if(input.Creds.KubernetesURL == ""){
+		finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
+		finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
+		finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
+	}
 
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service

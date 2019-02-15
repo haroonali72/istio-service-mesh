@@ -139,6 +139,11 @@ type SolutionInfo struct {
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
 	Service Service `json:"service"`
+	KIP    string  `json:"kubeip"`
+	KPo    string  `json:"kubeport"`
+	KU    string  `json:"kubeusername"`
+	KP    string  `json:"kubepassword"`
+
 }
 
 type ServiceInput struct {
@@ -148,6 +153,7 @@ type ServiceInput struct {
 	ProjectId    string         `json:"project_id"`
 	SolutionInfo SolutionInfo   `json:"solution_info"`
 	Creds        KubernetesCred `json:"kubernetes_credentials"`
+
 }
 
 type Output struct {
