@@ -177,8 +177,8 @@ type OutputServices struct {
 	Istio       []IstioObject    `json:"istio-component"`
 }
 type ServiceOutput struct {
-	ClusterInfo KubernetesCred `json:"cluster_info"`
-	Services    OutputServices `json:"serivce"`
+	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
+	Services    OutputServices `json:"service"`
 }
 type APIError struct {
 	ErrorCode    int
@@ -211,7 +211,7 @@ type LoggingRequest struct {
 }
 type Notifier struct {
 	Id     string `json:"_id"`
-	EnvId  string `json:"env_id"`
+	EnvId  string `json:"environment_id"`
 	Status string `json:"status"`
 }
 type KubeResponse struct {
