@@ -322,7 +322,7 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return service, nil
 }
-func DeployIstio(input types.ServiceInput) (string, error) {
+func DeployIstio(input types.ServiceInput , isUpdate bool) (string, error) {
 	var finalObj types.ServiceOutput
 
 	if(input.Creds.KubernetesURL == ""){
@@ -367,17 +367,20 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 		fmt.Println(err)
 	}
 	utils.SendLog("Deploying service "+service.Name, "info", input.EnvId)
-	if !ForwardToKube(x, input.EnvId) {
+	if !ForwardToKube(x, input.EnvId ,isUpdate) {
 		return string(x), errors.New("Kubernetes Deployment Failed")
 	}
 	return string(x), nil
 
 }
-func ForwardToKube(requestBody []byte, env_id string) bool {
+func ForwardToKube(requestBody []byte, env_id string , isUpdate bool) bool {
 
 	url := constants.KubernetesEngineURL
-
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+
+	if isUpdate{
+		req, err = http.NewRequest("PATCH", url, bytes.NewBuffer(requestBody))
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	//tr := &http.Transport{
@@ -450,7 +453,11 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	notification.Component = "solution"
 	notification.Id = input.SolutionInfo.Service.ID
 
-	result, err := DeployIstio(input)
+	isUpdate := false;
+	if(r.Method == "PATCH"){
+		isUpdate = true
+	}
+	result, err := DeployIstio(input , isUpdate)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.Write([]byte(string(err.Error())))
@@ -470,3 +477,4 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
+

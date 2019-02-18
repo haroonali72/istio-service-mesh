@@ -51,5 +51,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
+
 	log.Fatal(http.ListenAndServe(":"+constants.ServicePort, r))
 }
