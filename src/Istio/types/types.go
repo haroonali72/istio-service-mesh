@@ -211,8 +211,9 @@ type LoggingRequest struct {
 }
 type Notifier struct {
 	Id     string `json:"_id"`
-	EnvId  string `json:"environment_id"`
+	//EnvId  string `json:"environment_id"`
 	Status string `json:"status"`
+	Component  string `json:"component"`
 }
 type KubeResponse struct {
 	Error  string `json:"error"`

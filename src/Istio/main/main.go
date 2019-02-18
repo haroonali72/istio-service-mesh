@@ -48,7 +48,7 @@ func main() {
 	constants.NotificationURL = *redisEngine
 	constants.LoggingURL = *loggingEngine
 
-	
+
 	r := mux.NewRouter()
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
 	log.Fatal(http.ListenAndServe(":"+constants.ServicePort, r))

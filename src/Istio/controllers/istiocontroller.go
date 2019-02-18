@@ -447,7 +447,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var notification types.Notifier
-	notification.EnvId = input.EnvId
+	notification.Component = "solution"
 	notification.Id = input.SolutionInfo.Service.ID
 
 	result, err := DeployIstio(input)
@@ -465,7 +465,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		utils.Info.Println(err1)
 		utils.Error.Println("Notification Parsing failed")
 	} else {
-		Notifier.Notify(input.SolutionInfo.Name, string(b))
+		Notifier.Notify(input.ProjectId, string(b))
 		utils.Info.Println(string(b))
 
 	}
