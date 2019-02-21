@@ -19,6 +19,143 @@ import (
 	"strings"
 )
 
+var resp = `
+{
+    "project_id": "haseeb-test",
+    "service": {
+        "deployment": [
+            {
+                "error": "",
+                "data": {
+                    "metadata": {
+                        "name": "redis-cart",
+                        "namespace": "default",
+                        "selfLink": "/apis/apps/v1/namespaces/default/deployments/redis-cart",
+                        "uid": "73dd15be-3376-11e9-a1c7-0290193db1ca",
+                        "resourceVersion": "147108",
+                        "generation": 2,
+                        "creationTimestamp": "2019-02-18T12:12:25Z",
+                        "annotations": {
+                            "deployment.kubernetes.io/revision": "1"
+                        }
+                    },
+                    "spec": {
+                        "replicas": 3,
+                        "selector": {
+                            "matchLabels": {
+                                "app": "redis-cart"
+                            }
+                        },
+                        "template": {
+                            "metadata": {
+                                "creationTimestamp": null,
+                                "labels": {
+                                    "app": "redis-cart"
+                                }
+                            },
+                            "spec": {
+                                "volumes": [
+                                    {
+                                        "name": "redis-data",
+                                        "emptyDir": {}
+                                    }
+                                ],
+                                "containers": [
+                                    {
+                                        "name": "redis",
+                                        "image": "redis:alpine",
+                                        "ports": [
+                                            {
+                                                "containerPort": 6379,
+                                                "protocol": "TCP"
+                                            }
+                                        ],
+                                        "resources": {
+                                            "limits": {
+                                                "cpu": "125m",
+                                                "memory": "256Mi"
+                                            },
+                                            "requests": {
+                                                "cpu": "70m",
+                                                "memory": "200Mi"
+                                            }
+                                        },
+                                        "volumeMounts": [
+                                            {
+                                                "name": "redis-data",
+                                                "mountPath": "/data"
+                                            }
+                                        ],
+                                        "livenessProbe": {
+                                            "tcpSocket": {
+                                                "port": 6379
+                                            },
+                                            "timeoutSeconds": 1,
+                                            "periodSeconds": 5,
+                                            "successThreshold": 1,
+                                            "failureThreshold": 3
+                                        },
+                                        "readinessProbe": {
+                                            "tcpSocket": {
+                                                "port": 6379
+                                            },
+                                            "timeoutSeconds": 1,
+                                            "periodSeconds": 5,
+                                            "successThreshold": 1,
+                                            "failureThreshold": 3
+                                        },
+                                        "terminationMessagePath": "/dev/termination-log",
+                                        "terminationMessagePolicy": "File",
+                                        "imagePullPolicy": "IfNotPresent"
+                                    }
+                                ],
+                                "restartPolicy": "Always",
+                                "terminationGracePeriodSeconds": 30,
+                                "dnsPolicy": "ClusterFirst",
+                                "securityContext": {},
+                                "schedulerName": "default-scheduler"
+                            }
+                        },
+                        "strategy": {
+                            "type": "RollingUpdate",
+                            "rollingUpdate": {
+                                "maxUnavailable": "25%",
+                                "maxSurge": "25%"
+                            }
+                        },
+                        "revisionHistoryLimit": 10,
+                        "progressDeadlineSeconds": 600
+                    },
+                    "status": {
+                        "observedGeneration": 2,
+                        "replicas": 3,
+                        "updatedReplicas": 3,
+                        "readyReplicas": 3,
+                        "availableReplicas": 3,
+                        "conditions": [
+                            {
+                                "type": "Progressing",
+                                "status": "True",
+                                "lastUpdateTime": "2019-02-18T12:12:38Z",
+                                "lastTransitionTime": "2019-02-18T12:12:25Z",
+                                "reason": "NewReplicaSetAvailable",
+                                "message": "ReplicaSet \"redis-cart-d999c4589\" has successfully progressed."
+                            },
+                            {
+                                "type": "Available",
+                                "status": "True",
+                                "lastUpdateTime": "2019-02-18T12:15:41Z",
+                                "lastTransitionTime": "2019-02-18T12:15:41Z",
+                                "reason": "MinimumReplicasAvailable",
+                                "message": "Deployment has minimum availability."
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+}`
 var Notifier utils.Notifier
 
 func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, error) {
@@ -138,7 +275,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -152,7 +289,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -167,7 +304,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -183,7 +320,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		}
 		istioServ.Spec = serv
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -322,15 +459,19 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return service, nil
 }
-func DeployIstio(input types.ServiceInput , isUpdate bool) (string, error) {
-	var finalObj types.ServiceOutput
+func DeployIstio(input types.ServiceInput , requestType string) (types.StatusRequest) {
 
-	if(input.Creds.KubernetesURL == ""){
+	var ret types.StatusRequest
+	ret.ID = input.SolutionInfo.Service.ID
+	ret.Name = input.SolutionInfo.Service.Name
+
+	var finalObj types.ServiceOutput
+	if(input.Creds.KubernetesURL != ""){
 		finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
 		finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
 		finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
 	}
-
+	finalObj.ProjectId = input.ProjectId
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
@@ -339,7 +480,12 @@ func DeployIstio(input types.ServiceInput , isUpdate bool) (string, error) {
 		res, err := getIstioObject(service)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+
+			utils.SendLog(ret.Reason, "error", input.EnvId)
+
+			return  ret
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
@@ -347,16 +493,21 @@ func DeployIstio(input types.ServiceInput , isUpdate bool) (string, error) {
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
 		if err != nil {
-			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+			utils.SendLog(ret.Reason, "error", input.EnvId)
+			return ret
 		}
 		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		//Getting Kubernetes Service Object
 		serv, err := getServiceObject(service)
 		if err != nil {
-			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+			utils.SendLog(ret.Reason, "error", input.EnvId)
+			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
 	}
@@ -365,39 +516,204 @@ func DeployIstio(input types.ServiceInput , isUpdate bool) (string, error) {
 	x, err := json.Marshal(finalObj)
 	if err != nil {
 		fmt.Println(err)
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Service Object parsing failed : " + err.Error()
+		utils.SendLog(ret.Reason, "error", input.EnvId)
+		return ret
 	}
-	utils.SendLog("Deploying service "+service.Name, "info", input.EnvId)
-	if !ForwardToKube(x, input.EnvId ,isUpdate) {
-		return string(x), errors.New("Kubernetes Deployment Failed")
+	fmt.Println(string(x))
+
+	if requestType != "POST"{
+		ret , resp := GetFromKube(x,input.EnvId,ret)
+		if ret.Reason == ""{
+			//Successful in getting object
+			if requestType == "GET" {
+				if resp.Service.Kubernetes != nil {
+					for _,k := range resp.Service.Kubernetes{
+						if k.Error != ""{
+							ret.Reason = ret.Reason + k.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						ret.Status = append(ret.Status,"successful")
+					}
+				}
+				if resp.Service.Deployments != nil {
+					for _,d := range resp.Service.Deployments{
+						if d.Error != ""{
+							ret.Reason = ret.Reason + d.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						for _,c := range d.Deployments.Status.Conditions{
+							if c.Type == v12.DeploymentAvailable{
+								ret.Status = append(ret.Status, "successful")
+
+							} else if c.Type == v12.DeploymentProgressing{
+								ret.Status = append(ret.Status, "in progress")
+
+							}else{
+								ret.Status = append(ret.Status, "failed")
+								ret.Reason = ret.Reason + c.Reason
+							}
+						}
+					}
+				}
+				if resp.Service.Istio != nil {
+					for _,i := range resp.Service.Istio{
+						if i.Error != ""{
+							ret.Reason = ret.Reason + i.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						ret.Status = append(ret.Status,"successful")
+					}
+				}
+				return ret
+			} else if requestType == "PATCH"{
+				if resp.Service.Kubernetes != nil {
+					var services [] v1.Service
+					for i,k := range resp.Service.Kubernetes{
+						if k.Error != ""{
+							ret.Reason = ret.Reason + k.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						_ = i //Replace 0 with i in case of multiple services
+						k.Kubernetes.Spec = finalObj.Services.Kubernetes[0].Spec
+						services = append(services,k.Kubernetes)
+					}
+					finalObj.Services.Kubernetes = services
+
+				}
+				if resp.Service.Deployments != nil {
+					var deployments []v12.Deployment
+
+					for _,d := range resp.Service.Deployments{
+						if d.Error != ""{
+							ret.Reason = ret.Reason + d.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						d.Deployments.Spec = finalObj.Services.Deployments[0].Spec
+						deployments = append(deployments,d.Deployments)
+					}
+					finalObj.Services.Deployments = deployments
+				}
+				if resp.Service.Istio != nil {
+					var istios []types.IstioObject
+					for _,i := range resp.Service.Istio{
+						if i.Error != ""{
+							ret.Reason = ret.Reason + i.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						i.Istio.Spec = finalObj.Services.Istio[0].Spec
+						istios = append(istios,i.Istio)
+					}
+					finalObj.Services.Istio = istios
+				}
+			}
+		}else{
+			return ret
+		}
+
 	}
-	return string(x), nil
+	x, err = json.Marshal(finalObj)
+	if err != nil {
+		fmt.Println(err)
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Service Object parsing failed : " + err.Error()
+		utils.SendLog(ret.Reason, "error", input.EnvId)
+		return ret
+	}
+	fmt.Println(string(x))
+	if requestType != "GET" {
+		//Send failure request
+		return ForwardToKube(x, input.EnvId ,requestType , ret)
+	}
+	return ret
 
 }
-func ForwardToKube(requestBody []byte, env_id string , isUpdate bool) bool {
 
+func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(types.StatusRequest , types.ResponseRequest){
 	url := constants.KubernetesEngineURL
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	var res types.ResponseRequest
 
-	if isUpdate{
-		req, err = http.NewRequest("PATCH", url, bytes.NewBuffer(requestBody))
-	}
+
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
+
 	req.Header.Set("Content-Type", "application/json")
 
-	//tr := &http.Transport{
-	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//}
 	client := &http.Client{}
-	//client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
+		utils.SendLog(ret.Reason, "error", env_id)
 
-		return false
-		/*
-			Info.Println(err)
-			Info.Println(reflect.TypeOf(resp))
-		*/
+		return ret , res
+
+	} else {
+		statusCode := resp.StatusCode
+
+		//Info.Printf("notification status code %d\n", statusCode)
+		result, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+			utils.SendLog(ret.Reason, "error", env_id)
+			return ret, res
+		} else {
+
+			utils.Info.Println(string(result))
+			utils.SendLog(string(result), "info", env_id)
+			if statusCode != 200 {
+				var resrf types.ResponseServiceRequestFailure
+				err = json.Unmarshal(result, &resrf)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					utils.SendLog(ret.Reason, "error", env_id)
+					return ret, res
+				}
+				ret.Status = append(ret.Status,"failed")
+				ret.Reason = resrf.Error
+				return ret, res
+			}else {
+				err = json.Unmarshal(result, &res)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					utils.SendLog(ret.Reason, "error", env_id)
+					return ret, res
+				}
+				return ret , res
+			}
+		}
+		return ret , res
+	}
+}
+func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret types.StatusRequest)(types.StatusRequest) {
+
+	url := constants.KubernetesEngineURL
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		ret.Status = append(ret.Status, "failed")
+		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
+		utils.SendLog(ret.Reason, "error", env_id)
+
+		return ret
 
 	} else {
 		statusCode := resp.StatusCode
@@ -407,30 +723,33 @@ func ForwardToKube(requestBody []byte, env_id string , isUpdate bool) bool {
 		if err != nil {
 			fmt.Println(err)
 			utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
-			return false
-		} else {
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+			utils.SendLog(ret.Reason, "error", env_id)
+			return ret
+			} else {
 			utils.Info.Println(string(result))
 			utils.SendLog(string(result), "info", env_id)
 			if statusCode != 200 {
-				return false
-			}
-			/*var kubresponse types.KubeResponse
-			err1 := json.Unmarshal(result, &kubresponse)
-			if err1 != nil {
-				utils.Info.Println(err1)
-				utils.Error.Println("Notification Parsing failed")
-				return false
-			}else{
-				if(kubresponse.Status == "service deployment failed"){
-					return false
-				}else {
-					return true
+				var resrf types.ResponseServiceRequestFailure
+				err = json.Unmarshal(result, &resrf)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					utils.SendLog(ret.Reason, "error", env_id)
+					return ret
 				}
-			}*/
+				ret.Status = append(ret.Status,"failed")
+				ret.Reason = resrf.Error
+				return ret
+			}
+			ret.Status = append(ret.Status , "successful")
 		}
+
 	}
-	return true
+	return ret
 }
+
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
@@ -453,28 +772,34 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	notification.Component = "solution"
 	notification.Id = input.SolutionInfo.Service.ID
 
-	isUpdate := false;
-	if(r.Method == "PATCH"){
-		isUpdate = true
-	}
-	result, err := DeployIstio(input , isUpdate)
-	if err != nil {
-		fmt.Println(err.Error())
-		w.Write([]byte(string(err.Error())))
+	var status types.StatusRequest
+	status.ID = input.SolutionInfo.Service.ID
+	status.Name = input.SolutionInfo.Service.Name
+
+	result := DeployIstio(input, r.Method)
+
+	if result.Reason != "" {
+		x, err := json.Marshal(result)
+		if err == nil {
+			w.Write(x)
+		}
 		notification.Status = "fail"
 	} else {
 		fmt.Println("Deployment Successful\n")
-		w.Write([]byte(result))
 		notification.Status = "success"
-	}
-	b, err1 := json.Marshal(notification)
-	if err1 != nil {
-		utils.Info.Println(err1)
-		utils.Error.Println("Notification Parsing failed")
-	} else {
-		Notifier.Notify(input.ProjectId, string(b))
-		utils.Info.Println(string(b))
+		x, err := json.Marshal(result)
+		if err == nil {
+			w.Write(x)
+		}
+		b, err1 := json.Marshal(notification)
+		if err1 != nil {
+			utils.Info.Println(err1)
+			utils.Error.Println("Notification Parsing failed")
+		} else {
+			Notifier.Notify(input.ProjectId, string(b))
+			utils.Info.Println(string(b))
 
+		}
 	}
 }
 

@@ -103,7 +103,7 @@ type DockerServiceAttributes struct {
 type IstioObject struct {
 	ApiVersion string            `json:"apiVersion"`
 	Kind       string            `json:"kind"`
-	Metadata   map[string]string `json:"metadata"`
+	Metadata   map[string]interface{} `json:"metadata"`
 	Spec       interface{}       `json:"spec"`
 }
 type ServiceDependency struct {
@@ -135,6 +135,7 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
+	ID    string  `json:"_id"`
 	Name    string  `json:"name"`
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
@@ -153,7 +154,6 @@ type ServiceInput struct {
 	ProjectId    string         `json:"project_id"`
 	SolutionInfo SolutionInfo   `json:"solution_info"`
 	Creds        KubernetesCred `json:"kubernetes_credentials"`
-
 }
 
 type Output struct {
@@ -176,9 +176,29 @@ type OutputServices struct {
 	Kubernetes  []v1.Service     `json:"kubernetes-service"`
 	Istio       []IstioObject    `json:"istio-component"`
 }
+
+type DeploymentWrapper struct {
+	Error       string    `json:"error"`
+	Deployments v12.Deployment `json:"data"`
+}
+type KubernetesWrapper struct {
+	Error       string    `json:"error"`
+	Kubernetes  v1.Service     `json:"data"`
+}
+type IstioWrapper struct {
+	Error       string    `json:"error"`
+	Istio       IstioObject    `json:"data"`
+}
+type OutputResp struct {
+	Deployments []DeploymentWrapper `json:"deployment"`
+	Kubernetes  []KubernetesWrapper     `json:"kubernetes-service"`
+	Istio       []IstioWrapper    `json:"istio-component"`
+}
+
 type ServiceOutput struct {
 	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
 	Services    OutputServices `json:"service"`
+	ProjectId   string         `json:"project_id"`
 }
 type APIError struct {
 	ErrorCode    int
@@ -218,4 +238,20 @@ type Notifier struct {
 type KubeResponse struct {
 	Error  string `json:"error"`
 	Status string `json:"status"`
+}
+
+type StatusRequest struct {
+	ID      string `json:"_id"`
+	Name    string `json:"name"`
+	Status  []string `json:"status"`
+	Reason  string `json:"reason"`
+}
+
+type ResponseRequest struct {
+	Service  OutputResp `json:"service"`
+}
+type ResponseServiceRequestMessage struct{
+}
+type ResponseServiceRequestFailure struct {
+	Error    string `json:"error"`
 }
