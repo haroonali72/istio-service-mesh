@@ -5,6 +5,7 @@ import (
 	"Istio/types"
 	"Istio/utils"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,143 +20,6 @@ import (
 	"strings"
 )
 
-var resp = `
-{
-    "project_id": "haseeb-test",
-    "service": {
-        "deployment": [
-            {
-                "error": "",
-                "data": {
-                    "metadata": {
-                        "name": "redis-cart",
-                        "namespace": "default",
-                        "selfLink": "/apis/apps/v1/namespaces/default/deployments/redis-cart",
-                        "uid": "73dd15be-3376-11e9-a1c7-0290193db1ca",
-                        "resourceVersion": "147108",
-                        "generation": 2,
-                        "creationTimestamp": "2019-02-18T12:12:25Z",
-                        "annotations": {
-                            "deployment.kubernetes.io/revision": "1"
-                        }
-                    },
-                    "spec": {
-                        "replicas": 3,
-                        "selector": {
-                            "matchLabels": {
-                                "app": "redis-cart"
-                            }
-                        },
-                        "template": {
-                            "metadata": {
-                                "creationTimestamp": null,
-                                "labels": {
-                                    "app": "redis-cart"
-                                }
-                            },
-                            "spec": {
-                                "volumes": [
-                                    {
-                                        "name": "redis-data",
-                                        "emptyDir": {}
-                                    }
-                                ],
-                                "containers": [
-                                    {
-                                        "name": "redis",
-                                        "image": "redis:alpine",
-                                        "ports": [
-                                            {
-                                                "containerPort": 6379,
-                                                "protocol": "TCP"
-                                            }
-                                        ],
-                                        "resources": {
-                                            "limits": {
-                                                "cpu": "125m",
-                                                "memory": "256Mi"
-                                            },
-                                            "requests": {
-                                                "cpu": "70m",
-                                                "memory": "200Mi"
-                                            }
-                                        },
-                                        "volumeMounts": [
-                                            {
-                                                "name": "redis-data",
-                                                "mountPath": "/data"
-                                            }
-                                        ],
-                                        "livenessProbe": {
-                                            "tcpSocket": {
-                                                "port": 6379
-                                            },
-                                            "timeoutSeconds": 1,
-                                            "periodSeconds": 5,
-                                            "successThreshold": 1,
-                                            "failureThreshold": 3
-                                        },
-                                        "readinessProbe": {
-                                            "tcpSocket": {
-                                                "port": 6379
-                                            },
-                                            "timeoutSeconds": 1,
-                                            "periodSeconds": 5,
-                                            "successThreshold": 1,
-                                            "failureThreshold": 3
-                                        },
-                                        "terminationMessagePath": "/dev/termination-log",
-                                        "terminationMessagePolicy": "File",
-                                        "imagePullPolicy": "IfNotPresent"
-                                    }
-                                ],
-                                "restartPolicy": "Always",
-                                "terminationGracePeriodSeconds": 30,
-                                "dnsPolicy": "ClusterFirst",
-                                "securityContext": {},
-                                "schedulerName": "default-scheduler"
-                            }
-                        },
-                        "strategy": {
-                            "type": "RollingUpdate",
-                            "rollingUpdate": {
-                                "maxUnavailable": "25%",
-                                "maxSurge": "25%"
-                            }
-                        },
-                        "revisionHistoryLimit": 10,
-                        "progressDeadlineSeconds": 600
-                    },
-                    "status": {
-                        "observedGeneration": 2,
-                        "replicas": 3,
-                        "updatedReplicas": 3,
-                        "readyReplicas": 3,
-                        "availableReplicas": 3,
-                        "conditions": [
-                            {
-                                "type": "Progressing",
-                                "status": "True",
-                                "lastUpdateTime": "2019-02-18T12:12:38Z",
-                                "lastTransitionTime": "2019-02-18T12:12:25Z",
-                                "reason": "NewReplicaSetAvailable",
-                                "message": "ReplicaSet \"redis-cart-d999c4589\" has successfully progressed."
-                            },
-                            {
-                                "type": "Available",
-                                "status": "True",
-                                "lastUpdateTime": "2019-02-18T12:15:41Z",
-                                "lastTransitionTime": "2019-02-18T12:15:41Z",
-                                "reason": "MinimumReplicasAvailable",
-                                "message": "Deployment has minimum availability."
-                            }
-                        ]
-                    }
-                }
-            }
-        ]
-    }
-}`
 var Notifier utils.Notifier
 
 func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, error) {
@@ -510,6 +374,13 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
+
+
+		secret , exists := CreateDockerCfgSecret(service)
+
+		if(exists){
+			finalObj.Services.Secrets = append(finalObj.Services.Secrets,secret)
+		}
 	}
 
 	//Send request to Kubernetes
@@ -639,12 +510,8 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(types.StatusRequest , types.ResponseRequest){
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
-
-
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
-
 	req.Header.Set("Content-Type", "application/json")
-
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -778,13 +645,36 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 	result := DeployIstio(input, r.Method)
 
+	inProgress := false
+	failed := false
+	for _,status := range result.Status{
+		if status == "in progress"{
+			inProgress = true
+		}
+		if status == "failed"{
+			failed = true
+		}
+	}
+	if inProgress {
+		result.StatusF = "in progress"
+	}
+	if failed {
+		result.StatusF = "failed"
+	}
+	if !failed&&!inProgress{
+		result.StatusF = "successful"
+	}
 	if result.Reason != "" {
+		result.StatusF = "failed"
 		x, err := json.Marshal(result)
 		if err == nil {
 			w.Write(x)
 		}
 		notification.Status = "fail"
 	} else {
+
+
+
 		fmt.Println("Deployment Successful\n")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
@@ -798,8 +688,58 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		} else {
 			Notifier.Notify(input.ProjectId, string(b))
 			utils.Info.Println(string(b))
-
 		}
 	}
 }
+const (
+	SecretKind         = "Secret"
+)
+// this will be used by revions to pull the image from registry
+func CreateDockerCfgSecret(service types.Service) (v1.Secret , bool){
 
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	if serviceAttr.ImageRepositoryConfigurations.Url == ""{
+		return v1.Secret{} , false
+	}
+	secret := v1.Secret{}
+
+	typeMeta := metav1.TypeMeta{
+		Kind:       SecretKind,
+		APIVersion: v1.SchemeGroupVersion.String(),
+	}
+	objectMeta := metav1.ObjectMeta{
+		Name:      service.Name + "-cfg-secret",
+		Namespace: service.Namespace,
+	}
+
+
+	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
+	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
+	email := "email@email.com"
+	server := serviceAttr.ImageRepositoryConfigurations.Url
+
+	tokens := strings.Split(server, "/")
+	registry := tokens[0]
+
+	dockerConf := map[string]map[string]string{
+		registry: {
+			"email": email,
+			"auth":  base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+		},
+	}
+
+	dockerConfMarshaled, _ := json.Marshal(dockerConf)
+
+	data := map[string][]byte{
+		".dockercfg": dockerConfMarshaled,
+	}
+
+	secret.TypeMeta = typeMeta
+	secret.ObjectMeta = objectMeta
+	secret.Data = data
+
+	return secret , true
+}

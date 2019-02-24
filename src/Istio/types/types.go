@@ -86,6 +86,7 @@ type DockerServiceAttributes struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"environment_variables"`
+	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
 	Ports       []Port   `json:"ports"`
 	Files       []string `json:"files"`
 	Tag         string   `json:"tag"`
@@ -144,7 +145,6 @@ type SolutionInfo struct {
 	KPo    string  `json:"kubeport"`
 	KU    string  `json:"kubeusername"`
 	KP    string  `json:"kubepassword"`
-
 }
 
 type ServiceInput struct {
@@ -175,6 +175,8 @@ type OutputServices struct {
 	Deployments []v12.Deployment `json:"deployment"`
 	Kubernetes  []v1.Service     `json:"kubernetes-service"`
 	Istio       []IstioObject    `json:"istio-component"`
+	Secrets     []interface{} `json:"secrets"`
+
 }
 
 type DeploymentWrapper struct {
@@ -193,6 +195,8 @@ type OutputResp struct {
 	Deployments []DeploymentWrapper `json:"deployment"`
 	Kubernetes  []KubernetesWrapper     `json:"kubernetes-service"`
 	Istio       []IstioWrapper    `json:"istio-component"`
+	Secrets     []interface{} `json:"secrets"`
+
 }
 
 type ServiceOutput struct {
@@ -243,7 +247,8 @@ type KubeResponse struct {
 type StatusRequest struct {
 	ID      string `json:"_id"`
 	Name    string `json:"name"`
-	Status  []string `json:"status"`
+	Status  []string `json:"status_individual"`
+	StatusF string `json:"status"`
 	Reason  string `json:"reason"`
 }
 
@@ -254,4 +259,15 @@ type ResponseServiceRequestMessage struct{
 }
 type ResponseServiceRequestFailure struct {
 	Error    string `json:"error"`
+}
+
+type ImageRepositoryConfigurations struct {
+	Url         string               `json:"url"`
+	Tag         string               `json:"tag"`
+	Credentials BasicAuthCredentails `json:"credentials"`
+}
+
+type BasicAuthCredentails struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
