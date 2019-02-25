@@ -132,7 +132,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	var istioServ types.IstioObject
 
 	switch input.SubType {
-	case "virtual-service":
+	case "virtual_service":
 		serv, err := getIstioVirtualService(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
@@ -161,7 +161,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 
-	case "destination-rule":
+	case "destination_rule":
 		serv, err := getIstioDestinationRule(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
@@ -176,7 +176,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 
-	case "service-entry":
+	case "service_entry":
 		serv, err := getIstioServiceEntry(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
