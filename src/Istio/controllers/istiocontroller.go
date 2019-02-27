@@ -347,7 +347,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
 
-			utils.SendLog(ret.Reason, "error", input.EnvId)
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
 
 			return  ret
 		}
@@ -360,7 +360,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", input.EnvId)
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
 			return ret
 		}
 		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
@@ -370,7 +370,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		if err != nil {
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", input.EnvId)
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
 			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
@@ -389,13 +389,13 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		fmt.Println(err)
 		ret.Status = append(ret.Status,"failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
-		utils.SendLog(ret.Reason, "error", input.EnvId)
+		utils.SendLog(ret.Reason, "error", input.ProjectId)
 		return ret
 	}
 	fmt.Println(string(x))
 
 	if requestType != "POST"{
-		ret , resp := GetFromKube(x,input.EnvId,ret)
+		ret , resp := GetFromKube(x,input.ProjectId,ret)
 		if ret.Reason == ""{
 			//Successful in getting object
 			if requestType == "GET" {
@@ -495,13 +495,13 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		fmt.Println(err)
 		ret.Status = append(ret.Status,"failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
-		utils.SendLog(ret.Reason, "error", input.EnvId)
+		utils.SendLog(ret.Reason, "error", input.ProjectId)
 		return ret
 	}
 	fmt.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
-		return ForwardToKube(x, input.EnvId ,requestType , ret)
+		return ForwardToKube(x, input.ProjectId ,requestType , ret)
 	}
 	return ret
 
