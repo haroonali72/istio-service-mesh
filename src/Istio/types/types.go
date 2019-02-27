@@ -150,7 +150,7 @@ type SolutionInfo struct {
 type ServiceInput struct {
 	ClusterId    string         `json:"cluster_id"`
 	ClusterName  string         `json:"cluster_name"`
-	EnvId        string         `json:"env_id"`
+	EnvId        string         `json:"project_id"`
 	ProjectId    string         `json:"project_id"`
 	SolutionInfo SolutionInfo   `json:"solution_info"`
 	Creds        KubernetesCred `json:"kubernetes_credentials"`
