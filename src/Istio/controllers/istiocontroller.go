@@ -241,22 +241,22 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		if port.Container == "" && port.Host != "" {
 			port.Container = port.Host
 		}
-		if port.Container != "" && port.Host == "" {
-			port.Host = port.Container
-		}
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+
 		temp.ContainerPort = int32(i)
-		i, err = strconv.Atoi(port.Host)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		if port.Host != ""{
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
 		}
-		temp.HostPort = int32(i)
 		ports = append(ports, temp)
 	}
 	var envVariables []v1.EnvVar
@@ -302,22 +302,22 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 		if port.Container == "" && port.Host != "" {
 			port.Container = port.Host
 		}
-		if port.Container != "" && port.Host == "" {
-			port.Host = port.Container
-		}
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+
 		temp.Port = int32(i)
-		i, err = strconv.Atoi(port.Host)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
 		}
-		temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
 		servicePorts = append(servicePorts, temp)
 	}
 	service.Spec.Ports = servicePorts
