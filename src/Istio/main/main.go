@@ -15,8 +15,6 @@ import (
 func main() {
 
 
-	controllers.Notifier.Init_notifier()
-	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 
 	Port := flag.String("PORT", "", "Port of service")
 	kubeEngine := flag.String("KUBERNETES_ENGINE_URL", "", "Kubernetes engine url")
@@ -47,6 +45,8 @@ func main() {
 	constants.KubernetesEngineURL = *kubeEngine
 	constants.NotificationURL = *redisEngine
 	constants.LoggingURL = *loggingEngine
+	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	controllers.Notifier.Init_notifier()
 
 
 	r := mux.NewRouter()
