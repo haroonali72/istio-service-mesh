@@ -353,7 +353,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
-	} else if service.ServiceType == "docker" {
+	} else if service.ServiceType == "container" {
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
 		if err != nil {
