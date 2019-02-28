@@ -346,9 +346,9 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 			fmt.Println("There is error in deployment")
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-
-			utils.SendLog(ret.Reason, "error", input.ProjectId)
-
+			if requestType != "GET"{
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
 			return  ret
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
@@ -360,7 +360,9 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", input.ProjectId)
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
 			return ret
 		}
 		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
@@ -370,7 +372,9 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		if err != nil {
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", input.ProjectId)
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
 			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
@@ -389,13 +393,15 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		fmt.Println(err)
 		ret.Status = append(ret.Status,"failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
-		utils.SendLog(ret.Reason, "error", input.ProjectId)
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		}
 		return ret
 	}
 	fmt.Println(string(x))
 
 	if requestType != "POST"{
-		ret , resp := GetFromKube(x,input.ProjectId,ret)
+		ret , resp := GetFromKube(x,input.ProjectId,ret,requestType)
 		if ret.Reason == ""{
 			//Successful in getting object
 			if requestType == "GET" {
@@ -495,7 +501,9 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		fmt.Println(err)
 		ret.Status = append(ret.Status,"failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
-		utils.SendLog(ret.Reason, "error", input.ProjectId)
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		}
 		return ret
 	}
 	fmt.Println(string(x))
@@ -507,7 +515,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 
 }
 
-func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(types.StatusRequest , types.ResponseRequest){
+func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , requestType string)(types.StatusRequest , types.ResponseRequest){
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
@@ -516,10 +524,14 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(ty
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		if requestType != "GET" {
+			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		}
 		ret.Status = append(ret.Status,"failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
-		utils.SendLog(ret.Reason, "error", env_id)
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", env_id)
+		}
 
 		return ret , res
 
@@ -529,22 +541,29 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(ty
 		//Info.Printf("notification status code %d\n", statusCode)
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", env_id)
+			if requestType != "GET" {
+				utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+				utils.SendLog(ret.Reason, "error", env_id)
+			}
 			return ret, res
 		} else {
 
 			utils.Info.Println(string(result))
-			utils.SendLog(string(result), "info", env_id)
+			if requestType != "GET" {
+				utils.SendLog(string(result), "info", env_id)
+			}
 			if statusCode != 200 {
 				var resrf types.ResponseServiceRequestFailure
 				err = json.Unmarshal(result, &resrf)
 				if err != nil {
 					ret.Status = append(ret.Status,"failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
-					utils.SendLog(ret.Reason, "error", env_id)
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
 					return ret, res
 				}
 				ret.Status = append(ret.Status,"failed")
@@ -555,7 +574,10 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest)(ty
 				if err != nil {
 					ret.Status = append(ret.Status,"failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
-					utils.SendLog(ret.Reason, "error", env_id)
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
 					return ret, res
 				}
 				return ret , res
@@ -575,11 +597,14 @@ func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret t
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
-		utils.SendLog(ret.Reason, "error", env_id)
 
+		if requestType != "GET" {
+			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+
+			utils.SendLog(ret.Reason, "error", env_id)
+		}
 		return ret
 
 	} else {
@@ -589,21 +614,28 @@ func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret t
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
-			utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
 			ret.Status = append(ret.Status,"failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
-			utils.SendLog(ret.Reason, "error", env_id)
+			if requestType != "GET" {
+				utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
+				utils.SendLog(ret.Reason, "error", env_id)
+			}
 			return ret
 			} else {
 			utils.Info.Println(string(result))
-			utils.SendLog(string(result), "info", env_id)
+			if requestType != "GET" {
+				utils.SendLog(string(result), "info", env_id)
+			}
 			if statusCode != 200 {
 				var resrf types.ResponseServiceRequestFailure
 				err = json.Unmarshal(result, &resrf)
 				if err != nil {
 					ret.Status = append(ret.Status,"failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
-					utils.SendLog(ret.Reason, "error", env_id)
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
 					return ret
 				}
 				ret.Status = append(ret.Status,"failed")
@@ -673,19 +705,20 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		notification.Status = "fail"
 	} else {
 
-
-
 		fmt.Println("Deployment Successful\n")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
 		if err == nil {
 			w.Write(x)
 		}
-		b, err1 := json.Marshal(notification)
-		if err1 != nil {
-			utils.Info.Println(err1)
-			utils.Error.Println("Notification Parsing failed")
-		} else {
+
+	}
+	b, err1 := json.Marshal(notification)
+	if err1 != nil {
+		utils.Info.Println(err1)
+		utils.Error.Println("Notification Parsing failed")
+	} else {
+		if(r.Method != "GET"){
 			Notifier.Notify(input.ProjectId, string(b))
 			utils.Info.Println(string(b))
 		}
