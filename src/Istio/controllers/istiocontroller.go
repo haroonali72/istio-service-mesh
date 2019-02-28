@@ -636,7 +636,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var notification types.Notifier
-	notification.Component = "solution"
+	notification.Component = "Solution"
 	notification.Id = input.SolutionInfo.Service.ID
 
 	var status types.StatusRequest
