@@ -86,6 +86,7 @@ type DockerServiceAttributes struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"environment_variables"`
+	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
 	Ports       []Port   `json:"ports"`
 	Files       []string `json:"files"`
 	Tag         string   `json:"tag"`
@@ -103,7 +104,7 @@ type DockerServiceAttributes struct {
 type IstioObject struct {
 	ApiVersion string            `json:"apiVersion"`
 	Kind       string            `json:"kind"`
-	Metadata   map[string]string `json:"metadata"`
+	Metadata   map[string]interface{} `json:"metadata"`
 	Spec       interface{}       `json:"spec"`
 }
 type ServiceDependency struct {
@@ -135,16 +136,20 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
+	ID    string  `json:"_id"`
 	Name    string  `json:"name"`
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
 	Service Service `json:"service"`
+	KIP    string  `json:"kubeip"`
+	KPo    string  `json:"kubeport"`
+	KU    string  `json:"kubeusername"`
+	KP    string  `json:"kubepassword"`
 }
 
 type ServiceInput struct {
 	ClusterId    string         `json:"cluster_id"`
 	ClusterName  string         `json:"cluster_name"`
-	EnvId        string         `json:"env_id"`
 	ProjectId    string         `json:"project_id"`
 	SolutionInfo SolutionInfo   `json:"solution_info"`
 	Creds        KubernetesCred `json:"kubernetes_credentials"`
@@ -169,10 +174,34 @@ type OutputServices struct {
 	Deployments []v12.Deployment `json:"deployment"`
 	Kubernetes  []v1.Service     `json:"kubernetes-service"`
 	Istio       []IstioObject    `json:"istio-component"`
+	Secrets     []interface{} `json:"secrets"`
+
 }
+
+type DeploymentWrapper struct {
+	Error       string    `json:"error"`
+	Deployments v12.Deployment `json:"data"`
+}
+type KubernetesWrapper struct {
+	Error       string    `json:"error"`
+	Kubernetes  v1.Service     `json:"data"`
+}
+type IstioWrapper struct {
+	Error       string    `json:"error"`
+	Istio       IstioObject    `json:"data"`
+}
+type OutputResp struct {
+	Deployments []DeploymentWrapper `json:"deployment"`
+	Kubernetes  []KubernetesWrapper     `json:"kubernetes-service"`
+	Istio       []IstioWrapper    `json:"istio-component"`
+	Secrets     []interface{} `json:"secrets"`
+
+}
+
 type ServiceOutput struct {
 	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
 	Services    OutputServices `json:"service"`
+	ProjectId   string         `json:"project_id"`
 }
 type APIError struct {
 	ErrorCode    int
@@ -205,10 +234,39 @@ type LoggingRequest struct {
 }
 type Notifier struct {
 	Id     string `json:"_id"`
-	EnvId  string `json:"environment_id"`
+	//EnvId  string `json:"environment_id"`
 	Status string `json:"status"`
+	Component  string `json:"component"`
 }
 type KubeResponse struct {
 	Error  string `json:"error"`
 	Status string `json:"status"`
+}
+
+type StatusRequest struct {
+	ID      string `json:"_id"`
+	Name    string `json:"name"`
+	Status  []string `json:"status_individual"`
+	StatusF string `json:"status"`
+	Reason  string `json:"reason"`
+}
+
+type ResponseRequest struct {
+	Service  OutputResp `json:"service"`
+}
+type ResponseServiceRequestMessage struct{
+}
+type ResponseServiceRequestFailure struct {
+	Error    string `json:"error"`
+}
+
+type ImageRepositoryConfigurations struct {
+	Url         string               `json:"url"`
+	Tag         string               `json:"tag"`
+	Credentials BasicAuthCredentails `json:"credentials"`
+}
+
+type BasicAuthCredentails struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

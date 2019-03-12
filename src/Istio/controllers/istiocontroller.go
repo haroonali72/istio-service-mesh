@@ -5,6 +5,7 @@ import (
 	"Istio/types"
 	"Istio/utils"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -131,14 +132,14 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	var istioServ types.IstioObject
 
 	switch input.SubType {
-	case "virtual-service":
+	case "virtual_service":
 		serv, err := getIstioVirtualService(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -152,7 +153,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -160,14 +161,14 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 
-	case "destination-rule":
+	case "destination_rule":
 		serv, err := getIstioDestinationRule(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -175,7 +176,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 
-	case "service-entry":
+	case "service_entry":
 		serv, err := getIstioServiceEntry(input)
 		if err != nil {
 			fmt.Println("There is error in deployment")
@@ -183,7 +184,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		}
 		istioServ.Spec = serv
 		istioServ.Spec = serv
-		labels := make(map[string]string)
+		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
@@ -240,22 +241,22 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		if port.Container == "" && port.Host != "" {
 			port.Container = port.Host
 		}
-		if port.Container != "" && port.Host == "" {
-			port.Host = port.Container
-		}
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+
 		temp.ContainerPort = int32(i)
-		i, err = strconv.Atoi(port.Host)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		if port.Host != ""{
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
 		}
-		temp.HostPort = int32(i)
 		ports = append(ports, temp)
 	}
 	var envVariables []v1.EnvVar
@@ -301,34 +302,40 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 		if port.Container == "" && port.Host != "" {
 			port.Container = port.Host
 		}
-		if port.Container != "" && port.Host == "" {
-			port.Host = port.Container
-		}
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
+
 		temp.Port = int32(i)
-		i, err = strconv.Atoi(port.Host)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
 		}
-		temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
 		servicePorts = append(servicePorts, temp)
 	}
 	service.Spec.Ports = servicePorts
 	return service, nil
 }
-func DeployIstio(input types.ServiceInput) (string, error) {
+func DeployIstio(input types.ServiceInput , requestType string) (types.StatusRequest) {
+
+	var ret types.StatusRequest
+	ret.ID = input.SolutionInfo.Service.ID
+	ret.Name = input.SolutionInfo.Service.Name
+
 	var finalObj types.ServiceOutput
-
-	finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
-	finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
-	finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
-
+	if(input.Creds.KubernetesURL != ""){
+		finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
+		finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
+		finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
+	}
+	finalObj.ProjectId = input.ProjectId
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
@@ -337,62 +344,268 @@ func DeployIstio(input types.ServiceInput) (string, error) {
 		res, err := getIstioObject(service)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+			if requestType != "GET"{
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return  ret
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
-	} else if service.ServiceType == "docker" {
+	} else if service.ServiceType == "container" {
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
 		if err != nil {
-			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
 		}
 		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		//Getting Kubernetes Service Object
 		serv, err := getServiceObject(service)
 		if err != nil {
-			fmt.Println("There is error in deployment")
-			return string(err.Error()), err
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
+
+
+		secret , exists := CreateDockerCfgSecret(service)
+
+		if(exists){
+			finalObj.Services.Secrets = append(finalObj.Services.Secrets,secret)
+		}
 	}
 
 	//Send request to Kubernetes
 	x, err := json.Marshal(finalObj)
 	if err != nil {
 		fmt.Println(err)
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Service Object parsing failed : " + err.Error()
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		}
+		return ret
 	}
-	utils.SendLog("Deploying service "+service.Name, "info", input.EnvId)
-	if !ForwardToKube(x, input.EnvId) {
-		return string(x), errors.New("Kubernetes Deployment Failed")
+	fmt.Println(string(x))
+
+	if requestType != "POST"{
+		ret , resp := GetFromKube(x,input.ProjectId,ret,requestType)
+		if ret.Reason == ""{
+			//Successful in getting object
+			if requestType == "GET" {
+				if resp.Service.Kubernetes != nil {
+					for _,k := range resp.Service.Kubernetes{
+						if k.Error != ""{
+							ret.Reason = ret.Reason + k.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						ret.Status = append(ret.Status,"successful")
+					}
+				}
+				if resp.Service.Deployments != nil {
+					for _,d := range resp.Service.Deployments{
+						if d.Error != ""{
+							ret.Reason = ret.Reason + d.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						for _,c := range d.Deployments.Status.Conditions{
+							if c.Type == v12.DeploymentAvailable{
+								ret.Status = append(ret.Status, "successful")
+
+							} else if c.Type == v12.DeploymentProgressing{
+								ret.Status = append(ret.Status, "in progress")
+
+							}else{
+								ret.Status = append(ret.Status, "failed")
+								ret.Reason = ret.Reason + c.Reason
+							}
+						}
+					}
+				}
+				if resp.Service.Istio != nil {
+					for _,i := range resp.Service.Istio{
+						if i.Error != ""{
+							ret.Reason = ret.Reason + i.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						ret.Status = append(ret.Status,"successful")
+					}
+				}
+				return ret
+			} else if requestType == "PATCH"{
+				if resp.Service.Kubernetes != nil {
+					var services [] v1.Service
+					for i,k := range resp.Service.Kubernetes{
+						if k.Error != ""{
+							ret.Reason = ret.Reason + k.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						_ = i //Replace 0 with i in case of multiple services
+						k.Kubernetes.Spec = finalObj.Services.Kubernetes[0].Spec
+						services = append(services,k.Kubernetes)
+					}
+					finalObj.Services.Kubernetes = services
+
+				}
+				if resp.Service.Deployments != nil {
+					var deployments []v12.Deployment
+
+					for _,d := range resp.Service.Deployments{
+						if d.Error != ""{
+							ret.Reason = ret.Reason + d.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						d.Deployments.Spec = finalObj.Services.Deployments[0].Spec
+						deployments = append(deployments,d.Deployments)
+					}
+					finalObj.Services.Deployments = deployments
+				}
+				if resp.Service.Istio != nil {
+					var istios []types.IstioObject
+					for _,i := range resp.Service.Istio{
+						if i.Error != ""{
+							ret.Reason = ret.Reason + i.Error
+							ret.Status = append(ret.Status, "failed")
+							continue
+						}
+						i.Istio.Spec = finalObj.Services.Istio[0].Spec
+						istios = append(istios,i.Istio)
+					}
+					finalObj.Services.Istio = istios
+				}
+			}
+		}else{
+			return ret
+		}
+
 	}
-	return string(x), nil
+	x, err = json.Marshal(finalObj)
+	if err != nil {
+		fmt.Println(err)
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Service Object parsing failed : " + err.Error()
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		}
+		return ret
+	}
+	fmt.Println(string(x))
+	if requestType != "GET" {
+		//Send failure request
+		return ForwardToKube(x, input.ProjectId ,requestType , ret)
+	}
+	return ret
 
 }
-func ForwardToKube(requestBody []byte, env_id string) bool {
 
+func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , requestType string)(types.StatusRequest , types.ResponseRequest){
 	url := constants.KubernetesEngineURL
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	var res types.ResponseRequest
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
-
-	//tr := &http.Transport{
-	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//}
 	client := &http.Client{}
-	//client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
-		utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		if requestType != "GET" {
+			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+		}
+		ret.Status = append(ret.Status,"failed")
+		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", env_id)
+		}
 
-		return false
-		/*
-			Info.Println(err)
-			Info.Println(reflect.TypeOf(resp))
-		*/
+		return ret , res
+
+	} else {
+		statusCode := resp.StatusCode
+
+		//Info.Printf("notification status code %d\n", statusCode)
+		result, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+				utils.SendLog(ret.Reason, "error", env_id)
+			}
+			return ret, res
+		} else {
+
+			utils.Info.Println(string(result))
+			if requestType != "GET" {
+				utils.SendLog(string(result), "info", env_id)
+			}
+			if statusCode != 200 {
+				var resrf types.ResponseServiceRequestFailure
+				err = json.Unmarshal(result, &resrf)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
+					return ret, res
+				}
+				ret.Status = append(ret.Status,"failed")
+				ret.Reason = resrf.Error
+				return ret, res
+			}else {
+				err = json.Unmarshal(result, &res)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
+					return ret, res
+				}
+				return ret , res
+			}
+		}
+		return ret , res
+	}
+}
+func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret types.StatusRequest)(types.StatusRequest) {
+
+	url := constants.KubernetesEngineURL
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		ret.Status = append(ret.Status, "failed")
+		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
+
+		if requestType != "GET" {
+			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+
+			utils.SendLog(ret.Reason, "error", env_id)
+		}
+		return ret
 
 	} else {
 		statusCode := resp.StatusCode
@@ -401,31 +614,41 @@ func ForwardToKube(requestBody []byte, env_id string) bool {
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
-			utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
-			return false
-		} else {
-			utils.Info.Println(string(result))
-			utils.SendLog(string(result), "info", env_id)
-			if statusCode != 200 {
-				return false
+			ret.Status = append(ret.Status,"failed")
+			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
+				utils.SendLog(ret.Reason, "error", env_id)
 			}
-			/*var kubresponse types.KubeResponse
-			err1 := json.Unmarshal(result, &kubresponse)
-			if err1 != nil {
-				utils.Info.Println(err1)
-				utils.Error.Println("Notification Parsing failed")
-				return false
-			}else{
-				if(kubresponse.Status == "service deployment failed"){
-					return false
-				}else {
-					return true
+			return ret
+			} else {
+			utils.Info.Println(string(result))
+			if requestType != "GET" {
+				utils.SendLog(string(result), "info", env_id)
+			}
+			if statusCode != 200 {
+				var resrf types.ResponseServiceRequestFailure
+				err = json.Unmarshal(result, &resrf)
+				if err != nil {
+					ret.Status = append(ret.Status,"failed")
+					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
+					if requestType != "GET" {
+
+						utils.SendLog(ret.Reason, "error", env_id)
+					}
+					return ret
 				}
-			}*/
+				ret.Status = append(ret.Status,"failed")
+				ret.Reason = resrf.Error
+				return ret
+			}
+			ret.Status = append(ret.Status , "successful")
 		}
+
 	}
-	return true
+	return ret
 }
+
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
@@ -445,26 +668,111 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var notification types.Notifier
-	notification.EnvId = input.EnvId
+	notification.Component = "Solution"
 	notification.Id = input.SolutionInfo.Service.ID
 
-	result, err := DeployIstio(input)
-	if err != nil {
-		fmt.Println(err.Error())
-		w.Write([]byte(string(err.Error())))
+	var status types.StatusRequest
+	status.ID = input.SolutionInfo.Service.ID
+	status.Name = input.SolutionInfo.Service.Name
+
+	result := DeployIstio(input, r.Method)
+
+	inProgress := false
+	failed := false
+	for _,status := range result.Status{
+		if status == "in progress"{
+			inProgress = true
+		}
+		if status == "failed"{
+			failed = true
+		}
+	}
+	if inProgress {
+		result.StatusF = "in progress"
+	}
+	if failed {
+		result.StatusF = "failed"
+	}
+	if !failed&&!inProgress{
+		result.StatusF = "successful"
+	}
+	if result.Reason != "" {
+		result.StatusF = "failed"
+		x, err := json.Marshal(result)
+		if err == nil {
+			w.Write(x)
+		}
 		notification.Status = "fail"
 	} else {
+
 		fmt.Println("Deployment Successful\n")
-		w.Write([]byte(result))
 		notification.Status = "success"
+		x, err := json.Marshal(result)
+		if err == nil {
+			w.Write(x)
+		}
+
 	}
 	b, err1 := json.Marshal(notification)
 	if err1 != nil {
 		utils.Info.Println(err1)
 		utils.Error.Println("Notification Parsing failed")
 	} else {
-		Notifier.Notify(input.SolutionInfo.Name, string(b))
-		utils.Info.Println(string(b))
-
+		if(r.Method != "GET"){
+			Notifier.Notify(input.ProjectId, string(b))
+			utils.Info.Println(string(b))
+		}
 	}
+}
+const (
+	SecretKind         = "Secret"
+)
+// this will be used by revions to pull the image from registry
+func CreateDockerCfgSecret(service types.Service) (v1.Secret , bool){
+
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	if serviceAttr.ImageRepositoryConfigurations.Url == ""{
+		return v1.Secret{} , false
+	}
+	secret := v1.Secret{}
+
+	typeMeta := metav1.TypeMeta{
+		Kind:       SecretKind,
+		APIVersion: v1.SchemeGroupVersion.String(),
+	}
+	objectMeta := metav1.ObjectMeta{
+		Name:      service.Name + "-cfg-secret",
+		Namespace: service.Namespace,
+	}
+
+
+	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
+	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
+	email := "email@email.com"
+	server := serviceAttr.ImageRepositoryConfigurations.Url
+
+	tokens := strings.Split(server, "/")
+	registry := tokens[0]
+
+	dockerConf := map[string]map[string]string{
+		registry: {
+			"email": email,
+			"auth":  base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+		},
+	}
+
+	dockerConfMarshaled, _ := json.Marshal(dockerConf)
+
+	data := map[string][]byte{
+		".dockercfg": dockerConfMarshaled,
+	}
+
+	secret.TypeMeta = typeMeta
+	secret.ObjectMeta = objectMeta
+	secret.Data = data
+
+	return secret , true
 }
