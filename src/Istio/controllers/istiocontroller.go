@@ -249,7 +249,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		}
 
 		temp.ContainerPort = int32(i)
-		if port.Host != ""{
+		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
 				fmt.Println(err)
@@ -323,14 +323,14 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return service, nil
 }
-func DeployIstio(input types.ServiceInput , requestType string) (types.StatusRequest) {
+func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
 
 	var ret types.StatusRequest
 	ret.ID = input.SolutionInfo.Service.ID
 	ret.Name = input.SolutionInfo.Service.Name
 
 	var finalObj types.ServiceOutput
-	if(input.Creds.KubernetesURL != ""){
+	if input.Creds.KubernetesURL != "" {
 		finalObj.ClusterInfo.KubernetesURL = input.Creds.KubernetesURL
 		finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
 		finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
@@ -344,12 +344,12 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		res, err := getIstioObject(service)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			ret.Status = append(ret.Status,"failed")
+			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-			if requestType != "GET"{
+			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
 			}
-			return  ret
+			return ret
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
@@ -358,7 +358,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		deployment, err := getDeploymentObject(service)
 		if err != nil {
 
-			ret.Status = append(ret.Status,"failed")
+			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
@@ -370,7 +370,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		//Getting Kubernetes Service Object
 		serv, err := getServiceObject(service)
 		if err != nil {
-			ret.Status = append(ret.Status,"failed")
+			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
@@ -379,11 +379,10 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
 
+		secret, exists := CreateDockerCfgSecret(service)
 
-		secret , exists := CreateDockerCfgSecret(service)
-
-		if(exists){
-			finalObj.Services.Secrets = append(finalObj.Services.Secrets,secret)
+		if exists {
+			finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
 		}
 	}
 
@@ -391,7 +390,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 	x, err := json.Marshal(finalObj)
 	if err != nil {
 		fmt.Println(err)
-		ret.Status = append(ret.Status,"failed")
+		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", input.ProjectId)
@@ -400,36 +399,36 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 	}
 	fmt.Println(string(x))
 
-	if requestType != "POST"{
-		ret , resp := GetFromKube(x,input.ProjectId,ret,requestType)
-		if ret.Reason == ""{
+	if requestType != "POST" {
+		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
+		if ret.Reason == "" {
 			//Successful in getting object
 			if requestType == "GET" {
 				if resp.Service.Kubernetes != nil {
-					for _,k := range resp.Service.Kubernetes{
-						if k.Error != ""{
+					for _, k := range resp.Service.Kubernetes {
+						if k.Error != "" {
 							ret.Reason = ret.Reason + k.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
-						ret.Status = append(ret.Status,"successful")
+						ret.Status = append(ret.Status, "successful")
 					}
 				}
 				if resp.Service.Deployments != nil {
-					for _,d := range resp.Service.Deployments{
-						if d.Error != ""{
+					for _, d := range resp.Service.Deployments {
+						if d.Error != "" {
 							ret.Reason = ret.Reason + d.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
-						for _,c := range d.Deployments.Status.Conditions{
-							if c.Type == v12.DeploymentAvailable{
+						for _, c := range d.Deployments.Status.Conditions {
+							if c.Type == v12.DeploymentAvailable {
 								ret.Status = append(ret.Status, "successful")
 
-							} else if c.Type == v12.DeploymentProgressing{
+							} else if c.Type == v12.DeploymentProgressing {
 								ret.Status = append(ret.Status, "in progress")
 
-							}else{
+							} else {
 								ret.Status = append(ret.Status, "failed")
 								ret.Reason = ret.Reason + c.Reason
 							}
@@ -437,28 +436,28 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 					}
 				}
 				if resp.Service.Istio != nil {
-					for _,i := range resp.Service.Istio{
-						if i.Error != ""{
+					for _, i := range resp.Service.Istio {
+						if i.Error != "" {
 							ret.Reason = ret.Reason + i.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
-						ret.Status = append(ret.Status,"successful")
+						ret.Status = append(ret.Status, "successful")
 					}
 				}
 				return ret
-			} else if requestType == "PATCH"{
+			} else if requestType == "PATCH" {
 				if resp.Service.Kubernetes != nil {
-					var services [] v1.Service
-					for i,k := range resp.Service.Kubernetes{
-						if k.Error != ""{
+					var services []v1.Service
+					for i, k := range resp.Service.Kubernetes {
+						if k.Error != "" {
 							ret.Reason = ret.Reason + k.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
 						_ = i //Replace 0 with i in case of multiple services
 						k.Kubernetes.Spec = finalObj.Services.Kubernetes[0].Spec
-						services = append(services,k.Kubernetes)
+						services = append(services, k.Kubernetes)
 					}
 					finalObj.Services.Kubernetes = services
 
@@ -466,32 +465,32 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 				if resp.Service.Deployments != nil {
 					var deployments []v12.Deployment
 
-					for _,d := range resp.Service.Deployments{
-						if d.Error != ""{
+					for _, d := range resp.Service.Deployments {
+						if d.Error != "" {
 							ret.Reason = ret.Reason + d.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
 						d.Deployments.Spec = finalObj.Services.Deployments[0].Spec
-						deployments = append(deployments,d.Deployments)
+						deployments = append(deployments, d.Deployments)
 					}
 					finalObj.Services.Deployments = deployments
 				}
 				if resp.Service.Istio != nil {
 					var istios []types.IstioObject
-					for _,i := range resp.Service.Istio{
-						if i.Error != ""{
+					for _, i := range resp.Service.Istio {
+						if i.Error != "" {
 							ret.Reason = ret.Reason + i.Error
 							ret.Status = append(ret.Status, "failed")
 							continue
 						}
 						i.Istio.Spec = finalObj.Services.Istio[0].Spec
-						istios = append(istios,i.Istio)
+						istios = append(istios, i.Istio)
 					}
 					finalObj.Services.Istio = istios
 				}
 			}
-		}else{
+		} else {
 			return ret
 		}
 
@@ -499,7 +498,7 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 	x, err = json.Marshal(finalObj)
 	if err != nil {
 		fmt.Println(err)
-		ret.Status = append(ret.Status,"failed")
+		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", input.ProjectId)
@@ -509,13 +508,13 @@ func DeployIstio(input types.ServiceInput , requestType string) (types.StatusReq
 	fmt.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
-		return ForwardToKube(x, input.ProjectId ,requestType , ret)
+		return ForwardToKube(x, input.ProjectId, requestType, ret)
 	}
 	return ret
 
 }
 
-func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , requestType string)(types.StatusRequest , types.ResponseRequest){
+func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string) (types.StatusRequest, types.ResponseRequest) {
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
@@ -527,13 +526,13 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , r
 		if requestType != "GET" {
 			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 		}
-		ret.Status = append(ret.Status,"failed")
+		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", env_id)
 		}
 
-		return ret , res
+		return ret, res
 
 	} else {
 		statusCode := resp.StatusCode
@@ -541,7 +540,7 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , r
 		//Info.Printf("notification status code %d\n", statusCode)
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			ret.Status = append(ret.Status,"failed")
+			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
@@ -558,7 +557,7 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , r
 				var resrf types.ResponseServiceRequestFailure
 				err = json.Unmarshal(result, &resrf)
 				if err != nil {
-					ret.Status = append(ret.Status,"failed")
+					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
 
@@ -566,13 +565,13 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , r
 					}
 					return ret, res
 				}
-				ret.Status = append(ret.Status,"failed")
+				ret.Status = append(ret.Status, "failed")
 				ret.Reason = resrf.Error
 				return ret, res
-			}else {
+			} else {
 				err = json.Unmarshal(result, &res)
 				if err != nil {
-					ret.Status = append(ret.Status,"failed")
+					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
 
@@ -580,13 +579,13 @@ func GetFromKube(requestBody []byte, env_id string , ret types.StatusRequest , r
 					}
 					return ret, res
 				}
-				return ret , res
+				return ret, res
 			}
 		}
-		return ret , res
+		return ret, res
 	}
 }
-func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret types.StatusRequest)(types.StatusRequest) {
+func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
@@ -614,14 +613,14 @@ func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret t
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			fmt.Println(err)
-			ret.Status = append(ret.Status,"failed")
+			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
 				utils.SendLog(ret.Reason, "error", env_id)
 			}
 			return ret
-			} else {
+		} else {
 			utils.Info.Println(string(result))
 			if requestType != "GET" {
 				utils.SendLog(string(result), "info", env_id)
@@ -630,7 +629,7 @@ func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret t
 				var resrf types.ResponseServiceRequestFailure
 				err = json.Unmarshal(result, &resrf)
 				if err != nil {
-					ret.Status = append(ret.Status,"failed")
+					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
 
@@ -638,11 +637,11 @@ func ForwardToKube(requestBody []byte, env_id string , requestType string ,ret t
 					}
 					return ret
 				}
-				ret.Status = append(ret.Status,"failed")
+				ret.Status = append(ret.Status, "failed")
 				ret.Reason = resrf.Error
 				return ret
 			}
-			ret.Status = append(ret.Status , "successful")
+			ret.Status = append(ret.Status, "successful")
 		}
 
 	}
@@ -679,11 +678,11 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 	inProgress := false
 	failed := false
-	for _,status := range result.Status{
-		if status == "in progress"{
+	for _, status := range result.Status {
+		if status == "in progress" {
 			inProgress = true
 		}
-		if status == "failed"{
+		if status == "failed" {
 			failed = true
 		}
 	}
@@ -693,7 +692,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	if failed {
 		result.StatusF = "failed"
 	}
-	if !failed&&!inProgress{
+	if !failed && !inProgress {
 		result.StatusF = "successful"
 	}
 	if result.Reason != "" {
@@ -718,24 +717,26 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		utils.Info.Println(err1)
 		utils.Error.Println("Notification Parsing failed")
 	} else {
-		if(r.Method != "GET"){
+		if r.Method != "GET" {
 			Notifier.Notify(input.ProjectId, string(b))
 			utils.Info.Println(string(b))
 		}
 	}
 }
+
 const (
-	SecretKind         = "Secret"
+	SecretKind = "Secret"
 )
+
 // this will be used by revions to pull the image from registry
-func CreateDockerCfgSecret(service types.Service) (v1.Secret , bool){
+func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
-	if serviceAttr.ImageRepositoryConfigurations.Url == ""{
-		return v1.Secret{} , false
+	if serviceAttr.ImageRepositoryConfigurations.Url == "" {
+		return v1.Secret{}, false
 	}
 	secret := v1.Secret{}
 
@@ -747,7 +748,6 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret , bool){
 		Name:      service.Name + "-cfg-secret",
 		Namespace: service.Namespace,
 	}
-
 
 	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
 	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
@@ -774,5 +774,5 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret , bool){
 	secret.ObjectMeta = objectMeta
 	secret.Data = data
 
-	return secret , true
+	return secret, true
 }

@@ -87,11 +87,11 @@ type DockerServiceAttributes struct {
 		Value string `json:"value"`
 	} `json:"environment_variables"`
 	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
-	Ports       []Port   `json:"ports"`
-	Files       []string `json:"files"`
-	Tag         string   `json:"tag"`
-	ImagePrefix string   `json:"image_prefix"`
-	ImageName   string   `json:"image_name"`
+	Ports                         []Port                        `json:"ports"`
+	Files                         []string                      `json:"files"`
+	Tag                           string                        `json:"tag"`
+	ImagePrefix                   string                        `json:"image_prefix"`
+	ImageName                     string                        `json:"image_name"`
 }
 
 // ```yaml
@@ -102,10 +102,10 @@ type DockerServiceAttributes struct {
 // spec:
 
 type IstioObject struct {
-	ApiVersion string            `json:"apiVersion"`
-	Kind       string            `json:"kind"`
+	ApiVersion string                 `json:"apiVersion"`
+	Kind       string                 `json:"kind"`
 	Metadata   map[string]interface{} `json:"metadata"`
-	Spec       interface{}       `json:"spec"`
+	Spec       interface{}            `json:"spec"`
 }
 type ServiceDependency struct {
 	Name           string   `json:"name"`
@@ -136,15 +136,15 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
-	ID    string  `json:"_id"`
+	ID      string  `json:"_id"`
 	Name    string  `json:"name"`
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
 	Service Service `json:"service"`
-	KIP    string  `json:"kubeip"`
-	KPo    string  `json:"kubeport"`
-	KU    string  `json:"kubeusername"`
-	KP    string  `json:"kubepassword"`
+	KIP     string  `json:"kubeip"`
+	KPo     string  `json:"kubeport"`
+	KU      string  `json:"kubeusername"`
+	KP      string  `json:"kubepassword"`
 }
 
 type ServiceInput struct {
@@ -174,28 +174,26 @@ type OutputServices struct {
 	Deployments []v12.Deployment `json:"deployment"`
 	Kubernetes  []v1.Service     `json:"kubernetes-service"`
 	Istio       []IstioObject    `json:"istio-component"`
-	Secrets     []interface{} `json:"secrets"`
-
+	Secrets     []interface{}    `json:"secrets"`
 }
 
 type DeploymentWrapper struct {
-	Error       string    `json:"error"`
+	Error       string         `json:"error"`
 	Deployments v12.Deployment `json:"data"`
 }
 type KubernetesWrapper struct {
-	Error       string    `json:"error"`
-	Kubernetes  v1.Service     `json:"data"`
+	Error      string     `json:"error"`
+	Kubernetes v1.Service `json:"data"`
 }
 type IstioWrapper struct {
-	Error       string    `json:"error"`
-	Istio       IstioObject    `json:"data"`
+	Error string      `json:"error"`
+	Istio IstioObject `json:"data"`
 }
 type OutputResp struct {
 	Deployments []DeploymentWrapper `json:"deployment"`
-	Kubernetes  []KubernetesWrapper     `json:"kubernetes-service"`
-	Istio       []IstioWrapper    `json:"istio-component"`
-	Secrets     []interface{} `json:"secrets"`
-
+	Kubernetes  []KubernetesWrapper `json:"kubernetes-service"`
+	Istio       []IstioWrapper      `json:"istio-component"`
+	Secrets     []interface{}       `json:"secrets"`
 }
 
 type ServiceOutput struct {
@@ -233,10 +231,10 @@ type LoggingRequest struct {
 	Level       string `json:"level"`
 }
 type Notifier struct {
-	Id     string `json:"_id"`
+	Id string `json:"_id"`
 	//EnvId  string `json:"environment_id"`
-	Status string `json:"status"`
-	Component  string `json:"component"`
+	Status    string `json:"status"`
+	Component string `json:"component"`
 }
 type KubeResponse struct {
 	Error  string `json:"error"`
@@ -244,20 +242,20 @@ type KubeResponse struct {
 }
 
 type StatusRequest struct {
-	ID      string `json:"_id"`
-	Name    string `json:"name"`
+	ID      string   `json:"_id"`
+	Name    string   `json:"name"`
 	Status  []string `json:"status_individual"`
-	StatusF string `json:"status"`
-	Reason  string `json:"reason"`
+	StatusF string   `json:"status"`
+	Reason  string   `json:"reason"`
 }
 
 type ResponseRequest struct {
-	Service  OutputResp `json:"service"`
+	Service OutputResp `json:"service"`
 }
-type ResponseServiceRequestMessage struct{
+type ResponseServiceRequestMessage struct {
 }
 type ResponseServiceRequestFailure struct {
-	Error    string `json:"error"`
+	Error string `json:"error"`
 }
 
 type ImageRepositoryConfigurations struct {
