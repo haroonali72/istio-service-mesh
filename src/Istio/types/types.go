@@ -45,7 +45,7 @@ type VSHTTP struct {
 
 type IstioVirtualServiceAttributes struct {
 	Hosts    []string `json:"hosts"`
-	Gateways []string `json:"gateway"`
+	Gateways []string `json:"gateways"`
 	HTTP     []VSHTTP `json:"http"`
 }
 
