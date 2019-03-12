@@ -35,7 +35,7 @@ func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, err
 		var destination []*v1alpha3.HTTPRouteDestination
 		for _, route := range http.Routes {
 			var httpD v1alpha3.HTTPRouteDestination
-			httpD.Destination = &v1alpha3.Destination{Subset: route.Subset, Host: route.Host, Port: &v1alpha3.PortSelector{&v1alpha3.PortSelector_Number{Number: uint32(route.Port)}}}
+			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host, Port: &v1alpha3.PortSelector{&v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}}
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}

@@ -30,13 +30,15 @@ type VSRetries struct {
 	Timeout  int `json:"timeouts"`
 }
 type VSRoute struct {
-	Host   string `json:"host"`
-	Subset string `json:"subset"`
-	Port   int    `json:"port"`
-	Weight int32  `json:"weight"`
+	Destination struct {
+		Host   string `json:"host"`
+		Subset string `json:"subset"`
+		Port   int    `json:"port"`
+	} `json:"destination"`
+	Weight int32 `json:"weight"`
 }
 type VSHTTP struct {
-	Routes     []VSRoute   `json:"routes"`
+	Routes     []VSRoute   `json:"route"`
 	RewriteUri string      `json:"rewrite_uri"`
 	RetriesUri string      `json:"retries_uri"`
 	Timeout    int32       `json:"timeout"`
