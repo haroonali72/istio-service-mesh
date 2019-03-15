@@ -35,7 +35,10 @@ func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, err
 		var destination []*v1alpha3.HTTPRouteDestination
 		for _, route := range http.Routes {
 			var httpD v1alpha3.HTTPRouteDestination
-			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host, Port: &v1alpha3.PortSelector{&v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}}
+			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
+			if route.Destination.Port != 0 {
+				httpD.Destination.Port = &v1alpha3.PortSelector{Port: &v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}
+			}
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}
@@ -61,7 +64,8 @@ func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, err
 	vService.Http = routes
 	vService.Hosts = serviceAttr.Hosts
 	vService.Gateways = serviceAttr.Gateways
-	fmt.Println(vService.String())
+	utils.Info.Println(vService.String())
+
 	return vService, nil
 }
 func getIstioGateway(service types.Service) (v1alpha3.Gateway, error) {
