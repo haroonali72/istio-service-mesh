@@ -6,7 +6,7 @@ WORKDIR /go/src/IstioMesh/
 # Copy the current code into our workdir
 COPY . .
 ENV GOPATH /go/src/IstioMesh
-RUN go build -o IstioMesh src/Istio/main/main.go
+RUN go build -o IstioMesh main/main.go
 
 # final stage
 FROM ubuntu:bionic
