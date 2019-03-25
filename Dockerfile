@@ -5,7 +5,7 @@ FROM golang:1.11.3  AS build-env
 WORKDIR /go/src/IstioMesh/
 # Copy the current code into our workdir
 COPY . .
-ENV GOPATH /go/src/IstioMesh
+ENV GOPATH /go/
 RUN go build -o IstioMesh main/main.go
 
 # final stage
