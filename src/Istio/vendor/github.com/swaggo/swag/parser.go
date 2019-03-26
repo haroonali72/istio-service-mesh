@@ -541,7 +541,7 @@ func (parser *Parser) parseTypeExpr(pkgName, typeName string, typeExpr ast.Expr)
 	case *ast.Ident:
 		refTypeName := fullTypeName(pkgName, expr.Name)
 		if _, isParsed := parser.swagger.Definitions[refTypeName]; !isParsed {
-			if typedef, ok := parser.TypeDefinitions[pkgName][expr.Name]; ok{
+			if typedef, ok := parser.TypeDefinitions[pkgName][expr.Name]; ok {
 				parser.ParseDefinition(pkgName, expr.Name, typedef)
 			}
 		}
