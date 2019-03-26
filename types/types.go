@@ -16,7 +16,6 @@ type Port struct {
 }
 
 type SEPort struct {
-	Name     string `json:"name"`
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
@@ -60,15 +59,11 @@ type IstioServiceEntryAttributes struct {
 	Resolution string        `json:"resolution"`
 }
 type GWServers struct {
-	Hosts    []string `json:"hosts"`
-	Labels   []string `json:"labels"`
-	Port     int      `json:"port"`
-	Protocol string   `json:"protocol"`
-	Name     string   `json:"name"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
 }
 type IstioGatewayAttributes struct {
-	Servers  []GWServers       `json:"servers"`
-	Selector map[string]string `json:"selector"`
+	Servers []GWServers `json:"servers"`
 }
 type DRSubsets struct {
 	Name   string `json:"name"`
@@ -136,6 +131,12 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
+	MeshConfig            IstioConfig         `json:"istio_config"`
+}
+type IstioConfig struct {
+	Enable_External_Traffic bool                        `json:"enable_external_traffic"`
+	Gateway                 IstioGatewayAttributes      `json:"gateway"`
+	ServiceEntry            IstioServiceEntryAttributes `json:"service_entry"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
