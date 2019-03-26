@@ -1,12 +1,12 @@
 package main
 
 import (
-	"Istio/constants"
-	"Istio/controllers"
-	"Istio/utils"
 	"flag"
 	"github.com/gorilla/mux"
 	"io/ioutil"
+	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers"
+	"istio-service-mesh/utils"
 	"log"
 	"net/http"
 	"os"

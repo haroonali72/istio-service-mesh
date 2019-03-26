@@ -1,9 +1,6 @@
 package controllers
 
 import (
-	"Istio/constants"
-	"Istio/types"
-	"Istio/utils"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -11,6 +8,9 @@ import (
 	"fmt"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
+	"istio-service-mesh/constants"
+	"istio-service-mesh/types"
+	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

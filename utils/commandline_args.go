@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"Istio/constants"
 	"github.com/urfave/cli"
+	"istio-service-mesh/constants"
 	"log"
 	"os"
 )

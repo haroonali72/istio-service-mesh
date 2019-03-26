@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"Istio/constants"
-	"Istio/types"
 	"bytes"
 	"encoding/json"
 	"gopkg.in/resty.v1"
+	"istio-service-mesh/constants"
+	"istio-service-mesh/types"
 	"net/http"
 	"reflect"
 )

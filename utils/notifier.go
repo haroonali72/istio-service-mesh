@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"Istio/constants"
 	"github.com/astaxie/beego"
 	"github.com/go-redis/redis"
+	"istio-service-mesh/constants"
 )
 
 var (
