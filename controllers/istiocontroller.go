@@ -86,11 +86,8 @@ func getIstioGateway(serviceAttr types.IstioGatewayAttributes) (v1alpha3.Gateway
 	gateway.Servers = servers
 	return gateway, nil
 }
-func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, error) {
+func getIstioDestinationRule(serviceAttr types.IstioDestinationRuleAttributes) (v1alpha3.DestinationRule, error) {
 	destRule := v1alpha3.DestinationRule{}
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.IstioDestinationRuleAttributes
-	json.Unmarshal(byteData, &serviceAttr)
 	var subsets []*v1alpha3.Subset
 
 	for _, subset := range serviceAttr.Subsets {
@@ -105,6 +102,7 @@ func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, e
 	}
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
+
 	destRule.Marshal()
 	fmt.Println(destRule.String())
 	return destRule, nil
@@ -166,12 +164,26 @@ func getIstioObject(input types.Service) ([]types.IstioObject, error) {
 			return istioServices, err
 		}
 		istioServ.Spec = serv_entry
-		istioServ.Spec = serv_entry
 		labels = make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+
+		istioServices = append(istioServices, istioServ)
+
+		des_rule, err := getIstioDestinationRule(input.MeshConfig.DestinationRule)
+		if err != nil {
+			fmt.Println("There is error in deployment")
+			return istioServices, err
+		}
+		istioServ.Spec = des_rule
+		labels = make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		istioServ.Metadata = labels
+		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
 		istioServices = append(istioServices, istioServ)
