@@ -86,8 +86,13 @@ func getIstioGateway(serviceAttr types.IstioGatewayAttributes) (v1alpha3.Gateway
 	gateway.Servers = servers
 	return gateway, nil
 }
-func getIstioDestinationRule(serviceAttr types.IstioDestinationRuleAttributes) (v1alpha3.DestinationRule, error) {
+func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, error) {
 	destRule := v1alpha3.DestinationRule{}
+
+	byteData, _ := json.Marshal(service)
+	var serviceAttr types.IstioDestinationRuleAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
 	var subsets []*v1alpha3.Subset
 
 	for _, subset := range serviceAttr.Subsets {
@@ -107,7 +112,7 @@ func getIstioDestinationRule(serviceAttr types.IstioDestinationRuleAttributes) (
 	fmt.Println(destRule.String())
 	return destRule, nil
 }
-func getIstioServiceEntry(service types.IstioServiceEntryAttributes) (v1alpha3.ServiceEntry, error) {
+func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
 	SE := v1alpha3.ServiceEntry{}
 	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioServiceEntryAttributes
@@ -135,61 +140,63 @@ func getIstioServiceEntry(service types.IstioServiceEntryAttributes) (v1alpha3.S
 
 	return SE, nil
 }
-func getIstioObject(input types.Service) ([]types.IstioObject, error) {
+func getIstioGateWayObject(input types.Service) (types.IstioObject, error) {
+	var istioServ types.IstioObject
 
-	var istioServices []types.IstioObject
+	serv, err := getIstioGateway(input.MeshConfig.Gateway)
+	if err != nil {
+		fmt.Println("There is error in deployment")
+		return istioServ, err
+	}
 
-	if input.MeshConfig.Enable_External_Traffic {
+	istioServ.Spec = serv
+	labels := make(map[string]interface{})
+	labels["app"] = strings.ToLower(input.Name)
+	labels["name"] = strings.ToLower(input.Name)
+	istioServ.Metadata = labels
+	istioServ.Kind = "Gateway"
+	istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
-		var istioServ types.IstioObject
+	return istioServ, nil
+}
+func getIstioObject(input types.Service) (types.IstioObject, error) {
 
-		serv, err := getIstioGateway(input.MeshConfig.Gateway)
+	var istioServ types.IstioObject
+
+	switch input.SubType {
+
+	case "service_entry":
+
+		serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return istioServices, err
-		}
-		istioServ.Spec = serv
-		labels := make(map[string]interface{})
-		labels["app"] = strings.ToLower(input.Name)
-		labels["name"] = strings.ToLower(input.Name)
-		istioServ.Metadata = labels
-		istioServ.Kind = "Gateway"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-
-		istioServices = append(istioServices, istioServ)
-
-		serv_entry, err := getIstioServiceEntry(input.MeshConfig.ServiceEntry)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			return istioServices, err
+			return istioServ, err
 		}
 		istioServ.Spec = serv_entry
-		labels = make(map[string]interface{})
+		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
-		istioServices = append(istioServices, istioServ)
+	case "destination_rule":
 
-		des_rule, err := getIstioDestinationRule(input.MeshConfig.DestinationRule)
+		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
 		if err != nil {
 			fmt.Println("There is error in deployment")
-			return istioServices, err
+			return istioServ, err
 		}
 		istioServ.Spec = des_rule
-		labels = make(map[string]interface{})
+		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
-		istioServices = append(istioServices, istioServ)
-
 	}
-	return istioServices, nil
+	return istioServ, nil
 
 	/*switch input.SubType {
 	case "virtual_service":
@@ -206,26 +213,7 @@ func getIstioObject(input types.Service) ([]types.IstioObject, error) {
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
-
-
-	case "destination_rule":
-		serv, err := getIstioDestinationRule(input)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = serv
-		labels := make(map[string]interface{})
-		labels["app"] = strings.ToLower(input.Name)
-		labels["name"] = strings.ToLower(input.Name)
-		istioServ.Metadata = labels
-		istioServ.Kind = "DestinationRule"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
-
-
-	}
-	return istioServ, nil*/
+	*/
 }
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
@@ -371,7 +359,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 
-	if service.ServiceType == "container" {
+	if service.ServiceType == "mesh" {
 		//**Making Istio  Object*//
 		res, err := getIstioObject(service)
 		if err != nil {
@@ -383,7 +371,22 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			return ret
 		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+	} else if service.ServiceType == "container" {
+
+		if service.MeshConfig.Enable_External_Traffic {
+			res, err := getIstioGateWayObject(service)
+			if err != nil {
+				fmt.Println("There is error in deployment")
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+		}
 
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)

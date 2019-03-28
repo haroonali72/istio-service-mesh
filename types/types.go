@@ -134,10 +134,8 @@ type Service struct {
 	MeshConfig            IstioConfig         `json:"istio_config"`
 }
 type IstioConfig struct {
-	Enable_External_Traffic bool                           `json:"enable_external_traffic"`
-	Gateway                 IstioGatewayAttributes         `json:"gateway"`
-	ServiceEntry            IstioServiceEntryAttributes    `json:"service_entry"`
-	DestinationRule         IstioDestinationRuleAttributes `json:"destination_rule"`
+	Enable_External_Traffic bool                   `json:"enable_external_traffic"`
+	Gateway                 IstioGatewayAttributes `json:"gateway"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
