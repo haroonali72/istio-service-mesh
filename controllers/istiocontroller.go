@@ -145,6 +145,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Spec = serv
 		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
@@ -160,6 +161,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -175,6 +177,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -191,6 +194,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -206,6 +210,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
 	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
