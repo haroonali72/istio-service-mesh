@@ -148,7 +148,6 @@ type SolutionInfo struct {
 	KU      string  `json:"kubeusername"`
 	KP      string  `json:"kubepassword"`
 }
-
 type ServiceInput struct {
 	ClusterId    string         `json:"cluster_id"`
 	ClusterName  string         `json:"cluster_name"`
