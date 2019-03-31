@@ -43,19 +43,24 @@ func getIstioVirtualService(serviceAttr types.IstioVirtualServiceAttributes) (v1
 			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
-		if http.RewriteUri != "" {
-			var rewrite v1alpha3.HTTPRewrite
-			rewrite.Uri = http.RewriteUri
-			httpRoute.Rewrite = &rewrite
-		}
-		if http.RetriesUri != "" {
-			var retries v1alpha3.HTTPRetry
-			retries.RetryOn = http.RetriesUri
-			httpRoute.Retries = &retries
-		}
+		/*	if http.RewriteUri != "" {
+				var rewrite v1alpha3.HTTPRewrite
+				rewrite.Uri = http.RewriteUri
+				httpRoute.Rewrite = &rewrite
+			}
+			if http.RetriesUri != "" {
+				var retries v1alpha3.HTTPRetry
+				retries.RetryOn = http.RetriesUri
+				httpRoute.Retries = &retries
+			}*/
 		if http.Timeout > 0 {
 			//var timeout int32
 			//httpRoute.Timeout = google_protobuf.(timeout)
+		}
+		for _, retries := range http.Retries {
+			var httpR v1alpha3.HTTPRetry
+			httpR.Attempts = int32(retries.Attempts)
+			//	httpR.PerTryTimeout = retries.Timeout
 		}
 		routes = append(routes, &httpRoute)
 	}
