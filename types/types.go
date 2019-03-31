@@ -89,6 +89,7 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
+	MeshConfig                    IstioConfig                   `json:"istio_config"`
 }
 
 // ```yaml
@@ -121,6 +122,7 @@ type ServiceDependencyx struct {
 	Version           string `json:"version"`
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
+
 type Service struct {
 	ServiceType           string              `json:"service_type"`
 	SubType               string              `json:"service_sub_type"`
@@ -131,11 +133,12 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
-	MeshConfig            IstioConfig         `json:"istio_config"`
 }
 type IstioConfig struct {
-	Enable_External_Traffic bool                   `json:"enable_external_traffic"`
-	Gateway                 IstioGatewayAttributes `json:"gateway"`
+	Enable_External_Traffic bool                          `json:"enable_external_traffic"`
+	Gateway                 IstioGatewayAttributes        `json:"gateway"`
+	RouteController         bool                          `json:"route_controller"`
+	VirtualService          IstioVirtualServiceAttributes `json:"virtual_service"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
