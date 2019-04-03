@@ -71,17 +71,21 @@ func getIstioVirtualService(serviceAttr types.IstioVirtualServiceAttributes) (v1
 
 	return vService, nil
 }
-func getIstioGateway(serviceAttr types.IstioGatewayAttributes) (v1alpha3.Gateway, error) {
+func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
 	var hosts []string
 	hosts = append(hosts, "*")
 	var servers []*v1alpha3.Server
-	for _, server := range serviceAttr.Servers {
-		var serv v1alpha3.Server
-		serv.Port = &v1alpha3.Port{Name: strings.ToLower(server.Protocol), Protocol: server.Protocol, Number: uint32(server.Port)}
-		serv.Hosts = hosts
-		servers = append(servers, &serv)
-	}
+
+	var serv v1alpha3.Server
+	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
+	serv.Hosts = hosts
+	servers = append(servers, &serv)
+
+	var serv2 v1alpha3.Server
+	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
+	serv2.Hosts = hosts
+	servers = append(servers, &serv2)
 
 	var selector map[string]string
 	selector["istio"] = "ingressgateway"
@@ -161,7 +165,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 
 	switch input.SubType {
 
-	case "egress_rule":
+	case "service_entry":
 
 		serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
 		if err != nil {
@@ -187,7 +191,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	if istioConf.Enable_External_Traffic {
 		var istioServ types.IstioObject
 
-		serv, err := getIstioGateway(istioConf.Gateway)
+		serv, err := getIstioGateway()
 		if err != nil {
 			fmt.Println("There is error in deployment")
 			return istioServ, err
@@ -215,7 +219,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
-		istioServ.Kind = "DestinationRule"
+		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 	}

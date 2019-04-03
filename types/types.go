@@ -37,11 +37,11 @@ type VSRoute struct {
 	Weight int32 `json:"weight"`
 }
 type VSHTTP struct {
-	Routes     []VSRoute   `json:"route"`
-	RewriteUri string      `json:"rewrite_uri"`
-	RetriesUri string      `json:"retries_uri"`
-	Timeout    int32       `json:"timeout"`
-	Retries    []VSRetries `json:"retries"`
+	Routes []VSRoute `json:"route"`
+	//RewriteUri string      `json:"rewrite_uri"`
+	//RetriesUri string      `json:"retries_uri"`
+	Timeout int32       `json:"timeout"`
+	Retries []VSRetries `json:"retries"`
 }
 
 type IstioVirtualServiceAttributes struct {
@@ -58,13 +58,14 @@ type IstioServiceEntryAttributes struct {
 	Location   string        `json:"location"`
 	Resolution string        `json:"resolution"`
 }
-type GWServers struct {
+
+/*type GWServers struct {
 	Port     int    `json:"port"`
 	Protocol string `json:"protocol"`
 }
 type IstioGatewayAttributes struct {
 	Servers []GWServers `json:"servers"`
-}
+}*/
 type DRSubsets struct {
 	Name   string `json:"name"`
 	Labels []struct {
@@ -136,7 +137,6 @@ type Service struct {
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool                          `json:"enable_external_traffic"`
-	Gateway                 IstioGatewayAttributes        `json:"gateway"`
 	RouteController         bool                          `json:"route_controller"`
 	VirtualService          IstioVirtualServiceAttributes `json:"virtual_service"`
 }
