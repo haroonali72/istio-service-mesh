@@ -207,6 +207,11 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
 
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/polic"] = "all"
+
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
 	labels["app"] = service.Name
@@ -217,6 +222,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
 	deployment.ObjectMeta.Name = service.Name
+	deployment.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
