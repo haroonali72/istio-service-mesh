@@ -179,7 +179,20 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+	case "destination_rule":
 
+		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
+		if err != nil {
+			fmt.Println("There is error in deployment")
+			return istioServ, err
+		}
+		istioServ.Spec = des_rule
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		istioServ.Metadata = labels
+		istioServ.Kind = "DestinationRule"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 	}
 
@@ -223,21 +236,6 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 	}
-
-	/*case "destination_rule":
-
-	des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
-	if err != nil {
-		fmt.Println("There is error in deployment")
-		return istioServ, err
-	}
-	istioServ.Spec = des_rule
-	labels := make(map[string]interface{})
-	labels["name"] = strings.ToLower(input.Name)
-	labels["app"] = strings.ToLower(input.Name)
-	istioServ.Metadata = labels
-	istioServ.Kind = "DestinationRule"
-	istioServ.ApiVersion = "networking.istio.io/v1alpha3"*/
 
 	return istioServ, nil
 
