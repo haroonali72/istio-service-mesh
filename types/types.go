@@ -136,9 +136,7 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 }
 type IstioConfig struct {
-	Enable_External_Traffic bool                          `json:"enable_external_traffic"`
-	RouteController         bool                          `json:"route_controller"`
-	VirtualService          IstioVirtualServiceAttributes `json:"virtual_service"`
+	Enable_External_Traffic bool `json:"enable_external_traffic"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`

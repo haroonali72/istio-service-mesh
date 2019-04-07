@@ -22,9 +22,11 @@ import (
 
 var Notifier utils.Notifier
 
-func getIstioVirtualService(serviceAttr types.IstioVirtualServiceAttributes) (v1alpha3.VirtualService, error) {
+func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
 	vService := v1alpha3.VirtualService{}
-
+	byteData, _ := json.Marshal(service)
+	var serviceAttr types.IstioVirtualServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
 	var routes []*v1alpha3.HTTPRoute
 
 	for _, http := range serviceAttr.HTTP {
@@ -179,6 +181,21 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+
+	case "virtual_service":
+		vr, err := getIstioVirtualService(input.ServiceAttributes)
+		if err != nil {
+			fmt.Println("There is error in deployment")
+			return istioServ, err
+		}
+		istioServ.Spec = vr
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		istioServ.Metadata = labels
+		istioServ.Kind = "VirtualService"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ, nil
 	case "destination_rule":
 
 		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
@@ -218,22 +235,6 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
-		return istioServ, nil
-	}
-	if istioConf.RouteController {
-		var istioServ types.IstioObject
-		des_rule, err := getIstioVirtualService(istioConf.VirtualService)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = des_rule
-		labels := make(map[string]interface{})
-		labels["name"] = strings.ToLower(input.Name)
-		labels["app"] = strings.ToLower(input.Name)
-		istioServ.Metadata = labels
-		istioServ.Kind = "VirtualService"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
 	}
 
