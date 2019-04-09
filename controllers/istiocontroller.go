@@ -210,7 +210,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	//keel labels
 	deploymentLabels := make(map[string]string)
 	deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/polic"] = "all"
+	deploymentLabels["keel.sh/policy"] = "all"
+	deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
