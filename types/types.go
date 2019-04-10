@@ -94,6 +94,8 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
+	Command                       []string                      `json:"command"`
+	Args                          []string                      `json:"args"`
 }
 
 // ```yaml

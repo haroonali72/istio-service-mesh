@@ -244,6 +244,9 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
+	container.Command = serviceAttr.Command
+	container.Args = serviceAttr.Args
+
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
