@@ -94,8 +94,18 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
-	Command                       []string                      `json:"command"`
-	Args                          []string                      `json:"args"`
+
+	Command []string `json:"command"`
+	Args    []string `json:"args"`
+
+	//resource types: cpu, memory
+	LimitResourceType       string `json:"limitResourceType"`
+	LimitResourceQuantity   string `json:"limitResourceQuantity"`
+	RequestResourceType     string `json:"requestResourceType"`
+	RequestResourceQuantity string `json:"requestResourceQuantity"`
+
+	LivenessProbe  *v1.Probe `json:"livenessProbe"`
+	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
 
 // ```yaml

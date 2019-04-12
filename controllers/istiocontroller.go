@@ -13,6 +13,7 @@ import (
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"net/http"
@@ -244,6 +245,12 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
+	putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	putLimitResource(&container, serviceAttr.LimitResourceType, serviceAttr.LimitResourceQuantity)
+	putRequestResource(&container, serviceAttr.RequestResourceType, serviceAttr.RequestResourceQuantity)
+	putLivenessProbe(&container, serviceAttr.LivenessProbe)
+	putReadinessProbe(&container, serviceAttr.ReadinessProbe)
+
 	container.Command = serviceAttr.Command
 	container.Args = serviceAttr.Args
 
@@ -292,7 +299,6 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 	return deployment, nil
 }
-
 func getServiceObject(input types.Service) (v1.Service, error) {
 	service := v1.Service{}
 	service.Name = input.Name
@@ -794,4 +800,31 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	secret.Data = data
 
 	return secret, true
+}
+
+func putCommandAndArguments(container *v1.Container, command, args []string) {
+	container.Command = command
+	container.Args = args
+}
+func putLimitResource(container *v1.Container, limitResourceType, limitResourceQuantity string) {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	intQuantity, _ := strconv.Atoi(limitResourceQuantity)
+	quantity := resource.Quantity{}
+	quantity.Set(int64(intQuantity))
+	temp[v1.ResourceName(limitResourceType)] = quantity
+	container.Resources.Limits = temp
+}
+func putRequestResource(container *v1.Container, requestResourceType, requestResourceQuantity string) {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	intQuantity, _ := strconv.Atoi(requestResourceQuantity)
+	quantity := resource.Quantity{}
+	quantity.Set(int64(intQuantity))
+	temp[v1.ResourceName(requestResourceType)] = quantity
+	container.Resources.Requests = temp
+}
+func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) {
+	container.LivenessProbe = livenessProbe
+}
+func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) {
+	container.ReadinessProbe = readinessProbe
 }
