@@ -246,8 +246,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	json.Unmarshal(byteData, &serviceAttr)
 
 	putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	putLimitResource(&container, serviceAttr.LimitResourceType, serviceAttr.LimitResourceQuantity)
-	putRequestResource(&container, serviceAttr.RequestResourceType, serviceAttr.RequestResourceQuantity)
+	putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
 	putLivenessProbe(&container, serviceAttr.LivenessProbe)
 	putReadinessProbe(&container, serviceAttr.ReadinessProbe)
 
@@ -806,20 +806,30 @@ func putCommandAndArguments(container *v1.Container, command, args []string) {
 	container.Command = command
 	container.Args = args
 }
-func putLimitResource(container *v1.Container, limitResourceType, limitResourceQuantity string) {
+func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) {
 	temp := make(map[v1.ResourceName]resource.Quantity)
-	intQuantity, _ := strconv.Atoi(limitResourceQuantity)
-	quantity := resource.Quantity{}
-	quantity.Set(int64(intQuantity))
-	temp[v1.ResourceName(limitResourceType)] = quantity
+	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
+		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
+			intQuantity, _ := strconv.Atoi(limitResourceQuantities[i])
+			quantity := resource.Quantity{}
+			quantity.Set(int64(intQuantity))
+			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
+
+		}
+	}
 	container.Resources.Limits = temp
 }
-func putRequestResource(container *v1.Container, requestResourceType, requestResourceQuantity string) {
+func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) {
 	temp := make(map[v1.ResourceName]resource.Quantity)
-	intQuantity, _ := strconv.Atoi(requestResourceQuantity)
-	quantity := resource.Quantity{}
-	quantity.Set(int64(intQuantity))
-	temp[v1.ResourceName(requestResourceType)] = quantity
+	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
+		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
+			intQuantity, _ := strconv.Atoi(requestResourceQuantities[i])
+			quantity := resource.Quantity{}
+			quantity.Set(int64(intQuantity))
+			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
+
+		}
+	}
 	container.Resources.Requests = temp
 }
 func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) {

@@ -99,10 +99,10 @@ type DockerServiceAttributes struct {
 	Args    []string `json:"args"`
 
 	//resource types: cpu, memory
-	LimitResourceType       string `json:"limitResourceType"`
-	LimitResourceQuantity   string `json:"limitResourceQuantity"`
-	RequestResourceType     string `json:"requestResourceType"`
-	RequestResourceQuantity string `json:"requestResourceQuantity"`
+	LimitResourceTypes        []string `json:"limitResourceTypes"`
+	LimitResourceQuantities   []string `json:"limitResourceQuantities"`
+	RequestResourceTypes      []string `json:"requestResourceTypes"`
+	RequestResourceQuantities []string `json:"requestResourceQuantities"`
 
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
