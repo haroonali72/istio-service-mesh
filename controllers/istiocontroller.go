@@ -245,11 +245,14 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
-	putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	putLivenessProbe(&container, serviceAttr.LivenessProbe)
-	putReadinessProbe(&container, serviceAttr.ReadinessProbe)
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, serviceAttr.LivenessProbe)
+	err = putReadinessProbe(&container, serviceAttr.ReadinessProbe)
+	if err != nil {
+		return v12.Deployment{}, err
+	}
 
 	container.Command = serviceAttr.Command
 	container.Args = serviceAttr.Args
@@ -802,11 +805,16 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	return secret, true
 }
 
-func putCommandAndArguments(container *v1.Container, command, args []string) {
-	container.Command = command
-	container.Args = args
+func putCommandAndArguments(container *v1.Container, command, args []string) error {
+	if len(command) > 0 && command[0] != "" {
+		container.Command = command
+		container.Args = args
+	} else if len(args) > 0 {
+		return errors.New("Error Found: Arguments provided without a command.")
+	}
+	return nil
 }
-func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) {
+func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
 		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
@@ -814,12 +822,14 @@ func putLimitResource(container *v1.Container, limitResourceTypes, limitResource
 			quantity := resource.Quantity{}
 			quantity.Set(int64(intQuantity))
 			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
-
+		} else {
+			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
 		}
 	}
 	container.Resources.Limits = temp
+	return nil
 }
-func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) {
+func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
 		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
@@ -828,13 +838,18 @@ func putRequestResource(container *v1.Container, requestResourceTypes, requestRe
 			quantity.Set(int64(intQuantity))
 			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
 
+		} else {
+			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
 	}
 	container.Resources.Requests = temp
+	return nil
 }
-func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) {
+func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) error {
 	container.LivenessProbe = livenessProbe
+	return nil
 }
-func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) {
+func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) error {
 	container.ReadinessProbe = readinessProbe
+	return nil
 }
