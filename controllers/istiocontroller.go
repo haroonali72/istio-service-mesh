@@ -9,6 +9,7 @@ import (
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
@@ -203,6 +204,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	}
 	return istioServ, nil
 }
+
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
@@ -282,6 +284,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	container.Ports = ports
 	container.Env = envVariables
+
 	var containers []v1.Container
 
 	containers = append(containers, container)
@@ -337,6 +340,7 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 		servicePorts = append(servicePorts, temp)
 	}
 	service.Spec.Ports = servicePorts
+
 	return service, nil
 }
 func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
@@ -394,6 +398,19 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
+
+		//Attaching persistent volumes if any in two-steps
+		//1. Creating a new storage-class and persistent-volume-claim for each volume
+		//2. Mounting each volume to container and adding corresponding volume to pod
+		for _, volume := range service.Volumes {
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		}
+		if len(service.Volumes) > 0 &&
+			len(deployment.Spec.Template.Spec.Containers) > 0 {
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
+			deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(service.Volumes)
+		}
 
 		secret, exists := CreateDockerCfgSecret(service)
 
