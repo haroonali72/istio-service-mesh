@@ -403,6 +403,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		//1. Creating a new storage-class and persistent-volume-claim for each volume
 		//2. Mounting each volume to container and adding corresponding volume to pod
 		for _, volume := range service.Volumes {
+			volume.Namespace = service.Namespace
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
 		}
