@@ -9,6 +9,7 @@ import (
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
@@ -116,7 +117,6 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 	}
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
-
 	destRule.Marshal()
 	fmt.Println(destRule.String())
 	return destRule, nil
@@ -146,6 +146,7 @@ func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
 		SE.Resolution = v1alpha3.ServiceEntry_NONE
 	}
 	SE.Addresses = serviceAttr.Address
+	//SE.Location = v1alpha3.ServiceEntry_Location()
 
 	return SE, nil
 }
@@ -162,7 +163,6 @@ func getIstioConf(service types.Service) (types.IstioConfig, error) {
 	return istioConfig, nil
 }
 func getIstioObject(input types.Service) (types.IstioObject, error) {
-
 	var istioServ types.IstioObject
 
 	switch input.SubType {
@@ -192,10 +192,12 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
+
 	case "destination_rule":
 
 		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
@@ -207,6 +209,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -226,11 +229,12 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			fmt.Println("There is error in deployment")
 			return istioServ, err
 		}
-
+		istioServ.Spec = serv
 		istioServ.Spec = serv
 		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
 		istioServ.Metadata = labels
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -241,19 +245,28 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	return istioServ, nil
 
 }
+
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
 
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
 	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
 	deployment.ObjectMeta.Name = service.Name
+	deployment.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
@@ -423,6 +436,20 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			return ret
 		}
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
+
+		//Attaching persistent volumes if any in two-steps
+		//1. Creating a new storage-class and persistent-volume-claim for each volume
+		//2. Mounting each volume to container and adding corresponding volume to pod
+		for _, volume := range service.Volumes {
+			volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		}
+		if len(service.Volumes) > 0 &&
+			len(deployment.Spec.Template.Spec.Containers) > 0 {
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
+			deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(service.Volumes)
+		}
 
 		secret, exists := CreateDockerCfgSecret(service)
 
@@ -714,6 +741,10 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	var notification types.Notifier
 	notification.Component = "Solution"
 	notification.Id = input.SolutionInfo.Service.ID
+
+	var status types.StatusRequest
+	status.ID = input.SolutionInfo.Service.ID
+	status.Name = input.SolutionInfo.Service.Name
 
 	result := DeployIstio(input, r.Method)
 
