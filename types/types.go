@@ -3,6 +3,7 @@ package types
 import (
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"time"
 )
 
@@ -136,6 +137,7 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
+	Volumes               []Volume            `json:"volumes"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
@@ -173,10 +175,12 @@ type KubernetesCred struct {
 	KubernetesPassword string `json:"password"`
 }
 type OutputServices struct {
-	Deployments []v12.Deployment `json:"deployment"`
-	Kubernetes  []v1.Service     `json:"kubernetes-service"`
-	Istio       []IstioObject    `json:"istio-component"`
-	Secrets     []interface{}    `json:"secrets"`
+	Deployments            []v12.Deployment           `json:"deployment"`
+	Kubernetes             []v1.Service               `json:"kubernetes-service"`
+	Istio                  []IstioObject              `json:"istio-component"`
+	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
+	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
+	Secrets                []interface{}              `json:"secrets"`
 }
 
 type DeploymentWrapper struct {
@@ -191,11 +195,21 @@ type IstioWrapper struct {
 	Error string      `json:"error"`
 	Istio IstioObject `json:"data"`
 }
+type StorageClassesWrapper struct {
+	Error        string               `json:"error"`
+	StorageClass storage.StorageClass `json:"data"`
+}
+type PersistentVolumeClaimsWrapper struct {
+	Error                 string                   `json:"error"`
+	PersistentVolumeClaim v1.PersistentVolumeClaim `json:"data"`
+}
 type OutputResp struct {
-	Deployments []DeploymentWrapper `json:"deployment"`
-	Kubernetes  []KubernetesWrapper `json:"kubernetes-service"`
-	Istio       []IstioWrapper      `json:"istio-component"`
-	Secrets     []interface{}       `json:"secrets"`
+	Deployments            []DeploymentWrapper             `json:"deployment"`
+	Kubernetes             []KubernetesWrapper             `json:"kubernetes-service"`
+	Istio                  []IstioWrapper                  `json:"istio-component"`
+	StorageClasses         []StorageClassesWrapper         `json:"storage-classes"`
+	PersistentVolumeClaims []PersistentVolumeClaimsWrapper `json:"persistent-volume-claims"`
+	Secrets                []interface{}                   `json:"secrets"`
 }
 
 type ServiceOutput struct {
