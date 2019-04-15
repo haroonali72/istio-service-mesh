@@ -254,9 +254,6 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		return v12.Deployment{}, err
 	}
 
-	container.Command = serviceAttr.Command
-	container.Args = serviceAttr.Args
-
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
