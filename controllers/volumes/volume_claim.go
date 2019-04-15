@@ -1,7 +1,6 @@
 package volumes
 
 import (
-	"github.com/Azure/go-autorest/autorest/to"
 	"istio-service-mesh/types"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -15,9 +14,9 @@ func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim.ObjectMeta.Name = volumeClaim.Name
 	volumeClaim.Namespace = volume.Namespace
 
-	volumeClaim.Spec.StorageClassName = to.StringPtr(GetStorageClassName(volume.Name))
+	name := GetStorageClassName(volume.Name)
+	volumeClaim.Spec.StorageClassName = &name
 	volumeClaim.Spec.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
-
 
 	volumeClaim.Spec.Resources.Requests = map[v1.ResourceName]resource.Quantity{
 		v1.ResourceStorage: *resource.NewScaledQuantity(volume.Size, resource.Giga),
