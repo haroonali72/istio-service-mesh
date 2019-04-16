@@ -70,7 +70,9 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 	}
 	vService.Http = routes
 	vService.Hosts = serviceAttr.Hosts
-	vService.Gateways = serviceAttr.Gateways
+	if serviceAttr.Gateways != nil {
+		vService.Gateways = serviceAttr.Gateways
+	}
 	utils.Info.Println(vService.String())
 
 	return vService, nil
