@@ -93,7 +93,8 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	serv2.Hosts = hosts
 	servers = append(servers, &serv2)
 
-	var selector map[string]string
+	selector := make(map[string]string)
+
 	selector["istio"] = "ingressgateway"
 	gateway.Selector = selector
 	gateway.Servers = servers
