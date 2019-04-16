@@ -88,10 +88,10 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	serv.Hosts = hosts
 	servers = append(servers, &serv)
 
-	var serv2 v1alpha3.Server
+	/*var serv2 v1alpha3.Server
 	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
 	serv2.Hosts = hosts
-	servers = append(servers, &serv2)
+	servers = append(servers, &serv2)*/
 
 	selector := make(map[string]string)
 
