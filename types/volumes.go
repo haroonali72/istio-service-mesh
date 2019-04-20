@@ -20,7 +20,7 @@ type Volume struct {
 	Name      string     `json:"name"`
 	Size      int64      `json:"size"`
 	Cloud     string     `json:"cloud"`
-	Namespace string     `json:"namespace"`
+	Namespace string     `json:"-"`
 	MountPath string     `json:"mount_path"`
 	Params    Parameters `json:"params"`
 }

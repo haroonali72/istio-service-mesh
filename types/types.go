@@ -207,20 +207,10 @@ type IstioWrapper struct {
 	Error string      `json:"error"`
 	Istio IstioObject `json:"data"`
 }
-type StorageClassesWrapper struct {
-	Error        string               `json:"error"`
-	StorageClass storage.StorageClass `json:"data"`
-}
-type PersistentVolumeClaimsWrapper struct {
-	Error                 string                   `json:"error"`
-	PersistentVolumeClaim v1.PersistentVolumeClaim `json:"data"`
-}
 type OutputResp struct {
 	Deployments            []DeploymentWrapper             `json:"deployment"`
 	Kubernetes             []KubernetesWrapper             `json:"kubernetes-service"`
 	Istio                  []IstioWrapper                  `json:"istio-component"`
-	StorageClasses         []StorageClassesWrapper         `json:"storage-classes"`
-	PersistentVolumeClaims []PersistentVolumeClaimsWrapper `json:"persistent-volume-claims"`
 	Secrets                []interface{}                   `json:"secrets"`
 }
 

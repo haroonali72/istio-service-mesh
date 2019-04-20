@@ -18,7 +18,6 @@ func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim.Spec.StorageClassName = to.StringPtr(GetStorageClassName(volume.Name))
 	volumeClaim.Spec.AccessModes = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 
-
 	volumeClaim.Spec.Resources.Requests = map[v1.ResourceName]resource.Quantity{
 		v1.ResourceStorage: *resource.NewScaledQuantity(volume.Size, resource.Giga),
 	}

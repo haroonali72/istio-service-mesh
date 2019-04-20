@@ -382,6 +382,13 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	} else if service.ServiceType == "volume" {
+		//Creating a new storage-class and persistent-volume-claim for each volume
+		for _, volume := range service.Volumes {
+			volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		}
 	} else if service.ServiceType == "container" {
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
@@ -409,13 +416,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
 
 		//Attaching persistent volumes if any in two-steps
-		//1. Creating a new storage-class and persistent-volume-claim for each volume
-		//2. Mounting each volume to container and adding corresponding volume to pod
-		for _, volume := range service.Volumes {
-			volume.Namespace = service.Namespace
-			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
-			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
-		}
+		//Mounting each volume to container and adding corresponding volume to pod
 		if len(service.Volumes) > 0 &&
 			len(deployment.Spec.Template.Spec.Containers) > 0 {
 			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
