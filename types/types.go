@@ -3,6 +3,7 @@ package types
 import (
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"time"
 )
 
@@ -94,6 +95,18 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
+
+	Command []string `json:"command"`
+	Args    []string `json:"args"`
+
+	//resource types: cpu, memory
+	LimitResourceTypes        []string `json:"limitResourceTypes"`
+	LimitResourceQuantities   []string `json:"limitResourceQuantities"`
+	RequestResourceTypes      []string `json:"requestResourceTypes"`
+	RequestResourceQuantities []string `json:"requestResourceQuantities"`
+
+	LivenessProbe  *v1.Probe `json:"livenessProbe"`
+	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
 
 // ```yaml
@@ -136,6 +149,7 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
+	Volumes               []Volume            `json:"volumes"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
@@ -173,10 +187,12 @@ type KubernetesCred struct {
 	KubernetesPassword string `json:"password"`
 }
 type OutputServices struct {
-	Deployments []v12.Deployment `json:"deployment"`
-	Kubernetes  []v1.Service     `json:"kubernetes-service"`
-	Istio       []IstioObject    `json:"istio-component"`
-	Secrets     []interface{}    `json:"secrets"`
+	Deployments            []v12.Deployment           `json:"deployment"`
+	Kubernetes             []v1.Service               `json:"kubernetes-service"`
+	Istio                  []IstioObject              `json:"istio-component"`
+	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
+	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
+	Secrets                []interface{}              `json:"secrets"`
 }
 
 type DeploymentWrapper struct {

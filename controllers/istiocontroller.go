@@ -9,10 +9,12 @@ import (
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"net/http"
@@ -203,14 +205,16 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	}
 	return istioServ, nil
 }
+
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
 
 	//keel labels
 	deploymentLabels := make(map[string]string)
-	deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/polic"] = "all"
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
@@ -242,6 +246,15 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, serviceAttr.LivenessProbe)
+	err = putReadinessProbe(&container, serviceAttr.ReadinessProbe)
+	if err != nil {
+		return v12.Deployment{}, err
+	}
 
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
@@ -281,6 +294,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	container.Ports = ports
 	container.Env = envVariables
+
 	var containers []v1.Container
 
 	containers = append(containers, container)
@@ -371,6 +385,13 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	} else if service.ServiceType == "volume" {
+		//Creating a new storage-class and persistent-volume-claim for each volume
+		for _, volume := range service.Volumes {
+			volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		}
 	} else if service.ServiceType == "container" {
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
@@ -397,6 +418,13 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		if serv != nil {
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+		}
+		//Attaching persistent volumes if any in two-steps
+		//Mounting each volume to container and adding corresponding volume to pod
+		if len(service.Volumes) > 0 &&
+			len(deployment.Spec.Template.Spec.Containers) > 0 {
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
+			deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(service.Volumes)
 		}
 		secret, exists := CreateDockerCfgSecret(service)
 
@@ -794,4 +822,53 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	secret.Data = data
 
 	return secret, true
+}
+
+func putCommandAndArguments(container *v1.Container, command, args []string) error {
+	if len(command) > 0 && command[0] != "" {
+		container.Command = command
+		container.Args = args
+	} else if len(args) > 0 {
+		return errors.New("Error Found: Arguments provided without a command.")
+	}
+	return nil
+}
+func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) error {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
+		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
+			intQuantity, _ := strconv.Atoi(limitResourceQuantities[i])
+			quantity := resource.Quantity{}
+			quantity.Set(int64(intQuantity))
+			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
+		} else {
+			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
+		}
+	}
+	container.Resources.Limits = temp
+	return nil
+}
+func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) error {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
+		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
+			intQuantity, _ := strconv.Atoi(requestResourceQuantities[i])
+			quantity := resource.Quantity{}
+			quantity.Set(int64(intQuantity))
+			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
+
+		} else {
+			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
+		}
+	}
+	container.Resources.Requests = temp
+	return nil
+}
+func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) error {
+	container.LivenessProbe = livenessProbe
+	return nil
+}
+func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) error {
+	container.ReadinessProbe = readinessProbe
+	return nil
 }
