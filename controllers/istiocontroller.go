@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
@@ -106,7 +105,7 @@ func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, e
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
 	destRule.Marshal()
-	fmt.Println(destRule.String())
+	utils.Info.Println(destRule.String())
 	return destRule, nil
 }
 func getIstioServiceEntry(service types.Service) (v1alpha3.ServiceEntry, error) {
@@ -141,7 +140,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	case "virtual_service":
 		serv, err := getIstioVirtualService(input)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
@@ -156,7 +155,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	case "gateway":
 		serv, err := getIstioGateway(input)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
@@ -172,7 +171,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	case "destination_rule":
 		serv, err := getIstioDestinationRule(input)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
@@ -188,7 +187,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 	case "service_entry":
 		serv, err := getIstioServiceEntry(input)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
 		istioServ.Spec = serv
@@ -272,7 +271,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			continue
 		}
 
@@ -280,7 +279,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
-				fmt.Println(err)
+				utils.Info.Println(err)
 				continue
 			}
 			temp.HostPort = int32(i)
@@ -334,7 +333,7 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			continue
 		}
 
@@ -342,7 +341,7 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
-				fmt.Println(err)
+				utils.Info.Println(err)
 				continue
 			}
 			temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
@@ -371,11 +370,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
-	if service.ServiceType == "mesh" {
+	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
 		res, err := getIstioObject(service)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
 			if requestType != "GET" {
@@ -436,7 +435,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//Send request to Kubernetes
 	x, err := json.Marshal(finalObj)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
@@ -444,7 +443,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	fmt.Println(string(x))
+	utils.Info.Println(string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
@@ -544,7 +543,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	}
 	x, err = json.Marshal(finalObj)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
@@ -552,7 +551,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	fmt.Println(string(x))
+	utils.Info.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
 		return ForwardToKube(x, input.ProjectId, requestType, ret)
@@ -569,7 +568,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		if requestType != "GET" {
 			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 		}
@@ -642,7 +641,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
 
@@ -659,7 +658,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		//Info.Printf("notification status code %d\n", statusCode)
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 			if requestType != "GET" {
@@ -696,7 +695,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 }
 
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Body)
+	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -704,7 +703,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(string(b))
+	utils.Info.Println(string(b))
 	// Unmarshal
 	var input types.ServiceInput
 	err = json.Unmarshal(b, &input)
@@ -751,7 +750,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		notification.Status = "fail"
 	} else {
 
-		fmt.Println("Deployment Successful\n")
+		utils.Info.Println("Deployment Successful\n")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
 		if err == nil {
