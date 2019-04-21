@@ -17,7 +17,6 @@ type Port struct {
 }
 
 type SEPort struct {
-	Name     string `json:"name"`
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
@@ -39,11 +38,11 @@ type VSRoute struct {
 	Weight int32 `json:"weight"`
 }
 type VSHTTP struct {
-	Routes     []VSRoute   `json:"route"`
-	RewriteUri string      `json:"rewrite_uri"`
-	RetriesUri string      `json:"retries_uri"`
-	Timeout    int32       `json:"timeout"`
-	Retries    []VSRetries `json:"retries"`
+	Routes []VSRoute `json:"route"`
+	//RewriteUri string      `json:"rewrite_uri"`
+	//RetriesUri string      `json:"retries_uri"`
+	Timeout int32       `json:"timeout"`
+	Retries []VSRetries `json:"retries"`
 }
 
 type IstioVirtualServiceAttributes struct {
@@ -60,17 +59,14 @@ type IstioServiceEntryAttributes struct {
 	Location   string        `json:"location"`
 	Resolution string        `json:"resolution"`
 }
-type GWServers struct {
-	Hosts    []string `json:"hosts"`
-	Labels   []string `json:"labels"`
-	Port     int      `json:"port"`
-	Protocol string   `json:"protocol"`
-	Name     string   `json:"name"`
+
+/*type GWServers struct {
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
 }
 type IstioGatewayAttributes struct {
-	Servers  []GWServers       `json:"servers"`
-	Selector map[string]string `json:"selector"`
-}
+	Servers []GWServers `json:"servers"`
+}*/
 type DRSubsets struct {
 	Name   string `json:"name"`
 	Labels []struct {
@@ -95,6 +91,7 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
+	MeshConfig                    IstioConfig                   `json:"istio_config"`
 
 	Command []string `json:"command"`
 	Args    []string `json:"args"`
@@ -139,6 +136,7 @@ type ServiceDependencyx struct {
 	Version           string `json:"version"`
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
+
 type Service struct {
 	ServiceType           string              `json:"service_type"`
 	SubType               string              `json:"service_sub_type"`
@@ -151,6 +149,9 @@ type Service struct {
 	Hostnames             []string            `json:"hostnames"`
 	Volumes               []Volume            `json:"volumes"`
 }
+type IstioConfig struct {
+	Enable_External_Traffic bool `json:"enable_external_traffic"`
+}
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
 	Name    string  `json:"name"`
@@ -162,7 +163,6 @@ type SolutionInfo struct {
 	KU      string  `json:"kubeusername"`
 	KP      string  `json:"kubepassword"`
 }
-
 type ServiceInput struct {
 	ClusterId    string         `json:"cluster_id"`
 	ClusterName  string         `json:"cluster_name"`
