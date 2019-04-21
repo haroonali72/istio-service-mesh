@@ -289,15 +289,15 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	return deployment, nil
 }
 
-func getServiceObject(input types.Service) (v1.Service, error) {
+func getServiceObject(input types.Service) (*v1.Service, error) {
 	service := v1.Service{}
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
 
-	if service.Namespace == "" {
+	if input.Namespace == "" {
 		service.ObjectMeta.Namespace = "default"
 	} else {
-		service.ObjectMeta.Namespace = service.Namespace
+		service.ObjectMeta.Namespace = input.Namespace
 	}
 	service.Spec.Type = v1.ServiceTypeClusterIP
 
@@ -335,8 +335,11 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 		}
 		servicePorts = append(servicePorts, temp)
 	}
+	if len(servicePorts) == 0 {
+		return nil, nil
+	}
 	service.Spec.Ports = servicePorts
-	return service, nil
+	return &service, nil
 }
 func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
 
@@ -392,8 +395,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			return ret
 		}
-		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
-
+		if serv != nil {
+			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+		}
 		secret, exists := CreateDockerCfgSecret(service)
 
 		if exists {
