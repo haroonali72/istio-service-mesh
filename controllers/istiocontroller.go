@@ -247,7 +247,6 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-	fmt.Println(string(byteData))
 	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
 	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
 	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
