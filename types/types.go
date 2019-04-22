@@ -42,6 +42,7 @@ type VSHTTP struct {
 	//RewriteUri string      `json:"rewrite_uri"`
 	//RetriesUri string      `json:"retries_uri"`
 	Timeout int32       `json:"timeout"`
+	URIS    []string    `json:"uri"`
 	Retries []VSRetries `json:"retries"`
 }
 
