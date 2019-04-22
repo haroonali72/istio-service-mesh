@@ -40,6 +40,7 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
 				httpD.Destination.Port = &v1alpha3.PortSelector{Port: &v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}
+
 			}
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
@@ -74,7 +75,10 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 		vService.Gateways = serviceAttr.Gateways
 	}
 	utils.Info.Println(vService.String())
-
+	b, e := vService.Marshal()
+	if e == nil {
+		utils.Info.Println(string(b))
+	}
 	return vService, nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
@@ -192,7 +196,11 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		istioServ.Spec = vr
+		b, er := json.Marshal(vr)
+		if er != nil {
+			utils.Info.Println(er.Error())
+		}
+		istioServ.Spec = b
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
