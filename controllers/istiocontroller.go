@@ -196,11 +196,11 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		b, er := json.Marshal(vr)
-		if er != nil {
-			utils.Info.Println(er.Error())
-		}
-		istioServ.Spec = b
+		/*	b, er := json.Marshal(vr)
+			if er != nil {
+				utils.Info.Println(er.Error())
+			}*/
+		istioServ.Spec = vr
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
