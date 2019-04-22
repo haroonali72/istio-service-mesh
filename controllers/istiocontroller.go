@@ -438,11 +438,15 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
 	if service.ServiceType == "volume" {
-		//Creating a new storage-class and persistent-volume-claim for each volume
-		for _, volume := range service.Volumes {
-			volume.Namespace = service.Namespace
-			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
-			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		byteData, _ := json.Marshal(service.ServiceAttributes)
+		var attributes types.VolumeAttributes
+		err := json.Unmarshal(byteData, &attributes)
+
+		if err == nil && attributes.Volume.Name != "" {
+			//Creating a new storage-class and persistent-volume-claim for each volume
+			attributes.Volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
 
@@ -472,12 +476,19 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		if serv != nil {
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 		}
+
 		//Attaching persistent volumes if any in two-steps
 		//Mounting each volume to container and adding corresponding volume to pod
-		if len(service.Volumes) > 0 &&
-			len(deployment.Spec.Template.Spec.Containers) > 0 {
-			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
-			deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(service.Volumes)
+		if len(deployment.Spec.Template.Spec.Containers) > 0 {
+			byteData, _ := json.Marshal(service.ServiceAttributes)
+			var attributes types.VolumeAttributes
+			err = json.Unmarshal(byteData, &attributes)
+
+			if err == nil && attributes.Volume.Name != "" {
+				volumesData := []types.Volume{attributes.Volume}
+				deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+				deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+			}
 		}
 		secret, exists := CreateDockerCfgSecret(service)
 

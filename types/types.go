@@ -114,6 +114,10 @@ type DockerServiceAttributes struct {
 //   name: bookinfo-ratings-port
 // spec:
 
+type VolumeAttributes struct {
+	Volume Volume `json:"volume"`
+}
+
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
 	Kind       string                 `json:"kind"`
@@ -148,7 +152,6 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
-	Volumes               []Volume            `json:"volumes"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
