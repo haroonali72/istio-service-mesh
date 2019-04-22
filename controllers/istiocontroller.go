@@ -50,7 +50,7 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 		httpRoute.Route = destination
 		var matches []*v1alpha3.HTTPMatchRequest
 		for _, uri := range http.URIS {
-			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Exact{Exact: uri}}})
+			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
 		}
 		httpRoute.Match = matches
 		/*	if http.RewriteUri != "" {
