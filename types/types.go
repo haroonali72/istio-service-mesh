@@ -99,13 +99,12 @@ type DockerServiceAttributes struct {
 	Args    []string `json:"args"`
 
 	//resource types: cpu, memory
-	LimitResourceTypes        []string `json:"limitResourceTypes"`
-	LimitResourceQuantities   []string `json:"limitResourceQuantities"`
-	RequestResourceTypes      []string `json:"requestResourceTypes"`
-	RequestResourceQuantities []string `json:"requestResourceQuantities"`
+	LimitResourceTypes        []string `json:"limit_resource_types"`
+	LimitResourceQuantities   []string `json:"limit_resource_quantities"`
+	RequestResourceTypes      []string `json:"request_resource_types"`
+	RequestResourceQuantities []string `json:"request_resource_quantities"`
 
-	LivenessProbe  *v1.Probe `json:"livenessProbe"`
-	ReadinessProbe *v1.Probe `json:"readinessProbe"`
+	CronJobScheduleString string `json:"cron_job_schedule_string"`
 }
 
 // ```yaml
@@ -139,15 +138,16 @@ type ServiceDependencyx struct {
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
 type Service struct {
-	ServiceType           string              `json:"service_type"`
-	SubType               string              `json:"service_sub_type"`
-	Name                  string              `json:"name"`
-	ID                    string              `json:"_id"`
-	Version               string              `json:"version"`
-	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
-	ServiceAttributes     interface{}         `json:"service_attributes"`
-	Namespace             string              `json:"namespace"`
-	Hostnames             []string            `json:"hostnames"`
+	ServiceType             string              `json:"service_type"`
+	ContainerServiceSubType string              `json:"container_service_sub_type"`
+	SubType                 string              `json:"service_sub_type"`
+	Name                    string              `json:"name"`
+	ID                      string              `json:"_id"`
+	Version                 string              `json:"version"`
+	ServiceDependencyInfo   []ServiceDependency `json:"service_dependency_info"`
+	ServiceAttributes       interface{}         `json:"service_attributes"`
+	Namespace               string              `json:"namespace"`
+	Hostnames               []string            `json:"hostnames"`
 }
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
