@@ -10,6 +10,7 @@ import (
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
@@ -26,9 +27,9 @@ import (
 
 var Notifier utils.Notifier
 
-func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, error) {
+func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
 	vService := v1alpha3.VirtualService{}
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioVirtualServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 	var routes []*v1alpha3.HTTPRoute
@@ -42,6 +43,7 @@ func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, err
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
 				httpD.Destination.Port = &v1alpha3.PortSelector{Port: &v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}
+
 			}
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
@@ -49,50 +51,74 @@ func getIstioVirtualService(service types.Service) (v1alpha3.VirtualService, err
 			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
-		if http.RewriteUri != "" {
-			var rewrite v1alpha3.HTTPRewrite
-			rewrite.Uri = http.RewriteUri
-			httpRoute.Rewrite = &rewrite
+		var matches []*v1alpha3.HTTPMatchRequest
+		for _, uri := range http.URIS {
+			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
 		}
-		if http.RetriesUri != "" {
-			var retries v1alpha3.HTTPRetry
-			retries.RetryOn = http.RetriesUri
-			httpRoute.Retries = &retries
-		}
+		httpRoute.Match = matches
+		/*	if http.RewriteUri != "" {
+				var rewrite v1alpha3.HTTPRewrite
+				rewrite.Uri = http.RewriteUri
+				httpRoute.Rewrite = &rewrite
+			}
+			if http.RetriesUri != "" {
+				var retries v1alpha3.HTTPRetry
+				retries.RetryOn = http.RetriesUri
+				httpRoute.Retries = &retries
+			}*/
 		if http.Timeout > 0 {
 			//var timeout int32
 			//httpRoute.Timeout = google_protobuf.(timeout)
+		}
+		for _, retries := range http.Retries {
+			var httpR v1alpha3.HTTPRetry
+			httpR.Attempts = int32(retries.Attempts)
+			//	httpR.PerTryTimeout = retries.Timeout
 		}
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
 	vService.Hosts = serviceAttr.Hosts
-	vService.Gateways = serviceAttr.Gateways
+	if serviceAttr.Gateways != nil {
+		vService.Gateways = serviceAttr.Gateways
+	}
 	utils.Info.Println(vService.String())
-
+	b, e := vService.Marshal()
+	if e == nil {
+		utils.Info.Println(string(b))
+	}
 	return vService, nil
 }
-func getIstioGateway(service types.Service) (v1alpha3.Gateway, error) {
+func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.IstioGatewayAttributes
-	json.Unmarshal(byteData, &serviceAttr)
+	var hosts []string
+	hosts = append(hosts, "*")
 	var servers []*v1alpha3.Server
-	for _, server := range serviceAttr.Servers {
-		var serv v1alpha3.Server
-		serv.Port = &v1alpha3.Port{Name: server.Name, Protocol: server.Protocol, Number: uint32(server.Port)}
-		serv.Hosts = server.Hosts
-		servers = append(servers, &serv)
-	}
-	gateway.Selector = serviceAttr.Selector
+
+	var serv v1alpha3.Server
+	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
+	serv.Hosts = hosts
+	servers = append(servers, &serv)
+
+	/*var serv2 v1alpha3.Server
+	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
+	serv2.Hosts = hosts
+	servers = append(servers, &serv2)*/
+
+	selector := make(map[string]string)
+
+	selector["istio"] = "ingressgateway"
+	gateway.Selector = selector
 	gateway.Servers = servers
 	return gateway, nil
 }
-func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, error) {
+func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, error) {
 	destRule := v1alpha3.DestinationRule{}
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+
+	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioDestinationRuleAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+
 	var subsets []*v1alpha3.Subset
 
 	for _, subset := range serviceAttr.Subsets {
@@ -108,21 +134,18 @@ func getIstioDestinationRule(service types.Service) (v1alpha3.DestinationRule, e
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
 	destRule.Marshal()
-	fmt.Println(destRule.String())
+	utils.Info.Println(destRule.String())
 	return destRule, nil
 }
-func getIstioServiceEntry(service types.Service) (v1alpha3.ServiceEntry, error) {
+func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
 	SE := v1alpha3.ServiceEntry{}
-	//x := v1.Service{}
-	//x.Spec = SE
-
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioServiceEntryAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 	var ports []*v1alpha3.Port
 	for _, port := range serviceAttr.Ports {
 		var p v1alpha3.Port
-		p.Name = port.Name
+		p.Name = port.Protocol
 		p.Protocol = port.Protocol
 		p.Number = uint32(port.Port)
 		ports = append(ports, &p)
@@ -130,37 +153,99 @@ func getIstioServiceEntry(service types.Service) (v1alpha3.ServiceEntry, error) 
 
 	SE.Ports = ports
 	SE.Hosts = serviceAttr.Hosts
-	//SE.Location = serviceAttr.Location
+	switch serviceAttr.Resolution {
+	case "DNS":
+		SE.Resolution = v1alpha3.ServiceEntry_DNS
+	case "STATIC":
+		SE.Resolution = v1alpha3.ServiceEntry_STATIC
+	case "NONE":
+		SE.Resolution = v1alpha3.ServiceEntry_NONE
+	}
 	SE.Addresses = serviceAttr.Address
 	//SE.Location = v1alpha3.ServiceEntry_Location()
 
 	return SE, nil
 }
+func getIstioConf(service types.Service) (types.IstioConfig, error) {
+	b, e := json.Marshal(service.ServiceAttributes)
+	if e != nil {
+		return types.IstioConfig{}, e
+	}
+	var istioConfig types.IstioConfig
+	e = json.Unmarshal(b, &istioConfig)
+	if e != nil {
+		return types.IstioConfig{}, e
+	}
+	return istioConfig, nil
+}
 func getIstioObject(input types.Service) (types.IstioObject, error) {
 	var istioServ types.IstioObject
 
 	switch input.SubType {
-	case "virtual_service":
-		serv, err := getIstioVirtualService(input)
+
+	case "service_entry":
+
+		serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		istioServ.Spec = serv
+		istioServ.Spec = serv_entry
 		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		istioServ.Metadata = labels
+		istioServ.Kind = "ServiceEntry"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+
+	case "virtual_service":
+		vr, err := getIstioVirtualService(input.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return istioServ, err
+		}
+		istioServ.Spec = vr
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
-		labels["name"] = strings.ToLower(input.Name)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
-	case "gateway":
-		serv, err := getIstioGateway(input)
+
+	case "destination_rule":
+
+		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
 		if err != nil {
-			fmt.Println("There is error in deployment")
+			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
+		istioServ.Spec = des_rule
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
+		istioServ.Metadata = labels
+		istioServ.Kind = "DestinationRule"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ, nil
+	}
+
+	istioConf, err := getIstioConf(input)
+	if err != nil {
+		fmt.Println("There is error in deployment")
+		return istioServ, err
+	}
+	if istioConf.Enable_External_Traffic {
+		var istioServ types.IstioObject
+
+		serv, err := getIstioGateway()
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return istioServ, err
+		}
+		istioServ.Spec = serv
 		istioServ.Spec = serv
 		labels := make(map[string]interface{})
 		labels["app"] = strings.ToLower(input.Name)
@@ -169,44 +254,14 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
 
-	case "destination_rule":
-		serv, err := getIstioDestinationRule(input)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = serv
-		labels := make(map[string]interface{})
-		labels["app"] = strings.ToLower(input.Name)
-		labels["name"] = strings.ToLower(input.Name)
-		labels["version"] = strings.ToLower(input.Version)
-		istioServ.Metadata = labels
-		istioServ.Kind = "DestinationRule"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 		return istioServ, nil
-
-	case "service_entry":
-		serv, err := getIstioServiceEntry(input)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = serv
-		istioServ.Spec = serv
-		labels := make(map[string]interface{})
-		labels["name"] = strings.ToLower(input.Name)
-		labels["app"] = strings.ToLower(input.Name)
-		labels["version"] = strings.ToLower(input.Version)
-		istioServ.Metadata = labels
-		istioServ.Kind = "ServiceEntry"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
-
 	}
+
 	return istioServ, nil
+
 }
+
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
@@ -272,7 +327,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			continue
 		}
 
@@ -280,7 +335,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
-				fmt.Println(err)
+				utils.Info.Println(err)
 				continue
 			}
 			temp.HostPort = int32(i)
@@ -688,10 +743,10 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
 
-	if service.Namespace == "" {
+	if input.Namespace == "" {
 		service.ObjectMeta.Namespace = "default"
 	} else {
-		service.ObjectMeta.Namespace = service.Namespace
+		service.ObjectMeta.Namespace = input.Namespace
 	}
 	service.Spec.Type = v1.ServiceTypeClusterIP
 
@@ -714,7 +769,7 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 
 		i, err := strconv.Atoi(port.Container)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			continue
 		}
 
@@ -722,15 +777,18 @@ func getServiceObject(input types.Service) (v1.Service, error) {
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
-				fmt.Println(err)
+				utils.Info.Println(err)
 				continue
 			}
 			temp.TargetPort = intstr.IntOrString{IntVal: int32(i)}
 		}
 		servicePorts = append(servicePorts, temp)
 	}
+	if len(servicePorts) == 0 {
+		return nil, nil
+	}
 	service.Spec.Ports = servicePorts
-	return service, nil
+	return &service, nil
 }
 func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
 
@@ -748,20 +806,31 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
-	if service.ServiceType == "mesh" {
+	//if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-		res, err := getIstioObject(service)
-		if err != nil {
-			fmt.Println("There is error in deployment")
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-			if requestType != "GET" {
-				utils.SendLog(ret.Reason, "error", input.ProjectId)
-			}
-			return ret
+	res, err := getIstioObject(service)
+	if err != nil {
+		utils.Info.Println("There is error in deployment")
+		ret.Status = append(ret.Status, "failed")
+		ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
 		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+		return ret
+	}
+	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	if service.ServiceType == "volume" {
+		byteData, _ := json.Marshal(service.ServiceAttributes)
+		var attributes types.VolumeAttributes
+		err := json.Unmarshal(byteData, &attributes)
+
+		if err == nil && attributes.Volume.Name != "" {
+			//Creating a new storage-class and persistent-volume-claim for each volume
+			attributes.Volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
+		}
 	} else if service.ServiceType == "container" {
 
 		switch service.ContainerServiceSubType {
@@ -832,6 +901,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			//finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		}
+
 		//Getting Deployment Object
 		deployment, err := getDeploymentObject(service)
 		if err != nil {
@@ -855,8 +925,23 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			return ret
 		}
-		finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, serv)
+		if serv != nil {
+			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+		}
 
+		//Attaching persistent volumes if any in two-steps
+		//Mounting each volume to container and adding corresponding volume to pod
+		if len(deployment.Spec.Template.Spec.Containers) > 0 {
+			byteData, _ := json.Marshal(service.ServiceAttributes)
+			var attributes types.VolumeAttributes
+			err = json.Unmarshal(byteData, &attributes)
+
+			if err == nil && attributes.Volume.Name != "" {
+				volumesData := []types.Volume{attributes.Volume}
+				deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+				deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+			}
+		}
 		secret, exists := CreateDockerCfgSecret(service)
 
 		if exists {
@@ -867,7 +952,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//Send request to Kubernetes
 	x, err := json.Marshal(finalObj)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
@@ -875,7 +960,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	fmt.Println(string(x))
+	utils.Info.Println(string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
@@ -975,7 +1060,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	}
 	x, err = json.Marshal(finalObj)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
@@ -983,7 +1068,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	fmt.Println(string(x))
+	utils.Info.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
 		return ForwardToKube(x, input.ProjectId, requestType, ret)
@@ -1000,7 +1085,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		if requestType != "GET" {
 			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 		}
@@ -1073,7 +1158,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		utils.Info.Println(err)
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
 
@@ -1090,7 +1175,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		//Info.Printf("notification status code %d\n", statusCode)
 		result, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println(err)
+			utils.Info.Println(err)
 			ret.Status = append(ret.Status, "failed")
 			ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 			if requestType != "GET" {
@@ -1127,7 +1212,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 }
 
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Body)
+	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -1135,7 +1220,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(string(b))
+	utils.Info.Println(string(b))
 	// Unmarshal
 	var input types.ServiceInput
 	err = json.Unmarshal(b, &input)
@@ -1182,7 +1267,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		notification.Status = "fail"
 	} else {
 
-		fmt.Println("Deployment Successful\n")
+		utils.Info.Println("Deployment Successful\n")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
 		if err == nil {

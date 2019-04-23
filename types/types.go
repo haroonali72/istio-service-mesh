@@ -3,6 +3,7 @@ package types
 import (
 	v12 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"time"
 )
 
@@ -16,7 +17,6 @@ type Port struct {
 }
 
 type SEPort struct {
-	Name     string `json:"name"`
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
@@ -38,11 +38,12 @@ type VSRoute struct {
 	Weight int32 `json:"weight"`
 }
 type VSHTTP struct {
-	Routes     []VSRoute   `json:"route"`
-	RewriteUri string      `json:"rewrite_uri"`
-	RetriesUri string      `json:"retries_uri"`
-	Timeout    int32       `json:"timeout"`
-	Retries    []VSRetries `json:"retries"`
+	Routes []VSRoute `json:"route"`
+	//RewriteUri string      `json:"rewrite_uri"`
+	//RetriesUri string      `json:"retries_uri"`
+	Timeout int32       `json:"timeout"`
+	URIS    []string    `json:"uri"`
+	Retries []VSRetries `json:"retries"`
 }
 
 type IstioVirtualServiceAttributes struct {
@@ -59,17 +60,14 @@ type IstioServiceEntryAttributes struct {
 	Location   string        `json:"location"`
 	Resolution string        `json:"resolution"`
 }
-type GWServers struct {
-	Hosts    []string `json:"hosts"`
-	Labels   []string `json:"labels"`
-	Port     int      `json:"port"`
-	Protocol string   `json:"protocol"`
-	Name     string   `json:"name"`
+
+/*type GWServers struct {
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
 }
 type IstioGatewayAttributes struct {
-	Servers  []GWServers       `json:"servers"`
-	Selector map[string]string `json:"selector"`
-}
+	Servers []GWServers `json:"servers"`
+}*/
 type DRSubsets struct {
 	Name   string `json:"name"`
 	Labels []struct {
@@ -94,6 +92,7 @@ type DockerServiceAttributes struct {
 	Tag                           string                        `json:"tag"`
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
+	MeshConfig                    IstioConfig                   `json:"istio_config"`
 
 	Command []string `json:"command"`
 	Args    []string `json:"args"`
@@ -113,6 +112,10 @@ type DockerServiceAttributes struct {
 // metadata:
 //   name: bookinfo-ratings-port
 // spec:
+
+type VolumeAttributes struct {
+	Volume Volume `json:"volume"`
+}
 
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
@@ -137,6 +140,7 @@ type ServiceDependencyx struct {
 	Version           string `json:"version"`
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
+
 type Service struct {
 	ServiceType             string              `json:"service_type"`
 	ContainerServiceSubType string              `json:"container_service_sub_type"`
@@ -149,6 +153,9 @@ type Service struct {
 	Namespace               string              `json:"namespace"`
 	Hostnames               []string            `json:"hostnames"`
 }
+type IstioConfig struct {
+	Enable_External_Traffic bool `json:"enable_external_traffic"`
+}
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
 	Name    string  `json:"name"`
@@ -160,7 +167,6 @@ type SolutionInfo struct {
 	KU      string  `json:"kubeusername"`
 	KP      string  `json:"kubepassword"`
 }
-
 type ServiceInput struct {
 	ClusterId    string         `json:"cluster_id"`
 	ClusterName  string         `json:"cluster_name"`
@@ -185,10 +191,12 @@ type KubernetesCred struct {
 	KubernetesPassword string `json:"password"`
 }
 type OutputServices struct {
-	Deployments []v12.Deployment `json:"deployment"`
-	Kubernetes  []v1.Service     `json:"kubernetes-service"`
-	Istio       []IstioObject    `json:"istio-component"`
-	Secrets     []interface{}    `json:"secrets"`
+	Deployments            []v12.Deployment           `json:"deployment"`
+	Kubernetes             []v1.Service               `json:"kubernetes-service"`
+	Istio                  []IstioObject              `json:"istio-component"`
+	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
+	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
+	Secrets                []interface{}              `json:"secrets"`
 }
 
 type DeploymentWrapper struct {
