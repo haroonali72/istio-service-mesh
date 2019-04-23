@@ -40,6 +40,7 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
 				httpD.Destination.Port = &v1alpha3.PortSelector{Port: &v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}
+
 			}
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
@@ -73,7 +74,6 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 	if serviceAttr.Gateways != nil {
 		vService.Gateways = serviceAttr.Gateways
 	}
-	utils.Info.Println(vService.String())
 
 	return vService, nil
 }
@@ -192,7 +192,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		istioServ.Spec = vr
+		d, err := marshalUnMarshalOfIstioComponents(vr.String())
+		utils.Error.Println(err)
+		istioServ.Spec = d
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
@@ -915,4 +917,33 @@ func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) error {
 func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) error {
 	container.ReadinessProbe = readinessProbe
 	return nil
+}
+
+func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
+	s = strings.TrimSpace(s)
+	s = "{" + s
+	s = strings.Replace(s, " >", "}", -1)
+	s = strings.Replace(s, "<", "{", -1)
+	s = strings.Replace(s, " ", ",", -1)
+	s = s + "}"
+	for i := 0; i < len(s); i++ {
+		t := '"'
+		if s[i] == ':' {
+			s = s[:i] + string(t) + s[i:]
+			i++
+		} else if s[i] == '{' || s[i] == ',' {
+			s = s[:i+1] + string(t) + s[i+1:]
+			i++
+		}
+
+	}
+	utils.Info.Println(s)
+
+	var dd map[string]interface{}
+	err := json.Unmarshal([]byte(s), &dd)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	return dd, nil
 }
