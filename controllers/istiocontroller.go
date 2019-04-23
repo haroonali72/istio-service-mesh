@@ -930,17 +930,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 		//Attaching persistent volumes if any in two-steps
 		//Mounting each volume to container and adding corresponding volume to pod
-		if len(deployment.Spec.Template.Spec.Containers) > 0 {
-			byteData, _ := json.Marshal(service.ServiceAttributes)
-			var attributes types.VolumeAttributes
-			err = json.Unmarshal(byteData, &attributes)
 
-			if err == nil && attributes.Volume.Name != "" {
-				volumesData := []types.Volume{attributes.Volume}
-				deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
-				deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
-			}
-		}
 		secret, exists := CreateDockerCfgSecret(service)
 
 		if exists {
