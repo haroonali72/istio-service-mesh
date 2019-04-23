@@ -738,7 +738,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	return statefulset, nil
 }
-func getServiceObject(input types.Service) (v1.Service, error) {
+func getServiceObject(input types.Service) (*v1.Service, error) {
 	service := v1.Service{}
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
