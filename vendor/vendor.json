@@ -265,6 +265,12 @@
 			"revisionTime": "2018-11-10T18:56:34Z"
 		},
 		{
+			"checksumSHA1": "NxoJ1sUeTWZNbveibhY5mJB5Xak=",
+			"path": "github.com/iancoleman/strcase",
+			"revision": "3605ed457bf7f8caa1371b4fafadadc026673479",
+			"revisionTime": "2018-07-26T02:35:41Z"
+		},
+		{
 			"checksumSHA1": "2ggBzAmrk3Pv36DLAVKC/jBX58g=",
 			"path": "github.com/imdario/mergo",
 			"revision": "ca3dcc1022bae9b5510f3c83705b72db1b1a96f9",
@@ -1420,5 +1426,5 @@
 			"revisionTime": "2018-11-03T00:21:44Z"
 		}
 	],
-	"rootPath": "Istio"
+	"rootPath": "istio-service-mesh"
 }

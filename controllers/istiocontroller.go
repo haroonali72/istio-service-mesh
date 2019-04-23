@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/iancoleman/strcase"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
@@ -13,6 +14,8 @@ import (
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v12 "k8s.io/api/apps/v1"
+	v13 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +83,10 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 		vService.Gateways = serviceAttr.Gateways
 	}
 	utils.Info.Println(vService.String())
-
+	b, e := vService.Marshal()
+	if e == nil {
+		utils.Info.Println(string(b))
+	}
 	return vService, nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
@@ -298,12 +304,11 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-
 	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
 	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
 	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, serviceAttr.LivenessProbe)
-	err = putReadinessProbe(&container, serviceAttr.ReadinessProbe)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
 	if err != nil {
 		return v12.Deployment{}, err
 	}
@@ -353,7 +358,388 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 	return deployment, nil
 }
+func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
+	var daemonset = v12.DaemonSet{}
+	// Label Selector
 
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	var selector metav1.LabelSelector
+	labels := make(map[string]string)
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	if service.Name == "" {
+		//Failed
+		return v12.DaemonSet{}, errors.New("Service name not found")
+	}
+	daemonset.ObjectMeta.Name = service.Name
+	daemonset.ObjectMeta.Labels = deploymentLabels
+	selector.MatchLabels = labels
+
+	if service.Namespace == "" {
+		daemonset.ObjectMeta.Namespace = "default"
+	} else {
+		daemonset.ObjectMeta.Namespace = service.Namespace
+	}
+	daemonset.Spec.Selector = &selector
+	daemonset.Spec.Template.ObjectMeta.Labels = labels
+	daemonset.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}
+	//
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return v12.DaemonSet{}, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+	daemonset.Spec.Template.Spec.Containers = containers
+
+	return daemonset, nil
+}
+func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
+	var cronjob = v2alpha1.CronJob{}
+	// Label Selector
+
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	var selector metav1.LabelSelector
+	labels := make(map[string]string)
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	if service.Name == "" {
+		//Failed
+		return v2alpha1.CronJob{}, errors.New("Service name not found")
+	}
+	cronjob.ObjectMeta.Name = service.Name
+	cronjob.ObjectMeta.Labels = deploymentLabels
+	selector.MatchLabels = labels
+
+	if service.Namespace == "" {
+		cronjob.ObjectMeta.Namespace = "default"
+	} else {
+		cronjob.ObjectMeta.Namespace = service.Namespace
+	}
+	cronjob.Spec.JobTemplate.Spec.Selector = &selector
+	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
+	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}
+	//
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return v2alpha1.CronJob{}, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
+
+	return cronjob, nil
+}
+func getJobObject(service types.Service) (v13.Job, error) {
+	var job = v13.Job{}
+	// Label Selector
+
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	var selector metav1.LabelSelector
+	labels := make(map[string]string)
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	if service.Name == "" {
+		//Failed
+		return v13.Job{}, errors.New("Service name not found")
+	}
+	job.ObjectMeta.Name = service.Name
+	job.ObjectMeta.Labels = deploymentLabels
+	selector.MatchLabels = labels
+
+	if service.Namespace == "" {
+		job.ObjectMeta.Namespace = "default"
+	} else {
+		job.ObjectMeta.Namespace = service.Namespace
+	}
+	job.Spec.Selector = &selector
+	job.Spec.Template.ObjectMeta.Labels = labels
+	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}
+	//
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return v13.Job{}, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+	job.Spec.Template.Spec.Containers = containers
+
+	return job, nil
+}
+func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
+	var statefulset = v12.StatefulSet{}
+	// Label Selector
+
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	var selector metav1.LabelSelector
+	labels := make(map[string]string)
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	if service.Name == "" {
+		//Failed
+		return v12.StatefulSet{}, errors.New("Service name not found")
+	}
+	statefulset.ObjectMeta.Name = service.Name
+	statefulset.ObjectMeta.Labels = deploymentLabels
+	selector.MatchLabels = labels
+
+	if service.Namespace == "" {
+		statefulset.ObjectMeta.Namespace = "default"
+	} else {
+		statefulset.ObjectMeta.Namespace = service.Namespace
+	}
+	statefulset.Spec.Selector = &selector
+	statefulset.Spec.Template.ObjectMeta.Labels = labels
+	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}
+	//
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return v12.StatefulSet{}, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+	statefulset.Spec.Template.Spec.Containers = containers
+
+	return statefulset, nil
+}
 func getServiceObject(input types.Service) (*v1.Service, error) {
 	service := v1.Service{}
 	service.Name = input.Name
@@ -449,18 +835,84 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 	} else if service.ServiceType == "container" {
 
-		//Getting Deployment Object
-		deployment, err := getDeploymentObject(service)
-		if err != nil {
+		switch service.SubType {
 
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
-			if requestType != "GET" {
-				utils.SendLog(ret.Reason, "error", input.ProjectId)
+		case "deployment":
+			deployment, err := getDeploymentObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
 			}
-			return ret
+
+			//Attaching persistent volumes if any in two-steps
+			//Mounting each volume to container and adding corresponding volume to pod
+			if len(deployment.Spec.Template.Spec.Containers) > 0 {
+				byteData, _ := json.Marshal(service.ServiceAttributes)
+				var attributes types.VolumeAttributes
+				err = json.Unmarshal(byteData, &attributes)
+
+				if err == nil && attributes.Volume.Name != "" {
+					volumesData := []types.Volume{attributes.Volume}
+					deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+				}
+			}
+
+			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+
+		case "daemonset":
+			daemonset, err := getDaemonSetObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
+
+		case "cronjob":
+			cronjob, err := getCronJobObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
+
+		case "job":
+			job, err := getJobObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
+
+		case "statefulset":
+			statefulset, err := getStatefulSetObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+
 		}
-		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		//Getting Kubernetes Service Object
 		serv, err := getServiceObject(service)
@@ -900,9 +1352,10 @@ func putLimitResource(container *v1.Container, limitResourceTypes, limitResource
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
 		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
-			intQuantity, _ := strconv.Atoi(limitResourceQuantities[i])
-			quantity := resource.Quantity{}
-			quantity.Set(int64(intQuantity))
+			quantity, err := resource.ParseQuantity(limitResourceQuantities[i])
+			if err != nil {
+				return err
+			}
 			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
 		} else {
 			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
@@ -915,11 +1368,11 @@ func putRequestResource(container *v1.Container, requestResourceTypes, requestRe
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
 		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
-			intQuantity, _ := strconv.Atoi(requestResourceQuantities[i])
-			quantity := resource.Quantity{}
-			quantity.Set(int64(intQuantity))
+			quantity, err := resource.ParseQuantity(requestResourceQuantities[i])
+			if err != nil {
+				return err
+			}
 			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
-
 		} else {
 			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
@@ -927,13 +1380,55 @@ func putRequestResource(container *v1.Container, requestResourceTypes, requestRe
 	container.Resources.Requests = temp
 	return nil
 }
-func putLivenessProbe(container *v1.Container, livenessProbe *v1.Probe) error {
-	container.LivenessProbe = livenessProbe
+func putLivenessProbe(container *v1.Container, byteData []byte) error {
+
+	strLowerCamel := convertKeys(byteData)
+	var tempLivenessProbe tempProbing
+	json.Unmarshal(strLowerCamel, &tempLivenessProbe)
+	fmt.Println(tempLivenessProbe)
+	container.LivenessProbe = tempLivenessProbe.LivenessProbe
+
 	return nil
 }
-func putReadinessProbe(container *v1.Container, readinessProbe *v1.Probe) error {
-	container.ReadinessProbe = readinessProbe
+func putReadinessProbe(container *v1.Container, byteData []byte) error {
+
+	strLowerCamel := convertKeys(byteData)
+	var tempReadinessProbe tempProbing
+	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
+	fmt.Println(tempReadinessProbe)
+	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
+
 	return nil
+}
+
+func convertKeys(j json.RawMessage) json.RawMessage {
+	m := make(map[string]json.RawMessage)
+	if err := json.Unmarshal([]byte(j), &m); err != nil {
+		// Not a JSON object
+		return j
+	}
+
+	for k, v := range m {
+		fixed := fixKey(k)
+		delete(m, k)
+		m[fixed] = convertKeys(v)
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return j
+	}
+
+	return json.RawMessage(b)
+}
+
+func fixKey(key string) string {
+	return strcase.ToLowerCamel(key)
+}
+
+type tempProbing struct {
+	LivenessProbe  *v1.Probe `json:"livenessProbe"`
+	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {

@@ -2,6 +2,8 @@ package types
 
 import (
 	v12 "k8s.io/api/apps/v1"
+	v13 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
 	"time"
@@ -98,13 +100,12 @@ type DockerServiceAttributes struct {
 	Args    []string `json:"args"`
 
 	//resource types: cpu, memory
-	LimitResourceTypes        []string `json:"limitResourceTypes"`
-	LimitResourceQuantities   []string `json:"limitResourceQuantities"`
-	RequestResourceTypes      []string `json:"requestResourceTypes"`
-	RequestResourceQuantities []string `json:"requestResourceQuantities"`
+	LimitResourceTypes        []string `json:"limit_resource_types"`
+	LimitResourceQuantities   []string `json:"limit_resource_quantities"`
+	RequestResourceTypes      []string `json:"request_resource_types"`
+	RequestResourceQuantities []string `json:"request_resource_quantities"`
 
-	LivenessProbe  *v1.Probe `json:"livenessProbe"`
-	ReadinessProbe *v1.Probe `json:"readinessProbe"`
+	CronJobScheduleString string `json:"cron_job_schedule_string"`
 }
 
 // ```yaml
@@ -192,6 +193,10 @@ type KubernetesCred struct {
 }
 type OutputServices struct {
 	Deployments            []v12.Deployment           `json:"deployment"`
+	DaemonSets             []v12.DaemonSet            `json:"daemonset"`
+	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
+	Jobs                   []v13.Job                  `json:"job"`
+	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
