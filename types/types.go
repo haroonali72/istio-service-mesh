@@ -2,6 +2,8 @@ package types
 
 import (
 	v12 "k8s.io/api/apps/v1"
+	v13 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
 	"time"
@@ -142,16 +144,15 @@ type ServiceDependencyx struct {
 }*/
 
 type Service struct {
-	ServiceType             string              `json:"service_type"`
-	ContainerServiceSubType string              `json:"container_service_sub_type"`
-	SubType                 string              `json:"service_sub_type"`
-	Name                    string              `json:"name"`
-	ID                      string              `json:"_id"`
-	Version                 string              `json:"version"`
-	ServiceDependencyInfo   []ServiceDependency `json:"service_dependency_info"`
-	ServiceAttributes       interface{}         `json:"service_attributes"`
-	Namespace               string              `json:"namespace"`
-	Hostnames               []string            `json:"hostnames"`
+	ServiceType           string              `json:"service_type"`
+	SubType               string              `json:"service_sub_type"`
+	Name                  string              `json:"name"`
+	ID                    string              `json:"_id"`
+	Version               string              `json:"version"`
+	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
+	ServiceAttributes     interface{}         `json:"service_attributes"`
+	Namespace             string              `json:"namespace"`
+	Hostnames             []string            `json:"hostnames"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
@@ -192,6 +193,10 @@ type KubernetesCred struct {
 }
 type OutputServices struct {
 	Deployments            []v12.Deployment           `json:"deployment"`
+	DaemonSets             []v12.DaemonSet            `json:"daemonset"`
+	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
+	Jobs                   []v13.Job                  `json:"job"`
+	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`

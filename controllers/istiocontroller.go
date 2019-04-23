@@ -833,12 +833,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 	} else if service.ServiceType == "container" {
 
-		switch service.ContainerServiceSubType {
+		switch service.SubType {
+
 		case "deployment":
-			//Getting Deployment Object
 			deployment, err := getDeploymentObject(service)
 			if err != nil {
-
 				ret.Status = append(ret.Status, "failed")
 				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 				if requestType != "GET" {
@@ -846,12 +845,26 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
+
+			//Attaching persistent volumes if any in two-steps
+			//Mounting each volume to container and adding corresponding volume to pod
+			if len(deployment.Spec.Template.Spec.Containers) > 0 {
+				byteData, _ := json.Marshal(service.ServiceAttributes)
+				var attributes types.VolumeAttributes
+				err = json.Unmarshal(byteData, &attributes)
+
+				if err == nil && attributes.Volume.Name != "" {
+					volumesData := []types.Volume{attributes.Volume}
+					deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+				}
+			}
+
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+
 		case "daemonset":
-			//Getting Deployment Object
-			_, err := getDaemonSetObject(service)
+			daemonset, err := getDaemonSetObject(service)
 			if err != nil {
-
 				ret.Status = append(ret.Status, "failed")
 				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 				if requestType != "GET" {
@@ -859,12 +872,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			//finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
+
 		case "cronjob":
-			//Getting Deployment Object
-			_, err := getCronJobObject(service)
+			cronjob, err := getCronJobObject(service)
 			if err != nil {
-
 				ret.Status = append(ret.Status, "failed")
 				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 				if requestType != "GET" {
@@ -872,12 +884,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			//finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
+
 		case "job":
-			//Getting Deployment Object
-			_, err := getJobObject(service)
+			job, err := getJobObject(service)
 			if err != nil {
-
 				ret.Status = append(ret.Status, "failed")
 				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 				if requestType != "GET" {
@@ -885,12 +896,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			//finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
+
 		case "statefulset":
-			//Getting Deployment Object
-			_, err := getStatefulSetObject(service)
+			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
-
 				ret.Status = append(ret.Status, "failed")
 				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
 				if requestType != "GET" {
@@ -898,22 +908,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			//finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
 
 		}
-
-		//Getting Deployment Object
-		deployment, err := getDeploymentObject(service)
-		if err != nil {
-
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
-			if requestType != "GET" {
-				utils.SendLog(ret.Reason, "error", input.ProjectId)
-			}
-			return ret
-		}
-		finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		//Getting Kubernetes Service Object
 		serv, err := getServiceObject(service)
@@ -929,19 +926,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 		}
 
-		//Attaching persistent volumes if any in two-steps
-		//Mounting each volume to container and adding corresponding volume to pod
-		if len(deployment.Spec.Template.Spec.Containers) > 0 {
-			byteData, _ := json.Marshal(service.ServiceAttributes)
-			var attributes types.VolumeAttributes
-			err = json.Unmarshal(byteData, &attributes)
-
-			if err == nil && attributes.Volume.Name != "" {
-				volumesData := []types.Volume{attributes.Volume}
-				deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
-				deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
-			}
-		}
 		secret, exists := CreateDockerCfgSecret(service)
 
 		if exists {
@@ -1353,9 +1337,10 @@ func putLimitResource(container *v1.Container, limitResourceTypes, limitResource
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
 		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
-			intQuantity, _ := strconv.Atoi(limitResourceQuantities[i])
-			quantity := resource.Quantity{}
-			quantity.Set(int64(intQuantity))
+			quantity, err := resource.ParseQuantity(limitResourceQuantities[i])
+			if err != nil {
+				return err
+			}
 			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
 		} else {
 			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
@@ -1368,11 +1353,11 @@ func putRequestResource(container *v1.Container, requestResourceTypes, requestRe
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
 		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
-			intQuantity, _ := strconv.Atoi(requestResourceQuantities[i])
-			quantity := resource.Quantity{}
-			quantity.Set(int64(intQuantity))
+			quantity, err := resource.ParseQuantity(requestResourceQuantities[i])
+			if err != nil {
+				return err
+			}
 			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
-
 		} else {
 			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
