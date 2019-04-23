@@ -48,6 +48,11 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
+		var matches []*v1alpha3.HTTPMatchRequest
+		for _, uri := range http.URIS {
+			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
+		}
+		httpRoute.Match = matches
 		/*	if http.RewriteUri != "" {
 				var rewrite v1alpha3.HTTPRewrite
 				rewrite.Uri = http.RewriteUri
@@ -74,6 +79,7 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 	if serviceAttr.Gateways != nil {
 		vService.Gateways = serviceAttr.Gateways
 	}
+	utils.Info.Println(vService.String())
 
 	return vService, nil
 }
@@ -431,11 +437,15 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
 	if service.ServiceType == "volume" {
-		//Creating a new storage-class and persistent-volume-claim for each volume
-		for _, volume := range service.Volumes {
-			volume.Namespace = service.Namespace
-			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(volume))
-			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(volume))
+		byteData, _ := json.Marshal(service.ServiceAttributes)
+		var attributes types.VolumeAttributes
+		err := json.Unmarshal(byteData, &attributes)
+
+		if err == nil && attributes.Volume.Name != "" {
+			//Creating a new storage-class and persistent-volume-claim for each volume
+			attributes.Volume.Namespace = service.Namespace
+			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
 
@@ -465,12 +475,19 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		if serv != nil {
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 		}
+
 		//Attaching persistent volumes if any in two-steps
 		//Mounting each volume to container and adding corresponding volume to pod
-		if len(service.Volumes) > 0 &&
-			len(deployment.Spec.Template.Spec.Containers) > 0 {
-			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(service.Volumes)
-			deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(service.Volumes)
+		if len(deployment.Spec.Template.Spec.Containers) > 0 {
+			byteData, _ := json.Marshal(service.ServiceAttributes)
+			var attributes types.VolumeAttributes
+			err = json.Unmarshal(byteData, &attributes)
+
+			if err == nil && attributes.Volume.Name != "" {
+				volumesData := []types.Volume{attributes.Volume}
+				deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+				deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+			}
 		}
 		secret, exists := CreateDockerCfgSecret(service)
 
