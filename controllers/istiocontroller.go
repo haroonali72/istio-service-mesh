@@ -28,17 +28,23 @@ import (
 var Notifier utils.Notifier
 
 func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
+
 	vService := v1alpha3.VirtualService{}
-	byteData, _ := json.Marshal(service)
+
 	var serviceAttr types.IstioVirtualServiceAttributes
+
+	byteData, _ := json.Marshal(service)
 	json.Unmarshal(byteData, &serviceAttr)
+
 	var routes []*v1alpha3.HTTPRoute
 
+	var httpRoute v1alpha3.HTTPRoute
 	for _, http := range serviceAttr.HTTP {
 
-		var httpRoute v1alpha3.HTTPRoute
 		var destination []*v1alpha3.HTTPRouteDestination
+
 		for _, route := range http.Routes {
+
 			var httpD v1alpha3.HTTPRouteDestination
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
@@ -48,7 +54,6 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}
-			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
 		var matches []*v1alpha3.HTTPMatchRequest
@@ -834,7 +839,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
-
+		service.ServiceType = "deployment"
 		switch service.SubType {
 
 		case "deployment":
