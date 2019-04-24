@@ -839,7 +839,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
-		service.ServiceType = "deployment"
+		service.SubType = "deployment"
 		switch service.SubType {
 
 		case "deployment":
