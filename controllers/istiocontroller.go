@@ -891,7 +891,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
-		service.SubType = "deployment"
 		switch service.SubType {
 
 		case "deployment":
@@ -925,7 +924,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			daemonset, err := getDaemonSetObject(service)
 			if err != nil {
 				ret.Status = append(ret.Status, "failed")
-				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				ret.Reason = "Not a valid DaemonSet Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
 				}
@@ -937,7 +936,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
 				ret.Status = append(ret.Status, "failed")
-				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				ret.Reason = "Not a valid CronJob Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
 				}
@@ -949,7 +948,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			job, err := getJobObject(service)
 			if err != nil {
 				ret.Status = append(ret.Status, "failed")
-				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				ret.Reason = "Not a valid Job Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
 				}
@@ -961,13 +960,25 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
 				ret.Status = append(ret.Status, "failed")
-				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				ret.Reason = "Not a valid StatefulSet Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
 				}
 				return ret
 			}
 			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+
+		case "configmap":
+			configmap, err := getConfigMapObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid ConfigMap Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			finalObj.Services.ConfigMap = append(finalObj.Services.ConfigMap, configmap)
 
 		}
 
