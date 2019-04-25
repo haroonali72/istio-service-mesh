@@ -28,17 +28,23 @@ import (
 var Notifier utils.Notifier
 
 func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
+
 	vService := v1alpha3.VirtualService{}
-	byteData, _ := json.Marshal(service)
+
 	var serviceAttr types.IstioVirtualServiceAttributes
+
+	byteData, _ := json.Marshal(service)
 	json.Unmarshal(byteData, &serviceAttr)
+
 	var routes []*v1alpha3.HTTPRoute
 
+	var httpRoute v1alpha3.HTTPRoute
 	for _, http := range serviceAttr.HTTP {
 
-		var httpRoute v1alpha3.HTTPRoute
 		var destination []*v1alpha3.HTTPRouteDestination
+
 		for _, route := range http.Routes {
+
 			var httpD v1alpha3.HTTPRouteDestination
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
@@ -48,7 +54,6 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}
-			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
 		var matches []*v1alpha3.HTTPMatchRequest
@@ -204,7 +209,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		istioServ.Spec = vr
+		d, err := marshalUnMarshalOfIstioComponents(vr.String())
+		utils.Error.Println(err)
+		istioServ.Spec = d
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
@@ -884,7 +891,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
-
+		service.SubType = "deployment"
 		switch service.SubType {
 
 		case "deployment":
@@ -977,6 +984,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		if serv != nil {
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 		}
+
+		//Attaching persistent volumes if any in two-steps
+		//Mounting each volume to container and adding corresponding volume to pod
 
 		secret, exists := CreateDockerCfgSecret(service)
 
@@ -1466,4 +1476,33 @@ func fixKey(key string) string {
 type tempProbing struct {
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
+}
+
+func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
+	s = strings.TrimSpace(s)
+	s = "{" + s
+	s = strings.Replace(s, " >", "}", -1)
+	s = strings.Replace(s, "<", "{", -1)
+	s = strings.Replace(s, " ", ",", -1)
+	s = s + "}"
+	for i := 0; i < len(s); i++ {
+		t := '"'
+		if s[i] == ':' {
+			s = s[:i] + string(t) + s[i:]
+			i++
+		} else if s[i] == '{' || s[i] == ',' {
+			s = s[:i+1] + string(t) + s[i+1:]
+			i++
+		}
+
+	}
+	utils.Info.Println(s)
+
+	var dd map[string]interface{}
+	err := json.Unmarshal([]byte(s), &dd)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	return dd, nil
 }
