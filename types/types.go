@@ -197,6 +197,7 @@ type OutputServices struct {
 	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
 	Jobs                   []v13.Job                  `json:"job"`
 	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
+	ConfigMap              []v1.ConfigMap             `json:"configmap"`
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
