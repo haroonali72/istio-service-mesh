@@ -38,11 +38,11 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 
 	var routes []*v1alpha3.HTTPRoute
 
-	var httpRoute v1alpha3.HTTPRoute
 	for _, http := range serviceAttr.HTTP {
 
-		var destination []*v1alpha3.HTTPRouteDestination
+		var httpRoute v1alpha3.HTTPRoute
 
+		var destination []*v1alpha3.HTTPRouteDestination
 		for _, route := range http.Routes {
 
 			var httpD v1alpha3.HTTPRouteDestination
@@ -54,11 +54,15 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}
+			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
+
 		var matches []*v1alpha3.HTTPMatchRequest
-		for _, uri := range http.URIS {
-			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
+		for _, uris := range http.Match {
+			for _, uri := range uris.Uris {
+				matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
+			}
 		}
 		httpRoute.Match = matches
 		/*	if http.RewriteUri != "" {
@@ -71,15 +75,18 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 				retries.RetryOn = http.RetriesUri
 				httpRoute.Retries = &retries
 			}*/
-		if http.Timeout > 0 {
+		/*if http.Timeout > 0 {
 			//var timeout int32
 			//httpRoute.Timeout = google_protobuf.(timeout)
-		}
+		}*/
 		for _, retries := range http.Retries {
 			var httpR v1alpha3.HTTPRetry
 			httpR.Attempts = int32(retries.Attempts)
 			//	httpR.PerTryTimeout = retries.Timeout
+
+			httpRoute.Retries = &httpR
 		}
+
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
