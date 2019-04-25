@@ -54,6 +54,7 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			if route.Weight > 0 {
 				httpD.Weight = route.Weight
 			}
+			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
 		var matches []*v1alpha3.HTTPMatchRequest
