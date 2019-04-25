@@ -738,6 +738,58 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	return statefulset, nil
 }
+func getConfigMapObject(service types.Service) (v1.ConfigMap, error) {
+	var configmap = v1.ConfigMap{}
+	// Label Selector
+
+	//keel labels
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	var selector metav1.LabelSelector
+	labels := make(map[string]string)
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	if service.Name == "" {
+		//Failed
+		return v1.ConfigMap{}, errors.New("Service name not found")
+	}
+	configmap.ObjectMeta.Name = service.Name
+	configmap.ObjectMeta.Labels = deploymentLabels
+	selector.MatchLabels = labels
+
+	if service.Namespace == "" {
+		configmap.ObjectMeta.Namespace = "default"
+	} else {
+		configmap.ObjectMeta.Namespace = service.Namespace
+	}
+	/*statefulset.Spec.Selector = &selector
+	statefulset.Spec.Template.ObjectMeta.Labels = labels
+	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"sidecar.istio.io/inject": "true",
+	}*/
+	//
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return v1.ConfigMap{}, err
+	}
+
+	return configmap, nil
+}
 func getServiceObject(input types.Service) (*v1.Service, error) {
 	service := v1.Service{}
 	service.Name = input.Name
