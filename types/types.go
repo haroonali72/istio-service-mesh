@@ -28,8 +28,8 @@ type SEEndpoints struct {
 type VSDestination struct {
 }
 type VSRetries struct {
-	Attempts int `json:"attempts"`
-	Timeout  int `json:"timeouts"`
+	Attempts int   `json:"attempts"`
+	Timeout  int64 `json:"timeouts"`
 }
 type VSRoute struct {
 	Destination struct {
@@ -43,7 +43,7 @@ type VSHTTP struct {
 	Routes []VSRoute `json:"route"`
 	//RewriteUri string      `json:"rewrite_uri"`
 	//RetriesUri string      `json:"retries_uri"`
-	Timeout int32       `json:"timeout"`
+	Timeout int64       `json:"timeout"`
 	Match   []URI       `json:"match"`
 	Retries []VSRetries `json:"retries"`
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
@@ -75,17 +76,21 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				retries.RetryOn = http.RetriesUri
 				httpRoute.Retries = &retries
 			}*/
-		/*if http.Timeout > 0 {
-			//var timeout int32
-			//httpRoute.Timeout = google_protobuf.(timeout)
-		}*/
+		if http.Timeout > 0 {
+			time := googl_types.Duration{Seconds: http.Timeout}
+			httpRoute.Timeout = &time
+		}
 		for _, retries := range http.Retries {
+
 			var httpR v1alpha3.HTTPRetry
+
 			httpR.Attempts = int32(retries.Attempts)
-			//	httpR.PerTryTimeout = retries.Timeout
+
+			time := googl_types.Duration{Seconds: retries.Timeout}
+			httpR.PerTryTimeout = &time
+
 			httpRoute.Retries = &httpR
 		}
-
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
