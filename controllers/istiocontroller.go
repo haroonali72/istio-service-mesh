@@ -27,7 +27,7 @@ import (
 
 var Notifier utils.Notifier
 
-func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
+func getIstioVirtualService(service interface{}) (string, error) {
 
 	vService := v1alpha3.VirtualService{}
 
@@ -83,7 +83,6 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			var httpR v1alpha3.HTTPRetry
 			httpR.Attempts = int32(retries.Attempts)
 			//	httpR.PerTryTimeout = retries.Timeout
-
 			httpRoute.Retries = &httpR
 		}
 
@@ -94,12 +93,19 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 	if serviceAttr.Gateways != nil {
 		vService.Gateways = serviceAttr.Gateways
 	}
-	utils.Info.Println(vService.String())
+	/*utils.Info.Println(vService.String())
 	b, e := vService.Marshal()
 	if e == nil {
 		utils.Info.Println(string(b))
+	}*/
+
+	b, e := json.Marshal(vService)
+	if e != nil {
+		utils.Info.Println(e.Error())
 	}
-	return vService, nil
+	utils.Info.Println(string(b))
+
+	return string(b), nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
@@ -216,8 +222,8 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		d, err := marshalUnMarshalOfIstioComponents(vr.String())
-		utils.Error.Println(err)
+		d := jsonParser(vr, "\"Port\":{")
+		d = jsonParser(d, "\"MatchType\":{")
 		istioServ.Spec = d
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
@@ -1523,4 +1529,22 @@ func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error)
 		return nil, err
 	}
 	return dd, nil
+}
+func jsonParser(str string, str2 string) string {
+
+	for strings.Index(str, str2) != -1 {
+		ind := strings.Index(str, str2)
+		length := len(str)
+		replaced := false
+		for ind < length && !replaced {
+			if str[ind] == '}' {
+				str = str[:ind] + str[ind+1:]
+				replaced = true
+			}
+			ind = ind + 1
+		}
+		str = strings.Replace(str, str2, "", 1)
+	}
+	return str
+
 }
