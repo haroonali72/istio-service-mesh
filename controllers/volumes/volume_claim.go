@@ -11,6 +11,8 @@ import (
 func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim := v1.PersistentVolumeClaim{}
 
+	volumeClaim.TypeMeta.Kind = "PersistentVolumeClaim"
+	volumeClaim.TypeMeta.APIVersion = "v1"
 	volumeClaim.Name = GetVolumeClaimName(volume.Name)
 	volumeClaim.ObjectMeta.Name = volumeClaim.Name
 	volumeClaim.Namespace = volume.Namespace
