@@ -892,7 +892,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 		if err == nil && attributes.Volume.Name != "" {
 			//Creating a new storage-class and persistent-volume-claim for each volume
-			attributes.Volume.Namespace = service.Namespace
+			attributes.Volume.Namespace = "default"
+			if service.Namespace != "" {
+				attributes.Volume.Namespace = service.Namespace
+			}
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}

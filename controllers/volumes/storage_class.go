@@ -10,6 +10,8 @@ import (
 func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 	storageClass := v1.StorageClass{}
 
+	storageClass.TypeMeta.Kind = "StorageClass"
+	storageClass.TypeMeta.APIVersion = "storage.k8s.io/v1"
 	storageClass.Name = GetStorageClassName(volume.Name)
 	storageClass.ObjectMeta.Name = storageClass.Name
 	storageClass.Namespace = volume.Namespace
