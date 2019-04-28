@@ -880,6 +880,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	}
 	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	secret, exists := CreateDockerCfgSecret(service)
+	if exists {
+		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
+	}
+
 	if service.ServiceType == "volume" {
 		byteData, _ := json.Marshal(service.ServiceAttributes)
 		var attributes types.VolumeAttributes
@@ -892,12 +897,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
 	} else if service.ServiceType == "container" {
-
-		secret, exists := CreateDockerCfgSecret(service)
-
-		if exists {
-			finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
-		}
 		switch service.SubType {
 
 		case "deployment":
