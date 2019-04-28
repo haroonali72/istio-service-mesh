@@ -1211,6 +1211,10 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
+
+	utils.Info.Println("forward to kube: " + url)
+	utils.Info.Println("request type: " + requestType)
+
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
 
 	req.Header.Set("Content-Type", "application/json")
