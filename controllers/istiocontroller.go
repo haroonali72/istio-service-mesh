@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
@@ -27,7 +28,7 @@ import (
 
 var Notifier utils.Notifier
 
-func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error) {
+func getIstioVirtualService(service interface{}) (string, error) {
 
 	vService := v1alpha3.VirtualService{}
 
@@ -38,11 +39,11 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 
 	var routes []*v1alpha3.HTTPRoute
 
-	var httpRoute v1alpha3.HTTPRoute
 	for _, http := range serviceAttr.HTTP {
 
-		var destination []*v1alpha3.HTTPRouteDestination
+		var httpRoute v1alpha3.HTTPRoute
 
+		var destination []*v1alpha3.HTTPRouteDestination
 		for _, route := range http.Routes {
 
 			var httpD v1alpha3.HTTPRouteDestination
@@ -57,9 +58,12 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 			destination = append(destination, &httpD)
 		}
 		httpRoute.Route = destination
+
 		var matches []*v1alpha3.HTTPMatchRequest
-		for _, uri := range http.URIS {
-			matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
+		for _, uris := range http.Match {
+			for _, uri := range uris.Uris {
+				matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
+			}
 		}
 		httpRoute.Match = matches
 		/*	if http.RewriteUri != "" {
@@ -73,13 +77,19 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 				httpRoute.Retries = &retries
 			}*/
 		if http.Timeout > 0 {
-			//var timeout int32
-			//httpRoute.Timeout = google_protobuf.(timeout)
+			time := googl_types.Duration{Seconds: http.Timeout}
+			httpRoute.Timeout = &time
 		}
 		for _, retries := range http.Retries {
+
 			var httpR v1alpha3.HTTPRetry
+
 			httpR.Attempts = int32(retries.Attempts)
-			//	httpR.PerTryTimeout = retries.Timeout
+
+			time := googl_types.Duration{Seconds: retries.Timeout}
+			httpR.PerTryTimeout = &time
+
+			httpRoute.Retries = &httpR
 		}
 		routes = append(routes, &httpRoute)
 	}
@@ -88,12 +98,19 @@ func getIstioVirtualService(service interface{}) (v1alpha3.VirtualService, error
 	if serviceAttr.Gateways != nil {
 		vService.Gateways = serviceAttr.Gateways
 	}
-	utils.Info.Println(vService.String())
+	/*utils.Info.Println(vService.String())
 	b, e := vService.Marshal()
 	if e == nil {
 		utils.Info.Println(string(b))
+	}*/
+
+	b, e := json.Marshal(vService)
+	if e != nil {
+		utils.Info.Println(e.Error())
 	}
-	return vService, nil
+	utils.Info.Println(string(b))
+
+	return string(b), nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
@@ -210,9 +227,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		//d, err := marshalUnMarshalOfIstioComponents(vr.String())
-		//utils.Error.Println(err)
-		istioServ.Spec = vr
+		d := jsonParser(vr, "\"Port\":{")
+		d = jsonParser(d, "\"MatchType\":{")
+		istioServ.Spec = d
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
@@ -1523,4 +1540,22 @@ func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error)
 		return nil, err
 	}
 	return dd, nil
+}
+func jsonParser(str string, str2 string) string {
+
+	for strings.Index(str, str2) != -1 {
+		ind := strings.Index(str, str2)
+		length := len(str)
+		replaced := false
+		for ind < length && !replaced {
+			if str[ind] == '}' {
+				str = str[:ind] + str[ind+1:]
+				replaced = true
+			}
+			ind = ind + 1
+		}
+		str = strings.Replace(str, str2, "", 1)
+	}
+	return str
+
 }
