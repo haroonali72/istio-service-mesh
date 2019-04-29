@@ -84,13 +84,14 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		for _, retries := range http.Retries {
 
 			var httpR v1alpha3.HTTPRetry
+			if retries.Attempts > 0 && retries.Timeout > 0 {
+				httpR.Attempts = int32(retries.Attempts)
 
-			httpR.Attempts = int32(retries.Attempts)
+				time := googl_types.Duration{Seconds: retries.Timeout}
+				httpR.PerTryTimeout = &time
 
-			time := googl_types.Duration{Seconds: retries.Timeout}
-			httpR.PerTryTimeout = &time
-
-			httpRoute.Retries = &httpR
+				httpRoute.Retries = &httpR
+			}
 		}
 		routes = append(routes, &httpRoute)
 	}
