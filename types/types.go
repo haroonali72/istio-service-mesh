@@ -29,7 +29,7 @@ type VSDestination struct {
 }
 type VSRetries struct {
 	Attempts int   `json:"attempts"`
-	Timeout  int64 `json:"timeouts"`
+	Timeout  int64 `json:"per_request_timeout"`
 }
 type VSRoute struct {
 	Destination struct {
