@@ -231,6 +231,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		}
 		d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
+		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
 		m, err := marshalUnMarshalOfIstioComponents(d)
 		utils.Info.Println(err)
 		istioServ.Spec = m
