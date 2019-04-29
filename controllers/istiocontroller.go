@@ -60,8 +60,9 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		httpRoute.Route = destination
 
 		var matches []*v1alpha3.HTTPMatchRequest
-		for _, uris := range http.Match {
-			for _, uri := range uris.Uris {
+		for _, match := range http.Match {
+
+			for _, uri := range match.Uris {
 				matches = append(matches, &v1alpha3.HTTPMatchRequest{Uri: &v1alpha3.StringMatch{MatchType: &v1alpha3.StringMatch_Prefix{Prefix: uri}}})
 			}
 		}
@@ -229,7 +230,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		}
 		d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
-		istioServ.Spec = d
+		m, err := marshalUnMarshalOfIstioComponents(d)
+		utils.Info.Println(err)
+		istioServ.Spec = m
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
@@ -1514,23 +1517,23 @@ type tempProbing struct {
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
-	s = strings.TrimSpace(s)
-	s = "{" + s
-	s = strings.Replace(s, " >", "}", -1)
-	s = strings.Replace(s, "<", "{", -1)
-	s = strings.Replace(s, " ", ",", -1)
-	s = s + "}"
-	for i := 0; i < len(s); i++ {
-		t := '"'
-		if s[i] == ':' {
-			s = s[:i] + string(t) + s[i:]
-			i++
-		} else if s[i] == '{' || s[i] == ',' {
-			s = s[:i+1] + string(t) + s[i+1:]
-			i++
-		}
+	/*	s = strings.TrimSpace(s)
+		s = "{" + s
+		s = strings.Replace(s, " >", "}", -1)
+		s = strings.Replace(s, "<", "{", -1)
+		s = strings.Replace(s, " ", ",", -1)
+		s = s + "}"
+		for i := 0; i < len(s); i++ {
+			t := '"'
+			if s[i] == ':' {
+				s = s[:i] + string(t) + s[i:]
+				i++
+			} else if s[i] == '{' || s[i] == ',' {
+				s = s[:i+1] + string(t) + s[i+1:]
+				i++
+			}
 
-	}
+		}*/
 	utils.Info.Println(s)
 
 	var dd map[string]interface{}
