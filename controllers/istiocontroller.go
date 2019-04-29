@@ -897,6 +897,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	}
 	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	secret, exists := CreateDockerCfgSecret(service)
+	if exists {
+		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
+	}
+
 	if service.ServiceType == "volume" {
 		byteData, _ := json.Marshal(service.ServiceAttributes)
 		var attributes types.VolumeAttributes
@@ -904,7 +909,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 		if err == nil && attributes.Volume.Name != "" {
 			//Creating a new storage-class and persistent-volume-claim for each volume
-			attributes.Volume.Namespace = service.Namespace
+			attributes.Volume.Namespace = "default"
+			if service.Namespace != "" {
+				attributes.Volume.Namespace = service.Namespace
+			}
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
@@ -921,6 +929,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
+
+			//Assigning Secret
+			deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 
 			//Attaching persistent volumes if any in two-steps
 			//Mounting each volume to container and adding corresponding volume to pod
@@ -950,6 +961,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
 
+			//Assigning Secret
+			daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+
 		case "cronjob":
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
@@ -961,6 +975,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				return ret
 			}
 			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
+
+			//Assigning Secret
+			cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 
 		case "job":
 			job, err := getJobObject(service)
@@ -974,6 +991,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
 
+			//Assigning Secret
+			job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+
 		case "statefulset":
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
@@ -986,17 +1006,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
 
-		case "configmap":
-			configmap, err := getConfigMapObject(service)
-			if err != nil {
-				ret.Status = append(ret.Status, "failed")
-				ret.Reason = "Not a valid ConfigMap Object. Error : " + err.Error()
-				if requestType != "GET" {
-					utils.SendLog(ret.Reason, "error", input.ProjectId)
-				}
-				return ret
-			}
-			finalObj.Services.ConfigMap = append(finalObj.Services.ConfigMap, configmap)
+			//Assigning Secret
+			statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 
 		}
 
@@ -1012,15 +1023,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		if serv != nil {
 			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
-		}
-
-		//Attaching persistent volumes if any in two-steps
-		//Mounting each volume to container and adding corresponding volume to pod
-
-		secret, exists := CreateDockerCfgSecret(service)
-
-		if exists {
-			finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
 		}
 	}
 
@@ -1226,6 +1228,10 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
+
+	utils.Info.Println("forward to kube: " + url)
+	utils.Info.Println("request type: " + requestType)
+
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
 
 	req.Header.Set("Content-Type", "application/json")
