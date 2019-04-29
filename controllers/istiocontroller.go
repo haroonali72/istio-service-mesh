@@ -851,6 +851,7 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 		}
 
 		temp.Port = int32(i)
+		temp.Name = "p" + strconv.Itoa(i)
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
@@ -883,20 +884,21 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
-	//if service.ServiceType == "mesh" || service.ServiceType == "other" {
+	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-	res, err := getIstioObject(service)
-	if err != nil {
-		utils.Info.Println("There is error in deployment")
-		ret.Status = append(ret.Status, "failed")
-		ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-		if requestType != "GET" {
-			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		res, err := getIstioObject(service)
+		if err != nil {
+			utils.Info.Println("There is error in deployment")
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
 		}
-		return ret
-	}
-	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
+	}
 	secret, exists := CreateDockerCfgSecret(service)
 	if exists {
 		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
@@ -929,10 +931,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-
-			//Assigning Secret
-			deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
-
+			if exists {
+				//Assigning Secret
+				deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
 			//Attaching persistent volumes if any in two-steps
 			//Mounting each volume to container and adding corresponding volume to pod
 			if len(deployment.Spec.Template.Spec.Containers) > 0 {
@@ -960,10 +962,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				return ret
 			}
 			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
-
-			//Assigning Secret
-			daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
-
+			if exists {
+				//Assigning Secret
+				daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
 		case "cronjob":
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
@@ -975,10 +977,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				return ret
 			}
 			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
-
-			//Assigning Secret
-			cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
-
+			if exists {
+				//Assigning Secret
+				cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
 		case "job":
 			job, err := getJobObject(service)
 			if err != nil {
@@ -990,10 +992,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				return ret
 			}
 			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
-
-			//Assigning Secret
-			job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
-
+			if exists {
+				//Assigning Secret
+				job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
 		case "statefulset":
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
@@ -1005,10 +1007,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				return ret
 			}
 			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
-
-			//Assigning Secret
-			statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
-
+			if exists {
+				//Assigning Secret
+				statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
 		}
 
 		//Getting Kubernetes Service Object
@@ -1399,12 +1401,15 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	server := serviceAttr.ImageRepositoryConfigurations.Url
 
 	tokens := strings.Split(server, "/")
-	registry := tokens[0]
+	_ = tokens
+	registry := server
 
 	dockerConf := map[string]map[string]string{
 		registry: {
-			"email": email,
-			"auth":  base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			"username": username,
+			"password": password,
+			"email":    email,
+			"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
 		},
 	}
 
@@ -1417,6 +1422,7 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	secret.TypeMeta = typeMeta
 	secret.ObjectMeta = objectMeta
 	secret.Data = data
+	secret.Type = v1.SecretTypeDockercfg
 
 	return secret, true
 }
