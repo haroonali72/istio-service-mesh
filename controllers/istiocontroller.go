@@ -1615,12 +1615,12 @@ func timeParser(str string, str2 string) string {
 		replaced := false
 		for ind < length && !replaced {
 			if str[ind] == '}' {
-				str = str[:ind] + "s" + str[ind+1:]
+				str = str[:ind] + "s\"" + str[ind+1:]
 				replaced = true
 			}
 			ind = ind + 1
 		}
-		str = strings.Replace(str, str2, "", 1)
+		str = strings.Replace(str, str2, "\"", 1)
 	}
 	return str
 
