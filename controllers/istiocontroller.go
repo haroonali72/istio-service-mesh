@@ -262,7 +262,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
 		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
-		//	d = jsonParser(d, "{\"seconds\":")
+		utils.Info.Println(d)
+		d = timeParser(d, "{\"seconds\":")
+		utils.Info.Println(d)
 		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
 		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
 
@@ -1596,6 +1598,24 @@ func jsonParser(str string, str2 string) string {
 		for ind < length && !replaced {
 			if str[ind] == '}' {
 				str = str[:ind] + str[ind+1:]
+				replaced = true
+			}
+			ind = ind + 1
+		}
+		str = strings.Replace(str, str2, "", 1)
+	}
+	return str
+
+}
+func timeParser(str string, str2 string) string {
+
+	for strings.Index(str, str2) != -1 {
+		ind := strings.Index(str, str2)
+		length := len(str)
+		replaced := false
+		for ind < length && !replaced {
+			if str[ind] == '}' {
+				str = str[:ind] + "s" + str[ind+1:]
 				replaced = true
 			}
 			ind = ind + 1
