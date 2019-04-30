@@ -966,11 +966,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
 			if exists {
 				//Assigning Secret
 				daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
+			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
 		case "cronjob":
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
@@ -981,11 +981,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
 			if exists {
 				//Assigning Secret
 				cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
+			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
 		case "job":
 			job, err := getJobObject(service)
 			if err != nil {
@@ -996,11 +996,11 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
 			if exists {
 				//Assigning Secret
 				job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
+			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
 		case "statefulset":
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
@@ -1011,11 +1011,25 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				}
 				return ret
 			}
-			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+			//Attaching persistent volumes if any in two-steps
+			//Mounting each volume to container and adding corresponding volume to pod
+			if len(statefulset.Spec.Template.Spec.Containers) > 0 {
+				byteData, _ := json.Marshal(service.ServiceAttributes)
+				var attributes types.VolumeAttributes
+				err = json.Unmarshal(byteData, &attributes)
+
+				if err == nil && attributes.Volume.Name != "" {
+					volumesData := []types.Volume{attributes.Volume}
+					statefulset.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+					statefulset.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+				}
+			}
 			if exists {
 				//Assigning Secret
 				statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
+			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+
 		}
 
 		//Getting Kubernetes Service Object
