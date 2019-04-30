@@ -262,9 +262,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
 		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
-		d = jsonParser(d, "{\"seconds\":")
+		//	d = jsonParser(d, "{\"seconds\":")
 		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
-		d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
+		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
 
 		m, err := marshalUnMarshalOfIstioComponents(d)
 		utils.Info.Println(err)
@@ -898,21 +898,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
 
-		res, err := CheckGateway(service)
-		if err != nil {
-			utils.Info.Println("There is error in deployment")
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-			if requestType != "GET" {
-				utils.SendLog(ret.Reason, "error", input.ProjectId)
-			}
-			return ret
-		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
-
-if service.ServiceType == "mesh" || service.ServiceType == "other" {
-
-	res, err = getIstioObject(service)
+	res, err := CheckGateway(service)
 	if err != nil {
 		utils.Info.Println("There is error in deployment")
 		ret.Status = append(ret.Status, "failed")
@@ -923,6 +909,20 @@ if service.ServiceType == "mesh" || service.ServiceType == "other" {
 		return ret
 	}
 	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+
+	if service.ServiceType == "mesh" || service.ServiceType == "other" {
+
+		res, err = getIstioObject(service)
+		if err != nil {
+			utils.Info.Println("There is error in deployment")
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
+		}
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 
 	}
 	secret, exists := CreateDockerCfgSecret(service)
