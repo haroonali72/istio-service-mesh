@@ -234,7 +234,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
 		d = jsonParser(d, "{\"seconds\":")
 		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
-		//	d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
+		d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
 		m, err := marshalUnMarshalOfIstioComponents(d)
 		utils.Info.Println(err)
 		istioServ.Spec = m
