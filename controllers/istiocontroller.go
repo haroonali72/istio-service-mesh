@@ -583,6 +583,8 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 }
 func getJobObject(service types.Service) (v13.Job, error) {
 	var job = v13.Job{}
+	job.Kind = "Job"
+	job.APIVersion = "batch/v1"
 	// Label Selector
 
 	//keel labels
@@ -609,7 +611,7 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	} else {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
-	job.Spec.Selector = &selector
+	//job.Spec.Selector = &selector
 	job.Spec.Template.ObjectMeta.Labels = labels
 	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
@@ -673,7 +675,7 @@ func getJobObject(service types.Service) (v13.Job, error) {
 
 	containers = append(containers, container)
 	job.Spec.Template.Spec.Containers = containers
-
+	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
@@ -707,7 +709,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Selector = &selector
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
 	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
+		"sidecar.istio.io/inject": "false",
 	}
 	//
 
