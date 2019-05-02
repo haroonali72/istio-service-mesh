@@ -95,6 +95,21 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				httpRoute.Retries = &httpR
 			}
 		}
+
+		if http.FaultInjection.FaultInjectionAbort.Percentage != 0 && http.FaultInjection.FaultInjectionAbort.HttpStatus != 0 {
+			abort := &v1alpha3.HTTPFaultInjection_Abort{
+				Percentage: &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: http.FaultInjection.FaultInjectionAbort.HttpStatus},
+			}
+			httpRoute.Fault.Abort = abort
+		}
+		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
+			delay := &v1alpha3.HTTPFaultInjection_Delay{
+				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
+			}
+			httpRoute.Fault.Delay = delay
+		}
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes

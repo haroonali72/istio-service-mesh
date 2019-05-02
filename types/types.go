@@ -62,12 +62,12 @@ type FaultInjection struct {
 	FaultInjectionDelay FaultInjectionDelay `json:"fault_delay"`
 }
 type FaultInjectionAbort struct {
-	Percentage int32 `json:"percentage"`
-	HttpStatus int32 `json:"http_status"`
+	Percentage float64 `json:"percentage"`
+	HttpStatus int32   `json:"http_status"`
 }
 type FaultInjectionDelay struct {
 	Percentage int32 `json:"percentage"`
-	FixedDelay int32 `json:"fix_delay"`
+	FixedDelay int64 `json:"fix_delay"`
 }
 type IstioServiceEntryAttributes struct {
 	Hosts      []string      `json:"hosts"`
