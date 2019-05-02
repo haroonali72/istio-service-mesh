@@ -203,36 +203,6 @@ func getIstioConf(service types.Service) (types.IstioConfig, error) {
 	}
 	return istioConfig, nil
 }
-func CheckGateway(input types.Service) (types.IstioObject, error) {
-	var istioServ types.IstioObject
-
-	istioConf, err := getIstioConf(input)
-	if err != nil {
-		fmt.Println("There is error in deployment")
-		return istioServ, err
-	}
-	if istioConf.Enable_External_Traffic {
-		var istioServ types.IstioObject
-
-		serv, err := getIstioGateway()
-		if err != nil {
-			utils.Error.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = serv
-		istioServ.Spec = serv
-		labels := make(map[string]interface{})
-		labels["app"] = strings.ToLower(input.Name)
-		labels["name"] = strings.ToLower(input.Name)
-		labels["version"] = strings.ToLower(input.Version)
-		istioServ.Metadata = labels
-		istioServ.Kind = "Gateway"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-
-		return istioServ, nil
-	}
-	return istioServ, nil
-}
 func getIstioObject(input types.Service) (types.IstioObject, error) {
 	var istioServ types.IstioObject
 
@@ -262,12 +232,9 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
 		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
-		utils.Info.Println(d)
-		d = timeParser(d, "{\"seconds\":")
-		utils.Info.Println(d)
+		d = jsonParser(d, "{\"seconds\":")
 		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
-		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
-
+		//	d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
 		m, err := marshalUnMarshalOfIstioComponents(d)
 		utils.Info.Println(err)
 		istioServ.Spec = m
@@ -295,6 +262,32 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		return istioServ, nil
+	}
+
+	istioConf, err := getIstioConf(input)
+	if err != nil {
+		fmt.Println("There is error in deployment")
+		return istioServ, err
+	}
+	if istioConf.Enable_External_Traffic {
+		var istioServ types.IstioObject
+
+		serv, err := getIstioGateway()
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return istioServ, err
+		}
+		istioServ.Spec = serv
+		istioServ.Spec = serv
+		labels := make(map[string]interface{})
+		labels["app"] = strings.ToLower(input.Name)
+		labels["name"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
+		istioServ.Metadata = labels
+		istioServ.Kind = "Gateway"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+
 		return istioServ, nil
 	}
 
@@ -901,22 +894,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
-
-	res, err := CheckGateway(service)
-	if err != nil {
-		utils.Info.Println("There is error in deployment")
-		ret.Status = append(ret.Status, "failed")
-		ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
-		if requestType != "GET" {
-			utils.SendLog(ret.Reason, "error", input.ProjectId)
-		}
-		return ret
-	}
-	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
-
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-		res, err = getIstioObject(service)
+		res, err := getIstioObject(service)
 		if err != nil {
 			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
@@ -1605,24 +1585,6 @@ func jsonParser(str string, str2 string) string {
 			ind = ind + 1
 		}
 		str = strings.Replace(str, str2, "", 1)
-	}
-	return str
-
-}
-func timeParser(str string, str2 string) string {
-
-	for strings.Index(str, str2) != -1 {
-		ind := strings.Index(str, str2)
-		length := len(str)
-		replaced := false
-		for ind < length && !replaced {
-			if str[ind] == '}' {
-				str = str[:ind] + "s\"" + str[ind+1:]
-				replaced = true
-			}
-			ind = ind + 1
-		}
-		str = strings.Replace(str, str2, "\"", 1)
 	}
 	return str
 
