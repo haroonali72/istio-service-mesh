@@ -8,12 +8,14 @@ import (
 	"fmt"
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
-	"github.com/istio/api/networking/v1alpha3"
+	//"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	"istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
@@ -106,13 +108,18 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		utils.Info.Println(string(b))
 	}*/
 
-	b, e := json.Marshal(vService)
+	/*b, e := json.Marshal(vService)
 	if e != nil {
 		utils.Info.Println(e.Error())
 	}
-	utils.Info.Println(string(b))
+	utils.Info.Println(string(b))*/
+	gotJSON, err := model.ToYAML(&vService)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	return string(b), nil
+	fmt.Println(gotJSON)
+	return gotJSON, nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
@@ -259,15 +266,16 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 			utils.Error.Println("There is error in deployment")
 			return istioServ, err
 		}
-		d := jsonParser(vr, "\"Port\":{")
+		/*d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
 		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
 		utils.Info.Println(d)
 		d = timeParser(d, "{\"seconds\":")
 		utils.Info.Println(d)
-		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
-		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
+		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)*/
 
+		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
+		d := vr
 		m, err := marshalUnMarshalOfIstioComponents(d)
 		utils.Info.Println(err)
 		istioServ.Spec = m
