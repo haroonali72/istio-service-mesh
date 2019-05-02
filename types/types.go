@@ -196,7 +196,7 @@ type KubernetesCred struct {
 }
 type OutputServices struct {
 	Deployments            []v12.Deployment           `json:"deployment"`
-	DaemonSets             []v12.DaemonSet            `json:"daemonset"`
+	DaemonSets             []v12.DaemonSet            `json:"daemonsets"`
 	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
 	Jobs                   []v13.Job                  `json:"job"`
 	StatefulSets           []v12.StatefulSet          `json:"statefulset"`

@@ -391,6 +391,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 }
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	var daemonset = v12.DaemonSet{}
+	daemonset.Kind = "DaemonSet"
+	daemonset.APIVersion = "apps/v1"
 	// Label Selector
 
 	//keel labels
@@ -486,6 +488,8 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 }
 func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	var cronjob = v2alpha1.CronJob{}
+	cronjob.Kind = "CronJob"
+	cronjob.APIVersion = "batch/v1beta1"
 	// Label Selector
 
 	//keel labels
@@ -512,7 +516,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	} else {
 		cronjob.ObjectMeta.Namespace = service.Namespace
 	}
-	cronjob.Spec.JobTemplate.Spec.Selector = &selector
+	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
@@ -577,6 +581,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	var containers []v1.Container
 
 	containers = append(containers, container)
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
 
 	return cronjob, nil
@@ -680,6 +685,8 @@ func getJobObject(service types.Service) (v13.Job, error) {
 }
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	var statefulset = v12.StatefulSet{}
+	statefulset.Kind = "StatefulSet"
+	statefulset.APIVersion = "v1"
 	// Label Selector
 
 	//keel labels
