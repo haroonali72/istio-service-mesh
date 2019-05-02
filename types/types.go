@@ -43,9 +43,10 @@ type VSHTTP struct {
 	Routes []VSRoute `json:"route"`
 	//RewriteUri string      `json:"rewrite_uri"`
 	//RetriesUri string      `json:"retries_uri"`
-	Timeout int64       `json:"timeout"`
-	Match   []URI       `json:"match"`
-	Retries []VSRetries `json:"retries"`
+	Timeout        int64          `json:"timeout"`
+	Match          []URI          `json:"match"`
+	Retries        []VSRetries    `json:"retries"`
+	FaultInjection FaultInjection `json:"fault_injection"`
 }
 type URI struct {
 	Uris []string `json:"uri"`
@@ -56,7 +57,18 @@ type IstioVirtualServiceAttributes struct {
 	Gateways []string `json:"gateways"`
 	HTTP     []VSHTTP `json:"http"`
 }
-
+type FaultInjection struct {
+	FaultInjectionAbort FaultInjectionAbort `json:"fault_abort"`
+	FaultInjectionDelay FaultInjectionDelay `json:"fault_delay"`
+}
+type FaultInjectionAbort struct {
+	Percentage int32 `json:"percentage"`
+	HttpStatus int32 `json:"http_status"`
+}
+type FaultInjectionDelay struct {
+	Percentage int32 `json:"percentage"`
+	FixedDelay int32 `json:"fix_delay"`
+}
 type IstioServiceEntryAttributes struct {
 	Hosts      []string      `json:"hosts"`
 	Address    []string      `json:"address"`
