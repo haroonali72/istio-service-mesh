@@ -79,6 +79,10 @@ type DRSubsets struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"labels"`
+	Http1MaxPendingRequests  int32 `json:"max_pending_requests"`
+	Http2MaxRequests         int32 `json:"max_requests"`
+	MaxRequestsPerConnection int32 `json:"max_requests_per_connection"`
+	MaxRetries               int32 `json:"max_retries"`
 }
 type IstioDestinationRuleAttributes struct {
 	Host    string      `json:"host"`

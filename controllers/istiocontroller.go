@@ -155,12 +155,22 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 
 	for _, subset := range serviceAttr.Subsets {
 		var ss v1alpha3.Subset
+		var tp v1alpha3.TrafficPolicy
 		ss.Name = subset.Name
 		var labels = make(map[string]string)
 		for _, label := range subset.Labels {
 			labels[label.Key] = label.Value
 		}
 		ss.Labels = labels
+		tp.ConnectionPool = &v1alpha3.ConnectionPoolSettings{
+			Http: &v1alpha3.ConnectionPoolSettings_HTTPSettings{
+				Http1MaxPendingRequests:  subset.Http1MaxPendingRequests,
+				Http2MaxRequests:         subset.Http2MaxRequests,
+				MaxRequestsPerConnection: subset.MaxRequestsPerConnection,
+				MaxRetries:               subset.MaxRetries,
+			},
+		}
+		ss.TrafficPolicy = &tp
 		subsets = append(subsets, &ss)
 	}
 	destRule.Subsets = subsets
