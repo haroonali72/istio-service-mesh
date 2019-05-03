@@ -342,13 +342,11 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	daemonset.Kind = "DaemonSet"
 	daemonset.APIVersion = "apps/v1"
 	// Label Selector
-
 	//keel labels
 	deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
-
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
 	labels["app"] = service.Name
@@ -1278,15 +1276,24 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	//err = putReadinessProbe(&container, byteData)
-	if err != nil {
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
 		return nil, err
 	}
 
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
@@ -1338,15 +1345,27 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
-	if err != nil {
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
+		return nil, err
+	}
+	if err := putReadinessProbe(&container, byteData); err != nil {
 		return nil, err
 	}
 
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
@@ -1386,7 +1405,6 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 	container.Ports = ports
 	container.Env = envVariables
 	var containers []v1.Container
-
 	containers = append(containers, container)
 
 	return containers, nil
@@ -1437,4 +1455,24 @@ func jsonParser(str string, str2 string) string {
 	}
 	return str
 
+}
+
+func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.SecurityContext, error) {
+	var context v1.SecurityContext
+	context.Capabilities = &v1.Capabilities{}
+	for _, addCapability := range securityContext.CapabilitiesAdd {
+		context.Capabilities.Add = append(context.Capabilities.Add, addCapability.(v1.Capability))
+	}
+	for _, dropCapability := range securityContext.CapabilitiesDrop {
+		context.Capabilities.Drop = append(context.Capabilities.Drop, dropCapability.(v1.Capability))
+	}
+	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFileSystem
+	context.Privileged = &securityContext.Privileged
+	if securityContext.RunAsNonRoot && securityContext.RunAsUser == nil {
+		return nil, errors.New("RunAsNonRoot is Set, but RunAsUser value not given!")
+	} else {
+		context.RunAsNonRoot = &securityContext.RunAsNonRoot
+		context.RunAsUser = securityContext.RunAsUser
+	}
+	return &context, nil
 }

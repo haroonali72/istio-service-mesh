@@ -99,9 +99,9 @@ type DockerServiceAttributes struct {
 	ImageName                     string                        `json:"image_name"`
 	MeshConfig                    IstioConfig                   `json:"istio_config"`
 
-	Command []string `json:"command"`
-	Args    []string `json:"args"`
-
+	Command         []string              `json:"command"`
+	Args            []string              `json:"args"`
+	SecurityContext SecurityContextStruct `json:"security_context"`
 	//resource types: cpu, memory
 	LimitResourceTypes        []string `json:"limit_resource_types"`
 	LimitResourceQuantities   []string `json:"limit_resource_quantities"`
@@ -109,6 +109,15 @@ type DockerServiceAttributes struct {
 	RequestResourceQuantities []string `json:"request_resource_quantities"`
 
 	CronJobScheduleString string `json:"cron_job_schedule_string"`
+}
+
+type SecurityContextStruct struct {
+	CapabilitiesAdd        []interface{} `json:"capabilities_add"`
+	CapabilitiesDrop       []interface{} `json:"capabilities_drop"`
+	RunAsUser              *int64        `json:"run_as_user"`
+	RunAsNonRoot           bool          `json:"run_as_non_root"`
+	Privileged             bool          `json:"privileged"`
+	ReadOnlyRootFileSystem bool          `json:"read_only_root_filesystem"`
 }
 
 // ```yaml
