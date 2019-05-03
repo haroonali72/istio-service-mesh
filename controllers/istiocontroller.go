@@ -1276,15 +1276,24 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	//err = putReadinessProbe(&container, byteData)
-	if err != nil {
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
 		return nil, err
 	}
 
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
@@ -1336,15 +1345,27 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
-	if err != nil {
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
+		return nil, err
+	}
+	if err := putReadinessProbe(&container, byteData); err != nil {
 		return nil, err
 	}
 
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
 		container.Image += ":" + serviceAttr.Tag
@@ -1384,7 +1405,6 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 	container.Ports = ports
 	container.Env = envVariables
 	var containers []v1.Container
-
 	containers = append(containers, container)
 
 	return containers, nil
