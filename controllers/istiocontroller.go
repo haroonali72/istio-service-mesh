@@ -1474,5 +1474,16 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 		context.RunAsNonRoot = &securityContext.RunAsNonRoot
 		context.RunAsUser = securityContext.RunAsUser
 	}
+	context.RunAsGroup = securityContext.RunAsGroup
+	context.AllowPrivilegeEscalation = &securityContext.AllowPrivilegeEscalation
+	if proMount, ok := securityContext.ProcMount.(v1.ProcMountType); ok {
+		context.ProcMount = &proMount
+	}
+	context.SELinuxOptions = &v1.SELinuxOptions{
+		User:  securityContext.SELinuxOptions.User,
+		Role:  securityContext.SELinuxOptions.Role,
+		Type:  securityContext.SELinuxOptions.Type,
+		Level: securityContext.SELinuxOptions.Level,
+	}
 	return &context, nil
 }

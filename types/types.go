@@ -112,12 +112,23 @@ type DockerServiceAttributes struct {
 }
 
 type SecurityContextStruct struct {
-	CapabilitiesAdd        []interface{} `json:"capabilities_add"`
-	CapabilitiesDrop       []interface{} `json:"capabilities_drop"`
-	RunAsUser              *int64        `json:"run_as_user"`
-	RunAsNonRoot           bool          `json:"run_as_non_root"`
-	Privileged             bool          `json:"privileged"`
-	ReadOnlyRootFileSystem bool          `json:"read_only_root_filesystem"`
+	CapabilitiesAdd          []interface{}        `json:"capabilities_add"`
+	CapabilitiesDrop         []interface{}        `json:"capabilities_drop"`
+	RunAsUser                *int64               `json:"run_as_user"`
+	RunAsGroup               *int64               `json:"run_as_group"`
+	RunAsNonRoot             bool                 `json:"run_as_non_root"`
+	Privileged               bool                 `json:"privileged"`
+	ProcMount                interface{}          `json:"proc_mount"`
+	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation"`
+	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem"`
+	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options"`
+}
+
+type SELinuxOptionsStruct struct {
+	User  string `json:"user,omitempty"`
+	Role  string `json:"role,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Level string `json:"level,omitempty"`
 }
 
 // ```yaml
