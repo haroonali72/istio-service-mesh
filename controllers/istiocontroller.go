@@ -328,64 +328,12 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	deployment.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	deployment.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.Deployment{}, err
 	}
-
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
-	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			utils.Info.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				utils.Info.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	deployment.Spec.Template.Spec.Containers = containers
 
 	return deployment, nil
 }
@@ -424,65 +372,12 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	daemonset.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	daemonset.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.DaemonSet{}, err
 	}
-
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
-	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	daemonset.Spec.Template.Spec.Containers = containers
 
 	return daemonset, nil
 }
@@ -523,66 +418,19 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	}
 	//
 
-	var container v1.Container
-	container.Name = service.Name
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
 	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
 
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v2alpha1.CronJob{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
-	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
-	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
 
 	return cronjob, nil
 }
@@ -621,65 +469,13 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	job.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v13.Job{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
-	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	job.Spec.Template.Spec.Containers = containers
 	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
@@ -718,65 +514,12 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "false",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	statefulset.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
 	}
-
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
-	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	statefulset.Spec.Template.Spec.Containers = containers
 
 	return statefulset, nil
 }
@@ -807,27 +550,6 @@ func getConfigMapObject(service types.Service) (v1.ConfigMap, error) {
 		configmap.ObjectMeta.Namespace = "default"
 	} else {
 		configmap.ObjectMeta.Namespace = service.Namespace
-	}
-	/*statefulset.Spec.Selector = &selector
-	statefulset.Spec.Template.ObjectMeta.Labels = labels
-	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
-	}*/
-	//
-
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
-	if err != nil {
-		return v1.ConfigMap{}, err
 	}
 
 	return configmap, nil
@@ -1540,7 +1262,6 @@ func convertKeys(j json.RawMessage) json.RawMessage {
 
 	return json.RawMessage(b)
 }
-
 func fixKey(key string) string {
 	return strcase.ToLowerCamel(key)
 }
@@ -1548,6 +1269,127 @@ func fixKey(key string) string {
 type tempProbing struct {
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
+}
+
+func getInitContainers(service types.Service) ([]v1.Container, error) {
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	//err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return nil, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			utils.Info.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				utils.Info.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+
+	return containers, nil
+}
+func getContainers(service types.Service) ([]v1.Container, error) {
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
+	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
+	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
+	err = putLivenessProbe(&container, byteData)
+	err = putReadinessProbe(&container, byteData)
+	if err != nil {
+		return nil, err
+	}
+
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			utils.Info.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				utils.Info.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+
+	return containers, nil
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
