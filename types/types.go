@@ -6,6 +6,8 @@ import (
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
+
 	"time"
 )
 
@@ -142,6 +144,11 @@ type VolumeAttributes struct {
 	Volume Volume `json:"volume"`
 }
 
+type RbacAttributes struct {
+	RbacService Role `json:"role"`
+}
+
+
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
 	Kind       string                 `json:"kind"`
@@ -224,6 +231,9 @@ type OutputServices struct {
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
+	RoleClasses            []rbacV1.Role     		  `json:"role-classes"`
+	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
+	ServiceAccountClasses  [] v1.ServiceAccount       `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
 	Secrets                []interface{}              `json:"secrets"`
 }

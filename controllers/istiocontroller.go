@@ -11,6 +11,7 @@ import (
 	"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
+	"istio-service-mesh/controllers/rbac"
 	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
@@ -654,6 +655,36 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
+		}
+	} else if service.ServiceType == "rbac" {
+		byteData, _ := json.Marshal(service.ServiceAttributes)
+		var attributes types.RbacAttributes
+		err := json.Unmarshal(byteData, &attributes)
+
+		utils.Info.Println("****** rbac service ************")
+		utils.Info.Println(attributes.RbacService.ServiceName)
+		utils.Info.Println(attributes.RbacService.Resource)
+		utils.Info.Println(strings.Join(attributes.RbacService.Verbs, ", "))
+		utils.Info.Println(service.Namespace)
+		utils.Info.Println("****** rbac service ************")
+
+		if err == nil && attributes.RbacService.ServiceName != "" {
+			if service.Namespace != "" {
+				attributes.RbacService.Namespace = service.Namespace
+			}
+
+			//service account class
+			finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses,
+				rbac.ProvisionServiceAccount(types.ServiceAccount{Namespace:attributes.RbacService.Namespace,
+					ServiceName:attributes.RbacService.ServiceName}))
+
+			//role class
+			finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, rbac.ProvisionRole(attributes.RbacService))
+
+			//role binding class
+			finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses,
+				rbac.ProvisionRoleBinding(types.RoleBinding{Namespace:attributes.RbacService.Namespace,
+					ServiceName:attributes.RbacService.ServiceName}))
 		}
 	} else if service.ServiceType == "container" {
 		switch service.SubType {
