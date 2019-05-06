@@ -257,6 +257,7 @@ func CheckGateway(input types.Service) (types.IstioObject, error) {
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -281,6 +282,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -308,6 +310,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
@@ -325,6 +328,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
