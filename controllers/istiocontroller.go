@@ -335,6 +335,11 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		return v12.Deployment{}, err
 	}
 
+	deployment.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v12.Deployment{}, err
+	}
+
 	return deployment, nil
 }
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
@@ -373,6 +378,11 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 
 	var err error
 	daemonset.Spec.Template.Spec.Containers, err = getContainers(service)
+	if err != nil {
+		return v12.DaemonSet{}, err
+	}
+
+	daemonset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
 	if err != nil {
 		return v12.DaemonSet{}, err
 	}
@@ -428,6 +438,11 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 		return v2alpha1.CronJob{}, err
 	}
 
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v2alpha1.CronJob{}, err
+	}
+
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 
 	return cronjob, nil
@@ -474,6 +489,11 @@ func getJobObject(service types.Service) (v13.Job, error) {
 		return v13.Job{}, err
 	}
 
+	job.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v13.Job{}, err
+	}
+
 	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
@@ -515,6 +535,11 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	var err error
 	statefulset.Spec.Template.Spec.Containers, err = getContainers(service)
+	if err != nil {
+		return v12.StatefulSet{}, err
+	}
+
+	statefulset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
 	}
@@ -1271,11 +1296,29 @@ type tempProbing struct {
 
 func getInitContainers(service types.Service) ([]v1.Container, error) {
 
+	fmt.Println(service)
+	serviceAttributes := make(map[string]interface{})
+	var initContainerServiceAttributes interface{}
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+		if err = json.Unmarshal(data, &serviceAttributes); err == nil {
+			if _, ok := serviceAttributes["init_container"]; ok {
+				initContainerServiceAttributes = serviceAttributes["init_container"]
+			} else {
+				fmt.Println("No Init Containers for " + service.Name)
+				return nil, nil
+			}
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
 	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+	byteData, _ := json.Marshal(initContainerServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+	container.Name = serviceAttr.ImageName
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, err
 	}
@@ -1461,10 +1504,10 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 	var context v1.SecurityContext
 	context.Capabilities = &v1.Capabilities{}
 	for _, addCapability := range securityContext.CapabilitiesAdd {
-		context.Capabilities.Add = append(context.Capabilities.Add, addCapability.(v1.Capability))
+		context.Capabilities.Add = append(context.Capabilities.Add, v1.Capability(addCapability.(string)))
 	}
 	for _, dropCapability := range securityContext.CapabilitiesDrop {
-		context.Capabilities.Drop = append(context.Capabilities.Drop, dropCapability.(v1.Capability))
+		context.Capabilities.Drop = append(context.Capabilities.Drop, v1.Capability(dropCapability.(string)))
 	}
 	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFileSystem
 	context.Privileged = &securityContext.Privileged
@@ -1476,8 +1519,9 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 	}
 	context.RunAsGroup = securityContext.RunAsGroup
 	context.AllowPrivilegeEscalation = &securityContext.AllowPrivilegeEscalation
-	if proMount, ok := securityContext.ProcMount.(v1.ProcMountType); ok {
-		context.ProcMount = &proMount
+	if proMount, ok := securityContext.ProcMount.(string); ok {
+		tempProcMount := v1.ProcMountType(proMount)
+		context.ProcMount = &tempProcMount
 	}
 	context.SELinuxOptions = &v1.SELinuxOptions{
 		User:  securityContext.SELinuxOptions.User,
