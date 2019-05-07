@@ -111,6 +111,15 @@ type DockerServiceAttributes struct {
 	RequestResourceQuantities []string `json:"request_resource_quantities"`
 
 	CronJobScheduleString string `json:"cron_job_schedule_string"`
+
+	IsRbac bool `json:"is_rbac_enabled"`
+
+	RbacRoles []struct {
+		Resource       string `json:"resource"`
+		Verbs     []string `json:"verbs"`
+		ApiGroup  []string   `json:"api_group"`
+	} `json:"roles"`
+
 }
 
 type SecurityContextStruct struct {
@@ -233,7 +242,7 @@ type OutputServices struct {
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
 	RoleClasses            []rbacV1.Role     		  `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
-	ServiceAccountClasses  [] v1.ServiceAccount       `json:"service-account-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount       `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
 	Secrets                []interface{}              `json:"secrets"`
 }
