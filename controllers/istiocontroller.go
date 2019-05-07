@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	yaml2 "github.com/ghodss/yaml"
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
 	//"github.com/istio/api/networking/v1alpha3"
@@ -14,6 +15,7 @@ import (
 	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	policy "istio.io/api/authentication/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
@@ -130,10 +132,9 @@ func getIstioVirtualService(service interface{}) (string, error) {
 	utils.Info.Println(string(b))*/
 	gotJSON, err := model.ToYAML(&vService)
 	if err != nil {
-		fmt.Println(err)
+		utils.Error.Println(err)
 	}
 
-	fmt.Println(gotJSON)
 	return gotJSON, nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
@@ -190,11 +191,35 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 	}
 	destRule.Subsets = subsets
 	destRule.Host = serviceAttr.Host
-	destRule.Marshal()
-	utils.Info.Println(destRule.String())
+
+	switch serviceAttr.TrafficPolicy.TLS.Mode {
+	case "ISTIO_MUTUAL":
+		destRule.TrafficPolicy = &v1alpha3.TrafficPolicy{
+			Tls: &v1alpha3.TLSSettings{
+				Mode: v1alpha3.TLSSettings_ISTIO_MUTUAL,
+			},
+		}
+	}
 	return destRule, nil
 }
-func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
+func createPolicy(serviceName string) (map[string]interface{}, error) {
+	var p policy.Policy
+	p.Targets = append(p.Targets, &policy.TargetSelector{Name: serviceName})
+	p.Peers = append(p.Peers, &policy.PeerAuthenticationMethod{Params: &policy.PeerAuthenticationMethod_Mtls{
+		Mtls: &policy.MutualTls{
+			AllowTls: true,
+			Mode:     policy.MutualTls_PERMISSIVE,
+		},
+	},
+	})
+	yml, err := model.ToYAML(&p)
+	if err != nil {
+		return nil, err
+	}
+	return marshalUnMarshalOfIstioComponents(yml)
+
+}
+func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttributes, v1alpha3.ServiceEntry, error) {
 	SE := v1alpha3.ServiceEntry{}
 	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioServiceEntryAttributes
@@ -221,7 +246,7 @@ func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
 	SE.Addresses = serviceAttr.Address
 	//SE.Location = v1alpha3.ServiceEntry_Location()
 
-	return SE, nil
+	return serviceAttr, SE, nil
 }
 func getIstioConf(service types.Service) (types.IstioConfig, error) {
 	b, e := json.Marshal(service.ServiceAttributes)
@@ -266,17 +291,33 @@ func CheckGateway(input types.Service) (types.IstioObject, error) {
 	}
 	return istioServ, nil
 }
-func getIstioObject(input types.Service) (types.IstioObject, error) {
+func getIstioObject(input types.Service) (components []types.IstioObject, err error) {
 	var istioServ types.IstioObject
 
 	switch input.SubType {
 
 	case "service_entry":
 
-		serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
+		attrib, serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
 		if err != nil {
 			utils.Error.Println("There is error in deployment")
-			return istioServ, err
+			return components, err
+		}
+		utils.Info.Println(attrib.IsMtlsEnable)
+		if attrib.IsMtlsEnable {
+			p, err := createPolicy(input.Name)
+			if err != nil {
+				utils.Error.Println(err)
+			}
+			var policyService types.IstioObject
+			labels := make(map[string]interface{})
+			labels["name"] = strings.ToLower(input.Name + "-policy")
+			labels["namespace"] = strings.ToLower(input.Namespace)
+			policyService.Metadata = labels
+			policyService.Kind = "Policy"
+			policyService.ApiVersion = "authentication.istio.io/v1alpha1"
+			policyService.Spec = p
+			components = append(components, policyService)
 		}
 		istioServ.Spec = serv_entry
 		labels := make(map[string]interface{})
@@ -286,12 +327,13 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-
+		components = append(components, istioServ)
+		return components, nil
 	case "virtual_service":
 		vr, err := getIstioVirtualService(input.ServiceAttributes)
 		if err != nil {
 			utils.Error.Println("There is error in deployment")
-			return istioServ, err
+			return components, err
 		}
 		/*d := jsonParser(vr, "\"Port\":{")
 		d = jsonParser(d, "\"MatchType\":{")
@@ -314,14 +356,30 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
+		components = append(components, istioServ)
+		return components, nil
 
 	case "destination_rule":
 
 		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
 		if err != nil {
 			utils.Error.Println("There is error in deployment")
-			return istioServ, err
+			return components, err
+		}
+		if des_rule.TrafficPolicy != nil {
+			p, err := createPolicy(input.Name)
+			if err != nil {
+				utils.Error.Println(err)
+			}
+			var policyService types.IstioObject
+			labels := make(map[string]interface{})
+			labels["name"] = strings.ToLower(input.Name + "-policy")
+			labels["namespace"] = strings.ToLower(input.Namespace)
+			policyService.Metadata = labels
+			policyService.Kind = "Policy"
+			policyService.ApiVersion = "authentication.istio.io/v1alpha1"
+			policyService.Spec = p
+			components = append(components, policyService)
 		}
 		istioServ.Spec = des_rule
 		labels := make(map[string]interface{})
@@ -332,10 +390,10 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
+		components = append(components, istioServ)
+		return components, nil
 	}
-
-	return istioServ, nil
+	return components, nil
 
 }
 
@@ -953,7 +1011,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-		res, err = getIstioObject(service)
+		res, err := getIstioObject(service)
 		if err != nil {
 			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
@@ -963,7 +1021,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			return ret
 		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
 
 	}
 	secret, exists := CreateDockerCfgSecret(service)
@@ -1120,7 +1178,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	utils.Info.Println(string(x))
+	utils.Info.Println("kubernetes request payload", string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
@@ -1228,7 +1286,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	utils.Info.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
 		return ForwardToKube(x, input.ProjectId, requestType, ret)
@@ -1312,8 +1369,8 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 
 	url := constants.KubernetesEngineURL
 
-	utils.Info.Println("forward to kube: " + url)
-	utils.Info.Println("request type: " + requestType)
+	//utils.Info.Println("forward to kube: " + url)
+	//utils.Info.Println("request type: " + requestType)
 
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
 
@@ -1376,7 +1433,6 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 }
 
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
-	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -1384,7 +1440,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.Info.Println(string(b))
+	utils.Info.Println("solution request payload", string(b))
 	// Unmarshal
 	var input types.ServiceInput
 	err = json.Unmarshal(b, &input)
@@ -1618,10 +1674,13 @@ func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error)
 			}
 
 		}*/
-	utils.Info.Println(s)
-
+	jsonRaw, err := yaml2.YAMLToJSON([]byte(s))
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
 	var dd map[string]interface{}
-	err := json.Unmarshal([]byte(s), &dd)
+	err = json.Unmarshal(jsonRaw, &dd)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
