@@ -746,6 +746,10 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					}
 					return ret
 				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
 				// add roles and role bindings
 				for _, role := range roles {
 					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
@@ -754,8 +758,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				for _, roleBinding := range roleBindings {
 					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
 				}
-
-				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
 			}
 
 		case "daemonset":
