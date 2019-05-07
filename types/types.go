@@ -70,12 +70,13 @@ type FaultInjectionDelay struct {
 	FixedDelay int64 `json:"fix_delay"`
 }
 type IstioServiceEntryAttributes struct {
-	Hosts      []string      `json:"hosts"`
-	Address    []string      `json:"address"`
-	Ports      []SEPort      `json:"ports"`
-	Uri        []SEEndpoints `json:"endpoints"`
-	Location   string        `json:"location"`
-	Resolution string        `json:"resolution"`
+	Hosts        []string      `json:"hosts"`
+	Address      []string      `json:"address"`
+	Ports        []SEPort      `json:"ports"`
+	Uri          []SEEndpoints `json:"endpoints"`
+	Location     string        `json:"location"`
+	Resolution   string        `json:"resolution"`
+	IsMtlsEnable bool          `json:"is_mtls_enable"`
 }
 
 /*type GWServers struct {
@@ -97,8 +98,14 @@ type DRSubsets struct {
 	MaxRetries               int32 `json:"max_retries"`
 }
 type IstioDestinationRuleAttributes struct {
-	Host    string      `json:"host"`
-	Subsets []DRSubsets `json:"subsets"`
+	Host          string      `json:"host"`
+	Subsets       []DRSubsets `json:"subsets"`
+	TrafficPolicy struct {
+		TLS struct {
+			Mode         string   `json:"mode"`
+			Certificates struct{} `json:"certificates"`
+		}
+	} `json:"traffic_policy"`
 }
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
