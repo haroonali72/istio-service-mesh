@@ -160,7 +160,7 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway.Servers = servers
 	return gateway, nil
 }
-func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, error) {
+func getIstioDestinationRule(service interface{}) (map[string]interface{}, error) {
 	destRule := v1alpha3.DestinationRule{}
 
 	byteData, _ := json.Marshal(service)
@@ -189,7 +189,9 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 		ss.TrafficPolicy = &tp
 		subsets = append(subsets, &ss)
 	}
-	destRule.Subsets = subsets
+	if len(subsets) > 0 {
+		destRule.Subsets = subsets
+	}
 	destRule.Host = serviceAttr.Host
 
 	switch serviceAttr.TrafficPolicy.TLS.Mode {
@@ -200,7 +202,11 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 			},
 		}
 	}
-	return destRule, nil
+	yamlRaw, err := model.ToYAML(&destRule)
+	if err != nil {
+		utils.Error.Println(err)
+	}
+	return marshalUnMarshalOfIstioComponents(yamlRaw)
 }
 func createPolicy(serviceName string) (map[string]interface{}, error) {
 	var p policy.Policy
@@ -305,19 +311,24 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		}
 		utils.Info.Println(attrib.IsMtlsEnable)
 		if attrib.IsMtlsEnable {
-			p, err := createPolicy(input.Name)
-			if err != nil {
-				utils.Error.Println(err)
+			for i := range attrib.Hosts {
+				seDestionation := types.IstioDestinationRuleAttributes{Host: attrib.Hosts[i]}
+				seDestionation.TrafficPolicy.TLS.Mode = attrib.MtlsMode
+				p, err := getIstioDestinationRule(seDestionation)
+				if err != nil {
+					utils.Error.Println(err)
+				} else {
+					var policyService types.IstioObject
+					labels := make(map[string]interface{})
+					labels["name"] = strings.ToLower(input.Name + "-" + strconv.Itoa(i) + "")
+					labels["namespace"] = strings.ToLower(input.Namespace)
+					policyService.Metadata = labels
+					policyService.Kind = "DestinationRule"
+					policyService.ApiVersion = "networking.istio.io/v1alpha3"
+					policyService.Spec = p
+					components = append(components, policyService)
+				}
 			}
-			var policyService types.IstioObject
-			labels := make(map[string]interface{})
-			labels["name"] = strings.ToLower(input.Name + "-policy")
-			labels["namespace"] = strings.ToLower(input.Namespace)
-			policyService.Metadata = labels
-			policyService.Kind = "Policy"
-			policyService.ApiVersion = "authentication.istio.io/v1alpha1"
-			policyService.Spec = p
-			components = append(components, policyService)
 		}
 		istioServ.Spec = serv_entry
 		labels := make(map[string]interface{})
@@ -366,20 +377,22 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 			utils.Error.Println("There is error in deployment")
 			return components, err
 		}
-		if des_rule.TrafficPolicy != nil {
+		utils.Info.Println(des_rule)
+		if _, ok := des_rule["trafficPolicy"]; ok {
 			p, err := createPolicy(input.Name)
 			if err != nil {
 				utils.Error.Println(err)
+			} else {
+				var policyService types.IstioObject
+				labels := make(map[string]interface{})
+				labels["name"] = strings.ToLower(input.Name + "-policy")
+				labels["namespace"] = strings.ToLower(input.Namespace)
+				policyService.Metadata = labels
+				policyService.Kind = "Policy"
+				policyService.ApiVersion = "authentication.istio.io/v1alpha1"
+				policyService.Spec = p
+				components = append(components, policyService)
 			}
-			var policyService types.IstioObject
-			labels := make(map[string]interface{})
-			labels["name"] = strings.ToLower(input.Name + "-policy")
-			labels["namespace"] = strings.ToLower(input.Namespace)
-			policyService.Metadata = labels
-			policyService.Kind = "Policy"
-			policyService.ApiVersion = "authentication.istio.io/v1alpha1"
-			policyService.Spec = p
-			components = append(components, policyService)
 		}
 		istioServ.Spec = des_rule
 		labels := make(map[string]interface{})
@@ -1608,7 +1621,7 @@ func putLivenessProbe(container *v1.Container, byteData []byte) error {
 	strLowerCamel := convertKeys(byteData)
 	var tempLivenessProbe tempProbing
 	json.Unmarshal(strLowerCamel, &tempLivenessProbe)
-	fmt.Println(tempLivenessProbe)
+	utils.Info.Println(tempLivenessProbe)
 	container.LivenessProbe = tempLivenessProbe.LivenessProbe
 
 	return nil
@@ -1618,7 +1631,7 @@ func putReadinessProbe(container *v1.Container, byteData []byte) error {
 	strLowerCamel := convertKeys(byteData)
 	var tempReadinessProbe tempProbing
 	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
-	fmt.Println(tempReadinessProbe)
+	utils.Info.Println(tempReadinessProbe)
 	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
 
 	return nil
