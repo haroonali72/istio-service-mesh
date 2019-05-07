@@ -244,7 +244,7 @@ func CheckGateway(input types.Service) (types.IstioObject, error) {
 		return istioServ, err
 	}
 	if istioConf.Enable_External_Traffic {
-		var istioServ types.IstioObject
+		//var istioServ types.IstioObject
 
 		serv, err := getIstioGateway()
 		if err != nil {
@@ -947,7 +947,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+	if res.Spec != nil {
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+	}
 
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
