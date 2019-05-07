@@ -775,6 +775,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "cronjob":
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
@@ -790,6 +821,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "job":
 			job, err := getJobObject(service)
 			if err != nil {
@@ -805,6 +867,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "statefulset":
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
@@ -833,6 +926,36 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
 
 		}
 
