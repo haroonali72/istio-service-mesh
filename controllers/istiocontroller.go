@@ -385,7 +385,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 			} else {
 				var policyService types.IstioObject
 				labels := make(map[string]interface{})
-				labels["name"] = strings.ToLower(input.Name + "-policy")
+				labels["name"] = strings.ToLower(input.Name)
 				labels["namespace"] = strings.ToLower(input.Namespace)
 				policyService.Metadata = labels
 				policyService.Kind = "Policy"
