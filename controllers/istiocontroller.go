@@ -947,7 +947,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	if res.Spec != nil {
+	if res.Spec != nil && res.Metadata != nil {
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
 	}
 
