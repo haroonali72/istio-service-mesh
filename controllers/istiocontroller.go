@@ -212,10 +212,7 @@ func createPolicy(serviceName string) (map[string]interface{}, error) {
 	var p policy.Policy
 	p.Targets = append(p.Targets, &policy.TargetSelector{Name: serviceName})
 	p.Peers = append(p.Peers, &policy.PeerAuthenticationMethod{Params: &policy.PeerAuthenticationMethod_Mtls{
-		Mtls: &policy.MutualTls{
-			AllowTls: true,
-			Mode:     policy.MutualTls_PERMISSIVE,
-		},
+		Mtls: &policy.MutualTls{},
 	},
 	})
 	yml, err := model.ToYAML(&p)
