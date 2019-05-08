@@ -39,8 +39,11 @@ func getIstioVirtualService(service interface{}) (string, error) {
 	var serviceAttr types.IstioVirtualServiceAttributes
 
 	byteData, _ := json.Marshal(service)
-	json.Unmarshal(byteData, &serviceAttr)
-
+	err := json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		utils.Error.Println(err)
+		return "", err
+	}
 	var routes []*v1alpha3.HTTPRoute
 
 	for _, http := range serviceAttr.HTTP {
@@ -97,21 +100,22 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				httpRoute.Retries = &httpR
 			}
 		}
-
+		fault := &v1alpha3.HTTPFaultInjection{}
 		if http.FaultInjection.FaultInjectionAbort.Percentage != 0 && http.FaultInjection.FaultInjectionAbort.HttpStatus != 0 {
 			abort := &v1alpha3.HTTPFaultInjection_Abort{
 				Percentage: &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
 				ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: http.FaultInjection.FaultInjectionAbort.HttpStatus},
 			}
-			httpRoute.Fault.Abort = abort
+			fault.Abort = abort
 		}
 		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
 			delay := &v1alpha3.HTTPFaultInjection_Delay{
 				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
 				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
 			}
-			httpRoute.Fault.Delay = delay
+			fault.Delay = delay
 		}
+		httpRoute.Fault = fault
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
@@ -134,7 +138,6 @@ func getIstioVirtualService(service interface{}) (string, error) {
 	if err != nil {
 		utils.Error.Println(err)
 	}
-
 	return gotJSON, nil
 }
 func getIstioGateway() (v1alpha3.Gateway, error) {
@@ -335,17 +338,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 			utils.Error.Println("There is error in deployment")
 			return components, err
 		}
-		/*d := jsonParser(vr, "\"Port\":{")
-		d = jsonParser(d, "\"MatchType\":{")
-		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
-		utils.Info.Println(d)
-		d = timeParser(d, "{\"seconds\":")
-		utils.Info.Println(d)
-		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)*/
-
-		//d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
-		d := vr
-		m, err := marshalUnMarshalOfIstioComponents(d)
+		m, err := marshalUnMarshalOfIstioComponents(vr)
 		utils.Info.Println(err)
 		istioServ.Spec = m
 		labels := make(map[string]interface{})
@@ -1657,23 +1650,6 @@ type tempProbing struct {
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
-	/*	s = strings.TrimSpace(s)
-		s = "{" + s
-		s = strings.Replace(s, " >", "}", -1)
-		s = strings.Replace(s, "<", "{", -1)
-		s = strings.Replace(s, " ", ",", -1)
-		s = s + "}"
-		for i := 0; i < len(s); i++ {
-			t := '"'
-			if s[i] == ':' {
-				s = s[:i] + string(t) + s[i:]
-				i++
-			} else if s[i] == '{' || s[i] == ',' {
-				s = s[:i+1] + string(t) + s[i+1:]
-				i++
-			}
-
-		}*/
 	jsonRaw, err := yaml2.YAMLToJSON([]byte(s))
 	if err != nil {
 		utils.Error.Println(err)
@@ -1687,6 +1663,12 @@ func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error)
 	}
 	return dd, nil
 }
+
+/*
+
+@Deprecated Methods
+
+*/
 func jsonParser(str string, str2 string) string {
 
 	for strings.Index(str, str2) != -1 {
