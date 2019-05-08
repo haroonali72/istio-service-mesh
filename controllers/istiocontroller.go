@@ -738,14 +738,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 			utils.Info.Println("** rbac params **")
-			utils.Info.Println("** listing roles **")
-			for _, role := range serviceAttr.RbacRoles{
-				utils.Info.Println(role.Resource)
-			}
 			utils.Info.Println(len(serviceAttr.RbacRoles))
-			utils.Info.Println("** rbac params **")
 			if(serviceAttr.IsRbac){
-				utils.Info.Println("** rbac i enabled **")
+				utils.Info.Println("** rbac is enabled **")
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
