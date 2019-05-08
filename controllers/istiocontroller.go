@@ -612,6 +612,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 	account := v1.ServiceAccount{}
 	account.Name = "sa-" + serviceName
 	account.Namespace = nameSpace
+	account.APIVersion="v1"
+	account.Kind="ServiceAccount"
 
 	var roles []rbacV1.Role
 	var roleBindings []rbacV1.RoleBinding
@@ -621,6 +623,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 		roleObj := rbacV1.Role{}
 		roleObj.Namespace = nameSpace
 		roleObj.Name = "sa-" + serviceName + "-role"
+		roleObj.Kind="Role"
+		roleObj.APIVersion="rbac.authorization.k8s.io/v1"
 
 		rule := rbacV1.PolicyRule{APIGroups: role.ApiGroup,
 			Resources: []string{role.Resource},
@@ -639,6 +643,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 			},
 			RoleRef: rbacV1.RoleRef{Kind: "Role", Name: roleObj.Name},
 		}
+		rb.Kind="RoleBinding"
+		rb.APIVersion="rbac.authorization.k8s.io/v1"
 
 		roleBindings = append(roleBindings, rb)
 
