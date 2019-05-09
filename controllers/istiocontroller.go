@@ -168,8 +168,11 @@ func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, err
 
 	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioDestinationRuleAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
+	err := json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		utils.Info.Println(err.Error())
+		return destRule, err
+	}
 	var subsets []*v1alpha3.Subset
 
 	for _, subset := range serviceAttr.Subsets {
