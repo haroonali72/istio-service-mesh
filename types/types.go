@@ -72,13 +72,15 @@ type FaultInjectionDelay struct {
 	FixedDelay int64 `json:"fix_delay"`
 }
 type IstioServiceEntryAttributes struct {
-	Hosts        []string      `json:"hosts"`
-	Address      []string      `json:"address"`
-	Ports        []SEPort      `json:"ports"`
-	Uri          []SEEndpoints `json:"endpoints"`
-	Location     string        `json:"location"`
-	Resolution   string        `json:"resolution"`
-	IsMtlsEnable bool          `json:"is_mtls_enable"`
+	Hosts            []string      `json:"hosts"`
+	Address          []string      `json:"address"`
+	Ports            []SEPort      `json:"ports"`
+	Uri              []SEEndpoints `json:"endpoints"`
+	Location         string        `json:"location"`
+	Resolution       string        `json:"resolution"`
+	IsMtlsEnable     bool          `json:"is_mtls_enable"`
+	MtlsMode         string        `json:"mtls_mode"`
+	MtlsCertificates interface{}   `json:"mtls_certificates"`
 }
 
 /*type GWServers struct {
