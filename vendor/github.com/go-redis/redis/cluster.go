@@ -17,6 +17,7 @@ import (
 	"github.com/go-redis/redis/internal/hashtag"
 	"github.com/go-redis/redis/internal/pool"
 	"github.com/go-redis/redis/internal/proto"
+	"github.com/go-redis/redis/internal/singleflight"
 )
 
 var errClusterNoNodes = fmt.Errorf("redis: cluster has no nodes")
@@ -242,6 +243,8 @@ type clusterNodes struct {
 	clusterAddrs []string
 	closed       bool
 
+	nodeCreateGroup singleflight.Group
+
 	_generation uint32 // atomic
 }
 
@@ -344,6 +347,11 @@ func (c *clusterNodes) GetOrCreate(addr string) (*clusterNode, error) {
 		return node, nil
 	}
 
+	v, err := c.nodeCreateGroup.Do(addr, func() (interface{}, error) {
+		node := newClusterNode(c.opt, addr)
+		return node, nil
+	})
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -353,13 +361,15 @@ func (c *clusterNodes) GetOrCreate(addr string) (*clusterNode, error) {
 
 	node, ok := c.allNodes[addr]
 	if ok {
+		_ = v.(*clusterNode).Close()
 		return node, err
 	}
-
-	node = newClusterNode(c.opt, addr)
+	node = v.(*clusterNode)
 
 	c.allAddrs = appendIfNotExists(c.allAddrs, addr)
-	c.clusterAddrs = append(c.clusterAddrs, addr)
+	if err == nil {
+		c.clusterAddrs = append(c.clusterAddrs, addr)
+	}
 	c.allNodes[addr] = node
 
 	return node, err
@@ -844,12 +854,15 @@ func (c *ClusterClient) Watch(fn func(*Tx) error, keys ...string) error {
 		if err == nil {
 			break
 		}
-		if err != Nil {
+
+		if internal.IsRetryableError(err, true) {
 			c.state.LazyReload()
+			continue
 		}
 
 		moved, ask, addr := internal.IsMovedError(err)
 		if moved || ask {
+			c.state.LazyReload()
 			node, err = c.nodes.GetOrCreate(addr)
 			if err != nil {
 				return err
@@ -862,10 +875,6 @@ func (c *ClusterClient) Watch(fn func(*Tx) error, keys ...string) error {
 			if err != nil {
 				return err
 			}
-			continue
-		}
-
-		if internal.IsRetryableError(err, true) {
 			continue
 		}
 
@@ -933,9 +942,6 @@ func (c *ClusterClient) defaultProcess(cmd Cmder) error {
 		if err == nil {
 			break
 		}
-		if err != Nil {
-			c.state.LazyReload()
-		}
 
 		// If slave is loading - pick another node.
 		if c.opt.ReadOnly && internal.IsLoadingError(err) {
@@ -944,23 +950,9 @@ func (c *ClusterClient) defaultProcess(cmd Cmder) error {
 			continue
 		}
 
-		var moved bool
-		var addr string
-		moved, ask, addr = internal.IsMovedError(err)
-		if moved || ask {
-			node, err = c.nodes.GetOrCreate(addr)
-			if err != nil {
-				break
-			}
-			continue
-		}
-
-		if err == pool.ErrClosed {
-			node = nil
-			continue
-		}
-
 		if internal.IsRetryableError(err, true) {
+			c.state.LazyReload()
+
 			// First retry the same node.
 			if attempt == 0 {
 				continue
@@ -971,6 +963,24 @@ func (c *ClusterClient) defaultProcess(cmd Cmder) error {
 			if err != nil {
 				break
 			}
+			continue
+		}
+
+		var moved bool
+		var addr string
+		moved, ask, addr = internal.IsMovedError(err)
+		if moved || ask {
+			c.state.LazyReload()
+
+			node, err = c.nodes.GetOrCreate(addr)
+			if err != nil {
+				break
+			}
+			continue
+		}
+
+		if err == pool.ErrClosed {
+			node = nil
 			continue
 		}
 

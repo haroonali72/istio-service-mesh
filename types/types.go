@@ -45,9 +45,10 @@ type VSHTTP struct {
 	Routes []VSRoute `json:"route"`
 	//RewriteUri string      `json:"rewrite_uri"`
 	//RetriesUri string      `json:"retries_uri"`
-	Timeout int64       `json:"timeout"`
-	Match   []URI       `json:"match"`
-	Retries []VSRetries `json:"retries"`
+	Timeout        int64          `json:"timeout"`
+	Match          []URI          `json:"match"`
+	Retries        []VSRetries    `json:"retries"`
+	FaultInjection FaultInjection `json:"fault_injection"`
 }
 type URI struct {
 	Uris []string `json:"uri"`
@@ -58,14 +59,28 @@ type IstioVirtualServiceAttributes struct {
 	Gateways []string `json:"gateways"`
 	HTTP     []VSHTTP `json:"http"`
 }
-
+type FaultInjection struct {
+	FaultInjectionAbort FaultInjectionAbort `json:"fault_abort"`
+	FaultInjectionDelay FaultInjectionDelay `json:"fault_delay"`
+}
+type FaultInjectionAbort struct {
+	Percentage float64 `json:"percentage"`
+	HttpStatus int32   `json:"http_status"`
+}
+type FaultInjectionDelay struct {
+	Percentage int32 `json:"percentage"`
+	FixedDelay int64 `json:"fix_delay"`
+}
 type IstioServiceEntryAttributes struct {
-	Hosts      []string      `json:"hosts"`
-	Address    []string      `json:"address"`
-	Ports      []SEPort      `json:"ports"`
-	Uri        []SEEndpoints `json:"endpoints"`
-	Location   string        `json:"location"`
-	Resolution string        `json:"resolution"`
+	Hosts            []string      `json:"hosts"`
+	Address          []string      `json:"address"`
+	Ports            []SEPort      `json:"ports"`
+	Uri              []SEEndpoints `json:"endpoints"`
+	Location         string        `json:"location"`
+	Resolution       string        `json:"resolution"`
+	IsMtlsEnable     bool          `json:"is_mtls_enable"`
+	MtlsMode         string        `json:"mtls_mode"`
+	MtlsCertificates interface{}   `json:"mtls_certificates"`
 }
 
 /*type GWServers struct {
@@ -81,10 +96,20 @@ type DRSubsets struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"labels"`
+	Http1MaxPendingRequests  int32 `json:"max_pending_requests"`
+	Http2MaxRequests         int32 `json:"max_requests"`
+	MaxRequestsPerConnection int32 `json:"max_requests_per_connection"`
+	MaxRetries               int32 `json:"max_retries"`
 }
 type IstioDestinationRuleAttributes struct {
-	Host    string      `json:"host"`
-	Subsets []DRSubsets `json:"subsets"`
+	Host          string      `json:"host"`
+	Subsets       []DRSubsets `json:"subsets"`
+	TrafficPolicy struct {
+		TLS struct {
+			Mode         string   `json:"mode"`
+			Certificates struct{} `json:"certificates"`
+		}
+	} `json:"traffic_policy"`
 }
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`

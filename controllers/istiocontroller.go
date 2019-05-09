@@ -6,14 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	yaml2 "github.com/ghodss/yaml"
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
-	"github.com/istio/api/networking/v1alpha3"
+	//"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/controllers/volumes"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	policy "istio.io/api/authentication/v1alpha1"
+	"istio.io/api/networking/v1alpha3"
+	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
@@ -36,8 +40,11 @@ func getIstioVirtualService(service interface{}) (string, error) {
 	var serviceAttr types.IstioVirtualServiceAttributes
 
 	byteData, _ := json.Marshal(service)
-	json.Unmarshal(byteData, &serviceAttr)
-
+	err := json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		utils.Error.Println(err)
+		return "", err
+	}
 	var routes []*v1alpha3.HTTPRoute
 
 	for _, http := range serviceAttr.HTTP {
@@ -94,6 +101,22 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				httpRoute.Retries = &httpR
 			}
 		}
+		fault := &v1alpha3.HTTPFaultInjection{}
+		if http.FaultInjection.FaultInjectionAbort.Percentage != 0 && http.FaultInjection.FaultInjectionAbort.HttpStatus != 0 {
+			abort := &v1alpha3.HTTPFaultInjection_Abort{
+				Percentage: &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: http.FaultInjection.FaultInjectionAbort.HttpStatus},
+			}
+			fault.Abort = abort
+		}
+		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
+			delay := &v1alpha3.HTTPFaultInjection_Delay{
+				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
+			}
+			fault.Delay = delay
+		}
+		httpRoute.Fault = fault
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
@@ -107,13 +130,16 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		utils.Info.Println(string(b))
 	}*/
 
-	b, e := json.Marshal(vService)
+	/*b, e := json.Marshal(vService)
 	if e != nil {
 		utils.Info.Println(e.Error())
 	}
-	utils.Info.Println(string(b))
-
-	return string(b), nil
+	utils.Info.Println(string(b))*/
+	gotJSON, err := model.ToYAML(&vService)
+	if err != nil {
+		utils.Error.Println(err)
+	}
+	return gotJSON, nil
 }
 
 func getIstioGateway() (v1alpha3.Gateway, error) {
@@ -139,32 +165,72 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway.Servers = servers
 	return gateway, nil
 }
-func getIstioDestinationRule(service interface{}) (v1alpha3.DestinationRule, error) {
+func getIstioDestinationRule(service interface{}) (map[string]interface{}, error) {
 	destRule := v1alpha3.DestinationRule{}
 
 	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioDestinationRuleAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
+	err := json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		utils.Info.Println(err.Error())
+		return destRule, err
+	}
 	var subsets []*v1alpha3.Subset
 
 	for _, subset := range serviceAttr.Subsets {
 		var ss v1alpha3.Subset
+		var tp v1alpha3.TrafficPolicy
 		ss.Name = subset.Name
 		var labels = make(map[string]string)
 		for _, label := range subset.Labels {
 			labels[label.Key] = label.Value
 		}
 		ss.Labels = labels
+		tp.ConnectionPool = &v1alpha3.ConnectionPoolSettings{
+			Http: &v1alpha3.ConnectionPoolSettings_HTTPSettings{
+				Http1MaxPendingRequests:  subset.Http1MaxPendingRequests,
+				Http2MaxRequests:         subset.Http2MaxRequests,
+				MaxRequestsPerConnection: subset.MaxRequestsPerConnection,
+				MaxRetries:               subset.MaxRetries,
+			},
+		}
+		ss.TrafficPolicy = &tp
 		subsets = append(subsets, &ss)
 	}
-	destRule.Subsets = subsets
+	if len(subsets) > 0 {
+		destRule.Subsets = subsets
+	}
 	destRule.Host = serviceAttr.Host
-	destRule.Marshal()
-	utils.Info.Println(destRule.String())
-	return destRule, nil
+
+	switch serviceAttr.TrafficPolicy.TLS.Mode {
+	case "ISTIO_MUTUAL":
+		destRule.TrafficPolicy = &v1alpha3.TrafficPolicy{
+			Tls: &v1alpha3.TLSSettings{
+				Mode: v1alpha3.TLSSettings_ISTIO_MUTUAL,
+			},
+		}
+	}
+	yamlRaw, err := model.ToYAML(&destRule)
+	if err != nil {
+		utils.Error.Println(err)
+	}
+	return marshalUnMarshalOfIstioComponents(yamlRaw)
 }
-func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
+func createPolicy(serviceName string) (map[string]interface{}, error) {
+	var p policy.Policy
+	p.Targets = append(p.Targets, &policy.TargetSelector{Name: serviceName})
+	p.Peers = append(p.Peers, &policy.PeerAuthenticationMethod{Params: &policy.PeerAuthenticationMethod_Mtls{
+		Mtls: &policy.MutualTls{},
+	},
+	})
+	yml, err := model.ToYAML(&p)
+	if err != nil {
+		return nil, err
+	}
+	return marshalUnMarshalOfIstioComponents(yml)
+
+}
+func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttributes, v1alpha3.ServiceEntry, error) {
 	SE := v1alpha3.ServiceEntry{}
 	byteData, _ := json.Marshal(service)
 	var serviceAttr types.IstioServiceEntryAttributes
@@ -191,7 +257,7 @@ func getIstioServiceEntry(service interface{}) (v1alpha3.ServiceEntry, error) {
 	SE.Addresses = serviceAttr.Address
 	//SE.Location = v1alpha3.ServiceEntry_Location()
 
-	return SE, nil
+	return serviceAttr, SE, nil
 }
 func getIstioConf(service types.Service) (types.IstioConfig, error) {
 	b, e := json.Marshal(service.ServiceAttributes)
@@ -205,67 +271,8 @@ func getIstioConf(service types.Service) (types.IstioConfig, error) {
 	}
 	return istioConfig, nil
 }
-func getIstioObject(input types.Service) (types.IstioObject, error) {
+func CheckGateway(input types.Service) (types.IstioObject, error) {
 	var istioServ types.IstioObject
-
-	switch input.SubType {
-
-	case "service_entry":
-
-		serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
-		if err != nil {
-			utils.Error.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = serv_entry
-		labels := make(map[string]interface{})
-		labels["name"] = strings.ToLower(input.Name)
-		labels["app"] = strings.ToLower(input.Name)
-		istioServ.Metadata = labels
-		istioServ.Kind = "ServiceEntry"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-
-	case "virtual_service":
-		vr, err := getIstioVirtualService(input.ServiceAttributes)
-		if err != nil {
-			utils.Error.Println("There is error in deployment")
-			return istioServ, err
-		}
-		d := jsonParser(vr, "\"Port\":{")
-		d = jsonParser(d, "\"MatchType\":{")
-		d = strings.Replace(d, "\"port\":{\"Number\"", "\"port\":{\"number\"", -1)
-		d = jsonParser(d, "{\"seconds\":")
-		d = strings.Replace(d, "\"uri\":{\"Prefix\"", "\"uri\":{\"prefix\"", -1)
-		//	d = strings.Replace(d, "\"per_try_timeout\"", "\"perTryTimeout\"", -1)
-		m, err := marshalUnMarshalOfIstioComponents(d)
-		utils.Info.Println(err)
-		istioServ.Spec = m
-		labels := make(map[string]interface{})
-		labels["name"] = strings.ToLower(input.Name)
-		labels["app"] = strings.ToLower(input.Name)
-		labels["version"] = strings.ToLower(input.Version)
-		istioServ.Metadata = labels
-		istioServ.Kind = "VirtualService"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
-
-	case "destination_rule":
-
-		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
-		if err != nil {
-			utils.Error.Println("There is error in deployment")
-			return istioServ, err
-		}
-		istioServ.Spec = des_rule
-		labels := make(map[string]interface{})
-		labels["name"] = strings.ToLower(input.Name)
-		labels["app"] = strings.ToLower(input.Name)
-		labels["version"] = strings.ToLower(input.Version)
-		istioServ.Metadata = labels
-		istioServ.Kind = "DestinationRule"
-		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
-		return istioServ, nil
-	}
 
 	istioConf, err := getIstioConf(input)
 	if err != nil {
@@ -273,7 +280,7 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		return istioServ, err
 	}
 	if istioConf.Enable_External_Traffic {
-		var istioServ types.IstioObject
+		//var istioServ types.IstioObject
 
 		serv, err := getIstioGateway()
 		if err != nil {
@@ -286,14 +293,115 @@ func getIstioObject(input types.Service) (types.IstioObject, error) {
 		labels["app"] = strings.ToLower(input.Name)
 		labels["name"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "Gateway"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
 
 		return istioServ, nil
 	}
-
 	return istioServ, nil
+}
+func getIstioObject(input types.Service) (components []types.IstioObject, err error) {
+	var istioServ types.IstioObject
+
+	switch input.SubType {
+
+	case "service_entry":
+
+		attrib, serv_entry, err := getIstioServiceEntry(input.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return components, err
+		}
+		utils.Info.Println(attrib.IsMtlsEnable)
+		if attrib.IsMtlsEnable {
+			for i := range attrib.Hosts {
+				seDestionation := types.IstioDestinationRuleAttributes{Host: attrib.Hosts[i]}
+				seDestionation.TrafficPolicy.TLS.Mode = attrib.MtlsMode
+				p, err := getIstioDestinationRule(seDestionation)
+				if err != nil {
+					utils.Error.Println(err)
+				} else {
+					var policyService types.IstioObject
+					labels := make(map[string]interface{})
+					labels["name"] = strings.ToLower(input.Name + "-" + strconv.Itoa(i) + "")
+					labels["namespace"] = strings.ToLower(input.Namespace)
+					policyService.Metadata = labels
+					policyService.Kind = "DestinationRule"
+					policyService.ApiVersion = "networking.istio.io/v1alpha3"
+					policyService.Spec = p
+					components = append(components, policyService)
+				}
+			}
+		}
+		istioServ.Spec = serv_entry
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		labels["namespace"] = strings.ToLower(input.Namespace)
+		istioServ.Metadata = labels
+		istioServ.Kind = "ServiceEntry"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		components = append(components, istioServ)
+		return components, nil
+	case "virtual_service":
+		vr, err := getIstioVirtualService(input.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return components, err
+		}
+		m, err := marshalUnMarshalOfIstioComponents(vr)
+		utils.Info.Println(err)
+		istioServ.Spec = m
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
+		istioServ.Metadata = labels
+		istioServ.Kind = "VirtualService"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		components = append(components, istioServ)
+		return components, nil
+
+	case "destination_rule":
+
+		des_rule, err := getIstioDestinationRule(input.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println("There is error in deployment")
+			return components, err
+		}
+		utils.Info.Println(des_rule)
+		if _, ok := des_rule["trafficPolicy"]; ok {
+			p, err := createPolicy(input.Name)
+			if err != nil {
+				utils.Error.Println(err)
+			} else {
+				var policyService types.IstioObject
+				labels := make(map[string]interface{})
+				labels["name"] = strings.ToLower(input.Name)
+				labels["namespace"] = strings.ToLower(input.Namespace)
+				policyService.Metadata = labels
+				policyService.Kind = "Policy"
+				policyService.ApiVersion = "authentication.istio.io/v1alpha1"
+				policyService.Spec = p
+				components = append(components, policyService)
+			}
+		}
+		istioServ.Spec = des_rule
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(input.Name)
+		labels["app"] = strings.ToLower(input.Name)
+		labels["version"] = strings.ToLower(input.Version)
+		labels["namespace"] = strings.ToLower(input.Namespace)
+		istioServ.Metadata = labels
+		istioServ.Kind = "DestinationRule"
+		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		components = append(components, istioServ)
+		return components, nil
+	}
+	return components, nil
 
 }
 
@@ -337,6 +445,11 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		return v12.Deployment{}, err
 	}
 
+	deployment.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v12.Deployment{}, err
+	}
+
 	return deployment, nil
 }
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
@@ -375,6 +488,11 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 
 	var err error
 	daemonset.Spec.Template.Spec.Containers, err = getContainers(service)
+	if err != nil {
+		return v12.DaemonSet{}, err
+	}
+
+	daemonset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
 	if err != nil {
 		return v12.DaemonSet{}, err
 	}
@@ -430,6 +548,11 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 		return v2alpha1.CronJob{}, err
 	}
 
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v2alpha1.CronJob{}, err
+	}
+
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 
 	return cronjob, nil
@@ -476,6 +599,11 @@ func getJobObject(service types.Service) (v13.Job, error) {
 		return v13.Job{}, err
 	}
 
+	job.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v13.Job{}, err
+	}
+
 	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
@@ -517,6 +645,11 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	var err error
 	statefulset.Spec.Template.Spec.Containers, err = getContainers(service)
+	if err != nil {
+		return v12.StatefulSet{}, err
+	}
+
+	statefulset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
 	}
@@ -612,6 +745,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 	account := v1.ServiceAccount{}
 	account.Name = "sa-" + serviceName
 	account.Namespace = nameSpace
+	account.APIVersion = "v1"
+	account.Kind = "ServiceAccount"
 
 	var roles []rbacV1.Role
 	var roleBindings []rbacV1.RoleBinding
@@ -621,6 +756,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 		roleObj := rbacV1.Role{}
 		roleObj.Namespace = nameSpace
 		roleObj.Name = "sa-" + serviceName + "-role"
+		roleObj.Kind = "Role"
+		roleObj.APIVersion = "rbac.authorization.k8s.io/v1"
 
 		rule := rbacV1.PolicyRule{APIGroups: role.ApiGroup,
 			Resources: []string{role.Resource},
@@ -639,6 +776,8 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 			},
 			RoleRef: rbacV1.RoleRef{Kind: "Role", Name: roleObj.Name},
 		}
+		rb.Kind = "RoleBinding"
+		rb.APIVersion = "rbac.authorization.k8s.io/v1"
 
 		roleBindings = append(roleBindings, rb)
 
@@ -663,6 +802,21 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
+
+	res, err := CheckGateway(service)
+	if err != nil {
+		utils.Info.Println("There is error in deployment")
+		ret.Status = append(ret.Status, "failed")
+		ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
+		if requestType != "GET" {
+			utils.SendLog(ret.Reason, "error", input.ProjectId)
+		}
+		return ret
+	}
+	if res.Spec != nil && res.Metadata != nil {
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+	}
+
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
 		res, err := getIstioObject(service)
@@ -675,7 +829,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			}
 			return ret
 		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
 
 	}
 	secret, exists := CreateDockerCfgSecret(service)
@@ -732,11 +886,13 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 			//add rbac classes
 
-			byteData, _ := json.Marshal(service)
+			byteData, _ := json.Marshal(service.ServiceAttributes)
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
-
+			utils.Info.Println("** rbac params **")
+			utils.Info.Println(len(serviceAttr.RbacRoles))
 			if serviceAttr.IsRbac {
+				utils.Info.Println("** rbac is enabled **")
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
@@ -985,7 +1141,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	utils.Info.Println(string(x))
+	utils.Info.Println("kubernetes request payload", string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
@@ -1093,7 +1249,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 		return ret
 	}
-	utils.Info.Println(string(x))
 	if requestType != "GET" {
 		//Send failure request
 		return ForwardToKube(x, input.ProjectId, requestType, ret)
@@ -1419,7 +1574,7 @@ func putLivenessProbe(container *v1.Container, byteData []byte) error {
 	strLowerCamel := convertKeys(byteData)
 	var tempLivenessProbe tempProbing
 	json.Unmarshal(strLowerCamel, &tempLivenessProbe)
-	fmt.Println(tempLivenessProbe)
+	utils.Info.Println(tempLivenessProbe)
 	container.LivenessProbe = tempLivenessProbe.LivenessProbe
 
 	return nil
@@ -1429,7 +1584,7 @@ func putReadinessProbe(container *v1.Container, byteData []byte) error {
 	strLowerCamel := convertKeys(byteData)
 	var tempReadinessProbe tempProbing
 	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
-	fmt.Println(tempReadinessProbe)
+	utils.Info.Println(tempReadinessProbe)
 	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
 
 	return nil
@@ -1466,11 +1621,29 @@ type tempProbing struct {
 
 func getInitContainers(service types.Service) ([]v1.Container, error) {
 
+	fmt.Println(service)
+	serviceAttributes := make(map[string]interface{})
+	var initContainerServiceAttributes interface{}
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+		if err = json.Unmarshal(data, &serviceAttributes); err == nil {
+			if _, ok := serviceAttributes["init_container"]; ok {
+				initContainerServiceAttributes = serviceAttributes["init_container"]
+			} else {
+				fmt.Println("No Init Containers for " + service.Name)
+				return nil, nil
+			}
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
 	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+	byteData, _ := json.Marshal(initContainerServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+	container.Name = serviceAttr.ImageName
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, err
 	}
@@ -1606,33 +1779,25 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
-	/*	s = strings.TrimSpace(s)
-		s = "{" + s
-		s = strings.Replace(s, " >", "}", -1)
-		s = strings.Replace(s, "<", "{", -1)
-		s = strings.Replace(s, " ", ",", -1)
-		s = s + "}"
-		for i := 0; i < len(s); i++ {
-			t := '"'
-			if s[i] == ':' {
-				s = s[:i] + string(t) + s[i:]
-				i++
-			} else if s[i] == '{' || s[i] == ',' {
-				s = s[:i+1] + string(t) + s[i+1:]
-				i++
-			}
-
-		}*/
-	utils.Info.Println(s)
-
+	jsonRaw, err := yaml2.YAMLToJSON([]byte(s))
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
 	var dd map[string]interface{}
-	err := json.Unmarshal([]byte(s), &dd)
+	err = json.Unmarshal(jsonRaw, &dd)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
 	return dd, nil
 }
+
+/*
+
+@Deprecated Methods
+
+*/
 func jsonParser(str string, str2 string) string {
 
 	for strings.Index(str, str2) != -1 {
@@ -1651,15 +1816,33 @@ func jsonParser(str string, str2 string) string {
 	return str
 
 }
+func timeParser(str string, str2 string) string {
+
+	for strings.Index(str, str2) != -1 {
+		ind := strings.Index(str, str2)
+		length := len(str)
+		replaced := false
+		for ind < length && !replaced {
+			if str[ind] == '}' {
+				str = str[:ind] + "s\"" + str[ind+1:]
+				replaced = true
+			}
+			ind = ind + 1
+		}
+		str = strings.Replace(str, str2, "\"", 1)
+	}
+	return str
+
+}
 
 func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.SecurityContext, error) {
 	var context v1.SecurityContext
 	context.Capabilities = &v1.Capabilities{}
 	for _, addCapability := range securityContext.CapabilitiesAdd {
-		context.Capabilities.Add = append(context.Capabilities.Add, addCapability.(v1.Capability))
+		context.Capabilities.Add = append(context.Capabilities.Add, v1.Capability(addCapability.(string)))
 	}
 	for _, dropCapability := range securityContext.CapabilitiesDrop {
-		context.Capabilities.Drop = append(context.Capabilities.Drop, dropCapability.(v1.Capability))
+		context.Capabilities.Drop = append(context.Capabilities.Drop, v1.Capability(dropCapability.(string)))
 	}
 	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFileSystem
 	context.Privileged = &securityContext.Privileged
@@ -1671,8 +1854,9 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 	}
 	context.RunAsGroup = securityContext.RunAsGroup
 	context.AllowPrivilegeEscalation = &securityContext.AllowPrivilegeEscalation
-	if proMount, ok := securityContext.ProcMount.(v1.ProcMountType); ok {
-		context.ProcMount = &proMount
+	if proMount, ok := securityContext.ProcMount.(string); ok {
+		tempProcMount := v1.ProcMountType(proMount)
+		context.ProcMount = &tempProcMount
 	}
 	context.SELinuxOptions = &v1.SELinuxOptions{
 		User:  securityContext.SELinuxOptions.User,
