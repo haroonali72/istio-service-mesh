@@ -426,7 +426,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name
+	labels["app"] = service.Name + "-" + service.Version
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
@@ -473,7 +473,7 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name
+	labels["app"] = service.Name + "-" + service.Version
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
@@ -522,7 +522,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name
+	labels["app"] = service.Name + "-" + service.Version
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
@@ -580,7 +580,7 @@ func getJobObject(service types.Service) (v13.Job, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name
+	labels["app"] = service.Name + "-" + service.Version
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
@@ -630,7 +630,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name
+	labels["app"] = service.Name + "-" + service.Version
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
