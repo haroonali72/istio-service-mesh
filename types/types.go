@@ -5,8 +5,8 @@ import (
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
-	storage "k8s.io/api/storage/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
+	storage "k8s.io/api/storage/v1"
 
 	"time"
 )
@@ -45,9 +45,10 @@ type VSHTTP struct {
 	Routes []VSRoute `json:"route"`
 	//RewriteUri string      `json:"rewrite_uri"`
 	//RetriesUri string      `json:"retries_uri"`
-	Timeout int64       `json:"timeout"`
-	Match   []URI       `json:"match"`
-	Retries []VSRetries `json:"retries"`
+	Timeout        int64          `json:"timeout"`
+	Match          []URI          `json:"match"`
+	Retries        []VSRetries    `json:"retries"`
+	FaultInjection FaultInjection `json:"fault_injection"`
 }
 type URI struct {
 	Uris []string `json:"uri"`
@@ -58,14 +59,26 @@ type IstioVirtualServiceAttributes struct {
 	Gateways []string `json:"gateways"`
 	HTTP     []VSHTTP `json:"http"`
 }
-
+type FaultInjection struct {
+	FaultInjectionAbort FaultInjectionAbort `json:"fault_abort"`
+	FaultInjectionDelay FaultInjectionDelay `json:"fault_delay"`
+}
+type FaultInjectionAbort struct {
+	Percentage float64 `json:"percentage"`
+	HttpStatus int32   `json:"http_status"`
+}
+type FaultInjectionDelay struct {
+	Percentage int32 `json:"percentage"`
+	FixedDelay int64 `json:"fix_delay"`
+}
 type IstioServiceEntryAttributes struct {
-	Hosts      []string      `json:"hosts"`
-	Address    []string      `json:"address"`
-	Ports      []SEPort      `json:"ports"`
-	Uri        []SEEndpoints `json:"endpoints"`
-	Location   string        `json:"location"`
-	Resolution string        `json:"resolution"`
+	Hosts        []string      `json:"hosts"`
+	Address      []string      `json:"address"`
+	Ports        []SEPort      `json:"ports"`
+	Uri          []SEEndpoints `json:"endpoints"`
+	Location     string        `json:"location"`
+	Resolution   string        `json:"resolution"`
+	IsMtlsEnable bool          `json:"is_mtls_enable"`
 }
 
 /*type GWServers struct {
@@ -81,10 +94,20 @@ type DRSubsets struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"labels"`
+	Http1MaxPendingRequests  int32 `json:"max_pending_requests"`
+	Http2MaxRequests         int32 `json:"max_requests"`
+	MaxRequestsPerConnection int32 `json:"max_requests_per_connection"`
+	MaxRetries               int32 `json:"max_retries"`
 }
 type IstioDestinationRuleAttributes struct {
-	Host    string      `json:"host"`
-	Subsets []DRSubsets `json:"subsets"`
+	Host          string      `json:"host"`
+	Subsets       []DRSubsets `json:"subsets"`
+	TrafficPolicy struct {
+		TLS struct {
+			Mode         string   `json:"mode"`
+			Certificates struct{} `json:"certificates"`
+		}
+	} `json:"traffic_policy"`
 }
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
@@ -115,11 +138,10 @@ type DockerServiceAttributes struct {
 	IsRbac bool `json:"is_rbac_enabled"`
 
 	RbacRoles []struct {
-		Resource       string `json:"resource"`
-		Verbs     []string `json:"verbs"`
-		ApiGroup  []string   `json:"api_group"`
+		Resource string   `json:"resource"`
+		Verbs    []string `json:"verbs"`
+		ApiGroup []string `json:"api_group"`
 	} `json:"roles"`
-
 }
 
 type SecurityContextStruct struct {
@@ -156,7 +178,6 @@ type VolumeAttributes struct {
 type RbacAttributes struct {
 	RbacService Role `json:"role"`
 }
-
 
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
@@ -240,9 +261,9 @@ type OutputServices struct {
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
-	RoleClasses            []rbacV1.Role     		  `json:"role-classes"`
+	RoleClasses            []rbacV1.Role              `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
-	ServiceAccountClasses  []v1.ServiceAccount       `json:"service-account-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount        `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
 	Secrets                []interface{}              `json:"secrets"`
 }
