@@ -541,7 +541,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
+		"sidecar.istio.io/inject": "false",
 	}
 	//
 
@@ -580,14 +580,14 @@ func getJobObject(service types.Service) (v13.Job, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name + "-" + service.Version
+	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v13.Job{}, errors.New("Service name not found")
 	}
-	job.ObjectMeta.Name = service.Name
+	job.ObjectMeta.Name = service.Name + "-" + service.Version
 	job.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
@@ -599,7 +599,7 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	//job.Spec.Selector = &selector
 	job.Spec.Template.ObjectMeta.Labels = labels
 	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
+		"sidecar.istio.io/inject": "false",
 	}
 
 	var err error
@@ -630,14 +630,14 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name + "-" + service.Version
+	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.StatefulSet{}, errors.New("Service name not found")
 	}
-	statefulset.ObjectMeta.Name = service.Name
+	statefulset.ObjectMeta.Name = service.Name + "-" + service.Version
 	statefulset.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
@@ -649,7 +649,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Selector = &selector
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
 	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "false",
+		"sidecar.istio.io/inject": "true",
 	}
 
 	var err error
