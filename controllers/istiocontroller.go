@@ -22,6 +22,7 @@ import (
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -140,6 +141,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 	}
 	return gotJSON, nil
 }
+
 func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway := v1alpha3.Gateway{}
 	var hosts []string
@@ -426,77 +428,30 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	deployment.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	deployment.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.Deployment{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
+	deployment.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v12.Deployment{}, err
 	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			utils.Info.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				utils.Info.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	deployment.Spec.Template.Spec.Containers = containers
 
 	return deployment, nil
 }
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	var daemonset = v12.DaemonSet{}
+	daemonset.Kind = "DaemonSet"
+	daemonset.APIVersion = "apps/v1"
 	// Label Selector
-
 	//keel labels
 	deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
-
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
 	labels["app"] = service.Name
@@ -520,70 +475,24 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	daemonset.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	daemonset.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.DaemonSet{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
+	daemonset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v12.DaemonSet{}, err
 	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	daemonset.Spec.Template.Spec.Containers = containers
 
 	return daemonset, nil
 }
 func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	var cronjob = v2alpha1.CronJob{}
+	cronjob.Kind = "CronJob"
+	cronjob.APIVersion = "batch/v1beta1"
 	// Label Selector
 
 	//keel labels
@@ -610,77 +519,38 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	} else {
 		cronjob.ObjectMeta.Namespace = service.Namespace
 	}
-	cronjob.Spec.JobTemplate.Spec.Selector = &selector
+	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
 	//
 
-	var container v1.Container
-	container.Name = service.Name
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
 	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
 
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v2alpha1.CronJob{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v2alpha1.CronJob{}, err
 	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
 
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containers
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 
 	return cronjob, nil
 }
 func getJobObject(service types.Service) (v13.Job, error) {
 	var job = v13.Job{}
+	job.Kind = "Job"
+	job.APIVersion = "batch/v1"
 	// Label Selector
 
 	//keel labels
@@ -707,75 +577,30 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	} else {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
-	job.Spec.Selector = &selector
+	//job.Spec.Selector = &selector
 	job.Spec.Template.ObjectMeta.Labels = labels
 	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
 		"sidecar.istio.io/inject": "true",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	job.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v13.Job{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
+	job.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v13.Job{}, err
 	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
 
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	job.Spec.Template.Spec.Containers = containers
-
+	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	var statefulset = v12.StatefulSet{}
+	statefulset.Kind = "StatefulSet"
+	statefulset.APIVersion = "v1"
 	// Label Selector
 
 	//keel labels
@@ -805,67 +630,19 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Selector = &selector
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
 	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
+		"sidecar.istio.io/inject": "false",
 	}
-	//
 
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
+	var err error
+	statefulset.Spec.Template.Spec.Containers, err = getContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
 	}
 
-	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
-	if serviceAttr.Tag != "" {
-		container.Image += ":" + serviceAttr.Tag
+	statefulset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	if err != nil {
+		return v12.StatefulSet{}, err
 	}
-	var ports []v1.ContainerPort
-	for _, port := range serviceAttr.Ports {
-		temp := v1.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		temp.ContainerPort = int32(i)
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			temp.HostPort = int32(i)
-		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v1.EnvVar
-	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v1.Container
-
-	containers = append(containers, container)
-	statefulset.Spec.Template.Spec.Containers = containers
 
 	return statefulset, nil
 }
@@ -896,27 +673,6 @@ func getConfigMapObject(service types.Service) (v1.ConfigMap, error) {
 		configmap.ObjectMeta.Namespace = "default"
 	} else {
 		configmap.ObjectMeta.Namespace = service.Namespace
-	}
-	/*statefulset.Spec.Selector = &selector
-	statefulset.Spec.Template.ObjectMeta.Labels = labels
-	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
-	}*/
-	//
-
-	var container v1.Container
-	container.Name = service.Name
-	byteData, _ := json.Marshal(service.ServiceAttributes)
-	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
-	err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args)
-	err = putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities)
-	err = putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities)
-	err = putLivenessProbe(&container, byteData)
-	err = putReadinessProbe(&container, byteData)
-	if err != nil {
-		return v1.ConfigMap{}, err
 	}
 
 	return configmap, nil
@@ -974,6 +730,52 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return &service, nil
 }
+
+func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string) (v1.ServiceAccount, []rbacV1.Role, []rbacV1.RoleBinding, error) {
+	account := v1.ServiceAccount{}
+	account.Name = "sa-" + serviceName
+	account.Namespace = nameSpace
+	account.APIVersion="v1"
+	account.Kind="ServiceAccount"
+
+	var roles []rbacV1.Role
+	var roleBindings []rbacV1.RoleBinding
+
+	for _, role := range serviceAttr.RbacRoles {
+
+		roleObj := rbacV1.Role{}
+		roleObj.Namespace = nameSpace
+		roleObj.Name = "sa-" + serviceName + "-role"
+		roleObj.Kind="Role"
+		roleObj.APIVersion="rbac.authorization.k8s.io/v1"
+
+		rule := rbacV1.PolicyRule{APIGroups: role.ApiGroup,
+			Resources: []string{role.Resource},
+			Verbs:     role.Verbs}
+
+		roleObj.Rules = [] rbacV1.PolicyRule{rule}
+
+		roles = append(roles, roleObj)
+
+		// role binding
+
+		rb := rbacV1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: roleObj.Name + "binding"},
+			Subjects: []rbacV1.Subject{
+				{Kind: "ServiceAccount", Name: "sa-" + serviceName},
+			},
+			RoleRef: rbacV1.RoleRef{Kind: "Role", Name: roleObj.Name},
+		}
+		rb.Kind="RoleBinding"
+		rb.APIVersion="rbac.authorization.k8s.io/v1"
+
+		roleBindings = append(roleBindings, rb)
+
+	}
+
+	return account, roles, roleBindings, nil
+}
+
 func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
 
 	var ret types.StatusRequest
@@ -1007,7 +809,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-		res, err := getIstioObject(service)
+		res, err = getIstioObject(service)
 		if err != nil {
 			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
@@ -1039,7 +841,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
-	} else if service.ServiceType == "container" {
+	}else if service.ServiceType == "container" {
 		switch service.SubType {
 
 		case "deployment":
@@ -1072,6 +874,40 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
+			//add rbac classes
+
+
+
+			byteData, _ := json.Marshal(service.ServiceAttributes)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+			utils.Info.Println("** rbac params **")
+			utils.Info.Println(len(serviceAttr.RbacRoles))
+			if(serviceAttr.IsRbac){
+				utils.Info.Println("** rbac is enabled **")
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "daemonset":
 			daemonset, err := getDaemonSetObject(service)
 			if err != nil {
@@ -1087,6 +923,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				daemonset.Spec.Template.Spec.ImagePullSecrets = append(daemonset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.DaemonSets = append(finalObj.Services.DaemonSets, daemonset)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "cronjob":
 			cronjob, err := getCronJobObject(service)
 			if err != nil {
@@ -1102,6 +969,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.CronJobs = append(finalObj.Services.CronJobs, cronjob)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "job":
 			job, err := getJobObject(service)
 			if err != nil {
@@ -1117,6 +1015,37 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				job.Spec.Template.Spec.ImagePullSecrets = append(job.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.Jobs = append(finalObj.Services.Jobs, job)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
+
 		case "statefulset":
 			statefulset, err := getStatefulSetObject(service)
 			if err != nil {
@@ -1145,6 +1074,36 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				statefulset.Spec.Template.Spec.ImagePullSecrets = append(statefulset.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
 			finalObj.Services.StatefulSets = append(finalObj.Services.StatefulSets, statefulset)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+
+			if(serviceAttr.IsRbac){
+				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+				if err != nil {
+					ret.Status = append(ret.Status, "failed")
+					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+					if requestType != "GET" {
+						utils.SendLog(ret.Reason, "error", input.ProjectId)
+					}
+					return ret
+				}
+
+				//add service account
+				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+				// add roles and role bindings
+				for _, role := range roles {
+					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+				}
+
+				for _, roleBinding := range roleBindings {
+					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				}
+			}
 
 		}
 
@@ -1365,8 +1324,8 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 
 	url := constants.KubernetesEngineURL
 
-	//utils.Info.Println("forward to kube: " + url)
-	//utils.Info.Println("request type: " + requestType)
+	utils.Info.Println("forward to kube: " + url)
+	utils.Info.Println("request type: " + requestType)
 
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
 
@@ -1429,6 +1388,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 }
 
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
+	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -1436,7 +1396,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.Info.Println("solution request payload", string(b))
+	utils.Info.Println(string(b))
 	// Unmarshal
 	var input types.ServiceInput
 	err = json.Unmarshal(b, &input)
@@ -1642,7 +1602,6 @@ func convertKeys(j json.RawMessage) json.RawMessage {
 
 	return json.RawMessage(b)
 }
-
 func fixKey(key string) string {
 	return strcase.ToLowerCamel(key)
 }
@@ -1650,6 +1609,165 @@ func fixKey(key string) string {
 type tempProbing struct {
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
+}
+
+func getInitContainers(service types.Service) ([]v1.Container, error) {
+
+	fmt.Println(service)
+	serviceAttributes := make(map[string]interface{})
+	var initContainerServiceAttributes interface{}
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+		if err = json.Unmarshal(data, &serviceAttributes); err == nil {
+			if _, ok := serviceAttributes["init_container"]; ok {
+				initContainerServiceAttributes = serviceAttributes["init_container"]
+			} else {
+				fmt.Println("No Init Containers for " + service.Name)
+				return nil, nil
+			}
+		} else {
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
+	var container v1.Container
+	byteData, _ := json.Marshal(initContainerServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+	container.Name = serviceAttr.ImageName
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
+		return nil, err
+	}
+
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			utils.Info.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				utils.Info.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+
+	containers = append(containers, container)
+
+	return containers, nil
+}
+func getContainers(service types.Service) ([]v1.Container, error) {
+
+	var container v1.Container
+	container.Name = service.Name
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.DockerServiceAttributes
+	json.Unmarshal(byteData, &serviceAttr)
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, err
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+		return nil, err
+	}
+	if err := putLivenessProbe(&container, byteData); err != nil {
+		return nil, err
+	}
+	if err := putReadinessProbe(&container, byteData); err != nil {
+		return nil, err
+	}
+
+	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+		return nil, err
+	} else {
+		container.SecurityContext = securityContext
+	}
+	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
+	if serviceAttr.Tag != "" {
+		container.Image += ":" + serviceAttr.Tag
+	}
+	var ports []v1.ContainerPort
+	for _, port := range serviceAttr.Ports {
+		temp := v1.ContainerPort{}
+		if port.Container == "" && port.Host == "" {
+			continue
+		}
+		if port.Container == "" && port.Host != "" {
+			port.Container = port.Host
+		}
+
+		i, err := strconv.Atoi(port.Container)
+		if err != nil {
+			utils.Info.Println(err)
+			continue
+		}
+
+		temp.ContainerPort = int32(i)
+		if port.Host != "" {
+			i, err = strconv.Atoi(port.Host)
+			if err != nil {
+				utils.Info.Println(err)
+				continue
+			}
+			temp.HostPort = int32(i)
+		}
+		ports = append(ports, temp)
+	}
+	var envVariables []v1.EnvVar
+	for _, envVariable := range serviceAttr.EnvironmentVariables {
+		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		envVariables = append(envVariables, tempEnvVariable)
+	}
+	container.Ports = ports
+	container.Env = envVariables
+	var containers []v1.Container
+	containers = append(containers, container)
+
+	return containers, nil
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
@@ -1707,4 +1825,36 @@ func timeParser(str string, str2 string) string {
 	}
 	return str
 
+}
+
+func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.SecurityContext, error) {
+	var context v1.SecurityContext
+	context.Capabilities = &v1.Capabilities{}
+	for _, addCapability := range securityContext.CapabilitiesAdd {
+		context.Capabilities.Add = append(context.Capabilities.Add, v1.Capability(addCapability.(string)))
+	}
+	for _, dropCapability := range securityContext.CapabilitiesDrop {
+		context.Capabilities.Drop = append(context.Capabilities.Drop, v1.Capability(dropCapability.(string)))
+	}
+	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFileSystem
+	context.Privileged = &securityContext.Privileged
+	if securityContext.RunAsNonRoot && securityContext.RunAsUser == nil {
+		return nil, errors.New("RunAsNonRoot is Set, but RunAsUser value not given!")
+	} else {
+		context.RunAsNonRoot = &securityContext.RunAsNonRoot
+		context.RunAsUser = securityContext.RunAsUser
+	}
+	context.RunAsGroup = securityContext.RunAsGroup
+	context.AllowPrivilegeEscalation = &securityContext.AllowPrivilegeEscalation
+	if proMount, ok := securityContext.ProcMount.(string); ok {
+		tempProcMount := v1.ProcMountType(proMount)
+		context.ProcMount = &tempProcMount
+	}
+	context.SELinuxOptions = &v1.SELinuxOptions{
+		User:  securityContext.SELinuxOptions.User,
+		Role:  securityContext.SELinuxOptions.Role,
+		Type:  securityContext.SELinuxOptions.Type,
+		Level: securityContext.SELinuxOptions.Level,
+	}
+	return &context, nil
 }

@@ -6,6 +6,8 @@ import (
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
+
 	"time"
 )
 
@@ -122,9 +124,9 @@ type DockerServiceAttributes struct {
 	ImageName                     string                        `json:"image_name"`
 	MeshConfig                    IstioConfig                   `json:"istio_config"`
 
-	Command []string `json:"command"`
-	Args    []string `json:"args"`
-
+	Command         []string              `json:"command"`
+	Args            []string              `json:"args"`
+	SecurityContext SecurityContextStruct `json:"security_context"`
 	//resource types: cpu, memory
 	LimitResourceTypes        []string `json:"limit_resource_types"`
 	LimitResourceQuantities   []string `json:"limit_resource_quantities"`
@@ -132,6 +134,35 @@ type DockerServiceAttributes struct {
 	RequestResourceQuantities []string `json:"request_resource_quantities"`
 
 	CronJobScheduleString string `json:"cron_job_schedule_string"`
+
+	IsRbac bool `json:"is_rbac_enabled"`
+
+	RbacRoles []struct {
+		Resource       string `json:"resource"`
+		Verbs     []string `json:"verbs"`
+		ApiGroup  []string   `json:"api_group"`
+	} `json:"roles"`
+
+}
+
+type SecurityContextStruct struct {
+	CapabilitiesAdd          []interface{}        `json:"capabilities_add"`
+	CapabilitiesDrop         []interface{}        `json:"capabilities_drop"`
+	RunAsUser                *int64               `json:"run_as_user"`
+	RunAsGroup               *int64               `json:"run_as_group"`
+	RunAsNonRoot             bool                 `json:"run_as_non_root"`
+	Privileged               bool                 `json:"privileged"`
+	ProcMount                interface{}          `json:"proc_mount"`
+	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation"`
+	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem"`
+	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options"`
+}
+
+type SELinuxOptionsStruct struct {
+	User  string `json:"user,omitempty"`
+	Role  string `json:"role,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Level string `json:"level,omitempty"`
 }
 
 // ```yaml
@@ -144,6 +175,11 @@ type DockerServiceAttributes struct {
 type VolumeAttributes struct {
 	Volume Volume `json:"volume"`
 }
+
+type RbacAttributes struct {
+	RbacService Role `json:"role"`
+}
+
 
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
@@ -219,7 +255,7 @@ type KubernetesCred struct {
 }
 type OutputServices struct {
 	Deployments            []v12.Deployment           `json:"deployment"`
-	DaemonSets             []v12.DaemonSet            `json:"daemonset"`
+	DaemonSets             []v12.DaemonSet            `json:"daemonsets"`
 	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
 	Jobs                   []v13.Job                  `json:"job"`
 	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
@@ -227,6 +263,9 @@ type OutputServices struct {
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
+	RoleClasses            []rbacV1.Role     		  `json:"role-classes"`
+	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount       `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
 	Secrets                []interface{}              `json:"secrets"`
 }
