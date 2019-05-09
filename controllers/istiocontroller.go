@@ -173,7 +173,7 @@ func getIstioDestinationRule(service interface{}) (map[string]interface{}, error
 	err := json.Unmarshal(byteData, &serviceAttr)
 	if err != nil {
 		utils.Info.Println(err.Error())
-		return destRule, err
+		return nil, err
 	}
 	var subsets []*v1alpha3.Subset
 
