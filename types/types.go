@@ -5,8 +5,8 @@ import (
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
-	storage "k8s.io/api/storage/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
+	storage "k8s.io/api/storage/v1"
 
 	"time"
 )
@@ -138,11 +138,10 @@ type DockerServiceAttributes struct {
 	IsRbac bool `json:"is_rbac_enabled"`
 
 	RbacRoles []struct {
-		Resource       string `json:"resource"`
-		Verbs     []string `json:"verbs"`
-		ApiGroup  []string   `json:"api_group"`
+		Resource string   `json:"resource"`
+		Verbs    []string `json:"verbs"`
+		ApiGroup []string `json:"api_group"`
 	} `json:"roles"`
-
 }
 
 type SecurityContextStruct struct {
@@ -179,7 +178,6 @@ type VolumeAttributes struct {
 type RbacAttributes struct {
 	RbacService Role `json:"role"`
 }
-
 
 type IstioObject struct {
 	ApiVersion string                 `json:"apiVersion"`
@@ -263,9 +261,9 @@ type OutputServices struct {
 	Kubernetes             []v1.Service               `json:"kubernetes-service"`
 	Istio                  []IstioObject              `json:"istio-component"`
 	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
-	RoleClasses            []rbacV1.Role     		  `json:"role-classes"`
+	RoleClasses            []rbacV1.Role              `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
-	ServiceAccountClasses  []v1.ServiceAccount       `json:"service-account-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount        `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
 	Secrets                []interface{}              `json:"secrets"`
 }
