@@ -426,14 +426,14 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name + "-" + service.Version
+	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-	deployment.ObjectMeta.Name = service.Name
+	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
 	deployment.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
@@ -473,14 +473,14 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name + "-" + service.Version
+	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.DaemonSet{}, errors.New("Service name not found")
 	}
-	daemonset.ObjectMeta.Name = service.Name
+	daemonset.ObjectMeta.Name = service.Name + "-" + service.Version
 	daemonset.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
@@ -522,14 +522,14 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 
 	var selector metav1.LabelSelector
 	labels := make(map[string]string)
-	labels["app"] = service.Name + "-" + service.Version
+	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v2alpha1.CronJob{}, errors.New("Service name not found")
 	}
-	cronjob.ObjectMeta.Name = service.Name
+	cronjob.ObjectMeta.Name = service.Name + "-" + service.Version
 	cronjob.ObjectMeta.Labels = deploymentLabels
 	selector.MatchLabels = labels
 
