@@ -7,7 +7,7 @@ import (
 
 func ProvisionServiceAccount(serviceAccount types.ServiceAccount) v1.ServiceAccount {
 	account := v1.ServiceAccount{}
-	account.Name="sa-"+serviceAccount.ServiceName
-	account.Namespace=serviceAccount.Namespace
+	account.Name = "sa-" + serviceAccount.ServiceName
+	account.Namespace = serviceAccount.Namespace
 	return account
 }

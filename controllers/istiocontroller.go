@@ -626,7 +626,7 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 			Resources: []string{role.Resource},
 			Verbs:     role.Verbs}
 
-		roleObj.Rules = [] rbacV1.PolicyRule{rule}
+		roleObj.Rules = []rbacV1.PolicyRule{rule}
 
 		roles = append(roles, roleObj)
 
@@ -697,7 +697,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
-	}else if service.ServiceType == "container" {
+	} else if service.ServiceType == "container" {
 		switch service.SubType {
 
 		case "deployment":
@@ -736,7 +736,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
-			if(serviceAttr.IsRbac){
+			if serviceAttr.IsRbac {
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
@@ -782,7 +782,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
-			if(serviceAttr.IsRbac){
+			if serviceAttr.IsRbac {
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
@@ -828,7 +828,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
-			if(serviceAttr.IsRbac){
+			if serviceAttr.IsRbac {
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
@@ -874,7 +874,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
-			if(serviceAttr.IsRbac){
+			if serviceAttr.IsRbac {
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
@@ -933,7 +933,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
-			if(serviceAttr.IsRbac){
+			if serviceAttr.IsRbac {
 				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 				if err != nil {
 					ret.Status = append(ret.Status, "failed")
