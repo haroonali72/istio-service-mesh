@@ -101,6 +101,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				httpRoute.Retries = &httpR
 			}
 		}
+		set := false
 		fault := &v1alpha3.HTTPFaultInjection{}
 		if http.FaultInjection.FaultInjectionAbort.Percentage != 0 && http.FaultInjection.FaultInjectionAbort.HttpStatus != 0 {
 			abort := &v1alpha3.HTTPFaultInjection_Abort{
@@ -108,6 +109,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: http.FaultInjection.FaultInjectionAbort.HttpStatus},
 			}
 			fault.Abort = abort
+			set = true
 		}
 		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
 			delay := &v1alpha3.HTTPFaultInjection_Delay{
@@ -115,8 +117,11 @@ func getIstioVirtualService(service interface{}) (string, error) {
 				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
 			}
 			fault.Delay = delay
+			set = true
 		}
-		httpRoute.Fault = fault
+		if set {
+			httpRoute.Fault = fault
+		}
 		routes = append(routes, &httpRoute)
 	}
 	vService.Http = routes
@@ -165,6 +170,7 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	gateway.Servers = servers
 	return gateway, nil
 }
+
 func getIstioDestinationRule(service interface{}) (map[string]interface{}, error) {
 	destRule := v1alpha3.DestinationRule{}
 
@@ -186,15 +192,18 @@ func getIstioDestinationRule(service interface{}) (map[string]interface{}, error
 			labels[label.Key] = label.Value
 		}
 		ss.Labels = labels
-		tp.ConnectionPool = &v1alpha3.ConnectionPoolSettings{
-			Http: &v1alpha3.ConnectionPoolSettings_HTTPSettings{
-				Http1MaxPendingRequests:  subset.Http1MaxPendingRequests,
-				Http2MaxRequests:         subset.Http2MaxRequests,
-				MaxRequestsPerConnection: subset.MaxRequestsPerConnection,
-				MaxRetries:               subset.MaxRetries,
-			},
+		if subset.Http1MaxPendingRequests > 0 || subset.Http2MaxRequests > 0 || subset.MaxRequestsPerConnection > 0 || subset.MaxRetries > 0 {
+			tp.ConnectionPool = &v1alpha3.ConnectionPoolSettings{
+				Http: &v1alpha3.ConnectionPoolSettings_HTTPSettings{
+					Http1MaxPendingRequests:  subset.Http1MaxPendingRequests,
+					Http2MaxRequests:         subset.Http2MaxRequests,
+					MaxRequestsPerConnection: subset.MaxRequestsPerConnection,
+					MaxRetries:               subset.MaxRetries,
+				},
+			}
+			ss.TrafficPolicy = &tp
 		}
-		ss.TrafficPolicy = &tp
+
 		subsets = append(subsets, &ss)
 	}
 	if len(subsets) > 0 {
