@@ -1491,7 +1491,7 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
-	if serviceAttr.ImageRepositoryConfigurations.Url == "" {
+	if serviceAttr.ImageRepositoryConfigurations.Credentials.Username == "" || serviceAttr.ImageRepositoryConfigurations.Credentials.Password == "" {
 		return v1.Secret{}, false
 	}
 	secret := v1.Secret{}
@@ -1508,11 +1508,10 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
 	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
 	email := "email@email.com"
-	server := serviceAttr.ImageRepositoryConfigurations.Url
+	server := serviceAttr.ImageName
 
 	tokens := strings.Split(server, "/")
-	_ = tokens
-	registry := server
+	registry := tokens[0]
 
 	dockerConf := map[string]map[string]string{
 		registry: {
