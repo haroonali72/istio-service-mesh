@@ -17,6 +17,7 @@ import (
 	"istio-service-mesh/utils"
 	policy "istio.io/api/authentication/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
+	ist_rbac "istio.io/api/rbac/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
 	v13 "k8s.io/api/batch/v1"
@@ -749,6 +750,95 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return &service, nil
 }
+func getIstioRole(name string, services[]string, methods []string,paths []string,input types.Service) (ist_rbac.ServiceRole, ist_rbac.ServiceRoleBinding) {
+	role := ist_rbac.ServiceRole{}
+
+
+
+	rule := ist_rbac.AccessRule{}
+	rule.Methods = methods
+	rule.Services = services
+	rule.Paths = paths
+
+	role.Rules = []*ist_rbac.AccessRule{&rule}
+
+	roleBinding:= ist_rbac.ServiceRoleBinding{}
+	roleBinding.Role=name
+
+	properties := make(map[string]string)
+	properties["source.namespace"] = "default"
+	subject := ist_rbac.Subject{Properties:properties}
+
+	roleRef := ist_rbac.RoleRef{}
+	roleRef.Name=name
+	roleRef.Kind="ServiceRole"
+	roleBinding.Subjects= []*ist_rbac.Subject{&subject}
+	roleBinding.RoleRef= &roleRef
+
+	return role, roleBinding
+}
+
+
+func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string) ([]types.IstioObject, error) {
+
+	var istioObjects []types.IstioObject
+
+	//var roles []ist_rbac.ServiceRole
+	//var roleBindings []ist_rbac.ServiceRoleBinding
+	for i, role := range serviceAttr.IstioRoles {
+		name := strings.ToLower(serviceName + "-r" + strconv.Itoa(i) + "")
+		rule := ist_rbac.AccessRule{}
+		rule.Methods = role.Methods
+		rule.Services = role.Services
+		rule.Paths = role.Paths
+
+		roleObj := ist_rbac.ServiceRole{}
+		roleObj.Rules = []*ist_rbac.AccessRule{&rule}
+
+		//roles = append(roles, roleObj)
+
+		var istioRole types.IstioObject
+		labels := make(map[string]interface{})
+		labels["name"] = strings.ToLower(serviceName + "-r" + strconv.Itoa(i) + "")
+		labels["namespace"] = strings.ToLower(nameSpace)
+		istioRole.Metadata = labels
+		istioRole.Kind = "ServiceRole"
+		istioRole.ApiVersion = "rbac.istio.io/v1alpha1"
+		istioRole.Spec = roleObj
+
+		istioObjects = append(istioObjects, istioRole)
+
+		// role binding
+
+		roleBinding:= ist_rbac.ServiceRoleBinding{}
+		roleBinding.Role=name
+
+		properties := make(map[string]string)
+		properties["source.namespace"] = nameSpace
+		subject := ist_rbac.Subject{Properties:properties}
+
+		roleRef := ist_rbac.RoleRef{}
+		roleRef.Name=name
+		roleRef.Kind="ServiceRole"
+		roleBinding.Subjects= []*ist_rbac.Subject{&subject}
+		roleBinding.RoleRef= &roleRef
+
+		var istioRB types.IstioObject
+		rbLabels := make(map[string]interface{})
+		rbLabels["name"] = strings.ToLower(serviceName + "-r" + strconv.Itoa(i) + "")
+		rbLabels["namespace"] = strings.ToLower(nameSpace)
+		istioRB.Metadata = rbLabels
+		istioRB.Kind = "ServiceRole"
+		istioRB.ApiVersion = "rbac.istio.io/v1alpha1"
+		istioRB.Spec = roleBinding
+
+
+		istioObjects = append(istioObjects, istioRB)
+
+	}
+
+	return  istioObjects, nil
+}
 
 func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string) (v1.ServiceAccount, []rbacV1.Role, []rbacV1.RoleBinding, error) {
 	account := v1.ServiceAccount{}
@@ -756,24 +846,18 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 	account.Namespace = nameSpace
 	account.APIVersion = "v1"
 	account.Kind = "ServiceAccount"
-
 	var roles []rbacV1.Role
 	var roleBindings []rbacV1.RoleBinding
-
 	for _, role := range serviceAttr.RbacRoles {
-
 		roleObj := rbacV1.Role{}
 		roleObj.Namespace = nameSpace
 		roleObj.Name = "sa-" + serviceName + "-role"
 		roleObj.Kind = "Role"
 		roleObj.APIVersion = "rbac.authorization.k8s.io/v1"
-
 		rule := rbacV1.PolicyRule{APIGroups: role.ApiGroup,
 			Resources: []string{role.Resource},
 			Verbs:     role.Verbs}
-
 		roleObj.Rules = []rbacV1.PolicyRule{rule}
-
 		roles = append(roles, roleObj)
 
 		// role binding
