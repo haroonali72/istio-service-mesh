@@ -984,6 +984,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			json.Unmarshal(byteData, &serviceAttr)
 			utils.Info.Println("** rbac params **")
 			utils.Info.Println(len(serviceAttr.RbacRoles))
+			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
 				utils.Info.Println("** rbac is enabled **")
 				if len(serviceAttr.RbacRoles)>0{
@@ -1021,7 +1022,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						return ret
 					}
 					for _, istioObj := range istioObjects{
-						println(istioObj)
 						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
 					}
 				}
@@ -1049,27 +1049,48 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
+			utils.Info.Println("** rbac params **")
+			utils.Info.Println(len(serviceAttr.RbacRoles))
+			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
-				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
-				if err != nil {
-					ret.Status = append(ret.Status, "failed")
-					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
-					if requestType != "GET" {
-						utils.SendLog(ret.Reason, "error", input.ProjectId)
+				utils.Info.Println("** rbac is enabled **")
+				if len(serviceAttr.RbacRoles)>0{
+					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
 					}
-					return ret
+
+					//add service account
+					finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+					// add roles and role bindings
+					for _, role := range roles {
+						finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+					}
+
+					for _, roleBinding := range roleBindings {
+						finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+					}
 				}
 
-				//add service account
-				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
-
-				// add roles and role bindings
-				for _, role := range roles {
-					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
-				}
-
-				for _, roleBinding := range roleBindings {
-					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				if len(serviceAttr.IstioRoles)>0{
+					istioObjects, err := getIstioRbacObjects(serviceAttr,service.Name,service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
+					}
+					for _, istioObj := range istioObjects{
+						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
+					}
 				}
 			}
 
@@ -1200,27 +1221,48 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			var serviceAttr types.DockerServiceAttributes
 			json.Unmarshal(byteData, &serviceAttr)
 
+			utils.Info.Println("** rbac params **")
+			utils.Info.Println(len(serviceAttr.RbacRoles))
+			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
-				serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
-				if err != nil {
-					ret.Status = append(ret.Status, "failed")
-					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
-					if requestType != "GET" {
-						utils.SendLog(ret.Reason, "error", input.ProjectId)
+				utils.Info.Println("** rbac is enabled **")
+				if len(serviceAttr.RbacRoles)>0{
+					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
 					}
-					return ret
+
+					//add service account
+					finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+					// add roles and role bindings
+					for _, role := range roles {
+						finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+					}
+
+					for _, roleBinding := range roleBindings {
+						finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+					}
 				}
 
-				//add service account
-				finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
-
-				// add roles and role bindings
-				for _, role := range roles {
-					finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
-				}
-
-				for _, roleBinding := range roleBindings {
-					finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+				if len(serviceAttr.IstioRoles)>0{
+					istioObjects, err := getIstioRbacObjects(serviceAttr,service.Name,service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
+					}
+					for _, istioObj := range istioObjects{
+						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
+					}
 				}
 			}
 
