@@ -750,34 +750,6 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 	service.Spec.Ports = servicePorts
 	return &service, nil
 }
-func getIstioRole(name string, services[]string, methods []string,paths []string,input types.Service) (ist_rbac.ServiceRole, ist_rbac.ServiceRoleBinding) {
-	role := ist_rbac.ServiceRole{}
-
-
-
-	rule := ist_rbac.AccessRule{}
-	rule.Methods = methods
-	rule.Services = services
-	rule.Paths = paths
-
-	role.Rules = []*ist_rbac.AccessRule{&rule}
-
-	roleBinding:= ist_rbac.ServiceRoleBinding{}
-	roleBinding.Role=name
-
-	properties := make(map[string]string)
-	properties["source.namespace"] = "default"
-	subject := ist_rbac.Subject{Properties:properties}
-
-	roleRef := ist_rbac.RoleRef{}
-	roleRef.Name=name
-	roleRef.Kind="ServiceRole"
-	roleBinding.Subjects= []*ist_rbac.Subject{&subject}
-	roleBinding.RoleRef= &roleRef
-
-	return role, roleBinding
-}
-
 
 func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string ) ([]types.IstioObject, error) {
 
@@ -1019,9 +991,13 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						}
 						return ret
 					}
+
+					utils.Info.Println("isto rbac object's kinds")
 					for _, istioObj := range istioObjects{
+						utils.Info.Println(istioObj.Kind)
 						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
 					}
+					utils.Info.Println("")
 				}
 			}
 
