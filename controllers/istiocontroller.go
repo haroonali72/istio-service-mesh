@@ -825,10 +825,10 @@ func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName 
 
 		var istioRB types.IstioObject
 		rbLabels := make(map[string]interface{})
-		rbLabels["name"] = strings.ToLower(serviceName + "-r" + strconv.Itoa(i) + "")
+		rbLabels["name"] = strings.ToLower(serviceName + "-rb" + strconv.Itoa(i) + "")
 		rbLabels["namespace"] = strings.ToLower(nameSpace)
 		istioRB.Metadata = rbLabels
-		istioRB.Kind = "ServiceRole"
+		istioRB.Kind = "ServiceRoleBinding"
 		istioRB.ApiVersion = "rbac.istio.io/v1alpha1"
 		istioRB.Spec = roleBinding
 		istioObjects = append(istioObjects, istioRB)
