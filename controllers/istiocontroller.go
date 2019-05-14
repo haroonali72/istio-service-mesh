@@ -984,6 +984,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			json.Unmarshal(byteData, &serviceAttr)
 			utils.Info.Println("** rbac params **")
 			utils.Info.Println(len(serviceAttr.RbacRoles))
+			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
 				utils.Info.Println("** rbac is enabled **")
 				if len(serviceAttr.RbacRoles)>0{
@@ -1021,7 +1022,6 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						return ret
 					}
 					for _, istioObj := range istioObjects{
-						println(istioObj)
 						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
 					}
 				}
