@@ -756,7 +756,7 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 	return &service, nil
 }
 
-func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string ) ([]types.IstioObject, error) {
+func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string) ([]types.IstioObject, error) {
 
 	var istioObjects []types.IstioObject
 
@@ -766,7 +766,7 @@ func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName 
 		name := strings.ToLower(serviceName + "-r" + strconv.Itoa(i) + "")
 		rule := ist_rbac.AccessRule{}
 		rule.Methods = role.Methods
-		rule.Services = []string {serviceName}
+		rule.Services = []string{serviceName}
 		rule.Paths = role.Paths
 
 		roleObj := ist_rbac.ServiceRole{}
@@ -787,18 +787,18 @@ func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName 
 
 		// role binding
 
-		roleBinding:= ist_rbac.ServiceRoleBinding{}
-		roleBinding.Role=name
+		roleBinding := ist_rbac.ServiceRoleBinding{}
+		roleBinding.Role = name
 
 		properties := make(map[string]string)
 		properties["source.namespace"] = nameSpace
-		subject := ist_rbac.Subject{Properties:properties}
+		subject := ist_rbac.Subject{Properties: properties}
 
 		roleRef := ist_rbac.RoleRef{}
-		roleRef.Name=name
-		roleRef.Kind="ServiceRole"
-		roleBinding.Subjects= []*ist_rbac.Subject{&subject}
-		roleBinding.RoleRef= &roleRef
+		roleRef.Name = name
+		roleRef.Kind = "ServiceRole"
+		roleBinding.Subjects = []*ist_rbac.Subject{&subject}
+		roleBinding.RoleRef = &roleRef
 
 		var istioRB types.IstioObject
 		rbLabels := make(map[string]interface{})
@@ -812,7 +812,7 @@ func getIstioRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName 
 
 	}
 
-	return  istioObjects, nil
+	return istioObjects, nil
 }
 
 func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName string, nameSpace string) (v1.ServiceAccount, []rbacV1.Role, []rbacV1.RoleBinding, error) {
@@ -962,7 +962,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
 				utils.Info.Println("** rbac is enabled **")
-				if len(serviceAttr.RbacRoles)>0{
+				if len(serviceAttr.RbacRoles) > 0 {
 					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
@@ -986,8 +986,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					}
 				}
 
-				if len(serviceAttr.IstioRoles)>0{
-					istioObjects, err := getIstioRbacObjects(serviceAttr,service.Name,service.Namespace)
+				if len(serviceAttr.IstioRoles) > 0 {
+					istioObjects, err := getIstioRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
@@ -998,9 +998,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					}
 
 					utils.Info.Println("isto rbac object's kinds")
-					for _, istioObj := range istioObjects{
+					for _, istioObj := range istioObjects {
 						utils.Info.Println(istioObj.Kind)
-						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
+						finalObj.Services.Istio = append(finalObj.Services.Istio, istioObj)
 					}
 					utils.Info.Println("")
 				}
@@ -1033,7 +1033,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
 				utils.Info.Println("** rbac is enabled **")
-				if len(serviceAttr.RbacRoles)>0{
+				if len(serviceAttr.RbacRoles) > 0 {
 					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
@@ -1057,8 +1057,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					}
 				}
 
-				if len(serviceAttr.IstioRoles)>0{
-					istioObjects, err := getIstioRbacObjects(serviceAttr,service.Name,service.Namespace)
+				if len(serviceAttr.IstioRoles) > 0 {
+					istioObjects, err := getIstioRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
@@ -1067,8 +1067,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						}
 						return ret
 					}
-					for _, istioObj := range istioObjects{
-						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
+					for _, istioObj := range istioObjects {
+						finalObj.Services.Istio = append(finalObj.Services.Istio, istioObj)
 					}
 				}
 			}
@@ -1205,7 +1205,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			utils.Info.Println(len(serviceAttr.IstioRoles))
 			if serviceAttr.IsRbac {
 				utils.Info.Println("** rbac is enabled **")
-				if len(serviceAttr.RbacRoles)>0{
+				if len(serviceAttr.RbacRoles) > 0 {
 					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
@@ -1229,8 +1229,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					}
 				}
 
-				if len(serviceAttr.IstioRoles)>0{
-					istioObjects, err := getIstioRbacObjects(serviceAttr,service.Name,service.Namespace)
+				if len(serviceAttr.IstioRoles) > 0 {
+					istioObjects, err := getIstioRbacObjects(serviceAttr, service.Name, service.Namespace)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
@@ -1239,8 +1239,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						}
 						return ret
 					}
-					for _, istioObj := range istioObjects{
-						finalObj.Services.Istio = append(finalObj.Services.Istio,istioObj)
+					for _, istioObj := range istioObjects {
+						finalObj.Services.Istio = append(finalObj.Services.Istio, istioObj)
 					}
 				}
 			}

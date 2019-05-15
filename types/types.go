@@ -147,9 +147,9 @@ type DockerServiceAttributes struct {
 	} `json:"roles"`
 
 	IstioRoles []struct {
-		Services   []string   `json:"services"`
-		Methods    []string `json:"methods"`
-		Paths 	   []string `json:"paths"`
+		Services []string `json:"services"`
+		Methods  []string `json:"methods"`
+		Paths    []string `json:"paths"`
 	} `json:"istio_roles"`
 }
 
