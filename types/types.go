@@ -18,6 +18,7 @@ type Route struct {
 type Port struct {
 	Host      string `json:"host"`
 	Container string `json:"container"`
+	Name      string `json:"name"`
 }
 
 type SEPort struct {

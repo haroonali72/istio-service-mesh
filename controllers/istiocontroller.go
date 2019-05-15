@@ -732,7 +732,12 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 		}
 
 		temp.Port = int32(i)
-		temp.Name = "p" + strconv.Itoa(i)
+		if port.Name == "" {
+
+			temp.Name = "http-" + strconv.Itoa(i)
+		} else {
+			temp.Name = port.Name
+		}
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
