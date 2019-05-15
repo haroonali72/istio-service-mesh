@@ -145,6 +145,12 @@ type DockerServiceAttributes struct {
 		Verbs    []string `json:"verbs"`
 		ApiGroup []string `json:"api_group"`
 	} `json:"roles"`
+
+	IstioRoles []struct {
+		Services   []string   `json:"services"`
+		Methods    []string `json:"methods"`
+		Paths 	   []string `json:"paths"`
+	} `json:"istio_roles"`
 }
 
 type SecurityContextStruct struct {
