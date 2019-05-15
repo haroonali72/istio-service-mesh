@@ -1302,7 +1302,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 								ret.Status = append(ret.Status, "successful")
 
 							} else if c.Type == v12.DeploymentProgressing {
-								ret.Status = append(ret.Status, "in progress")
+								ret.Status = append(ret.Status, "successful") //will decide later
 
 							} else {
 								ret.Status = append(ret.Status, "failed")
@@ -1546,7 +1546,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var notification types.Notifier
-	notification.Component = "Solution"
+	notification.Component = "Service"
 	notification.Id = input.SolutionInfo.Service.ID
 
 	var status types.StatusRequest
