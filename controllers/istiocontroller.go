@@ -264,8 +264,13 @@ func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttribute
 		SE.Resolution = v1alpha3.ServiceEntry_NONE
 	}
 	SE.Addresses = serviceAttr.Address
-	//SE.Location = v1alpha3.ServiceEntry_Location()
+	if serviceAttr.Location == "mesh_external" {
 
+		SE.Location = v1alpha3.ServiceEntry_MESH_EXTERNAL
+	} else if serviceAttr.Location == "mesh_internal" {
+
+		SE.Location = v1alpha3.ServiceEntry_MESH_INTERNAL
+	}
 	return serviceAttr, SE, nil
 }
 func getIstioConf(service types.Service) (types.IstioConfig, error) {
