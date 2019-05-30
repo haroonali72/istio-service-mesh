@@ -112,6 +112,27 @@ type IstioDestinationRuleAttributes struct {
 		}
 	} `json:"traffic_policy"`
 }
+type HPAServiceAttributes struct {
+	ScalingEnable bool          `json:"enable_scaling"`
+	HPA           HPAAttributes `json:"hpa_configurations"`
+}
+type HPAAttributes struct {
+	MixReplicas        int32          `json:"min_replicas"`
+	MaxReplicas        int32          `json:"max_replicas"`
+	Metrics_           []Metrics      `json:"metrics_values"`
+	CrossObjectVersion ScaleTargetRef `json:"cross_object_version"`
+}
+type Metrics struct {
+	TargetValueKind string `json:"target_value_kind"`
+	TargetValue     int64  `json:"target_value"`
+	TargetValueUnit string `json:"target_value_unit"`
+	ResourceKind    string `json:"resource_kind"`
+}
+type ScaleTargetRef struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Type    string `json:"type"`
+}
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
 	DefaultConfigurations string `json:"default_configurations"`
@@ -263,6 +284,7 @@ type KubernetesCred struct {
 type OutputServices struct {
 	Deployments            []v12.Deployment           `json:"deployment"`
 	DaemonSets             []v12.DaemonSet            `json:"daemonsets"`
+	HPA                    []v12.Deployment           `json:"hpas"`
 	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
 	Jobs                   []v13.Job                  `json:"job"`
 	StatefulSets           []v12.StatefulSet          `json:"statefulset"`

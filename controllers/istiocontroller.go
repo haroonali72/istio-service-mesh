@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"antelope/_vendor-20190419104715/github.com/Azure/go-autorest/autorest/to"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -9,7 +10,6 @@ import (
 	yaml2 "github.com/ghodss/yaml"
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
-	//"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/controllers/volumes"
@@ -20,6 +20,7 @@ import (
 	ist_rbac "istio.io/api/rbac/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
@@ -419,7 +420,100 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 	return components, nil
 
 }
+func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, error) {
+	var hpa = autoscaling.HorizontalPodAutoscaler{}
+	// Label Selector
 
+	//keel labels
+	hpa.Kind = "HorizontalPodAutoscaler" // apiversion???
+	hpaLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	hpaLabels["keel.sh/policy"] = "force"
+
+	if service.Name == "" {
+		//Failed
+		return autoscaling.HorizontalPodAutoscaler{}, errors.New("Service name not found")
+	}
+	hpa.ObjectMeta.Name = service.Name + "-" + service.Version
+	hpa.ObjectMeta.Labels = hpaLabels
+
+	if service.Namespace == "" {
+		hpa.ObjectMeta.Namespace = "default"
+	} else {
+		hpa.ObjectMeta.Namespace = service.Namespace
+	}
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.HPAServiceAttributes
+	json.Unmarshal(byteData, serviceAttr)
+	hpa.Spec.MinReplicas = &serviceAttr.HPA.MixReplicas
+	hpa.Spec.MaxReplicas = serviceAttr.HPA.MaxReplicas
+	crossObj := autoscaling.CrossVersionObjectReference{
+		Kind:       serviceAttr.HPA.CrossObjectVersion.Type,
+		Name:       serviceAttr.HPA.CrossObjectVersion.Name,
+		APIVersion: serviceAttr.HPA.CrossObjectVersion.Version,
+	}
+	hpa.Spec.ScaleTargetRef = crossObj
+
+	var metricsArr []autoscaling.MetricSpec
+	for _, metrics := range serviceAttr.HPA.Metrics_ {
+		met := autoscaling.MetricSpec{
+			Type: autoscaling.ResourceMetricSourceType,
+		}
+		target := autoscaling.MetricTarget{}
+		if metrics.TargetValueKind == "value" {
+			target.Type = autoscaling.ValueMetricType
+			target.Value = resource.NewScaledQuantity(metrics.TargetValue, ScaleUnit(metrics.TargetValueUnit))
+
+		} else if metrics.TargetValueKind == "utilization" {
+			target.Type = autoscaling.UtilizationMetricType
+			v := int32(metrics.TargetValue)
+			target.AverageUtilization = &v
+		} else if metrics.TargetValueKind == "average" {
+			target.Type = autoscaling.AverageValueMetricType
+			target.AverageValue = resource.NewScaledQuantity(metrics.TargetValue, ScaleUnit(metrics.TargetValueUnit))
+		}
+
+		resource := autoscaling.ResourceMetricSource{}
+		if metrics.ResourceKind == "cpu" {
+			resource.Name = v1.ResourceCPU
+		} else if metrics.ResourceKind == "memory" {
+			resource.Name = v1.ResourceMemory
+		} else if metrics.ResourceKind == "storage" {
+			resource.Name = v1.ResourceEphemeralStorage
+		}
+
+		resource.Target = target
+
+		met.Resource = &resource
+		metricsArr = append(metricsArr, met)
+	}
+
+	hpa.Spec.Metrics = metricsArr
+	return hpa, nil
+}
+func ScaleUnit(unit string) resource.Scale {
+
+	if unit == "nano" {
+		return resource.Nano
+	} else if unit == "micro" {
+		return resource.Micro
+	} else if unit == "milli" {
+		return resource.Milli
+	} else if unit == "kilo" {
+		return resource.Kilo
+	} else if unit == "mega" {
+		return resource.Mega
+	} else if unit == "giga" {
+		return resource.Giga
+	} else if unit == "tera" {
+		return resource.Tera
+	} else if unit == "peta" {
+		return resource.Peta
+	} else if unit == "exa" {
+		return resource.Exa
+	}
+
+}
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var deployment = v12.Deployment{}
 	// Label Selector
@@ -926,7 +1020,89 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 	} else if service.ServiceType == "container" {
 		switch service.SubType {
+		case "hpa":
+			hpa, err := getDeploymentObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+			if exists {
+				//Assigning Secret
+				hpa.Spec.Template.Spec.ImagePullSecrets = append(hpa.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
+			}
+			//Attaching persistent volumes if any in two-steps
+			//Mounting each volume to container and adding corresponding volume to pod
+			if len(hpa.Spec.Template.Spec.Containers) > 0 {
+				byteData, _ := json.Marshal(service.ServiceAttributes)
+				var attributes types.VolumeAttributes
+				err = json.Unmarshal(byteData, &attributes)
 
+				if err == nil && attributes.Volume.Name != "" {
+					volumesData := []types.Volume{attributes.Volume}
+					hpa.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
+					hpa.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+				}
+			}
+
+			finalObj.Services.HPA = append(finalObj.Services.HPA, hpa)
+
+			//add rbac classes
+
+			byteData, _ := json.Marshal(service.ServiceAttributes)
+			var serviceAttr types.DockerServiceAttributes
+			json.Unmarshal(byteData, &serviceAttr)
+			utils.Info.Println("** rbac params **")
+			utils.Info.Println(len(serviceAttr.RbacRoles))
+			utils.Info.Println(len(serviceAttr.IstioRoles))
+			if serviceAttr.IsRbac {
+				utils.Info.Println("** rbac is enabled **")
+				if len(serviceAttr.RbacRoles) > 0 {
+					serviceAccount, roles, roleBindings, err := getRbacObjects(serviceAttr, service.Name, service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
+					}
+
+					//add service account
+					finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+
+					// add roles and role bindings
+					for _, role := range roles {
+						finalObj.Services.RoleClasses = append(finalObj.Services.RoleClasses, role)
+					}
+
+					for _, roleBinding := range roleBindings {
+						finalObj.Services.RoleBindingClasses = append(finalObj.Services.RoleBindingClasses, roleBinding)
+					}
+				}
+
+				if len(serviceAttr.IstioRoles) > 0 {
+					istioObjects, err := getIstioRbacObjects(serviceAttr, service.Name, service.Namespace)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
+						if requestType != "GET" {
+							utils.SendLog(ret.Reason, "error", input.ProjectId)
+						}
+						return ret
+					}
+
+					utils.Info.Println("isto rbac object's kinds")
+					for _, istioObj := range istioObjects {
+						utils.Info.Println(istioObj.Kind)
+						finalObj.Services.Istio = append(finalObj.Services.Istio, istioObj)
+					}
+					utils.Info.Println("")
+				}
+			}
 		case "deployment":
 			deployment, err := getDeploymentObject(service)
 			if err != nil {
