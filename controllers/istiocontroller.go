@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"antelope/_vendor-20190419104715/github.com/Azure/go-autorest/autorest/to"
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
@@ -509,7 +508,7 @@ func ScaleUnit(unit string) resource.Scale {
 		return resource.Tera
 	} else if unit == "peta" {
 		return resource.Peta
-	} else if unit == "exa" {
+	} else {
 		return resource.Exa
 	}
 
