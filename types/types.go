@@ -2,12 +2,12 @@ package types
 
 import (
 	v12 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
-
 	"time"
 )
 
@@ -282,21 +282,21 @@ type KubernetesCred struct {
 	KubernetesPassword string `json:"password"`
 }
 type OutputServices struct {
-	Deployments            []v12.Deployment           `json:"deployment"`
-	DaemonSets             []v12.DaemonSet            `json:"daemonsets"`
-	HPA                    []v12.Deployment           `json:"hpas"`
-	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
-	Jobs                   []v13.Job                  `json:"job"`
-	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
-	ConfigMap              []v1.ConfigMap             `json:"configmap"`
-	Kubernetes             []v1.Service               `json:"kubernetes-service"`
-	Istio                  []IstioObject              `json:"istio-component"`
-	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
-	RoleClasses            []rbacV1.Role              `json:"role-classes"`
-	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
-	ServiceAccountClasses  []v1.ServiceAccount        `json:"service-account-classes"`
-	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
-	Secrets                []interface{}              `json:"secrets"`
+	Deployments            []v12.Deployment                      `json:"deployment"`
+	DaemonSets             []v12.DaemonSet                       `json:"daemonsets"`
+	HPA                    []autoscaling.HorizontalPodAutoscaler `json:"hpas"`
+	CronJobs               []v2alpha1.CronJob                    `json:"cronjob"`
+	Jobs                   []v13.Job                             `json:"job"`
+	StatefulSets           []v12.StatefulSet                     `json:"statefulset"`
+	ConfigMap              []v1.ConfigMap                        `json:"configmap"`
+	Kubernetes             []v1.Service                          `json:"kubernetes-service"`
+	Istio                  []IstioObject                         `json:"istio-component"`
+	StorageClasses         []storage.StorageClass                `json:"storage-classes"`
+	RoleClasses            []rbacV1.Role                         `json:"role-classes"`
+	RoleBindingClasses     []rbacV1.RoleBinding                  `json:"role-binding-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount                   `json:"service-account-classes"`
+	PersistentVolumeClaims []v1.PersistentVolumeClaim            `json:"persistent-volume-claims"`
+	Secrets                []interface{}                         `json:"secrets"`
 }
 
 type DeploymentWrapper struct {
