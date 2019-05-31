@@ -39,10 +39,11 @@ func main() {
 		log.Fatal("LOGGING_ENGINE_URL flag missing.\nTerminating....")
 		os.Exit(1)
 	}
-	constants.ServicePort = *Port
-	constants.KubernetesEngineURL = *kubeEngine
-	constants.NotificationURL = *redisEngine
-	constants.LoggingURL = *loggingEngine
+
+	constants.ServicePort = constants.ServicePort
+	constants.KubernetesEngineURL = constants.KubernetesEngineURL
+	constants.NotificationURL = constants.NotificationURL
+	constants.LoggingURL = constants.LoggingURL
 	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	controllers.Notifier.Init_notifier()
 
