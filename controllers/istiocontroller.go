@@ -941,9 +941,9 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 	var configmap = v1.ConfigMap{}
 	// Label Selector
 	//keel labels
-	deploymentLabels := make(map[string]string)
+	//deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	//var selector metav1.LabelSelector
@@ -956,16 +956,22 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 		//Failed
 		return &v1.ConfigMap{}, errors.New("Service name not found")
 	}
-	configmap.ObjectMeta.Name = service.Name
+	configmap.GenerateName = service.ID
+	configmap.Name = service.ID
+
+	//configmap.ObjectMeta.Name = service.Name
 	configmap.ObjectMeta.Labels = labels
 	//selector.MatchLabels = labels
-
-	if serviceAttr.Namespace != nil && *serviceAttr.Namespace == "" {
+	if service.Namespace == "" {
+		configmap.Namespace = service.Namespace
 		configmap.ObjectMeta.Namespace = "default"
-	} else if serviceAttr.Namespace != nil {
+	} else {
+		configmap.Namespace = service.Namespace
 		configmap.ObjectMeta.Namespace = service.Namespace
 	}
-
+	configmap.ObjectMeta.Name = service.ID
+	//configmap.ObjectMeta.GenerateName = service.ID
+	configmap.Data = make(map[string]string)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
 			configmap.Data[key] = value
@@ -1120,7 +1126,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 
 	}
 
-	if service.ServiceType == "secret" {
+	if service.ServiceType == "secrets" {
 		if secret, err := getSecretObject(service); err != nil {
 			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
@@ -1879,14 +1885,17 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 		APIVersion: v1.SchemeGroupVersion.String(),
 	}
 	objectMeta := metav1.ObjectMeta{
-		Name:      service.Name,
+		Name:      service.ID,
 		Namespace: service.Namespace,
 	}
 
 	secret.TypeMeta = typeMeta
 	secret.ObjectMeta = objectMeta
+	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
-		secret.Data = serviceAttr.Data
+		for key, value := range serviceAttr.Data {
+			secret.Data[key] = []byte(value)
+		}
 	}
 	if serviceAttr.StringData != nil {
 		secret.StringData = serviceAttr.StringData
@@ -1912,14 +1921,17 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 		APIVersion: v1.SchemeGroupVersion.String(),
 	}
 	objectMeta := metav1.ObjectMeta{
-		Name:      service.Name,
+		Name:      service.ID,
 		Namespace: service.Namespace,
 	}
 
 	secret.TypeMeta = typeMeta
 	secret.ObjectMeta = objectMeta
+	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
-		secret.Data = serviceAttr.Data
+		for key, value := range serviceAttr.Data {
+			secret.Data[key] = []byte(value)
+		}
 	}
 	if serviceAttr.StringData != nil {
 		secret.StringData = serviceAttr.StringData
@@ -2101,16 +2113,18 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	for _, envVariable := range serviceAttr.EnvironmentVariables {
 		tempEnvVariable := v1.EnvVar{}
 		if envVariable.IsConfigMap {
+			source, key := resolveValue(envVariable.Value)
 			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
 				ValueFrom: &v1.EnvVarSource{ConfigMapKeyRef: &v1.ConfigMapKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{Name: ""},
-					Key:                  "",
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
 				}}}
 		} else if envVariable.IsSecret {
+			source, key := resolveValue(envVariable.Value)
 			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
 				ValueFrom: &v1.EnvVarSource{SecretKeyRef: &v1.SecretKeySelector{
-					LocalObjectReference: v1.LocalObjectReference{Name: ""},
-					Key:                  "",
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
 				}}}
 		} else {
 			tempEnvVariable = v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
@@ -2217,8 +2231,10 @@ func resolveValue(value string) (string, string) {
 	result := returnValuesArray(value)
 	var splittedResult []string
 	for _, every := range result {
-		splittedResult = strings.Split(every, ":")
-		break
+		if len(every) > 0 {
+			splittedResult = strings.Split(every, ":")
+			break
+		}
 	}
 	keyArray := strings.Split(splittedResult[1], ".")
 	return splittedResult[0], keyArray[len(keyArray)-1]
@@ -2321,34 +2337,7 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 	return &context, nil
 }
 
-func makeSecrets(data types.KubernetesSecret) (*v1.Secret, error) {
-	var secret v1.Secret
-	if data.Name != nil {
-		secret.Name = *data.Name
-	}
-	if data.Namespace != nil {
-		secret.Namespace = *data.Namespace
-	}
-	if data.Type != nil {
-		switch *data.Type {
-		case "Opaque":
-			secret.Type = v1.SecretTypeOpaque
-		case "TLS":
-			secret.Type = v1.SecretTypeTLS
-		}
-	}
-	if data.Data != nil {
-		for key, value := range data.Data {
-			secret.Data[key] = value
-		}
-	}
-	if data.StringData != nil {
-		for key, value := range data.StringData {
-			secret.StringData[key] = value
-		}
-	}
-	return &secret, nil
-}
+
 
 func ConfigMapObject(data types.ConfigMap) (*v1.ConfigMap, error) {
 	var configMap v1.ConfigMap

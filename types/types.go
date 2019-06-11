@@ -153,7 +153,7 @@ type KubernetesSecret struct {
 	Version    *string           `json:"version"`
 	Namespace  *string           `json:"namespace"`
 	Type       *string           `json:"type"`
-	Data       map[string][]byte `json:"data"`
+	Data       map[string]string `json:"data"`
 	StringData map[string]string `json:"string_data"`
 }
 
