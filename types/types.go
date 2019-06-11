@@ -17,6 +17,7 @@ type Route struct {
 type Port struct {
 	Host      string `json:"host"`
 	Container string `json:"container"`
+	Name      string `json:"name"`
 }
 
 type SEPort struct {
@@ -146,6 +147,12 @@ type DockerServiceAttributes struct {
 		Verbs    []string `json:"verbs"`
 		ApiGroup []string `json:"api_group"`
 	} `json:"roles"`
+
+	IstioRoles []struct {
+		Services []string `json:"services"`
+		Methods  []string `json:"methods"`
+		Paths    []string `json:"paths"`
+	} `json:"istio_roles"`
 }
 
 type KubernetesSecret struct {

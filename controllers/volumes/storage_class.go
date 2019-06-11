@@ -24,6 +24,8 @@ func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 		provisionAwsClass(&storageClass, volume)
 	case string(types.Azure):
 		provisionAzureClass(&storageClass, volume)
+	case string(types.GCP):
+		provisionGCPClass(&storageClass, volume)
 	}
 
 	return storageClass
@@ -67,5 +69,17 @@ func provisionAzureClass(storageClass *v1.StorageClass, volume types.Volume) {
 	}
 	if volume.Params.StorageAccount != "" {
 		storageClass.Parameters["storageAccount"] = volume.Params.StorageAccount
+	}
+}
+
+func provisionGCPClass(storageClass *v1.StorageClass, volume types.Volume) {
+	storageClass.Provisioner = "kubernetes.io/gce-pd"
+
+	storageClass.Parameters = map[string]string{}
+	if volume.Params.Type != "" {
+		storageClass.Parameters["type"] = volume.Params.Type
+	}
+	if volume.Params.ReplicationType != "" {
+		storageClass.Parameters["replication-type"] = volume.Params.ReplicationType
 	}
 }
