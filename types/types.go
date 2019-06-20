@@ -68,8 +68,8 @@ type FaultInjectionAbort struct {
 	HttpStatus int32   `json:"http_status"`
 }
 type FaultInjectionDelay struct {
-	Percentage int32 `json:"percentage"`
-	FixedDelay int64 `json:"fix_delay"`
+	Percentage float64 `json:"percentage"`
+	FixedDelay int64   `json:"fix_delay"`
 }
 type IstioServiceEntryAttributes struct {
 	Hosts            []string      `json:"hosts"`
