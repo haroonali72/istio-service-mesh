@@ -48,6 +48,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
-
+	r.HandleFunc("/importservice", controllers.ImportServiceRequest)
 	log.Fatal(http.ListenAndServe(":"+constants.ServicePort, r))
 }

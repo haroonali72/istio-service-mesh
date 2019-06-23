@@ -951,196 +951,202 @@
 			"revisionTime": "2019-05-02T03:43:50Z"
 		},
 		{
-			"checksumSHA1": "gLztD+nCgmmx2TnWs8OSnVlF6dw=",
+			"checksumSHA1": "HXEiTgS1W04ptRq3RgkUb5njhk8=",
+			"path": "k8s.io/api/admissionregistration/v1alpha1",
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
+		},
+		{
+			"checksumSHA1": "LNKM1J6EYJxO+vAMGISOxYBU4Ck=",
 			"path": "k8s.io/api/admissionregistration/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "xhcKvtMfnLsZIm0WuRKnPMqdIa8=",
+			"checksumSHA1": "JGf+qPrLvvGomn0OLQay0tb3GDk=",
 			"path": "k8s.io/api/apps/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "Tb+0imiBYv4knVpTT5IueVmPxiw=",
+			"checksumSHA1": "vQ31w5Y4EZuy9nfdZ0sNGWjp6JY=",
 			"path": "k8s.io/api/apps/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "qfPgaq93dUUPRkKvfqmktlJQLRs=",
+			"checksumSHA1": "Hd84y8/l4UAe0fceR91BmcLGrOM=",
 			"path": "k8s.io/api/apps/v1beta2",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "KJw3ZiiyDAXzZJxR4vBy/MryAe8=",
+			"checksumSHA1": "49CNOPHTNC1PCvjBlfvhQFUuqYM=",
 			"path": "k8s.io/api/auditregistration/v1alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "j0Oex7cjn3tUc1ivGHBiaKg7pQ4=",
+			"checksumSHA1": "7uIyGDZR8lTYR7Mjr5PzkHVrjFA=",
 			"path": "k8s.io/api/authentication/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "Z9bNiU4r2iInvMLCdlgSNU5YUGY=",
+			"checksumSHA1": "tCYZPJKTmsrMAbn5agPZKy4Nww4=",
 			"path": "k8s.io/api/authentication/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "xmDhNhZaLaA29PoDp6tgpjVeBoU=",
+			"checksumSHA1": "JBPatq04jIcqw6JS6+j29juBcW0=",
 			"path": "k8s.io/api/authorization/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "NFP3rwrf0c+E0pTpJ+B2ZnTTagU=",
+			"checksumSHA1": "ciauhoW93tONPtFSN0Y3pWJlweo=",
 			"path": "k8s.io/api/authorization/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "KYq2UkaHl7iDbP2tL++Rpy0FhBI=",
+			"checksumSHA1": "TlLy5Hue3tAmbHIewx1m5iZngLc=",
 			"path": "k8s.io/api/autoscaling/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "2f+RbsO3eOj52HTo4s43AOCEp9I=",
+			"checksumSHA1": "cxVJE40T96SJc0vHOF6IoQ1OcSI=",
 			"path": "k8s.io/api/autoscaling/v2beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "tl7lCIiCv785kGkxmPImJR1n/c8=",
+			"checksumSHA1": "g2PwcXO3NaWLQ6bhduLUBYHpfRs=",
 			"path": "k8s.io/api/autoscaling/v2beta2",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "68frgo+G5Q/K5mpPX4jeo/nbYgA=",
+			"checksumSHA1": "f8yTtZKzjQImieZUYitBWE4oWDo=",
 			"path": "k8s.io/api/batch/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "4Z2eTNy6LALqXLDO0kWwLQpcJ0o=",
+			"checksumSHA1": "zExlMSUAboB2LwUP35LrwgOvRUA=",
 			"path": "k8s.io/api/batch/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "y5He89ungFvhyq45mF8gFSYlN0s=",
+			"checksumSHA1": "MEM5AadmRaYTgI2m8XMjY4A8f6Y=",
 			"path": "k8s.io/api/batch/v2alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "/ULat0hx7WSi6vv1Mv38YDO9FoI=",
+			"checksumSHA1": "XnTV0AUuADXS1sGQS/R0kensoPA=",
 			"path": "k8s.io/api/certificates/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "czpwklpnTJHtpS46VT5oKxRvtaY=",
+			"checksumSHA1": "U3oEqiZQ5lMK0DKN8E9z9Hk6OY4=",
 			"path": "k8s.io/api/coordination/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "s1dFcDJD7KLp360gQrYJkVoOpbk=",
+			"checksumSHA1": "+/zMFr18e14xt5wDqILTCSnEnvY=",
 			"path": "k8s.io/api/coordination/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "eeBKjUzQe1QseSdq9aAJ94hCtvk=",
+			"checksumSHA1": "9NFpNwpl28lJ1o3Q1IZ5LNG6Zy4=",
 			"path": "k8s.io/api/core/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "5mcaaBkzcfw7xb42RSDGGeG3MXM=",
+			"checksumSHA1": "D+ez63ne9A478ZCVbPBnoqtThkg=",
 			"path": "k8s.io/api/events/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "HDJedR7OQdwyJ/9QQeXGktsAWm8=",
+			"checksumSHA1": "J5vrxB57yQVpdZpGrP+UVMD2rpE=",
 			"path": "k8s.io/api/extensions/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "wqQ5+krQNSZ3MqaW/ukTu/vlBFo=",
+			"checksumSHA1": "Fv+1JfJtTcFHrbhw6dRNDghaC10=",
 			"path": "k8s.io/api/networking/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "HYGLLrp2rFS68dy5prLYi8ewa3c=",
+			"checksumSHA1": "6tvG7rHoj72y2J+/7uAYE7q1O0s=",
 			"path": "k8s.io/api/policy/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "HvZTtXrlvdEtZppJmbczm/263Og=",
+			"checksumSHA1": "tJQ+zVwM7RXP7OSAf4i3pvG4/Vo=",
 			"path": "k8s.io/api/rbac/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "OxgwuFsTCKVSRPa4i/qp2rC/5D0=",
+			"checksumSHA1": "BCah5rcjtMZYE5OEi5oqwwANc5A=",
 			"path": "k8s.io/api/rbac/v1alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "XKRAopIOxWmGY8Zf+vwUtG67lJs=",
+			"checksumSHA1": "gXdtj4045uyrh0D+uWCcND6cnl8=",
 			"path": "k8s.io/api/rbac/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "dG4pxAgfGhtOwgVe/0OZj1vHRUw=",
+			"checksumSHA1": "56rFkXU234hsJLVUsNQpiekRQr4=",
 			"path": "k8s.io/api/scheduling/v1alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "B+nNXTjiQoBbX0KWwmVCV6JIqKg=",
+			"checksumSHA1": "yZ+uqojvmp/Aq9nFASag7Aor59c=",
 			"path": "k8s.io/api/scheduling/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "2L1ZuQKDSeLuwqA8ma+DFh4wRVs=",
+			"checksumSHA1": "RYaVbTdgPHoRjJgaN4U9mz0hLGw=",
 			"path": "k8s.io/api/settings/v1alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "g2T/srp+aQ3H5//CX8HRyGnlNho=",
+			"checksumSHA1": "mdRiDfTuynB9II/snY2Vjnx8np8=",
 			"path": "k8s.io/api/storage/v1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "RRbHJISA05c9UeOwYyhbJ6SU4ZU=",
+			"checksumSHA1": "uiKco2k9cDBtFLMyFSe6fjqRDT8=",
 			"path": "k8s.io/api/storage/v1alpha1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
-			"checksumSHA1": "OoNMIbQFi1Cy0YL6V8I7dreoomM=",
+			"checksumSHA1": "eJyDTn9CvZyM7NfzYS3TZhACXFA=",
 			"path": "k8s.io/api/storage/v1beta1",
-			"revision": "97d6bb8ea5f4f05566a0124638fb511be2b80c54",
-			"revisionTime": "2019-04-29T21:35:36Z"
+			"revision": "173ce66c1e39d1d0f56e0b3347ff2988068aecd0",
+			"revisionTime": "2018-12-21T18:03:36Z"
 		},
 		{
 			"checksumSHA1": "dM7GNO2KUrLgh4VeflXa7G7YCgc=",
@@ -1357,6 +1363,12 @@
 			"path": "k8s.io/apimachinery/third_party/forked/golang/reflect",
 			"revision": "5bae42371a56b2252d3a1c531087dce873ee446e",
 			"revisionTime": "2019-04-30T21:11:24Z"
+		},
+		{
+			"checksumSHA1": "aCw2+F9qCy+xRvfD1AvmjUKAgkE=",
+			"path": "k8s.io/client-go/kubernetes/scheme",
+			"revision": "73dad31f020d30ccebe1617e6c93546013050175",
+			"revisionTime": "2019-01-09T00:26:46Z"
 		},
 		{
 			"checksumSHA1": "jjLnetcAQUtya2TMk7uyLhf8H2s=",
