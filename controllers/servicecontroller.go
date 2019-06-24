@@ -27,7 +27,7 @@ func ImportServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	svc, errs := GetServices(b)
-
+	utils.Info.Println(len(svc))
 	result := struct {
 		Services []types.Service `json:"services"`
 		Errors   []string        `json:"errors"`
@@ -51,9 +51,11 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 	var deployments []types.Service
 	var k8sRoles []types.K8sRbacAttribute
 	var istioRoles []types.IstioRbacAttribute
-	for kind, obj := range files {
+	for kindName, obj := range files {
 		svc := types.Service{}
 		svc.Version = "v1"
+		metdata := strings.Split(kindName, ";")
+		kind := metdata[0]
 		switch constants.K8sKind(kind) {
 		case constants.Deployment:
 			var dep v1.Deployment
@@ -259,6 +261,7 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.ServiceType = strings.ToLower(string(constants.Secret))
 				svc.SubType = string(secrets.Type)
 				var serviceAttr types.KubernetesSecret
+				serviceAttr.Data = make(map[string]string)
 				if secrets.Data != nil {
 					for key, value := range secrets.Data {
 						serviceAttr.Data[key] = string(value)
@@ -344,11 +347,22 @@ func parseK8sYaml(fileR []byte) (map[string][]byte, []error) {
 			errs = append(errs, err)
 			continue
 		}
+		kind := ""
 		if _, ok := raw["kind"]; ok {
 			if _, isType := raw["kind"].(string); isType {
-				files[raw["kind"].(string)] = jsonRawData
+				kind = raw["kind"].(string)
+				//files[raw["kind"].(string)+";"] = jsonRawData
 			}
 		}
+		name := ""
+		if _, ok := raw["metadata"]; ok {
+			if metdata, ok := raw["metadata"].(map[string]interface{}); ok {
+				if _, exist := metdata["name"]; exist {
+					name = metdata["name"].(string)
+				}
+			}
+		}
+		files[kind+";"+name] = jsonRawData
 
 	}
 	return files, errs
