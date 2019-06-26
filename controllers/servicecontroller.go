@@ -258,7 +258,7 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 			} else {
 				svc.Namespace = secrets.Namespace
 				svc.Name = secrets.Name
-				svc.ServiceType = strings.ToLower(string(constants.Secret))
+				svc.ServiceType = "secrets" //strings.ToLower(string(constants.Secret))
 				svc.SubType = string(secrets.Type)
 				var serviceAttr types.KubernetesSecret
 				serviceAttr.Data = make(map[string]string)
