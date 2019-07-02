@@ -114,7 +114,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		}
 		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
 			delay := &v1alpha3.HTTPFaultInjection_Delay{
-				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionDelay.Percentage},
 				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
 			}
 			fault.Delay = delay
@@ -2474,8 +2474,6 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 	}
 	return &context, nil
 }
-
-
 
 func ConfigMapObject(data types.ConfigMap) (*v1.ConfigMap, error) {
 	var configMap v1.ConfigMap
