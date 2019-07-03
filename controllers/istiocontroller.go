@@ -2021,7 +2021,13 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			secret.Data[key] = []byte(value)
+			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+				utils.Error.Println(err)
+				secret.Data[key] = []byte(value)
+			} else {
+				secret.Data[key] = decoded_value
+			}
+			//secret.Data[key] = []byte(value)
 		}
 	}
 	if serviceAttr.StringData != nil {
@@ -2057,7 +2063,12 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			secret.Data[key] = []byte(value)
+			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+				utils.Error.Println(err)
+				secret.Data[key] = []byte(value)
+			} else {
+				secret.Data[key] = decoded_value
+			}
 		}
 	}
 	if serviceAttr.StringData != nil {
