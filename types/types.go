@@ -132,29 +132,34 @@ type DockerServiceAttributes struct {
 	Args            []string              `json:"args"`
 	SecurityContext SecurityContextStruct `json:"security_context"`
 	//resource types: cpu, memory
-	LimitResourceTypes        []string          `json:"limit_resource_types"`
-	LimitResourceQuantities   []string          `json:"limit_resource_quantities"`
-	RequestResourceTypes      []string          `json:"request_resource_types"`
-	RequestResourceQuantities []string          `json:"request_resource_quantities"`
-	Labels                    map[string]string `json:"labels"`
-	Annotations               map[string]string `json:"annotations"`
-	CronJobScheduleString     string            `json:"cron_job_schedule_string"`
+	LimitResourceTypes        []string               `json:"limit_resource_types"`
+	LimitResourceQuantities   []string               `json:"limit_resource_quantities"`
+	RequestResourceTypes      []string               `json:"request_resource_types"`
+	RequestResourceQuantities []string               `json:"request_resource_quantities"`
+	Labels                    map[string]string      `json:"labels"`
+	Annotations               map[string]string      `json:"annotations"`
+	CronJobScheduleString     string                 `json:"cron_job_schedule_string"`
+	LivenessProb              map[string]interface{} `json:"liveness_probe"`
+	RedinessProb              map[string]interface{} `json:"readiness_probe"`
 
 	IsRbac bool `json:"is_rbac_enabled"`
 
-	RbacRoles []struct {
-		Resource string   `json:"resource"`
-		Verbs    []string `json:"verbs"`
-		ApiGroup []string `json:"api_group"`
-	} `json:"roles"`
+	RbacRoles []K8sRbacAttribute `json:"roles"`
 
-	IstioRoles []struct {
-		Services []string `json:"services"`
-		Methods  []string `json:"methods"`
-		Paths    []string `json:"paths"`
-	} `json:"istio_roles"`
+	IstioRoles []IstioRbacAttribute `json:"istio_roles"`
+
+	IsInitContainerEnable bool `json:"enable_init"`
 }
-
+type K8sRbacAttribute struct {
+	Resource string   `json:"resource"`
+	Verbs    []string `json:"verbs"`
+	ApiGroup []string `json:"api_group"`
+}
+type IstioRbacAttribute struct {
+	Services []string `json:"services"`
+	Methods  []string `json:"methods"`
+	Paths    []string `json:"paths"`
+}
 type KubernetesSecret struct {
 	Name       *string           `json:"name"`
 	Version    *string           `json:"version"`
