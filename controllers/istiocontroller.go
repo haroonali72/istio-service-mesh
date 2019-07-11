@@ -419,6 +419,44 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 	return components, nil
 
 }
+func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1.LabelSelector, error) {
+	lenl := len(service.LabelSelector.MatchLabel)
+	lene := len(service.LabelSelector.MatchExpression)
+	if (!(lenl > 0)) && lene > 0 {
+
+		sel = &metav1.LabelSelector{nil, nil}
+	} else if lene > 0 || lenl > 0 {
+		sel = &metav1.LabelSelector{make(map[string]string), nil}
+
+	}
+	for k, v := range service.LabelSelector.MatchLabel {
+		sel.MatchLabels[k] = v
+	}
+	for i := 0; i < len(service.LabelSelector.MatchExpression); i++ {
+		byteData, err := json.Marshal(service.LabelSelector.MatchExpression[i])
+		if err != nil {
+			return sel, err
+		}
+		var temp metav1.LabelSelectorRequirement
+
+		err = json.Unmarshal(byteData, &temp)
+		if err != nil {
+			return sel, err
+		}
+		sel.MatchExpressions = append(sel.MatchExpressions, temp)
+	}
+	return sel, nil
+}
+
+func setNodeSelector(service types.Service, sel map[string]string) (map[string]string, error) {
+	if len(sel) <= 0 {
+		sel = make(map[string]string)
+	}
+	for k, v := range service.NodeSelector {
+		sel[k] = v
+	}
+	return sel, nil
+}
 
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
@@ -429,7 +467,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
-	var selector metav1.LabelSelector
+	//var selector metav1.LabelSelector
 	labels, _ := getLabels(service)
 
 	labels["app"] = service.Name
@@ -439,16 +477,25 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
+
 	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
 	deployment.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
-	deployment.Spec.Selector = &selector
+	var err2 error
+	deployment.Spec.Selector, err2 = setLabelSelector(service, deployment.Spec.Selector)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+	deployment.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, deployment.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+
 	deployment.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "true"
@@ -548,7 +595,17 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	} else {
 		daemonset.ObjectMeta.Namespace = service.Namespace
 	}
-	daemonset.Spec.Selector = &selector
+	var err2 error
+	daemonset.Spec.Selector, err2 = setLabelSelector(service, daemonset.Spec.Selector)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+
+	daemonset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, daemonset.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+
 	daemonset.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "true"
@@ -651,7 +708,18 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	} else {
 		cronjob.ObjectMeta.Namespace = service.Namespace
 	}
-	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
+
+	var err2 error
+	cronjob.Spec.JobTemplate.Spec.Selector, err2 = setLabelSelector(service, cronjob.Spec.JobTemplate.Spec.Selector)
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+
+	//	cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "false"
@@ -763,7 +831,15 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	} else {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
-	//job.Spec.Selector = &selector
+	var err2 error
+	job.Spec.Selector, err2 = setLabelSelector(service, job.Spec.Selector)
+	if err2 != nil {
+		return v13.Job{}, err2
+	}
+	job.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, job.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v13.Job{}, err2
+	}
 	job.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "false"
@@ -866,7 +942,15 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	} else {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
-	statefulset.Spec.Selector = &selector
+	var err2 error
+	statefulset.Spec.Selector, err2 = setLabelSelector(service, statefulset.Spec.Selector)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
+	statefulset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, statefulset.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "true"
@@ -1232,6 +1316,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			if service.Namespace != "" {
 				attributes.Volume.Namespace = service.Namespace
 			}
+
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
@@ -1871,7 +1956,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	var status types.StatusRequest
 	status.ID = input.SolutionInfo.Service.ID
 	status.Name = input.SolutionInfo.Service.Name
-
+	//
 	result := DeployIstio(input, r.Method)
 
 	inProgress := false
@@ -2021,7 +2106,7 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {
@@ -2063,7 +2148,7 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {
@@ -2080,11 +2165,17 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 }
 
 func putCommandAndArguments(container *v1.Container, command, args []string) error {
+
 	if len(command) > 0 && command[0] != "" {
 		container.Command = command
-		container.Args = args
+		if len(args) > 0 {
+			container.Args = args
+		} else {
+			container.Args = []string{}
+		}
+
 	} else if len(args) > 0 {
-		return errors.New("Error Found: Arguments provided without a command.")
+		container.Args = args
 	}
 	return nil
 }
@@ -2548,6 +2639,7 @@ func getLabels(data types.Service) (map[string]string, error) {
 
 	var serviceAttributes types.DockerServiceAttributes
 	if data, err := json.Marshal(data.ServiceAttributes); err == nil {
+
 		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
 			utils.Error.Println(err)
 			return nil, err

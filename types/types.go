@@ -234,6 +234,23 @@ type ServiceDependencyx struct {
 	Version           string `json:"version"`
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
+type LabelSelectorObj struct {
+	MatchLabel      map[string]string          `json:"match_label"`
+	MatchExpression []LabelSelectorRequirement `json:"match_expression"`
+}
+type LabelSelectorRequirement struct {
+	Key      string                `json:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	Operator LabelSelectorOperator `json:"operator" protobuf:"bytes,2,opt,name=operator,casttype=LabelSelectorOperator"`
+	Values   []string              `json:"values,omitempty" protobuf:"bytes,3,rep,name=values"`
+}
+type LabelSelectorOperator string
+
+const (
+	LabelSelectorOpIn           LabelSelectorOperator = "In"
+	LabelSelectorOpNotIn        LabelSelectorOperator = "NotIn"
+	LabelSelectorOpExists       LabelSelectorOperator = "Exists"
+	LabelSelectorOpDoesNotExist LabelSelectorOperator = "DoesNotExist"
+)
 
 type Service struct {
 	ServiceType           string              `json:"service_type"`
@@ -245,6 +262,8 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
+	LabelSelector         LabelSelectorObj    `json:"label_selector"`
+	NodeSelector          map[string]string   `json:"node_selector"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
