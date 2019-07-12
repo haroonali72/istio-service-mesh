@@ -1933,11 +1933,10 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	cpContext := new(core.Context)
 	err := cpContext.ReadLoggingParameters(r)
 	if err != nil {
-		/*
 		utils.Error.Println(err)
-		http.Error(w, err.Error(), 500)
-		return
-		*/
+
+		//http.Error(w, err.Error(), 500)
+
 	} else{
 
 		backwardCompatiblity := true
@@ -1945,20 +1944,19 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		projectId := r.Header.Get("projectId")
 		if projectId == "" {
 			backwardCompatiblity = false
-			/*
+
 			utils.Error.Println("projectId not found in request")
-			http.Error(w,"projectId is missing in request", 500)
-			return
-			*/
+			//http.Error(w,"projectId is missing in request", 500)
+			//return
 		}
 		solutionId := r.Header.Get("solutionId")
 		if projectId == "" {
 			backwardCompatiblity = false
-			/*
+
 			utils.Error.Println("solutionId not found in request")
-			http.Error(w,"solutionId not found in request", 500)
-			return
-			*/
+			//http.Error(w,"solutionId not found in request", 500)
+			//return
+
 		}
 		if backwardCompatiblity{
 			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
@@ -1969,7 +1967,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Logging Initializations End
-	
+
 	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
