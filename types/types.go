@@ -69,8 +69,8 @@ type FaultInjectionAbort struct {
 	HttpStatus int32   `json:"http_status"`
 }
 type FaultInjectionDelay struct {
-	Percentage int32 `json:"percentage"`
-	FixedDelay int64 `json:"fix_delay"`
+	Percentage float64 `json:"percentage"`
+	FixedDelay int64   `json:"fix_delay"`
 }
 type IstioServiceEntryAttributes struct {
 	Hosts            []string      `json:"hosts"`
@@ -137,8 +137,10 @@ type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
 	DefaultConfigurations string `json:"default_configurations"`
 	EnvironmentVariables  []struct {
-		Key   string `json:"key"`
-		Value string `json:"value"`
+		Key         string `json:"key"`
+		Value       string `json:"value"`
+		IsSecret    bool   `json:"secrets"`
+		IsConfigMap bool   `json:"configmap"`
 	} `json:"environment_variables"`
 	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
 	Ports                         []Port                        `json:"ports"`
@@ -152,26 +154,48 @@ type DockerServiceAttributes struct {
 	Args            []string              `json:"args"`
 	SecurityContext SecurityContextStruct `json:"security_context"`
 	//resource types: cpu, memory
-	LimitResourceTypes        []string `json:"limit_resource_types"`
-	LimitResourceQuantities   []string `json:"limit_resource_quantities"`
-	RequestResourceTypes      []string `json:"request_resource_types"`
-	RequestResourceQuantities []string `json:"request_resource_quantities"`
-
-	CronJobScheduleString string `json:"cron_job_schedule_string"`
+	LimitResourceTypes        []string               `json:"limit_resource_types"`
+	LimitResourceQuantities   []string               `json:"limit_resource_quantities"`
+	RequestResourceTypes      []string               `json:"request_resource_types"`
+	RequestResourceQuantities []string               `json:"request_resource_quantities"`
+	Labels                    map[string]string      `json:"labels"`
+	Annotations               map[string]string      `json:"annotations"`
+	CronJobScheduleString     string                 `json:"cron_job_schedule_string"`
+	LivenessProb              map[string]interface{} `json:"liveness_probe"`
+	RedinessProb              map[string]interface{} `json:"readiness_probe"`
 
 	IsRbac bool `json:"is_rbac_enabled"`
 
-	RbacRoles []struct {
-		Resource string   `json:"resource"`
-		Verbs    []string `json:"verbs"`
-		ApiGroup []string `json:"api_group"`
-	} `json:"roles"`
+	RbacRoles []K8sRbacAttribute `json:"roles"`
 
-	IstioRoles []struct {
-		Services []string `json:"services"`
-		Methods  []string `json:"methods"`
-		Paths    []string `json:"paths"`
-	} `json:"istio_roles"`
+	IstioRoles []IstioRbacAttribute `json:"istio_roles"`
+
+	IsInitContainerEnable bool `json:"enable_init"`
+}
+type K8sRbacAttribute struct {
+	Resource string   `json:"resource"`
+	Verbs    []string `json:"verbs"`
+	ApiGroup []string `json:"api_group"`
+}
+type IstioRbacAttribute struct {
+	Services []string `json:"services"`
+	Methods  []string `json:"methods"`
+	Paths    []string `json:"paths"`
+}
+type KubernetesSecret struct {
+	Name       *string           `json:"name"`
+	Version    *string           `json:"version"`
+	Namespace  *string           `json:"namespace"`
+	Type       *string           `json:"type"`
+	Data       map[string]string `json:"data"`
+	StringData map[string]string `json:"string_data"`
+}
+
+type ConfigMap struct {
+	Name      *string           `json:"name"`
+	Version   *string           `json:"version"`
+	Namespace *string           `json:"namespace"`
+	Data      map[string]string `json:"data"`
 }
 
 type SecurityContextStruct struct {

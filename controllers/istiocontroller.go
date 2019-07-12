@@ -114,7 +114,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 		}
 		if http.FaultInjection.FaultInjectionDelay.Percentage != 0 && http.FaultInjection.FaultInjectionDelay.FixedDelay != 0 {
 			delay := &v1alpha3.HTTPFaultInjection_Delay{
-				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionAbort.Percentage},
+				Percentage:    &v1alpha3.Percent{Value: http.FaultInjection.FaultInjectionDelay.Percentage},
 				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{FixedDelay: &googl_types.Duration{Seconds: http.FaultInjection.FaultInjectionDelay.FixedDelay}},
 			}
 			fault.Delay = delay
@@ -514,17 +514,17 @@ func ScaleUnit(unit string) resource.Scale {
 
 }
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
+	var secrets, configMaps []string
 	var deployment = v12.Deployment{}
 	// Label Selector
-
 	//keel labels
 	deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
-
 	var selector metav1.LabelSelector
-	labels := make(map[string]string)
+	labels, _ := getLabels(service)
+
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -543,24 +543,77 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	deployment.Spec.Selector = &selector
 	deployment.Spec.Template.ObjectMeta.Labels = labels
-	deployment.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
-	}
-
+	Annotations, _ := getAnnotations(service)
+	Annotations["sidecar.istio.io/inject"] = "true"
+	deployment.Spec.Template.ObjectMeta.Annotations = Annotations
 	var err error
-	deployment.Spec.Template.Spec.Containers, err = getContainers(service)
+	deployment.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
+	if err != nil {
+		return v12.Deployment{}, err
+	}
+	isExistSecret := make(map[string]bool)
+	isExistConfigMap := make(map[string]bool)
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
+	}
+
+	deployment.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
 	if err != nil {
 		return v12.Deployment{}, err
 	}
 
-	deployment.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
-	if err != nil {
-		return v12.Deployment{}, err
+	for _, every := range secrets {
+		if _, ok := isExistSecret[every]; !ok {
+			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: every,
+					},
+				},
+			})
+		}
+	}
+	for _, every := range configMaps {
+		if _, ok := isExistConfigMap[every]; !ok {
+			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: every,
+						},
+					},
+				},
+			})
+		}
 	}
 
 	return deployment, nil
 }
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
+	var secrets, configMaps []string
 	var daemonset = v12.DaemonSet{}
 	daemonset.Kind = "DaemonSet"
 	daemonset.APIVersion = "apps/v1"
@@ -571,7 +624,7 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 	var selector metav1.LabelSelector
-	labels := make(map[string]string)
+	labels, _ := getLabels(service)
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -590,24 +643,78 @@ func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	}
 	daemonset.Spec.Selector = &selector
 	daemonset.Spec.Template.ObjectMeta.Labels = labels
-	daemonset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
-	}
+	Annotations, _ := getAnnotations(service)
+	Annotations["sidecar.istio.io/inject"] = "true"
+	daemonset.Spec.Template.ObjectMeta.Annotations = Annotations
 
 	var err error
-	daemonset.Spec.Template.Spec.Containers, err = getContainers(service)
+	daemonset.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
+	if err != nil {
+		return v12.DaemonSet{}, err
+	}
+	isExistSecret := make(map[string]bool)
+	isExistConfigMap := make(map[string]bool)
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		daemonset.Spec.Template.Spec.Volumes = append(daemonset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		daemonset.Spec.Template.Spec.Volumes = append(daemonset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
+	}
+
+	daemonset.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
 	if err != nil {
 		return v12.DaemonSet{}, err
 	}
 
-	daemonset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
-	if err != nil {
-		return v12.DaemonSet{}, err
+	for _, every := range secrets {
+		if _, ok := isExistSecret[every]; !ok {
+			daemonset.Spec.Template.Spec.Volumes = append(daemonset.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: every,
+					},
+				},
+			})
+		}
+	}
+	for _, every := range configMaps {
+		if _, ok := isExistConfigMap[every]; !ok {
+			daemonset.Spec.Template.Spec.Volumes = append(daemonset.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: every,
+						},
+					},
+				},
+			})
+		}
 	}
 
 	return daemonset, nil
 }
 func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
+	var secrets, configMaps []string
 	var cronjob = v2alpha1.CronJob{}
 	cronjob.Kind = "CronJob"
 	cronjob.APIVersion = "batch/v1beta1"
@@ -620,7 +727,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels := make(map[string]string)
+	labels, _ := getLabels(service)
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -639,9 +746,9 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	}
 	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
-	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "false",
-	}
+	Annotations, _ := getAnnotations(service)
+	Annotations["sidecar.istio.io/inject"] = "false"
+	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = Annotations
 	//
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -651,14 +758,67 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
 
 	var err error
-	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers, err = getContainers(service)
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
+	if err != nil {
+		return v2alpha1.CronJob{}, err
+	}
+	isExistSecret := make(map[string]bool)
+	isExistConfigMap := make(map[string]bool)
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
+	}
+
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
 	if err != nil {
 		return v2alpha1.CronJob{}, err
 	}
 
-	cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
-	if err != nil {
-		return v2alpha1.CronJob{}, err
+	for _, every := range secrets {
+		if _, ok := isExistSecret[every]; !ok {
+			cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: every,
+					},
+				},
+			})
+		}
+	}
+	for _, every := range configMaps {
+		if _, ok := isExistConfigMap[every]; !ok {
+			cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes = append(cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: every,
+						},
+					},
+				},
+			})
+		}
 	}
 
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
@@ -666,6 +826,7 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	return cronjob, nil
 }
 func getJobObject(service types.Service) (v13.Job, error) {
+	var secrets, configMaps []string
 	var job = v13.Job{}
 	job.Kind = "Job"
 	job.APIVersion = "batch/v1"
@@ -678,7 +839,7 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels := make(map[string]string)
+	labels, _ := getLabels(service)
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -697,30 +858,83 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	}
 	//job.Spec.Selector = &selector
 	job.Spec.Template.ObjectMeta.Labels = labels
-	job.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "false",
-	}
+	Annotations, _ := getAnnotations(service)
+	Annotations["sidecar.istio.io/inject"] = "false"
+	job.Spec.Template.ObjectMeta.Annotations = Annotations
 
 	var err error
-	job.Spec.Template.Spec.Containers, err = getContainers(service)
+	job.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
+	if err != nil {
+		return v13.Job{}, err
+	}
+	isExistSecret := make(map[string]bool)
+	isExistConfigMap := make(map[string]bool)
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
+	}
+
+	job.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
 	if err != nil {
 		return v13.Job{}, err
 	}
 
-	job.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
-	if err != nil {
-		return v13.Job{}, err
+	for _, every := range secrets {
+		if _, ok := isExistSecret[every]; !ok {
+			job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: every,
+					},
+				},
+			})
+		}
+	}
+	for _, every := range configMaps {
+		if _, ok := isExistConfigMap[every]; !ok {
+			job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, v1.Volume{
+				Name: every,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: every,
+						},
+					},
+				},
+			})
+		}
 	}
 
 	job.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyNever
 	return job, nil
 }
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
+	var secrets, configMaps []string
 	var statefulset = v12.StatefulSet{}
 	statefulset.Kind = "StatefulSet"
 	statefulset.APIVersion = "v1"
 	// Label Selector
-
 	//keel labels
 	deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
@@ -728,7 +942,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels := make(map[string]string)
+	labels, _ := getLabels(service)
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -747,53 +961,123 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	}
 	statefulset.Spec.Selector = &selector
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
-	statefulset.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"sidecar.istio.io/inject": "true",
-	}
+	Annotations, _ := getAnnotations(service)
+	Annotations["sidecar.istio.io/inject"] = "true"
+	statefulset.Spec.Template.ObjectMeta.Annotations = Annotations
 
 	var err error
-	statefulset.Spec.Template.Spec.Containers, err = getContainers(service)
+	statefulset.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
 	}
+	isExistSecret := make(map[string]bool)
+	isExistConfigMap := make(map[string]bool)
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		statefulset.Spec.Template.Spec.Volumes = append(statefulset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		statefulset.Spec.Template.Spec.Volumes = append(statefulset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
+	}
 
-	statefulset.Spec.Template.Spec.InitContainers, err = getInitContainers(service)
+	statefulset.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
 	if err != nil {
 		return v12.StatefulSet{}, err
+	}
+	for _, every := range secrets {
+		isExistSecret[every] = true
+		statefulset.Spec.Template.Spec.Volumes = append(statefulset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: every,
+				},
+			},
+		})
+	}
+	for _, every := range configMaps {
+		isExistConfigMap[every] = true
+		statefulset.Spec.Template.Spec.Volumes = append(statefulset.Spec.Template.Spec.Volumes, v1.Volume{
+			Name: every,
+			VolumeSource: v1.VolumeSource{
+				ConfigMap: &v1.ConfigMapVolumeSource{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: every,
+					},
+				},
+			},
+		})
 	}
 
 	return statefulset, nil
 }
-func getConfigMapObject(service types.Service) (v1.ConfigMap, error) {
+func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
+
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.ConfigMap
+	if err := json.Unmarshal(byteData, &serviceAttr); err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
 	var configmap = v1.ConfigMap{}
 	// Label Selector
-
 	//keel labels
-	deploymentLabels := make(map[string]string)
+	//deploymentLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
-	var selector metav1.LabelSelector
+	//var selector metav1.LabelSelector
+	//labels, _ := getLabels(service)
 	labels := make(map[string]string)
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
-		return v1.ConfigMap{}, errors.New("Service name not found")
+		return &v1.ConfigMap{}, errors.New("Service name not found")
 	}
-	configmap.ObjectMeta.Name = service.Name
-	configmap.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
+	configmap.GenerateName = service.ID
+	configmap.Name = service.ID
 
+	//configmap.ObjectMeta.Name = service.Name
+	configmap.ObjectMeta.Labels = labels
+	//selector.MatchLabels = labels
 	if service.Namespace == "" {
+		configmap.Namespace = service.Namespace
 		configmap.ObjectMeta.Namespace = "default"
 	} else {
+		configmap.Namespace = service.Namespace
 		configmap.ObjectMeta.Namespace = service.Namespace
 	}
+	configmap.ObjectMeta.Name = service.ID
+	//configmap.ObjectMeta.GenerateName = service.ID
+	configmap.Data = make(map[string]string)
+	if serviceAttr.Data != nil {
+		for key, value := range serviceAttr.Data {
+			configmap.Data[key] = value
+		}
+	}
 
-	return configmap, nil
+	return &configmap, nil
 }
 func getServiceObject(input types.Service) (*v1.Service, error) {
 	service := v1.Service{}
@@ -807,7 +1091,7 @@ func getServiceObject(input types.Service) (*v1.Service, error) {
 	}
 	service.Spec.Type = v1.ServiceTypeClusterIP
 
-	labels := make(map[string]string)
+	labels, _ := getLabels(input)
 	labels["app"] = service.Name
 	service.Spec.Selector = labels
 	byteData, _ := json.Marshal(input.ServiceAttributes)
@@ -998,6 +1282,33 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
 
 	}
+
+	if service.ServiceType == "secrets" {
+		if secret, err := getSecretObject(service); err != nil {
+			utils.Info.Println("There is error in deployment")
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Not a valid Secret Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
+		} else {
+			finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
+		}
+	} else if service.ServiceType == "configmap" {
+		if configmap, err := getConfigMapObject(service); err != nil {
+			utils.Info.Println("There is error in deployment")
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Not a valid configMap Object. Error : " + err.Error()
+			if requestType != "GET" {
+				utils.SendLog(ret.Reason, "error", input.ProjectId)
+			}
+			return ret
+		} else {
+			finalObj.Services.ConfigMap = append(finalObj.Services.ConfigMap, *configmap)
+		}
+	}
+
 	secret, exists := CreateDockerCfgSecret(service)
 	if exists {
 		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
@@ -1046,6 +1357,9 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				//Assigning Secret
 				deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, v1.LocalObjectReference{Name: secret.ObjectMeta.Name})
 			}
+
+			//secrets
+
 			//Attaching persistent volumes if any in two-steps
 			//Mounting each volume to container and adding corresponding volume to pod
 			if len(deployment.Spec.Template.Spec.Containers) > 0 {
@@ -1717,6 +2031,24 @@ const (
 	SecretKind = "Secret"
 )
 
+func getSecretObject(service types.Service) (*v1.Secret, error) {
+	switch service.SubType {
+	case "Opaque":
+		if secret, ok := CreateOpaqueSecret(service); ok {
+			return secret, nil
+		} else {
+			return nil, errors.New("Something went wrong in getting secret object")
+		}
+	case "TLS":
+		if secret, ok := CreateTLSSecret(service); ok {
+			return secret, nil
+		} else {
+			return nil, errors.New("Something went wrong in getting secret object")
+		}
+	}
+	return nil, errors.New("Something went wrong")
+}
+
 // this will be used by revions to pull the image from registry
 func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 
@@ -1767,6 +2099,89 @@ func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
 	secret.Type = v1.SecretTypeDockercfg
 
 	return secret, true
+}
+
+func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
+
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.KubernetesSecret
+	if err := json.Unmarshal(byteData, &serviceAttr); err != nil {
+		utils.Error.Println(err)
+		return nil, false
+	}
+
+	secret := v1.Secret{}
+
+	typeMeta := metav1.TypeMeta{
+		Kind:       SecretKind,
+		APIVersion: v1.SchemeGroupVersion.String(),
+	}
+	objectMeta := metav1.ObjectMeta{
+		Name:      service.ID,
+		Namespace: service.Namespace,
+	}
+
+	secret.TypeMeta = typeMeta
+	secret.ObjectMeta = objectMeta
+	secret.Data = make(map[string][]byte)
+	if serviceAttr.Data != nil {
+		for key, value := range serviceAttr.Data {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+				utils.Error.Println(err)
+				secret.Data[key] = []byte(value)
+			} else {
+				secret.Data[key] = decoded_value
+			}
+			//secret.Data[key] = []byte(value)
+		}
+	}
+	if serviceAttr.StringData != nil {
+		secret.StringData = serviceAttr.StringData
+	}
+	secret.Type = v1.SecretTypeOpaque
+
+	return &secret, true
+}
+
+func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
+
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.KubernetesSecret
+	if err := json.Unmarshal(byteData, &serviceAttr); err != nil {
+		utils.Error.Println(err)
+		return nil, false
+	}
+
+	secret := v1.Secret{}
+
+	typeMeta := metav1.TypeMeta{
+		Kind:       SecretKind,
+		APIVersion: v1.SchemeGroupVersion.String(),
+	}
+	objectMeta := metav1.ObjectMeta{
+		Name:      service.ID,
+		Namespace: service.Namespace,
+	}
+
+	secret.TypeMeta = typeMeta
+	secret.ObjectMeta = objectMeta
+	secret.Data = make(map[string][]byte)
+	if serviceAttr.Data != nil {
+		for key, value := range serviceAttr.Data {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+				utils.Error.Println(err)
+				secret.Data[key] = []byte(value)
+			} else {
+				secret.Data[key] = decoded_value
+			}
+		}
+	}
+	if serviceAttr.StringData != nil {
+		secret.StringData = serviceAttr.StringData
+	}
+	secret.Type = v1.SecretTypeTLS
+
+	return &secret, true
 }
 
 func putCommandAndArguments(container *v1.Container, command, args []string) error {
@@ -1860,8 +2275,8 @@ type tempProbing struct {
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
 
-func getInitContainers(service types.Service) ([]v1.Container, error) {
-
+func getInitContainers(service types.Service) ([]v1.Container, []string, []string, error) {
+	var configMapsArray, secretsArray []string
 	fmt.Println(service)
 	serviceAttributes := make(map[string]interface{})
 	var initContainerServiceAttributes interface{}
@@ -1871,13 +2286,13 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 				initContainerServiceAttributes = serviceAttributes["init_container"]
 			} else {
 				fmt.Println("No Init Containers for " + service.Name)
-				return nil, nil
+				return nil, secretsArray, configMapsArray, nil
 			}
 		} else {
-			return nil, err
+			return nil, secretsArray, configMapsArray, err
 		}
 	} else {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 
 	var container v1.Container
@@ -1886,20 +2301,20 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 	json.Unmarshal(byteData, &serviceAttr)
 	container.Name = serviceAttr.ImageName
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putLivenessProbe(&container, byteData); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	} else {
 		container.SecurityContext = securityContext
 	}
@@ -1934,9 +2349,29 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 		}
 		ports = append(ports, temp)
 	}
+	//configMapExist := make(map[string]bool)
+	//secretExist := make(map[string]bool)
+
 	var envVariables []v1.EnvVar
 	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		tempEnvVariable := v1.EnvVar{}
+		if envVariable.IsConfigMap {
+			source, key := resolveValue(envVariable.Value)
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
+				ValueFrom: &v1.EnvVarSource{ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
+				}}}
+		} else if envVariable.IsSecret {
+			source, key := resolveValue(envVariable.Value)
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
+				ValueFrom: &v1.EnvVarSource{SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
+				}}}
+		} else {
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		}
 		envVariables = append(envVariables, tempEnvVariable)
 	}
 	container.Ports = ports
@@ -1945,33 +2380,33 @@ func getInitContainers(service types.Service) ([]v1.Container, error) {
 
 	containers = append(containers, container)
 
-	return containers, nil
+	return containers, secretsArray, configMapsArray, nil
 }
-func getContainers(service types.Service) ([]v1.Container, error) {
-
+func getContainers(service types.Service) ([]v1.Container, []string, []string, error) {
+	var configMapsArray, secretsArray []string
 	var container v1.Container
 	container.Name = service.Name
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putLivenessProbe(&container, byteData); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putReadinessProbe(&container, byteData); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	}
 
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
-		return nil, err
+		return nil, secretsArray, configMapsArray, err
 	} else {
 		container.SecurityContext = securityContext
 	}
@@ -2008,15 +2443,52 @@ func getContainers(service types.Service) ([]v1.Container, error) {
 	}
 	var envVariables []v1.EnvVar
 	for _, envVariable := range serviceAttr.EnvironmentVariables {
-		tempEnvVariable := v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		tempEnvVariable := v1.EnvVar{}
+		if envVariable.IsConfigMap {
+			source, key := resolveValue(envVariable.Value)
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
+				ValueFrom: &v1.EnvVarSource{ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
+				}}}
+		} else if envVariable.IsSecret {
+			source, key := resolveValue(envVariable.Value)
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key,
+				ValueFrom: &v1.EnvVarSource{SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{Name: source},
+					Key:                  key,
+				}}}
+		} else {
+			tempEnvVariable = v1.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		}
 		envVariables = append(envVariables, tempEnvVariable)
 	}
 	container.Ports = ports
 	container.Env = envVariables
 	var containers []v1.Container
 	containers = append(containers, container)
+	return containers, secretsArray, configMapsArray, nil
+}
 
-	return containers, nil
+func resolveValue(value string) (string, string) {
+	result := returnValuesArray(value)
+	var splittedResult []string
+	for _, every := range result {
+		if len(every) > 0 {
+			splittedResult = strings.Split(every, ":")
+			break
+		}
+	}
+	keyArray := strings.Split(splittedResult[1], ".")
+	return splittedResult[0], keyArray[len(keyArray)-1]
+}
+
+func returnValuesArray(value string) []string {
+	replacer := strings.NewReplacer(
+		"{{", "|-|",
+		"}}", "|-|")
+	result := replacer.Replace(value)
+	return strings.Split(result, "|-|")
 }
 
 func marshalUnMarshalOfIstioComponents(s string) (map[string]interface{}, error) {
@@ -2106,4 +2578,108 @@ func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.
 		Level: securityContext.SELinuxOptions.Level,
 	}
 	return &context, nil
+}
+
+func ConfigMapObject(data types.ConfigMap) (*v1.ConfigMap, error) {
+	var configMap v1.ConfigMap
+	if data.Name != nil {
+		configMap.Name = *data.Name
+	}
+	if data.Namespace != nil {
+		configMap.Namespace = *data.Namespace
+	}
+
+	configMap.Labels["app"] = *data.Name
+
+	if data.Data != nil {
+		for key, value := range data.Data {
+			configMap.Data[key] = value
+		}
+	}
+	return &configMap, nil
+}
+
+func getVolumeMount(data types.ContainerVolumeMount) *v1.VolumeMount {
+	var volumeMount v1.VolumeMount
+	volumeMount.Name = data.Name
+	if data.ReadOnly {
+		volumeMount.ReadOnly = data.ReadOnly
+	}
+	volumeMount.MountPath = data.MountPath
+	return &volumeMount
+}
+
+func getVolume(data types.ContainerVolume) *v1.Volume {
+	var volume v1.Volume
+	volume.Name = data.Name
+	if data.ContainerConfigMap != nil {
+		volume.ConfigMap.Name = data.ContainerConfigMap.Name
+		volume.ConfigMap.LocalObjectReference.Name = data.ContainerConfigMap.Name
+		if data.ContainerConfigMap.DefaultMode != 0 {
+			volume.ConfigMap.DefaultMode = &data.ContainerConfigMap.DefaultMode
+		}
+		for _, item := range data.ContainerConfigMap.Items {
+			var tempItem v1.KeyToPath
+			tempItem.Key = item.Key
+			if item.Mode != 0 {
+				tempItem.Mode = &item.Mode
+			}
+			if item.Path != "" {
+				tempItem.Path = item.Path
+			}
+			volume.ConfigMap.Items = append(volume.ConfigMap.Items, tempItem)
+		}
+	} else if data.ContainerSecret != nil {
+		volume.Secret.SecretName = data.ContainerSecret.Name
+		if data.ContainerSecret.DefaultMode != 0 {
+			volume.Secret.DefaultMode = &data.ContainerSecret.DefaultMode
+		}
+		for _, item := range data.ContainerSecret.Items {
+			var tempItem v1.KeyToPath
+			tempItem.Key = item.Key
+			if item.Mode != 0 {
+				tempItem.Mode = &item.Mode
+			}
+			if item.Path != "" {
+				tempItem.Path = item.Path
+			}
+			volume.Secret.Items = append(volume.Secret.Items, tempItem)
+		}
+	}
+	return &volume
+}
+
+func getLabels(data types.Service) (map[string]string, error) {
+
+	var serviceAttributes types.DockerServiceAttributes
+	if data, err := json.Marshal(data.ServiceAttributes); err == nil {
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+	labels := make(map[string]string)
+	for key, value := range serviceAttributes.Labels {
+		labels[key] = value
+	}
+	return labels, nil
+}
+
+func getAnnotations(data types.Service) (map[string]string, error) {
+	var serviceAttributes types.DockerServiceAttributes
+	if data, err := json.Marshal(data.ServiceAttributes); err == nil {
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+	annotations := make(map[string]string)
+	for key, value := range serviceAttributes.Annotations {
+		annotations[key] = value
+	}
+	return annotations, nil
 }
