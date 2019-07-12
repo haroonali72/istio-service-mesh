@@ -13,10 +13,13 @@ type K8sKind string
 
 const (
 	SERVICE_NAME        = "istio-mesh-engine"
+	//Logging
 	LOGGING_ENDPOINT    = "/api/v1/logger"
 	LOGGING_LEVEL_INFO  = "info"
 	LOGGING_LEVEL_ERROR = "error"
 	LOGGING_LEVEL_WARN  = "warn"
+	BACKEND_LOGGING_ENDPOINT = "/elephant/api/v1/backend/logging"
+
 	//Kubernetes Component
 	Deployment  K8sKind = "Deployment"
 	CronJob     K8sKind = "CronJob"

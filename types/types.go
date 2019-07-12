@@ -392,3 +392,17 @@ type BasicAuthCredentails struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+type LoggingHttpRequest struct {
+	RequestId string `json:"request_id"`
+	//url of the cloudplex server (e.g. apis.cloudplex.cf)
+	Url string `json:"url"`
+	//request method (GET/POST/PUT/PATCH/DELETE)
+	Method string `json:"method" `
+	//request path of backend service
+	Path string `json:"path"`
+	//request body
+	Body string `json:"body"`
+	//status code of service
+	Status int `json:"status"`
+}
