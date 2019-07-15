@@ -111,6 +111,13 @@ type IstioDestinationRuleAttributes struct {
 		}
 	} `json:"traffic_policy"`
 }
+type RecourceType string
+
+const (
+	RecourceTypeMemory RecourceType = "memory"
+	RecourceTypeCpu    RecourceType = "cpu"
+)
+
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
 	DefaultConfigurations string `json:"default_configurations"`
@@ -127,20 +134,19 @@ type DockerServiceAttributes struct {
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
 	MeshConfig                    IstioConfig                   `json:"istio_config"`
-
-	Command         []string              `json:"command"`
-	Args            []string              `json:"args"`
-	SecurityContext SecurityContextStruct `json:"security_context"`
+	LabelSelector                 LabelSelectorObj              `json:"label_selector"`
+	NodeSelector                  map[string]string             `json:"node_selector"`
+	Command                       []string                      `json:"command"`
+	Args                          []string                      `json:"args"`
+	SecurityContext               SecurityContextStruct         `json:"security_context"`
 	//resource types: cpu, memory
-	LimitResourceTypes        []string               `json:"limit_resource_types"`
-	LimitResourceQuantities   []string               `json:"limit_resource_quantities"`
-	RequestResourceTypes      []string               `json:"request_resource_types"`
-	RequestResourceQuantities []string               `json:"request_resource_quantities"`
-	Labels                    map[string]string      `json:"labels"`
-	Annotations               map[string]string      `json:"annotations"`
-	CronJobScheduleString     string                 `json:"cron_job_schedule_string"`
-	LivenessProb              map[string]interface{} `json:"liveness_probe"`
-	RedinessProb              map[string]interface{} `json:"readiness_probe"`
+	LimitResources        map[RecourceType]string `json:"limit_resources"`
+	RequestResources      map[RecourceType]string `json:"request_resources"`
+	Labels                map[string]string       `json:"labels"`
+	Annotations           map[string]string       `json:"annotations"`
+	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
+	LivenessProb          map[string]interface{}  `json:"liveness_probe"`
+	RedinessProb          map[string]interface{}  `json:"readiness_probe"`
 
 	IsRbac bool `json:"is_rbac_enabled"`
 
@@ -262,8 +268,6 @@ type Service struct {
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
 	Hostnames             []string            `json:"hostnames"`
-	LabelSelector         LabelSelectorObj    `json:"label_selector"`
-	NodeSelector          map[string]string   `json:"node_selector"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`

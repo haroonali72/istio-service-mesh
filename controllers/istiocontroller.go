@@ -420,8 +420,20 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 
 }
 func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1.LabelSelector, error) {
-	lenl := len(service.LabelSelector.MatchLabel)
-	lene := len(service.LabelSelector.MatchExpression)
+	var serviceAttributes types.DockerServiceAttributes
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
+	lenl := len(serviceAttributes.LabelSelector.MatchLabel)
+	lene := len(serviceAttributes.LabelSelector.MatchExpression)
+
 	if (!(lenl > 0)) && lene > 0 {
 
 		sel = &metav1.LabelSelector{nil, nil}
@@ -429,30 +441,49 @@ func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1
 		sel = &metav1.LabelSelector{make(map[string]string), nil}
 
 	}
-	for k, v := range service.LabelSelector.MatchLabel {
+
+	for k, v := range serviceAttributes.LabelSelector.MatchLabel {
 		sel.MatchLabels[k] = v
 	}
-	for i := 0; i < len(service.LabelSelector.MatchExpression); i++ {
-		byteData, err := json.Marshal(service.LabelSelector.MatchExpression[i])
-		if err != nil {
-			return sel, err
-		}
-		var temp metav1.LabelSelectorRequirement
+	for i := 0; i < len(serviceAttributes.LabelSelector.MatchExpression); i++ {
+		if serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpDoesNotExist ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpExists ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpIn ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpNotIn {
+			byteData, err := json.Marshal(serviceAttributes.LabelSelector.MatchExpression[i])
+			if err != nil {
+				return sel, err
+			}
+			var temp metav1.LabelSelectorRequirement
 
-		err = json.Unmarshal(byteData, &temp)
-		if err != nil {
-			return sel, err
+			err = json.Unmarshal(byteData, &temp)
+			if err != nil {
+				return nil, err
+			}
+			sel.MatchExpressions = append(sel.MatchExpressions, temp)
+		} else {
+			return nil, errors.New("Can not Apply Labels. Invalid Operation in MatchExpression Label type")
 		}
-		sel.MatchExpressions = append(sel.MatchExpressions, temp)
 	}
 	return sel, nil
 }
 
 func setNodeSelector(service types.Service, sel map[string]string) (map[string]string, error) {
+	var serviceAttributes types.DockerServiceAttributes
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
 	if len(sel) <= 0 {
 		sel = make(map[string]string)
 	}
-	for k, v := range service.NodeSelector {
+	for k, v := range serviceAttributes.NodeSelector {
 		sel[k] = v
 	}
 	return sel, nil
@@ -719,7 +750,6 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 		return v2alpha1.CronJob{}, err2
 	}
 
-	//	cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
 	Annotations, _ := getAnnotations(service)
 	Annotations["sidecar.istio.io/inject"] = "false"
@@ -2179,35 +2209,38 @@ func putCommandAndArguments(container *v1.Container, command, args []string) err
 	}
 	return nil
 }
-func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) error {
+func putLimitResource(container *v1.Container, limitResources map[types.RecourceType]string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
-	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
-		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
-			quantity, err := resource.ParseQuantity(limitResourceQuantities[i])
+	for t, v := range limitResources {
+		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+			quantity, err := resource.ParseQuantity(v)
 			if err != nil {
 				return err
 			}
-			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
-		} else {
-			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
-		}
-	}
-	container.Resources.Limits = temp
-	return nil
-}
-func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) error {
-	temp := make(map[v1.ResourceName]resource.Quantity)
-	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
-		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
-			quantity, err := resource.ParseQuantity(requestResourceQuantities[i])
-			if err != nil {
-				return err
-			}
-			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
+			temp[v1.ResourceName(t)] = quantity
 		} else {
 			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
 	}
+
+	container.Resources.Limits = temp
+	return nil
+}
+func putRequestResource(container *v1.Container, requestResources map[types.RecourceType]string) error {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	for t, v := range requestResources {
+		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+			quantity, err := resource.ParseQuantity(v)
+			if err != nil {
+				return err
+			}
+			//
+			temp[v1.ResourceName(t)] = quantity
+		} else {
+			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
+		}
+	}
+
 	container.Resources.Requests = temp
 	return nil
 }
@@ -2261,6 +2294,27 @@ type tempProbing struct {
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
 
+func checkRequestIsLessThanLimit(serviceAttr types.DockerServiceAttributes) (error, bool) {
+	for t, v := range serviceAttr.LimitResources {
+		r, found := serviceAttr.RequestResources[t]
+		if found {
+			rr, err := resource.ParseQuantity(r)
+			if err != nil {
+				return err, false
+			}
+			lr, err := resource.ParseQuantity(v)
+			if err != nil {
+				return err, false
+			}
+			rrint := rr.AsDec()
+			lrint := lr.AsDec()
+			if rrint.Cmp(lrint) == 1 {
+				return nil, false
+			}
+		}
+	}
+	return nil, true
+}
 func getInitContainers(service types.Service) ([]v1.Container, []string, []string, error) {
 	var configMapsArray, secretsArray []string
 	fmt.Println(service)
@@ -2284,17 +2338,29 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	var container v1.Container
 	byteData, _ := json.Marshal(initContainerServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
+	var err = json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		return nil, secretsArray, configMapsArray, err
+	}
+
 	container.Name = serviceAttr.ImageName
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+	errr, isOk := checkRequestIsLessThanLimit(serviceAttr)
+	if errr != nil {
+		return nil, secretsArray, configMapsArray, errr
+	} else if isOk == false {
+		return nil, secretsArray, configMapsArray, errors.New("Request Resource is greater limit resource")
+
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+	if err := putRequestResource(&container, serviceAttr.RequestResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
+
 	if err := putLivenessProbe(&container, byteData); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
@@ -2378,10 +2444,17 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+	errr, isOk := checkRequestIsLessThanLimit(serviceAttr)
+	if errr != nil {
+		return nil, secretsArray, configMapsArray, errr
+	} else if isOk == false {
+		return nil, secretsArray, configMapsArray, errors.New("Request Resource is greater limit resource")
+
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+	if err := putRequestResource(&container, serviceAttr.RequestResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
 	if err := putLivenessProbe(&container, byteData); err != nil {

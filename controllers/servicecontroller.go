@@ -369,8 +369,8 @@ func parseK8sYaml(fileR []byte) (map[string][]byte, []error) {
 }
 func getContainerData(c *coreV1.Container) (service types.DockerServiceAttributes, err error) {
 	service.Command, service.Args = convertCommandAndArguments(c)
-	service.LimitResourceTypes, service.LimitResourceQuantities = convertLimitResource(c)
-	service.RequestResourceTypes, service.RequestResourceQuantities = convertRequestResource(c)
+	service.LimitResources = convertLimitResource(c)
+	service.RequestResources = convertRequestResource(c)
 	limitprob, err := convertLivenessProbe(c)
 	if err != nil {
 		utils.Error.Println(err)
@@ -440,23 +440,24 @@ func convertCommandAndArguments(container *coreV1.Container) (command []string, 
 	}
 	return command, args
 }
-func convertLimitResource(container *coreV1.Container) (limitResourceTypes, limitResourceQuantities []string) {
+
+func convertLimitResource(container *coreV1.Container) map[types.RecourceType]string {
+	var limitResources = make(map[types.RecourceType]string)
 	for rName, rValue := range container.Resources.Limits {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			limitResourceTypes = append(limitResourceTypes, rName.String())
-			limitResourceQuantities = append(limitResourceQuantities, strconv.FormatInt(rValue.Value(), 10))
+			limitResources[types.RecourceType(rName)] = rValue.String()
 		}
 	}
-	return limitResourceTypes, limitResourceQuantities
+	return limitResources
 }
-func convertRequestResource(container *coreV1.Container) (requestResourceTypes, requestResourceQuantities []string) {
+func convertRequestResource(container *coreV1.Container) map[types.RecourceType]string {
+	var requestResources = make(map[types.RecourceType]string)
 	for rName, rValue := range container.Resources.Requests {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			requestResourceTypes = append(requestResourceTypes, rName.String())
-			requestResourceQuantities = append(requestResourceQuantities, strconv.FormatInt(rValue.Value(), 10))
+			requestResources[types.RecourceType(rName)] = rValue.String()
 		}
 	}
-	return requestResourceTypes, requestResourceQuantities
+	return requestResources
 }
 func convertLivenessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
 
