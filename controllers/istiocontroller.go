@@ -2283,6 +2283,7 @@ func putLivenessProbe(container *v1.Container, prob types.Probe) error {
 				}
 				if prob.Handler.HTTPGet.Path != nil {
 					temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
+
 				}
 				if prob.Handler.HTTPGet.Scheme != nil {
 					if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
