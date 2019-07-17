@@ -2244,27 +2244,105 @@ func putRequestResource(container *v1.Container, requestResources map[types.Reco
 	container.Resources.Requests = temp
 	return nil
 }
-func putLivenessProbe(container *v1.Container, byteData []byte) error {
+func putLivenessProbe(container *v1.Container, prob types.Probe) error {
+	var temp v1.Probe
+	if prob.Handler != nil {
+		if prob.InitialDelaySeconds != nil {
+			temp.InitialDelaySeconds = *prob.InitialDelaySeconds
+		}
+		if prob.FailureThreshold != nil {
+			temp.FailureThreshold = *prob.FailureThreshold
+		}
+		if prob.PeriodSeconds != nil {
+			temp.PeriodSeconds = *prob.PeriodSeconds
+		}
+		if prob.SuccessThreshold != nil {
+			temp.SuccessThreshold = *prob.SuccessThreshold
+		}
+		if prob.TimeoutSeconds != nil {
+			temp.TimeoutSeconds = *prob.TimeoutSeconds
+		}
+		switch typeHandler := prob.Handler.Type; typeHandler {
+		case "exec":
+			if prob.Handler.Exec == nil {
+				return errors.New("there is no liveness handler of exec type")
+			}
+			temp.Handler.Exec = &v1.ExecAction{}
+			for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+				temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+			}
 
-	strLowerCamel := convertKeys(byteData)
-	var tempLivenessProbe tempProbing
-	json.Unmarshal(strLowerCamel, &tempLivenessProbe)
-	utils.Info.Println(tempLivenessProbe)
-	container.LivenessProbe = tempLivenessProbe.LivenessProbe
+		case "httpGet":
+			if prob.Handler.HTTPGet == nil {
+				return errors.New("there is no liveness handler of httpGet type")
+			}
+			temp.Handler.HTTPGet = &v1.HTTPGetAction{}
+			if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
+				if prob.Handler.HTTPGet.Host != nil {
+					temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
+				}
+				if prob.Handler.HTTPGet.Path != nil {
+					temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
+				}
+				if prob.Handler.HTTPGet.Scheme != nil {
+					if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
 
+						temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
+					} else {
+						return errors.New("invalid urischeme ")
+					}
+				}
+				if prob.Handler.HTTPGet.HTTPHeaders != nil {
+					temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
+					for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
+						if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
+							return errors.New("http header name and values are required")
+						}
+						tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
+						temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+					}
+				}
+				temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
+			} else {
+				return errors.New("Invalid Port number for http Get")
+			}
+		case "tcpSocket":
+			if prob.Handler.TCPSocket == nil {
+				return errors.New("there is no liveness handler of tcpSocket type")
+			}
+			temp.Handler.TCPSocket = &v1.TCPSocketAction{}
+			if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
+				temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
+				if prob.Handler.TCPSocket.Host != nil {
+					temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+				}
+			} else {
+				return errors.New("Invalid Port number for tcp socket")
+			}
+
+		default:
+			return errors.New("There Must be liveness handler of valid type")
+
+		}
+	} else {
+		return errors.New("Liveness Probe handler can not be nil")
+	}
+	container.LivenessProbe = &temp
 	return nil
 }
-func putReadinessProbe(container *v1.Container, byteData []byte) error {
 
-	strLowerCamel := convertKeys(byteData)
+/*func putReadinessProbe(container *v1.Container, byteData []byte) error {
+
+	/*strLowerCamel := convertKeys(byteData)
 	var tempReadinessProbe tempProbing
 	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
+
 	utils.Info.Println(tempReadinessProbe)
 	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
 
 	return nil
 }
-
+*/
 func convertKeys(j json.RawMessage) json.RawMessage {
 	m := make(map[string]json.RawMessage)
 	if err := json.Unmarshal([]byte(j), &m); err != nil {
@@ -2289,11 +2367,12 @@ func fixKey(key string) string {
 	return strcase.ToLowerCamel(key)
 }
 
+/*
 type tempProbing struct {
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
-
+*/
 func checkRequestIsLessThanLimit(serviceAttr types.DockerServiceAttributes) (error, bool) {
 	for t, v := range serviceAttr.LimitResources {
 		r, found := serviceAttr.RequestResources[t]
@@ -2361,10 +2440,12 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	if err := putLivenessProbe(&container, byteData); err != nil {
+	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-
+	/*	if err := putReadinessProbe(&container, byteData); err != nil {
+		return nil, secretsArray, configMapsArray, err
+	}*/
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
@@ -2440,7 +2521,10 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	container.Name = service.Name
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
+	if err := json.Unmarshal(byteData, &serviceAttr); err != nil {
+		return nil, nil, nil, err
+	}
+
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
@@ -2457,12 +2541,12 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	if err := putRequestResource(&container, serviceAttr.RequestResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putLivenessProbe(&container, byteData); err != nil {
+	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putReadinessProbe(&container, byteData); err != nil {
+	/*	if err := putReadinessProbe(&container, byteData); err != nil {
 		return nil, secretsArray, configMapsArray, err
-	}
+	}*/
 
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err

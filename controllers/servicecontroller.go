@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/iancoleman/strcase"
 	"io/ioutil"
 	"istio-service-mesh/constants"
@@ -377,12 +378,12 @@ func getContainerData(c *coreV1.Container) (service types.DockerServiceAttribute
 		return service, err
 	}
 	service.LivenessProb = limitprob
-	requestProb, err := convertReadinessProbe(c)
-	if err != nil {
-		utils.Error.Println(err)
-		return service, err
-	}
-	service.RedinessProb = requestProb
+	//requestProb, err := convertReadinessProbe(c)
+	//if err != nil {
+	//		utils.Error.Println(err)
+	//		return service, err
+	//	}
+	//	service.RedinessProb = requestProb
 	service.SecurityContext, err = revertSecurityContext(c.SecurityContext)
 	if err != nil {
 		return service, err
@@ -459,17 +460,48 @@ func convertRequestResource(container *coreV1.Container) map[types.RecourceType]
 	}
 	return requestResources
 }
-func convertLivenessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
+func convertLivenessProbe(container *coreV1.Container) (livenessprob types.Probe, err error) {
+	livenessprob = types.Probe{}
+	livenessprob.SuccessThreshold = &container.LivenessProbe.SuccessThreshold
+	livenessprob.FailureThreshold = &container.LivenessProbe.FailureThreshold
+	livenessprob.TimeoutSeconds = &container.LivenessProbe.TimeoutSeconds
+	livenessprob.PeriodSeconds = &container.LivenessProbe.PeriodSeconds
+	livenessprob.InitialDelaySeconds = &container.LivenessProbe.InitialDelaySeconds
+	livenessprob.Handler = &types.Handler{}
+	if container.LivenessProbe.Exec != nil {
+		livenessprob.Handler.Exec = (*types.ExecAction)(container.LivenessProbe.Exec)
+		livenessprob.Handler.Type = "exec"
+	} else if container.LivenessProbe.HTTPGet != nil {
+		if port := container.LivenessProbe.HTTPGet.Port.IntValue(); port > 0 && port < 65536 {
+			livenessprob.Handler.HTTPGet = &types.HTTPGetAction{}
+			livenessprob.Handler.HTTPGet.Port = port
+			livenessprob.Handler.HTTPGet.Path = &container.LivenessProbe.HTTPGet.Path
+			livenessprob.Handler.HTTPGet.Host = &container.LivenessProbe.HTTPGet.Host
+			livenessprob.Handler.HTTPGet.Scheme = (*string)(&container.LivenessProbe.HTTPGet.Scheme)
+			for i := 0; i < len(container.LivenessProbe.HTTPGet.HTTPHeaders); i++ {
+				var temp = types.HTTPHeader{&container.LivenessProbe.HTTPGet.HTTPHeaders[i].Name, &container.LivenessProbe.HTTPGet.HTTPHeaders[i].Value}
+				livenessprob.Handler.HTTPGet.HTTPHeaders = append(livenessprob.Handler.HTTPGet.HTTPHeaders, temp)
+			}
+			livenessprob.Handler.Type = "httpGet"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Http Get in Liveness Prob")
+		}
 
-	raw, err := json.Marshal(container.LivenessProbe)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
+	} else if container.LivenessProbe.TCPSocket != nil {
+		if port := container.LivenessProbe.TCPSocket.Port.IntValue(); port > 0 && port < 65536 {
+			livenessprob.Handler.TCPSocket = &types.TCPSocketAction{}
+			livenessprob.Handler.TCPSocket.Port = port
+			livenessprob.Handler.TCPSocket.Host = &container.LivenessProbe.TCPSocket.Host
+			livenessprob.Handler.Type = "tcpSocket"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Tcp Socket in Liveness Prob")
+
+		}
+
+	} else {
+		return types.Probe{}, errors.New("handler of liveness prob can not be nill")
 	}
-	raw = k8sToSvcKeys(raw)
-	err = json.Unmarshal(raw, &data)
-
-	return data, err
+	return livenessprob, err
 }
 func convertReadinessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
 
