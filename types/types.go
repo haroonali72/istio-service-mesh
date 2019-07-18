@@ -240,8 +240,8 @@ type DockerServiceAttributes struct {
 	Labels                map[string]string       `json:"labels"`
 	Annotations           map[string]string       `json:"annotations"`
 	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
-	LivenessProb          Probe                   `json:"liveness_probe"`
-	RedinessProb          Probe                   `json:"readiness_probe"`
+	LivenessProb          *Probe                  `json:"liveness_probe"`
+	RedinessProb          *Probe                  `json:"readiness_probe"`
 
 	IsRbac bool `json:"is_rbac_enabled"`
 

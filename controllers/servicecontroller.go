@@ -377,13 +377,13 @@ func getContainerData(c *coreV1.Container) (service types.DockerServiceAttribute
 		utils.Error.Println(err)
 		return service, err
 	}
-	service.LivenessProb = limitprob
-	//requestProb, err := convertReadinessProbe(c)
-	//if err != nil {
-	//		utils.Error.Println(err)
-	//		return service, err
-	//	}
-	//	service.RedinessProb = requestProb
+	service.LivenessProb = &limitprob
+	requestProb, err := convertReadinessProbe(c)
+	if err != nil {
+		utils.Error.Println(err)
+		return service, err
+	}
+	service.RedinessProb = &requestProb
 	service.SecurityContext, err = revertSecurityContext(c.SecurityContext)
 	if err != nil {
 		return service, err
@@ -503,17 +503,49 @@ func convertLivenessProbe(container *coreV1.Container) (livenessprob types.Probe
 	}
 	return livenessprob, err
 }
-func convertReadinessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
+func convertReadinessProbe(container *coreV1.Container) (readinessprob types.Probe, err error) {
 
-	raw, err := json.Marshal(container.ReadinessProbe)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
+	readinessprob = types.Probe{}
+	readinessprob.SuccessThreshold = &container.ReadinessProbe.SuccessThreshold
+	readinessprob.FailureThreshold = &container.ReadinessProbe.FailureThreshold
+	readinessprob.TimeoutSeconds = &container.ReadinessProbe.TimeoutSeconds
+	readinessprob.PeriodSeconds = &container.ReadinessProbe.PeriodSeconds
+	readinessprob.InitialDelaySeconds = &container.ReadinessProbe.InitialDelaySeconds
+	readinessprob.Handler = &types.Handler{}
+	if container.ReadinessProbe.Exec != nil {
+		readinessprob.Handler.Exec = (*types.ExecAction)(container.ReadinessProbe.Exec)
+		readinessprob.Handler.Type = "exec"
+	} else if container.ReadinessProbe.HTTPGet != nil {
+		if port := container.ReadinessProbe.HTTPGet.Port.IntValue(); port > 0 && port < 65536 {
+			readinessprob.Handler.HTTPGet = &types.HTTPGetAction{}
+			readinessprob.Handler.HTTPGet.Port = port
+			readinessprob.Handler.HTTPGet.Path = &container.ReadinessProbe.HTTPGet.Path
+			readinessprob.Handler.HTTPGet.Host = &container.ReadinessProbe.HTTPGet.Host
+			readinessprob.Handler.HTTPGet.Scheme = (*string)(&container.ReadinessProbe.HTTPGet.Scheme)
+			for i := 0; i < len(container.ReadinessProbe.HTTPGet.HTTPHeaders); i++ {
+				var temp = types.HTTPHeader{&container.ReadinessProbe.HTTPGet.HTTPHeaders[i].Name, &container.ReadinessProbe.HTTPGet.HTTPHeaders[i].Value}
+				readinessprob.Handler.HTTPGet.HTTPHeaders = append(readinessprob.Handler.HTTPGet.HTTPHeaders, temp)
+			}
+			readinessprob.Handler.Type = "httpGet"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Http Get in Liveness Prob")
+		}
+
+	} else if container.ReadinessProbe.TCPSocket != nil {
+		if port := container.ReadinessProbe.TCPSocket.Port.IntValue(); port > 0 && port < 65536 {
+			readinessprob.Handler.TCPSocket = &types.TCPSocketAction{}
+			readinessprob.Handler.TCPSocket.Port = port
+			readinessprob.Handler.TCPSocket.Host = &container.ReadinessProbe.TCPSocket.Host
+			readinessprob.Handler.Type = "tcpSocket"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Tcp Socket in Liveness Prob")
+
+		}
+
+	} else {
+		return types.Probe{}, errors.New("handler of liveness prob can not be nill")
 	}
-	raw = k8sToSvcKeys(raw)
-	err = json.Unmarshal(raw, &data)
-
-	return data, err
+	return readinessprob, err
 }
 func revertSecurityContext(scontext *coreV1.SecurityContext) (securityContext types.SecurityContextStruct, err error) {
 	if scontext == nil {

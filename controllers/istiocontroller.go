@@ -446,10 +446,10 @@ func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1
 		sel.MatchLabels[k] = v
 	}
 	for i := 0; i < len(serviceAttributes.LabelSelector.MatchExpression); i++ {
-		if serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpDoesNotExist ||
+		if len(serviceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpDoesNotExist ||
 			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpExists ||
 			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpIn ||
-			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpNotIn {
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpNotIn) {
 			byteData, err := json.Marshal(serviceAttributes.LabelSelector.MatchExpression[i])
 			if err != nil {
 				return sel, err
@@ -462,7 +462,7 @@ func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1
 			}
 			sel.MatchExpressions = append(sel.MatchExpressions, temp)
 		} else {
-			return nil, errors.New("Can not Apply Labels. Invalid Operation in MatchExpression Label type")
+			return nil, errors.New("Can not Apply Labels.Inavlid MatchExpression Label type")
 		}
 	}
 	return sel, nil
@@ -2017,7 +2017,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		notification.Status = "fail"
 	} else {
 
-		utils.Info.Println("Deployment Successful\n")
+		utils.Info.Println("Deployment Successful")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
 		if err == nil {
@@ -2244,106 +2244,187 @@ func putRequestResource(container *v1.Container, requestResources map[types.Reco
 	container.Resources.Requests = temp
 	return nil
 }
-func putLivenessProbe(container *v1.Container, prob types.Probe) error {
+func putLivenessProbe(container *v1.Container, prob *types.Probe) error {
+
 	var temp v1.Probe
-	if prob.Handler != nil {
-		if prob.InitialDelaySeconds != nil {
-			temp.InitialDelaySeconds = *prob.InitialDelaySeconds
-		}
-		if prob.FailureThreshold != nil {
-			temp.FailureThreshold = *prob.FailureThreshold
-		}
-		if prob.PeriodSeconds != nil {
-			temp.PeriodSeconds = *prob.PeriodSeconds
-		}
-		if prob.SuccessThreshold != nil {
-			temp.SuccessThreshold = *prob.SuccessThreshold
-		}
-		if prob.TimeoutSeconds != nil {
-			temp.TimeoutSeconds = *prob.TimeoutSeconds
-		}
-		switch typeHandler := prob.Handler.Type; typeHandler {
-		case "exec":
-			if prob.Handler.Exec == nil {
-				return errors.New("there is no liveness handler of exec type")
+	if prob != nil {
+		if prob.Handler != nil {
+			if prob.InitialDelaySeconds != nil {
+				temp.InitialDelaySeconds = *prob.InitialDelaySeconds
 			}
-			temp.Handler.Exec = &v1.ExecAction{}
-			for i := 0; i < len(prob.Handler.Exec.Command); i++ {
-				temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+			if prob.FailureThreshold != nil {
+				temp.FailureThreshold = *prob.FailureThreshold
 			}
-
-		case "httpGet":
-			if prob.Handler.HTTPGet == nil {
-				return errors.New("there is no liveness handler of httpGet type")
+			if prob.PeriodSeconds != nil {
+				temp.PeriodSeconds = *prob.PeriodSeconds
 			}
-			temp.Handler.HTTPGet = &v1.HTTPGetAction{}
-			if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
-				if prob.Handler.HTTPGet.Host != nil {
-					temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
+			if prob.SuccessThreshold != nil {
+				temp.SuccessThreshold = *prob.SuccessThreshold
+			}
+			if prob.TimeoutSeconds != nil {
+				temp.TimeoutSeconds = *prob.TimeoutSeconds
+			}
+			switch typeHandler := prob.Handler.Type; typeHandler {
+			case "exec":
+				if prob.Handler.Exec == nil {
+					return errors.New("there is no liveness handler of exec type")
 				}
-				if prob.Handler.HTTPGet.Path != nil {
-					temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
-
+				temp.Handler.Exec = &v1.ExecAction{}
+				for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
 				}
-				if prob.Handler.HTTPGet.Scheme != nil {
-					if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
 
-						temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
-					} else {
-						return errors.New("invalid urischeme ")
+			case "httpGet":
+				if prob.Handler.HTTPGet == nil {
+					return errors.New("there is no liveness handler of httpGet type")
+				}
+				temp.Handler.HTTPGet = &v1.HTTPGetAction{}
+				if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
+					if prob.Handler.HTTPGet.Host != nil {
+						temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
 					}
-				}
-				if prob.Handler.HTTPGet.HTTPHeaders != nil {
-					temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
-					for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
-						if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
-							return errors.New("http header name and values are required")
+					if prob.Handler.HTTPGet.Path != nil {
+						temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
+
+					}
+					if prob.Handler.HTTPGet.Scheme != nil {
+						if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
+
+							temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
+						} else {
+							return errors.New("invalid urischeme ")
 						}
-						tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
-						temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
 					}
+					if prob.Handler.HTTPGet.HTTPHeaders != nil {
+						temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
+						for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
+							if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
+								return errors.New("http header name and values are required")
+							}
+							tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
+							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+						}
+					}
+					temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
+				} else {
+					return errors.New("Invalid Port number for http Get")
 				}
-				temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
-			} else {
-				return errors.New("Invalid Port number for http Get")
-			}
-		case "tcpSocket":
-			if prob.Handler.TCPSocket == nil {
-				return errors.New("there is no liveness handler of tcpSocket type")
-			}
-			temp.Handler.TCPSocket = &v1.TCPSocketAction{}
-			if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
-				temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
-				if prob.Handler.TCPSocket.Host != nil {
-					temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+			case "tcpSocket":
+				if prob.Handler.TCPSocket == nil {
+					return errors.New("there is no liveness handler of tcpSocket type")
 				}
-			} else {
-				return errors.New("Invalid Port number for tcp socket")
+				temp.Handler.TCPSocket = &v1.TCPSocketAction{}
+				if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
+					temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
+					if prob.Handler.TCPSocket.Host != nil {
+						temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+					}
+				} else {
+					return errors.New("Invalid Port number for tcp socket")
+				}
+
+			default:
+				return errors.New("There Must be liveness handler of valid type")
+
 			}
-
-		default:
-			return errors.New("There Must be liveness handler of valid type")
-
+		} else {
+			return errors.New("Liveness prob header can not be nil")
 		}
-	} else {
-		return errors.New("Liveness Probe handler can not be nil")
+		container.LivenessProbe = &temp
 	}
-	container.LivenessProbe = &temp
 	return nil
 }
 
-/*func putReadinessProbe(container *v1.Container, byteData []byte) error {
+func putReadinessProbe(container *v1.Container, prob *types.Probe) error {
+	var temp v1.Probe
+	if prob != nil {
+		if prob.Handler != nil {
+			if prob.InitialDelaySeconds != nil {
+				temp.InitialDelaySeconds = *prob.InitialDelaySeconds
+			}
+			if prob.FailureThreshold != nil {
+				temp.FailureThreshold = *prob.FailureThreshold
+			}
+			if prob.PeriodSeconds != nil {
+				temp.PeriodSeconds = *prob.PeriodSeconds
+			}
+			if prob.SuccessThreshold != nil {
+				temp.SuccessThreshold = *prob.SuccessThreshold
+			}
+			if prob.TimeoutSeconds != nil {
+				temp.TimeoutSeconds = *prob.TimeoutSeconds
+			}
+			switch typeHandler := prob.Handler.Type; typeHandler {
+			case "exec":
+				if prob.Handler.Exec == nil {
+					return errors.New("there is no readiness handler of exec type")
+				}
+				temp.Handler.Exec = &v1.ExecAction{}
+				for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+				}
 
-	/*strLowerCamel := convertKeys(byteData)
-	var tempReadinessProbe tempProbing
-	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
+			case "httpGet":
+				if prob.Handler.HTTPGet == nil {
+					return errors.New("there is no readiness handler of httpGet type")
+				}
+				temp.Handler.HTTPGet = &v1.HTTPGetAction{}
+				if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
+					if prob.Handler.HTTPGet.Host != nil {
+						temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
+					}
+					if prob.Handler.HTTPGet.Path != nil {
+						temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
 
-	utils.Info.Println(tempReadinessProbe)
-	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
+					}
+					if prob.Handler.HTTPGet.Scheme != nil {
+						if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
 
+							temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
+						} else {
+							return errors.New("invalid urischeme ")
+						}
+					}
+					if prob.Handler.HTTPGet.HTTPHeaders != nil {
+						temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
+						for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
+							if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
+								return errors.New("http header name and values are required")
+							}
+							tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
+							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+						}
+					}
+					temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
+				} else {
+					return errors.New("Invalid Port number for http Get")
+				}
+			case "tcpSocket":
+				if prob.Handler.TCPSocket == nil {
+					return errors.New("there is no readiness handler of tcpSocket type")
+				}
+				temp.Handler.TCPSocket = &v1.TCPSocketAction{}
+				if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
+					temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
+					if prob.Handler.TCPSocket.Host != nil {
+						temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+					}
+				} else {
+					return errors.New("Invalid Port number for tcp socket")
+				}
+
+			default:
+				return errors.New("There Must be readiness handler of valid type")
+
+			}
+		} else {
+			return errors.New("Readiness prob handler can not be nil")
+		}
+		container.ReadinessProbe = &temp
+	}
 	return nil
 }
-*/
+
 func convertKeys(j json.RawMessage) json.RawMessage {
 	m := make(map[string]json.RawMessage)
 	if err := json.Unmarshal([]byte(j), &m); err != nil {
@@ -2444,9 +2525,9 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	/*	if err := putReadinessProbe(&container, byteData); err != nil {
+	if err := putReadinessProbe(&container, serviceAttr.RedinessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
-	}*/
+	}
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
@@ -2545,9 +2626,9 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	/*	if err := putReadinessProbe(&container, byteData); err != nil {
+	if err := putReadinessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
-	}*/
+	}
 
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
