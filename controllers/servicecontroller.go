@@ -444,7 +444,8 @@ func convertLimitResource(container *coreV1.Container) (limitResourceTypes, limi
 	for rName, rValue := range container.Resources.Limits {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
 			limitResourceTypes = append(limitResourceTypes, rName.String())
-			limitResourceQuantities = append(limitResourceQuantities, strconv.FormatInt(rValue.Value(), 10))
+			utils.Info.Println(rValue.Value())
+			limitResourceQuantities = append(limitResourceQuantities, rValue.String())
 		}
 	}
 	return limitResourceTypes, limitResourceQuantities
@@ -453,7 +454,7 @@ func convertRequestResource(container *coreV1.Container) (requestResourceTypes, 
 	for rName, rValue := range container.Resources.Requests {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
 			requestResourceTypes = append(requestResourceTypes, rName.String())
-			requestResourceQuantities = append(requestResourceQuantities, strconv.FormatInt(rValue.Value(), 10))
+			requestResourceQuantities = append(requestResourceQuantities, rValue.String())
 		}
 	}
 	return requestResourceTypes, requestResourceQuantities
