@@ -1,10 +1,9 @@
 package utils
 
-
 import (
-"encoding/json"
-"github.com/pkg/errors"
-"gopkg.in/resty.v1"
+	"encoding/json"
+	"github.com/pkg/errors"
+	"gopkg.in/resty.v1"
 )
 
 func Get(url string, body interface{}, headers map[string]string) ([]byte, error) {

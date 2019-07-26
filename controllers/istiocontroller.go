@@ -22,6 +22,7 @@ import (
 	ist_rbac "istio.io/api/rbac/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
@@ -421,7 +422,100 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 	return components, nil
 
 }
+func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, error) {
+	var hpa = autoscaling.HorizontalPodAutoscaler{}
+	// Label Selector
 
+	//keel labels
+	hpa.Kind = "HorizontalPodAutoscaler" // apiversion???
+	hpaLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	hpaLabels["keel.sh/policy"] = "force"
+
+	if service.Name == "" {
+		//Failed
+		return autoscaling.HorizontalPodAutoscaler{}, errors.New("Service name not found")
+	}
+	hpa.ObjectMeta.Name = service.Name + "-" + service.Version
+	hpa.ObjectMeta.Labels = hpaLabels
+
+	if service.Namespace == "" {
+		hpa.ObjectMeta.Namespace = "default"
+	} else {
+		hpa.ObjectMeta.Namespace = service.Namespace
+	}
+	byteData, _ := json.Marshal(service.ServiceAttributes)
+	var serviceAttr types.HPAServiceAttributes
+	json.Unmarshal(byteData, serviceAttr)
+	hpa.Spec.MinReplicas = &serviceAttr.HPA.MixReplicas
+	hpa.Spec.MaxReplicas = serviceAttr.HPA.MaxReplicas
+	crossObj := autoscaling.CrossVersionObjectReference{
+		Kind:       serviceAttr.HPA.CrossObjectVersion.Type,
+		Name:       serviceAttr.HPA.CrossObjectVersion.Name,
+		APIVersion: serviceAttr.HPA.CrossObjectVersion.Version,
+	}
+	hpa.Spec.ScaleTargetRef = crossObj
+
+	var metricsArr []autoscaling.MetricSpec
+	for _, metrics := range serviceAttr.HPA.Metrics_ {
+		met := autoscaling.MetricSpec{
+			Type: autoscaling.ResourceMetricSourceType,
+		}
+		target := autoscaling.MetricTarget{}
+		if metrics.TargetValueKind == "value" {
+			target.Type = autoscaling.ValueMetricType
+			target.Value = resource.NewScaledQuantity(metrics.TargetValue, ScaleUnit(metrics.TargetValueUnit))
+
+		} else if metrics.TargetValueKind == "utilization" {
+			target.Type = autoscaling.UtilizationMetricType
+			v := int32(metrics.TargetValue)
+			target.AverageUtilization = &v
+		} else if metrics.TargetValueKind == "average" {
+			target.Type = autoscaling.AverageValueMetricType
+			target.AverageValue = resource.NewScaledQuantity(metrics.TargetValue, ScaleUnit(metrics.TargetValueUnit))
+		}
+
+		resource := autoscaling.ResourceMetricSource{}
+		if metrics.ResourceKind == "cpu" {
+			resource.Name = v1.ResourceCPU
+		} else if metrics.ResourceKind == "memory" {
+			resource.Name = v1.ResourceMemory
+		} else if metrics.ResourceKind == "storage" {
+			resource.Name = v1.ResourceEphemeralStorage
+		}
+
+		resource.Target = target
+
+		met.Resource = &resource
+		metricsArr = append(metricsArr, met)
+	}
+
+	hpa.Spec.Metrics = metricsArr
+	return hpa, nil
+}
+func ScaleUnit(unit string) resource.Scale {
+
+	if unit == "nano" {
+		return resource.Nano
+	} else if unit == "micro" {
+		return resource.Micro
+	} else if unit == "milli" {
+		return resource.Milli
+	} else if unit == "kilo" {
+		return resource.Kilo
+	} else if unit == "mega" {
+		return resource.Mega
+	} else if unit == "giga" {
+		return resource.Giga
+	} else if unit == "tera" {
+		return resource.Tera
+	} else if unit == "peta" {
+		return resource.Peta
+	} else {
+		return resource.Exa
+	}
+
+}
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
 	var deployment = v12.Deployment{}
@@ -1145,7 +1239,7 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 	return account, roles, roleBindings, nil
 }
 
-func DeployIstio(input types.ServiceInput, requestType string , cpContext *core.Context) types.StatusRequest {
+func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.Context) types.StatusRequest {
 
 	var ret types.StatusRequest
 	ret.ID = input.SolutionInfo.Service.ID
@@ -1243,6 +1337,18 @@ func DeployIstio(input types.ServiceInput, requestType string , cpContext *core.
 		}
 	} else if service.ServiceType == "container" {
 		switch service.SubType {
+		case "hpa":
+			hpa, err := getHPAObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+				}
+				return ret
+			}
+
+			finalObj.Services.HPA = append(finalObj.Services.HPA, hpa)
 
 		case "deployment":
 			deployment, err := getDeploymentObject(service)
@@ -1627,7 +1733,7 @@ func DeployIstio(input types.ServiceInput, requestType string , cpContext *core.
 	utils.Info.Println("kubernetes request payload", string(x))
 
 	if requestType != "POST" {
-		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType , cpContext)
+		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType, cpContext)
 		if ret.Reason == "" {
 			//Successful in getting object
 			if requestType == "GET" {
@@ -1736,32 +1842,31 @@ func DeployIstio(input types.ServiceInput, requestType string , cpContext *core.
 	}
 	if requestType != "GET" {
 		//Send failure request
-		return ForwardToKube(x, input.ProjectId, requestType,ret, cpContext)
+		return ForwardToKube(x, input.ProjectId, requestType, ret, cpContext)
 	}
 	return ret
 
 }
 
-func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string , cpContext * core.Context) (types.StatusRequest, types.ResponseRequest) {
+func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string, cpContext *core.Context) (types.StatusRequest, types.ResponseRequest) {
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
 	//Adding Headers
-	if(cpContext.Exists("projectId")){
+	if cpContext.Exists("projectId") {
 		req.Header.Set("projectId", cpContext.GetString("projectId"))
 	}
-	if(cpContext.Exists("solutionId")){
+	if cpContext.Exists("solutionId") {
 		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
 	}
 
-	if(cpContext.Exists("company")){
+	if cpContext.Exists("company") {
 		req.Header.Set("company", cpContext.GetString("company"))
 	}
-	if(cpContext.Exists("user_id")){
+	if cpContext.Exists("user_id") {
 		req.Header.Set("user", cpContext.GetString("user_id"))
 	}
-
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -1838,7 +1943,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 		return ret, res
 	}
 }
-func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest ,cpContext *core.Context) types.StatusRequest {
+func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest, cpContext *core.Context) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
 
@@ -1849,17 +1954,17 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 
 	req.Header.Set("Content-Type", "application/json")
 	//Adding Headers
-	if(cpContext.Exists("projectId")){
+	if cpContext.Exists("projectId") {
 		req.Header.Set("projectId", cpContext.GetString("projectId"))
 	}
-	if(cpContext.Exists("solutionId")){
+	if cpContext.Exists("solutionId") {
 		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
 	}
 
-	if(cpContext.Exists("company")){
+	if cpContext.Exists("company") {
 		req.Header.Set("company", cpContext.GetString("company"))
 	}
-	if(cpContext.Exists("user_id")){
+	if cpContext.Exists("user_id") {
 		req.Header.Set("user", cpContext.GetString("user_id"))
 	}
 	client := &http.Client{}
@@ -1929,7 +2034,6 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 	/* Logging New Architecture */
 
-
 	cpContext := new(core.Context)
 	err := cpContext.ReadLoggingParameters(r)
 	if err != nil {
@@ -1937,7 +2041,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 		//http.Error(w, err.Error(), 500)
 
-	} else{
+	} else {
 
 		backwardCompatiblity := true
 
@@ -1958,7 +2062,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 			//return
 
 		}
-		if backwardCompatiblity{
+		if backwardCompatiblity {
 			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
 			cpContext.AddProjectId(projectId)
 		}
@@ -1994,7 +2098,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	status.ID = input.SolutionInfo.Service.ID
 	status.Name = input.SolutionInfo.Service.Name
 
-	result := DeployIstio(input, r.Method , cpContext)
+	result := DeployIstio(input, r.Method, cpContext)
 
 	inProgress := false
 	failed := false
@@ -2143,7 +2247,7 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {
@@ -2185,7 +2289,7 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {

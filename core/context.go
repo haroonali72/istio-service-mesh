@@ -1,14 +1,14 @@
 package core
 
 import (
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	"context"
 	"github.com/google/uuid"
+	"istio-service-mesh/constants"
+	"istio-service-mesh/types"
+	"istio-service-mesh/utils"
 	"math"
 	"net/http"
 	"time"
-	"istio-service-mesh/types"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -16,8 +16,8 @@ const abortIndex int8 = math.MaxInt8 / 2
 // Context is the most important part. It allows us to pass variables between middleware,
 type Context struct {
 	context.Context
-	index int8
-	Keys  map[string]interface{}
+	index       int8
+	Keys        map[string]interface{}
 	initialized bool
 }
 
@@ -63,10 +63,11 @@ func (c *Context) Set(key string, value interface{}) {
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
-func (c *Context) Exists(key string)bool {
+func (c *Context) Exists(key string) bool {
 	_, exists := c.Keys[key]
 	return exists
 }
+
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
@@ -208,7 +209,7 @@ func (c *Context) AddProjectId(projectId string) {
 	c.Set("project_id", projectId)
 }
 func (c *Context) SendBackendLogs(message interface{}, severity string) {
-	if(c.initialized){
+	if c.initialized {
 		url := constants.LoggingURL + constants.BACKEND_LOGGING_ENDPOINT
 		c.Set("severity", severity)
 		c.Set("message", message)
@@ -219,4 +220,3 @@ func (c *Context) SendBackendLogs(message interface{}, severity string) {
 		}
 	}
 }
-

@@ -2,6 +2,7 @@ package types
 
 import (
 	v12 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
@@ -110,6 +111,27 @@ type IstioDestinationRuleAttributes struct {
 			Certificates struct{} `json:"certificates"`
 		}
 	} `json:"traffic_policy"`
+}
+type HPAServiceAttributes struct {
+	ScalingEnable bool          `json:"enable_scaling"`
+	HPA           HPAAttributes `json:"hpa_configurations"`
+}
+type HPAAttributes struct {
+	MixReplicas        int32          `json:"min_replicas"`
+	MaxReplicas        int32          `json:"max_replicas"`
+	Metrics_           []Metrics      `json:"metrics_values"`
+	CrossObjectVersion ScaleTargetRef `json:"cross_object_version"`
+}
+type Metrics struct {
+	TargetValueKind string `json:"target_value_kind"`
+	TargetValue     int64  `json:"target_value"`
+	TargetValueUnit string `json:"target_value_unit"`
+	ResourceKind    string `json:"resource_kind"`
+}
+type ScaleTargetRef struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Type    string `json:"type"`
 }
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
@@ -284,20 +306,21 @@ type KubernetesCred struct {
 	KubernetesPassword string `json:"password"`
 }
 type OutputServices struct {
-	Deployments            []v12.Deployment           `json:"deployment"`
-	DaemonSets             []v12.DaemonSet            `json:"daemonsets"`
-	CronJobs               []v2alpha1.CronJob         `json:"cronjob"`
-	Jobs                   []v13.Job                  `json:"job"`
-	StatefulSets           []v12.StatefulSet          `json:"statefulset"`
-	ConfigMap              []v1.ConfigMap             `json:"configmap"`
-	Kubernetes             []v1.Service               `json:"kubernetes-service"`
-	Istio                  []IstioObject              `json:"istio-component"`
-	StorageClasses         []storage.StorageClass     `json:"storage-classes"`
-	RoleClasses            []rbacV1.Role              `json:"role-classes"`
-	RoleBindingClasses     []rbacV1.RoleBinding       `json:"role-binding-classes"`
-	ServiceAccountClasses  []v1.ServiceAccount        `json:"service-account-classes"`
-	PersistentVolumeClaims []v1.PersistentVolumeClaim `json:"persistent-volume-claims"`
-	Secrets                []interface{}              `json:"secrets"`
+	Deployments            []v12.Deployment                      `json:"deployment"`
+	DaemonSets             []v12.DaemonSet                       `json:"daemonsets"`
+	HPA                    []autoscaling.HorizontalPodAutoscaler `json:"hpas"`
+	CronJobs               []v2alpha1.CronJob                    `json:"cronjob"`
+	Jobs                   []v13.Job                             `json:"job"`
+	StatefulSets           []v12.StatefulSet                     `json:"statefulset"`
+	ConfigMap              []v1.ConfigMap                        `json:"configmap"`
+	Kubernetes             []v1.Service                          `json:"kubernetes-service"`
+	Istio                  []IstioObject                         `json:"istio-component"`
+	StorageClasses         []storage.StorageClass                `json:"storage-classes"`
+	RoleClasses            []rbacV1.Role                         `json:"role-classes"`
+	RoleBindingClasses     []rbacV1.RoleBinding                  `json:"role-binding-classes"`
+	ServiceAccountClasses  []v1.ServiceAccount                   `json:"service-account-classes"`
+	PersistentVolumeClaims []v1.PersistentVolumeClaim            `json:"persistent-volume-claims"`
+	Secrets                []interface{}                         `json:"secrets"`
 }
 
 type DeploymentWrapper struct {
