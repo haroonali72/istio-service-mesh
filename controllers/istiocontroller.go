@@ -455,7 +455,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 
 	var serviceAttr types.HPAServiceAttributes
 
-	err = json.Unmarshal(byteData, serviceAttr)
+	err = json.Unmarshal(byteData, &serviceAttr)
 	if err != nil {
 		utils.Error.Println(err.Error())
 		return autoscaling.HorizontalPodAutoscaler{}, err
