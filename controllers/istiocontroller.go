@@ -434,7 +434,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 	hpaLabels["keel.sh/policy"] = "force"
 
 	if service.Name == "" {
-		//Failed
+		utils.Error.Println("service name not found")
 		return autoscaling.HorizontalPodAutoscaler{}, errors.New("Service name not found")
 	}
 	hpa.ObjectMeta.Name = service.Name + "-" + service.Version
@@ -445,9 +445,22 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 	} else {
 		hpa.ObjectMeta.Namespace = service.Namespace
 	}
-	byteData, _ := json.Marshal(service.ServiceAttributes)
+	byteData, err := json.Marshal(service.ServiceAttributes)
+	if err != nil {
+		utils.Error.Println(err.Error())
+		return autoscaling.HorizontalPodAutoscaler{}, err
+	}
+
+	utils.Info.Println(string(byteData))
+
 	var serviceAttr types.HPAServiceAttributes
-	json.Unmarshal(byteData, serviceAttr)
+
+	err = json.Unmarshal(byteData, serviceAttr)
+	if err != nil {
+		utils.Error.Println(err.Error())
+		return autoscaling.HorizontalPodAutoscaler{}, err
+	}
+
 	hpa.Spec.MinReplicas = &serviceAttr.HPA.MixReplicas
 	hpa.Spec.MaxReplicas = serviceAttr.HPA.MaxReplicas
 	crossObj := autoscaling.CrossVersionObjectReference{
