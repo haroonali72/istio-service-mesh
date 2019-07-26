@@ -420,7 +420,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 
 }
 func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1.LabelSelector, error) {
-	var serviceAttributes types.DockerServiceAttributes
+	var serviceAttributes = types.DockerServiceAttributes{}
 	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
 
 		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
@@ -430,9 +430,12 @@ func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1
 	} else {
 		return nil, err
 	}
-
 	lenl := len(serviceAttributes.LabelSelector.MatchLabel)
 	lene := len(serviceAttributes.LabelSelector.MatchExpression)
+	if lenl <= 0 && lene <= 0 {
+		//		return nil,nil
+		return &metav1.LabelSelector{make(map[string]string), nil}, nil
+	}
 
 	if (!(lenl > 0)) && lene > 0 {
 
@@ -492,43 +495,60 @@ func setNodeSelector(service types.Service, sel map[string]string) (map[string]s
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
 	var deployment = v12.Deployment{}
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-	//var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-
-	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
-	deployment.ObjectMeta.Labels = deploymentLabels
-
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
+	//add label to deployment object
 	var err2 error
-	deployment.Spec.Selector, err2 = setLabelSelector(service, deployment.Spec.Selector)
+	deploymentLabels, err2 := getLabels(service)
 	if err2 != nil {
 		return v12.Deployment{}, err2
 	}
+	if deploymentLabels == nil {
+		deploymentLabels = make(map[string]string)
+	}
+
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
+	deployment.ObjectMeta.Labels = deploymentLabels
+
+	//add label to container in deployment object
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
 	deployment.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, deployment.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v12.Deployment{}, err2
 	}
-
+	//adding label selector
+	deployment.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
+	deployment.Spec.Selector.MatchLabels = labels
 	deployment.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.Deployment{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "true"
 	deployment.Spec.Template.ObjectMeta.Annotations = Annotations
 	var err error
@@ -600,45 +620,65 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	var secrets, configMaps []string
 	var daemonset = v12.DaemonSet{}
-	daemonset.Kind = "DaemonSet"
-	daemonset.APIVersion = "apps/v1"
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
-
 	if service.Name == "" {
 		//Failed
 		return v12.DaemonSet{}, errors.New("Service name not found")
 	}
-	daemonset.ObjectMeta.Name = service.Name + "-" + service.Version
-	daemonset.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
 		daemonset.ObjectMeta.Namespace = "default"
 	} else {
 		daemonset.ObjectMeta.Namespace = service.Namespace
 	}
+
+	daemonset.Kind = "DaemonSet"
+	daemonset.APIVersion = "apps/v1"
+	// Label Selector
+	//keel labels
 	var err2 error
-	daemonset.Spec.Selector, err2 = setLabelSelector(service, daemonset.Spec.Selector)
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels, err2 = getLabels(service)
 	if err2 != nil {
 		return v12.DaemonSet{}, err2
 	}
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
 
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+	daemonset.ObjectMeta.Name = service.Name + "-" + service.Version
+	daemonset.ObjectMeta.Labels = deploymentLabels
+
+	/*	daemonset.Spec.Selector, err2 = setLabelSelector(service, daemonset.Spec.Selector)
+		if err2 != nil {
+			return v12.DaemonSet{}, err2
+		}
+	*/
+	daemonset.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
+	daemonset.Spec.Selector.MatchLabels = labels
 	daemonset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, daemonset.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v12.DaemonSet{}, err2
 	}
 
 	daemonset.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.DaemonSet{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
+
 	Annotations["sidecar.istio.io/inject"] = "true"
 	daemonset.Spec.Template.ObjectMeta.Annotations = Annotations
 
@@ -714,15 +754,32 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	cronjob.Kind = "CronJob"
 	cronjob.APIVersion = "batch/v1beta1"
 	// Label Selector
-
 	//keel labels
-	deploymentLabels := make(map[string]string)
+
+	deploymentLabels, err2 := getLabels(service)
+
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+	if deploymentLabels == nil {
+		deploymentLabels = make(map[string]string)
+	}
+
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
+
+	labels, err2 := getLabels(service)
+
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -740,18 +797,19 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 		cronjob.ObjectMeta.Namespace = service.Namespace
 	}
 
-	var err2 error
-	cronjob.Spec.JobTemplate.Spec.Selector, err2 = setLabelSelector(service, cronjob.Spec.JobTemplate.Spec.Selector)
-	if err2 != nil {
-		return v2alpha1.CronJob{}, err2
-	}
 	cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v2alpha1.CronJob{}, err2
 	}
 
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v2alpha1.CronJob{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "false"
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = Annotations
 	//
@@ -759,7 +817,13 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+	if len(serviceAttr.CronJobScheduleString) <= 0 {
+		return v2alpha1.CronJob{}, errors.New("cron job schedule can not be zero")
 
+	}
+	if errrr := standardParser.Parse(serviceAttr.CronJobScheduleString); errrr != nil {
+		return v2alpha1.CronJob{}, errors.New("invalid  cron job schedule")
+	}
 	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
 
 	var err error
@@ -844,7 +908,14 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
+	var err2 error
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v13.Job{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -861,20 +932,20 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	} else {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
-	var err2 error
-	job.Spec.Selector, err2 = setLabelSelector(service, job.Spec.Selector)
-	if err2 != nil {
-		return v13.Job{}, err2
-	}
 	job.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, job.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v13.Job{}, err2
 	}
 	job.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v13.Job{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "false"
 	job.Spec.Template.ObjectMeta.Annotations = Annotations
-
 	var err error
 	job.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
 	if err != nil {
@@ -945,44 +1016,57 @@ func getJobObject(service types.Service) (v13.Job, error) {
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	var secrets, configMaps []string
 	var statefulset = v12.StatefulSet{}
-	statefulset.Kind = "StatefulSet"
-	statefulset.APIVersion = "v1"
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-
-	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
-
 	if service.Name == "" {
 		//Failed
 		return v12.StatefulSet{}, errors.New("Service name not found")
 	}
-	statefulset.ObjectMeta.Name = service.Name + "-" + service.Version
-	statefulset.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
 		statefulset.ObjectMeta.Namespace = "default"
 	} else {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
+	statefulset.Kind = "StatefulSet"
+	statefulset.APIVersion = "v1"
+	// Label Selector
+	//keel labels
 	var err2 error
-	statefulset.Spec.Selector, err2 = setLabelSelector(service, statefulset.Spec.Selector)
+	deploymentLabels := make(map[string]string)
+	deploymentLabels, err2 = getLabels(service)
 	if err2 != nil {
 		return v12.StatefulSet{}, err2
 	}
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	statefulset.ObjectMeta.Name = service.Name + "-" + service.Version
+	statefulset.ObjectMeta.Labels = deploymentLabels
+
 	statefulset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, statefulset.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v12.StatefulSet{}, err2
 	}
+	statefulset.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	statefulset.Spec.Selector.MatchLabels = labels
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.StatefulSet{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "true"
 	statefulset.Spec.Template.ObjectMeta.Annotations = Annotations
 
@@ -1383,7 +1467,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
 				}
 			}
-
+			utils.Info.Println(deployment.Name)
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 			//add rbac classes
@@ -1805,6 +1889,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		}
 
 	}
+
 	x, err = json.Marshal(finalObj)
 	if err != nil {
 		utils.Info.Println(err)
@@ -1906,6 +1991,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
+	//issue here
 	resp, err := client.Do(req)
 	if err != nil {
 		utils.Info.Println(err)
@@ -2195,7 +2281,11 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 }
 
 func putCommandAndArguments(container *v1.Container, command, args []string) error {
-
+	for i := 0; i < len(command); i++ {
+		if strings.Contains(command[i], " ") {
+			return errors.New("Invalid command")
+		}
+	}
 	if len(command) > 0 && command[0] != "" {
 		container.Command = command
 		if len(args) > 0 {
@@ -2504,17 +2594,11 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	container.Name = serviceAttr.ImageName
+	container.Name = serviceAttr.Name
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	errr, isOk := checkRequestIsLessThanLimit(serviceAttr)
-	if errr != nil {
-		return nil, secretsArray, configMapsArray, errr
-	} else if isOk == false {
-		return nil, secretsArray, configMapsArray, errors.New("Request Resource is greater limit resource")
 
-	}
 	if err := putLimitResource(&container, serviceAttr.LimitResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
@@ -2522,12 +2606,7 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putReadinessProbe(&container, serviceAttr.RedinessProb); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
+	//init container do not have readiness prob
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
@@ -2626,7 +2705,7 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putReadinessProbe(&container, serviceAttr.LivenessProb); err != nil {
+	if err := putReadinessProbe(&container, serviceAttr.RedinessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
 
@@ -2908,4 +2987,128 @@ func getAnnotations(data types.Service) (map[string]string, error) {
 		annotations[key] = value
 	}
 	return annotations, nil
+}
+func (p Parser) Parse(spec string) error {
+	if len(spec) == 0 {
+		return fmt.Errorf("empty spec string")
+	}
+
+	// Split on whitespace.
+	fields := strings.Fields(spec)
+
+	// Validate & fill in any omitted or optional fields
+	var err error
+	fields, err = normalizeFields(fields, p.options)
+
+	return err
+}
+
+// A custom Parser that can be configured.
+type Parser struct {
+	options ParseOption
+}
+type ParseOption int
+
+const (
+	Second         ParseOption = 1 << iota // Seconds field, default 0
+	SecondOptional                         // Optional seconds field, default 0
+	Minute                                 // Minutes field, default 0
+	Hour                                   // Hours field, default 0
+	Dom                                    // Day of month field, default *
+	Month                                  // Month field, default *
+	Dow                                    // Day of week field, default *
+	DowOptional                            // Optional day of week field, default *
+	Descriptor                             // Allow descriptors such as @monthly, @weekly, etc.
+)
+
+var places = []ParseOption{
+	Minute,
+	Hour,
+	Dom,
+	Month,
+	Dow,
+}
+
+var defaults = []string{
+	"0",
+	"0",
+	"0",
+	"*",
+	"*",
+	"*",
+}
+
+func normalizeFields(fields []string, options ParseOption) ([]string, error) {
+	// Validate optionals & add their field to options
+	optionals := 0
+	if options&SecondOptional > 0 {
+		options |= Second
+		optionals++
+	}
+	if options&DowOptional > 0 {
+		options |= Dow
+		optionals++
+	}
+	if optionals > 1 {
+		return nil, fmt.Errorf("multiple optionals may not be configured")
+	}
+
+	// Figure out how many fields we need
+	max := 0
+	for _, place := range places {
+		if options&place > 0 {
+			max++
+		}
+	}
+	min := max - optionals
+
+	// Validate number of fields
+	if count := len(fields); count < min || count > max {
+		if min == max {
+			return nil, fmt.Errorf("expected exactly %d fields, found %d: %s", min, count, fields)
+		}
+		return nil, fmt.Errorf("expected %d to %d fields, found %d: %s", min, max, count, fields)
+	}
+
+	// Populate the optional field if not provided
+	if min < max && len(fields) == min {
+		switch {
+		case options&DowOptional > 0:
+			fields = append(fields, defaults[5]) // TODO: improve access to default
+		case options&SecondOptional > 0:
+			fields = append([]string{defaults[0]}, fields...)
+		default:
+			return nil, fmt.Errorf("unknown optional field")
+		}
+	}
+
+	// Populate all fields not part of options with their defaults
+	n := 0
+	expandedFields := make([]string, len(places))
+	copy(expandedFields, defaults)
+	for i, place := range places {
+		if options&place > 0 {
+			expandedFields[i] = fields[n]
+			n++
+		}
+	}
+	return expandedFields, nil
+}
+
+var standardParser = NewParser(
+	Minute | Hour | Dom | Month | Dow,
+)
+
+func NewParser(options ParseOption) Parser {
+	optionals := 0
+	if options&DowOptional > 0 {
+		optionals++
+	}
+	if options&SecondOptional > 0 {
+		optionals++
+	}
+	if optionals > 1 {
+		panic("multiple optionals may not be configured")
+	}
+	return Parser{options}
 }
