@@ -428,7 +428,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 
 	//keel labels
 	hpa.Kind = "HorizontalPodAutoscaler"
-	hpa.APIVersion = "apps/v1"
+	hpa.APIVersion = "autoscaling/v2beta2"
 	hpaLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	hpaLabels["keel.sh/policy"] = "force"
