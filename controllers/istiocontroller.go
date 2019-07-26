@@ -9,6 +9,9 @@ import (
 	yaml2 "github.com/ghodss/yaml"
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
+	"istio-service-mesh/core"
+
+	//"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/controllers/volumes"
@@ -1236,7 +1239,7 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 	return account, roles, roleBindings, nil
 }
 
-func DeployIstio(input types.ServiceInput, requestType string) types.StatusRequest {
+func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.Context) types.StatusRequest {
 
 	var ret types.StatusRequest
 	ret.ID = input.SolutionInfo.Service.ID
@@ -1260,6 +1263,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", input.ProjectId)
+			cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 		}
 		return ret
 	}
@@ -1276,6 +1280,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			ret.Reason = "Not a valid Istio Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 			}
 			return ret
 		}
@@ -1290,6 +1295,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			ret.Reason = "Not a valid Secret Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 			}
 			return ret
 		} else {
@@ -1302,6 +1308,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			ret.Reason = "Not a valid configMap Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 			}
 			return ret
 		} else {
@@ -1393,6 +1400,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 						}
 						return ret
 					}
@@ -1417,6 +1425,7 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 						}
 						return ret
 					}
@@ -1437,6 +1446,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				ret.Reason = "Not a valid DaemonSet Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 				}
 				return ret
 			}
@@ -1464,6 +1475,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 						}
 						return ret
 					}
@@ -1488,6 +1501,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 						}
 						return ret
 					}
@@ -1504,6 +1519,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				ret.Reason = "Not a valid CronJob Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 				}
 				return ret
 			}
@@ -1526,6 +1543,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 					if requestType != "GET" {
 						utils.SendLog(ret.Reason, "error", input.ProjectId)
+						cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 					}
 					return ret
 				}
@@ -1550,6 +1569,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				ret.Reason = "Not a valid Job Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 				}
 				return ret
 			}
@@ -1572,6 +1593,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 					ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 					if requestType != "GET" {
 						utils.SendLog(ret.Reason, "error", input.ProjectId)
+						cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 					}
 					return ret
 				}
@@ -1596,6 +1619,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 				ret.Reason = "Not a valid StatefulSet Object. Error : " + err.Error()
 				if requestType != "GET" {
 					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 				}
 				return ret
 			}
@@ -1636,6 +1661,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 						}
 						return ret
 					}
@@ -1660,6 +1687,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 						ret.Reason = "Not a valid rbac Object. Error : " + err.Error()
 						if requestType != "GET" {
 							utils.SendLog(ret.Reason, "error", input.ProjectId)
+							cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 						}
 						return ret
 					}
@@ -1678,6 +1707,8 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
 			if requestType != "GET" {
 				utils.SendLog(ret.Reason, "error", input.ProjectId)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 			}
 			return ret
 		}
@@ -1694,13 +1725,15 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", input.ProjectId)
+			cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 		}
 		return ret
 	}
 	utils.Info.Println("kubernetes request payload", string(x))
 
 	if requestType != "POST" {
-		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType)
+		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType, cpContext)
 		if ret.Reason == "" {
 			//Successful in getting object
 			if requestType == "GET" {
@@ -1802,33 +1835,53 @@ func DeployIstio(input types.ServiceInput, requestType string) types.StatusReque
 		ret.Reason = "Service Object parsing failed : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", input.ProjectId)
+			cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 		}
 		return ret
 	}
 	if requestType != "GET" {
 		//Send failure request
-		return ForwardToKube(x, input.ProjectId, requestType, ret)
+		return ForwardToKube(x, input.ProjectId, requestType, ret, cpContext)
 	}
 	return ret
 
 }
 
-func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string) (types.StatusRequest, types.ResponseRequest) {
+func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string, cpContext *core.Context) (types.StatusRequest, types.ResponseRequest) {
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
+	//Adding Headers
+	if cpContext.Exists("projectId") {
+		req.Header.Set("projectId", cpContext.GetString("projectId"))
+	}
+	if cpContext.Exists("solutionId") {
+		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
+	}
+
+	if cpContext.Exists("company") {
+		req.Header.Set("company", cpContext.GetString("company"))
+	}
+	if cpContext.Exists("user_id") {
+		req.Header.Set("user", cpContext.GetString("user_id"))
+	}
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		utils.Info.Println(err)
 		if requestType != "GET" {
 			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+			cpContext.SendBackendLogs("Connection to kubernetes microservice failed "+err.Error(), constants.LOGGING_LEVEL_INFO)
+
 		}
 		ret.Status = append(ret.Status, "failed")
 		ret.Reason = "Connection to kubernetes deployment microservice failed Error : " + err.Error()
 		if requestType != "GET" {
 			utils.SendLog(ret.Reason, "error", env_id)
+			cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 		}
 
 		return ret, res
@@ -1844,6 +1897,9 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 			if requestType != "GET" {
 				utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
 				utils.SendLog(ret.Reason, "error", env_id)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+				cpContext.SendBackendLogs("Connection to kubernetes microservice failed "+err.Error(), constants.LOGGING_LEVEL_INFO)
+
 			}
 			return ret, res
 		} else {
@@ -1851,6 +1907,8 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 			utils.Info.Println(string(result))
 			if requestType != "GET" {
 				utils.SendLog(string(result), "info", env_id)
+				cpContext.SendBackendLogs(string(result), constants.LOGGING_LEVEL_INFO)
+
 			}
 			if statusCode != 200 {
 				var resrf types.ResponseServiceRequestFailure
@@ -1859,8 +1917,9 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
-
 						utils.SendLog(ret.Reason, "error", env_id)
+						cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
 					}
 					return ret, res
 				}
@@ -1873,7 +1932,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
-
+						cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 						utils.SendLog(ret.Reason, "error", env_id)
 					}
 					return ret, res
@@ -1884,7 +1943,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 		return ret, res
 	}
 }
-func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest) types.StatusRequest {
+func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest, cpContext *core.Context) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
 
@@ -1894,7 +1953,20 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(requestBody))
 
 	req.Header.Set("Content-Type", "application/json")
+	//Adding Headers
+	if cpContext.Exists("projectId") {
+		req.Header.Set("projectId", cpContext.GetString("projectId"))
+	}
+	if cpContext.Exists("solutionId") {
+		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
+	}
 
+	if cpContext.Exists("company") {
+		req.Header.Set("company", cpContext.GetString("company"))
+	}
+	if cpContext.Exists("user_id") {
+		req.Header.Set("user", cpContext.GetString("user_id"))
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -1904,6 +1976,8 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 
 		if requestType != "GET" {
 			utils.SendLog("Connection to kubernetes microservice failed "+err.Error(), "info", env_id)
+			cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+			cpContext.SendBackendLogs("Connection to kubernetes microservice failed "+err.Error(), constants.LOGGING_LEVEL_INFO)
 
 			utils.SendLog(ret.Reason, "error", env_id)
 		}
@@ -1921,12 +1995,17 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 			if requestType != "GET" {
 				utils.SendLog("Response Parsing failed "+err.Error(), "error", env_id)
 				utils.SendLog(ret.Reason, "error", env_id)
+				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+				cpContext.SendBackendLogs("Response Parsing failed "+err.Error(), constants.LOGGING_LEVEL_INFO)
+
 			}
 			return ret
 		} else {
 			utils.Info.Println(string(result))
 			if requestType != "GET" {
 				utils.SendLog(string(result), "info", env_id)
+				cpContext.SendBackendLogs(string(result), constants.LOGGING_LEVEL_INFO)
+
 			}
 			if statusCode != 200 {
 				var resrf types.ResponseServiceRequestFailure
@@ -1935,7 +2014,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					ret.Status = append(ret.Status, "failed")
 					ret.Reason = "kubernetes deployment microservice Response Parsing failed.Error : " + err.Error()
 					if requestType != "GET" {
-
+						cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 						utils.SendLog(ret.Reason, "error", env_id)
 					}
 					return ret
@@ -1952,6 +2031,47 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 }
 
 func ServiceRequest(w http.ResponseWriter, r *http.Request) {
+
+	/* Logging New Architecture */
+
+	cpContext := new(core.Context)
+	err := cpContext.ReadLoggingParameters(r)
+	if err != nil {
+		utils.Error.Println(err)
+
+		//http.Error(w, err.Error(), 500)
+
+	} else {
+
+		backwardCompatiblity := true
+
+		projectId := r.Header.Get("projectId")
+		if projectId == "" {
+			backwardCompatiblity = false
+
+			utils.Error.Println("projectId not found in request")
+			//http.Error(w,"projectId is missing in request", 500)
+			//return
+		}
+		solutionId := r.Header.Get("solutionId")
+		if projectId == "" {
+			backwardCompatiblity = false
+
+			utils.Error.Println("solutionId not found in request")
+			//http.Error(w,"solutionId not found in request", 500)
+			//return
+
+		}
+		if backwardCompatiblity {
+			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
+			cpContext.AddProjectId(projectId)
+		}
+		_ = solutionId
+
+	}
+
+	//Logging Initializations End
+
 	utils.Info.Println(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -1966,6 +2086,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(b, &input)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
+		cpContext.SendBackendLogs(err.Error(), constants.LOGGING_LEVEL_ERROR)
 		return
 	}
 
@@ -1977,7 +2098,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	status.ID = input.SolutionInfo.Service.ID
 	status.Name = input.SolutionInfo.Service.Name
 
-	result := DeployIstio(input, r.Method)
+	result := DeployIstio(input, r.Method, cpContext)
 
 	inProgress := false
 	failed := false
@@ -2126,7 +2247,7 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {
@@ -2168,7 +2289,7 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
 		for key, value := range serviceAttr.Data {
-			if decoded_value, err := base64.StdEncoding.DecodeString(value) ; err != nil {
+			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
 				secret.Data[key] = []byte(value)
 			} else {
