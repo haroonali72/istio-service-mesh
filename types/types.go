@@ -112,10 +112,10 @@ type IstioDestinationRuleAttributes struct {
 		}
 	} `json:"traffic_policy"`
 }
-type HPAServiceAttributes struct {
-	ScalingEnable bool          `json:"enable_scaling"`
+
+/*type HPAServiceAttributes struct {
 	HPA           HPAAttributes `json:"hpa_configurations"`
-}
+}*/
 type HPAAttributes struct {
 	MixReplicas        int32          `json:"min_replicas"`
 	MaxReplicas        int32          `json:"max_replicas"`

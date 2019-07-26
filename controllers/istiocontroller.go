@@ -453,7 +453,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 
 	utils.Info.Println(string(byteData))
 
-	var serviceAttr types.HPAServiceAttributes
+	var serviceAttr types.HPAAttributes
 
 	err = json.Unmarshal(byteData, &serviceAttr)
 	if err != nil {
@@ -461,17 +461,17 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 		return autoscaling.HorizontalPodAutoscaler{}, err
 	}
 
-	hpa.Spec.MinReplicas = &serviceAttr.HPA.MixReplicas
-	hpa.Spec.MaxReplicas = serviceAttr.HPA.MaxReplicas
+	hpa.Spec.MinReplicas = &serviceAttr.MixReplicas
+	hpa.Spec.MaxReplicas = serviceAttr.MaxReplicas
 	crossObj := autoscaling.CrossVersionObjectReference{
-		Kind:       serviceAttr.HPA.CrossObjectVersion.Type,
-		Name:       serviceAttr.HPA.CrossObjectVersion.Name,
-		APIVersion: serviceAttr.HPA.CrossObjectVersion.Version,
+		Kind:       serviceAttr.CrossObjectVersion.Type,
+		Name:       serviceAttr.CrossObjectVersion.Name,
+		APIVersion: serviceAttr.CrossObjectVersion.Version,
 	}
 	hpa.Spec.ScaleTargetRef = crossObj
 
 	var metricsArr []autoscaling.MetricSpec
-	for _, metrics := range serviceAttr.HPA.Metrics_ {
+	for _, metrics := range serviceAttr.Metrics_ {
 		met := autoscaling.MetricSpec{
 			Type: autoscaling.ResourceMetricSourceType,
 		}
