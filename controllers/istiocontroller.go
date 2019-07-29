@@ -2281,11 +2281,6 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 }
 
 func putCommandAndArguments(container *v1.Container, command, args []string) error {
-	for i := 0; i < len(command); i++ {
-		if strings.Contains(command[i], " ") {
-			return errors.New("Invalid command")
-		}
-	}
 	if len(command) > 0 && command[0] != "" {
 		container.Command = command
 		if len(args) > 0 {
