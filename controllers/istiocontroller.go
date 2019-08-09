@@ -275,6 +275,16 @@ func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttribute
 
 		SE.Location = v1alpha3.ServiceEntry_MESH_INTERNAL
 	}
+	for i := range serviceAttr.Uri {
+		SE.Endpoints = append(SE.Endpoints, &v1alpha3.ServiceEntry_Endpoint{
+			Ports:    serviceAttr.Uri[i].Ports,
+			Address:  serviceAttr.Uri[i].Address,
+			Labels:   serviceAttr.Uri[i].Labels,
+			Locality: serviceAttr.Uri[i].Locality,
+			Network:  serviceAttr.Uri[i].Network,
+			Weight:   serviceAttr.Uri[i].Weight,
+		})
+	}
 	return serviceAttr, SE, nil
 }
 func getIstioConf(service types.Service) (types.IstioConfig, error) {

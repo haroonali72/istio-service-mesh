@@ -26,7 +26,12 @@ type SEPort struct {
 	Protocol string `json:"protocol"`
 }
 type SEEndpoints struct {
-	Address string `json:"address"`
+	Address  string            `json:"address"`
+	Ports    map[string]uint32 `json:"ports,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty"`
+	Network  string            `json:"network,omitempty"`
+	Locality string            `json:"locality,omitempty"`
+	Weight   uint32            `json:"weight,omitempty"`
 }
 type VSDestination struct {
 }
