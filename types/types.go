@@ -133,6 +133,108 @@ type ScaleTargetRef struct {
 	Version string `json:"version"`
 	Type    string `json:"type"`
 }
+type RecourceType string
+
+const (
+	RecourceTypeMemory RecourceType = "memory"
+	RecourceTypeCpu    RecourceType = "cpu"
+)
+
+type ExecAction struct {
+	// Command is the command line to execute inside the container, the working directory for the
+	// command  is root ('/') in the container's filesystem. The command is simply exec'd, it is
+	// not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use
+	// a shell, you need to explicitly call out to that shell.
+	// Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
+	// +optional
+	Command []string `json:"command,omitempty" protobuf:"bytes,1,rep,name=command"`
+}
+type HTTPHeader struct {
+	// The header field name
+	Name *string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// The header field value
+	Value *string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
+const (
+	// URISchemeHTTP means that the scheme used will be http://
+	URISchemeHTTP string = "HTTP"
+	// URISchemeHTTPS means that the scheme used will be https://
+	URISchemeHTTPS string = "HTTPS"
+)
+
+type HTTPGetAction struct {
+	// Path to access on the HTTP server.
+	// +optional
+	Path *string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+	// Name or number of the port to access on the container.
+	// Number must be in the range 1 to 65535.
+	// Name must be an IANA_SVC_NAME.
+	Port int `json:"port" protobuf:"bytes,2,opt,name=port"`
+	// Host name to connect to, defaults to the pod IP. You probably want to set
+	// "Host" in httpHeaders instead.
+	// +optional
+	Host *string `json:"host,omitempty" protobuf:"bytes,3,opt,name=host"`
+	// Scheme to use for connecting to the host.
+	// Defaults to HTTP.
+	// +optional
+	Scheme *string `json:"scheme,omitempty" protobuf:"bytes,4,opt,name=scheme,casttype=URIScheme"`
+	// Custom headers to set in the request. HTTP allows repeated headers.
+	// +optional
+	HTTPHeaders []HTTPHeader `json:"http_headers,omitempty" protobuf:"bytes,5,rep,name=http_headers"`
+}
+type TCPSocketAction struct {
+	// Number or name of the port to access on the container.
+	// Number must be in the range 1 to 65535.
+	// Name must be an IANA_SVC_NAME.
+	Port int `json:"port" protobuf:"bytes,1,opt,name=port"`
+	// Optional: Host name to connect to, defaults to the pod IP.
+	// +optional
+	Host *string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
+}
+type Handler struct {
+	Type string `json:"handler_type"`
+
+	// One and only one of the following should be specified.
+	// Exec specifies the action to take.
+	// +optional
+	Exec *ExecAction `json:"exec,omitempty" protobuf:"bytes,1,opt,name=exec"`
+	// HTTPGet specifies the http request to perform.
+	// +optional
+	HTTPGet *HTTPGetAction `json:"http_get,omitempty" protobuf:"bytes,2,opt,name=http_get"`
+	// TCPSocket specifies an action involving a TCP port.
+	// TCP hooks not yet supported
+	// TODO: implement a realistic TCP lifecycle hook
+	// +optional
+	TCPSocket *TCPSocketAction `json:"tcp_socket,omitempty" protobuf:"bytes,3,opt,name=tcp_socket"`
+}
+
+type Probe struct {
+	// The action taken to determine the health of a container
+	Handler *Handler `json:",inline" protobuf:"bytes,1,opt,name=handler"`
+	// Number of seconds after the container has started before liveness probes are initiated.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// +optional
+	InitialDelaySeconds *int32 `json:"initial_delay_seconds,omitempty" protobuf:"varint,2,opt,name=initial_delay_seconds"`
+	// Number of seconds after which the probe times out.
+	// Defaults to 1 second. Minimum value is 1.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
+	// +optional
+	TimeoutSeconds *int32 `json:"timeout_seconds,omitempty" protobuf:"varint,3,opt,name=timeout_seconds"`
+	// How often (in seconds) to perform the probe.
+	// Default to 10 seconds. Minimum value is 1.
+	// +optional
+	PeriodSeconds *int32 `json:"period_seconds,omitempty" protobuf:"varint,4,opt,name=period_seconds"`
+	// Minimum consecutive successes for the probe to be considered successful after having failed.
+	// Defaults to 1. Must be 1 for liveness. Minimum value is 1.
+	// +optional
+	SuccessThreshold *int32 `json:"success_threshold,omitempty" protobuf:"varint,5,opt,name=success_threshold"`
+	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
+	// Defaults to 3. Minimum value is 1.
+	// +optional
+	FailureThreshold *int32 `json:"failure_threshold,omitempty" protobuf:"varint,6,opt,name=failure_threshold"`
+}
+
 type DockerServiceAttributes struct {
 	DistributionType      string `json:"distribution_type"`
 	DefaultConfigurations string `json:"default_configurations"`
@@ -149,22 +251,21 @@ type DockerServiceAttributes struct {
 	ImagePrefix                   string                        `json:"image_prefix"`
 	ImageName                     string                        `json:"image_name"`
 	MeshConfig                    IstioConfig                   `json:"istio_config"`
-
-	Command         []string              `json:"command"`
-	Args            []string              `json:"args"`
-	SecurityContext SecurityContextStruct `json:"security_context"`
+	LabelSelector                 LabelSelectorObj              `json:"label_selector"`
+	NodeSelector                  map[string]string             `json:"node_selector"`
+	Command                       []string                      `json:"command"`
+	Args                          []string                      `json:"args"`
+	SecurityContext               SecurityContextStruct         `json:"security_context"`
 	//resource types: cpu, memory
-	LimitResourceTypes        []string               `json:"limit_resource_types"`
-	LimitResourceQuantities   []string               `json:"limit_resource_quantities"`
-	RequestResourceTypes      []string               `json:"request_resource_types"`
-	RequestResourceQuantities []string               `json:"request_resource_quantities"`
-	Labels                    map[string]string      `json:"labels"`
-	Annotations               map[string]string      `json:"annotations"`
-	CronJobScheduleString     string                 `json:"cron_job_schedule_string"`
-	LivenessProb              map[string]interface{} `json:"liveness_probe"`
-	RedinessProb              map[string]interface{} `json:"readiness_probe"`
-
-	IsRbac bool `json:"is_rbac_enabled"`
+	LimitResources        map[RecourceType]string `json:"limit_resources"`
+	RequestResources      map[RecourceType]string `json:"request_resources"`
+	Labels                map[string]string       `json:"labels"`
+	Annotations           map[string]string       `json:"annotations"`
+	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
+	LivenessProb          *Probe                  `json:"liveness_probe"`
+	RedinessProb          *Probe                  `json:"readiness_probe"`
+	Name                  string                  `json:"name"`
+	IsRbac                bool                    `json:"is_rbac_enabled"`
 
 	RbacRoles []K8sRbacAttribute `json:"roles"`
 
@@ -256,6 +357,24 @@ type ServiceDependencyx struct {
 	Version           string `json:"version"`
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
+type LabelSelectorObj struct {
+	MatchLabel      map[string]string          `json:"match_label"`
+	MatchExpression []LabelSelectorRequirement `json:"match_expression"`
+}
+type LabelSelectorRequirement struct {
+	Key      string                `json:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	Operator LabelSelectorOperator `json:"operator" protobuf:"bytes,2,opt,name=operator,casttype=LabelSelectorOperator"`
+	Values   []string              `json:"values,omitempty" protobuf:"bytes,3,rep,name=values"`
+}
+
+type LabelSelectorOperator string
+
+const (
+	LabelSelectorOpIn           LabelSelectorOperator = "In"
+	LabelSelectorOpNotIn        LabelSelectorOperator = "NotIn"
+	LabelSelectorOpExists       LabelSelectorOperator = "Exists"
+	LabelSelectorOpDoesNotExist LabelSelectorOperator = "DoesNotExist"
+)
 
 type Service struct {
 	ServiceType           string              `json:"service_type"`

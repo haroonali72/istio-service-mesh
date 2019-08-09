@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/iancoleman/strcase"
 	"io/ioutil"
 	"istio-service-mesh/constants"
@@ -369,20 +370,20 @@ func parseK8sYaml(fileR []byte) (map[string][]byte, []error) {
 }
 func getContainerData(c *coreV1.Container) (service types.DockerServiceAttributes, err error) {
 	service.Command, service.Args = convertCommandAndArguments(c)
-	service.LimitResourceTypes, service.LimitResourceQuantities = convertLimitResource(c)
-	service.RequestResourceTypes, service.RequestResourceQuantities = convertRequestResource(c)
+	service.LimitResources = convertLimitResource(c)
+	service.RequestResources = convertRequestResource(c)
 	limitprob, err := convertLivenessProbe(c)
 	if err != nil {
 		utils.Error.Println(err)
 		return service, err
 	}
-	service.LivenessProb = limitprob
+	service.LivenessProb = &limitprob
 	requestProb, err := convertReadinessProbe(c)
 	if err != nil {
 		utils.Error.Println(err)
 		return service, err
 	}
-	service.RedinessProb = requestProb
+	service.RedinessProb = &requestProb
 	service.SecurityContext, err = revertSecurityContext(c.SecurityContext)
 	if err != nil {
 		return service, err
@@ -440,48 +441,111 @@ func convertCommandAndArguments(container *coreV1.Container) (command []string, 
 	}
 	return command, args
 }
-func convertLimitResource(container *coreV1.Container) (limitResourceTypes, limitResourceQuantities []string) {
+
+func convertLimitResource(container *coreV1.Container) map[types.RecourceType]string {
+	var limitResources = make(map[types.RecourceType]string)
 	for rName, rValue := range container.Resources.Limits {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			limitResourceTypes = append(limitResourceTypes, rName.String())
-			utils.Info.Println(rValue.Value())
-			limitResourceQuantities = append(limitResourceQuantities, rValue.String())
+			limitResources[types.RecourceType(rName)] = rValue.String()
 		}
 	}
-	return limitResourceTypes, limitResourceQuantities
+	return limitResources
 }
-func convertRequestResource(container *coreV1.Container) (requestResourceTypes, requestResourceQuantities []string) {
+func convertRequestResource(container *coreV1.Container) map[types.RecourceType]string {
+	var requestResources = make(map[types.RecourceType]string)
 	for rName, rValue := range container.Resources.Requests {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			requestResourceTypes = append(requestResourceTypes, rName.String())
-			requestResourceQuantities = append(requestResourceQuantities, rValue.String())
+			requestResources[types.RecourceType(rName)] = rValue.String()
 		}
 	}
-	return requestResourceTypes, requestResourceQuantities
+	return requestResources
 }
-func convertLivenessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
+func convertLivenessProbe(container *coreV1.Container) (livenessprob types.Probe, err error) {
+	livenessprob = types.Probe{}
+	livenessprob.SuccessThreshold = &container.LivenessProbe.SuccessThreshold
+	livenessprob.FailureThreshold = &container.LivenessProbe.FailureThreshold
+	livenessprob.TimeoutSeconds = &container.LivenessProbe.TimeoutSeconds
+	livenessprob.PeriodSeconds = &container.LivenessProbe.PeriodSeconds
+	livenessprob.InitialDelaySeconds = &container.LivenessProbe.InitialDelaySeconds
+	livenessprob.Handler = &types.Handler{}
+	if container.LivenessProbe.Exec != nil {
+		livenessprob.Handler.Exec = (*types.ExecAction)(container.LivenessProbe.Exec)
+		livenessprob.Handler.Type = "exec"
+	} else if container.LivenessProbe.HTTPGet != nil {
+		if port := container.LivenessProbe.HTTPGet.Port.IntValue(); port > 0 && port < 65536 {
+			livenessprob.Handler.HTTPGet = &types.HTTPGetAction{}
+			livenessprob.Handler.HTTPGet.Port = port
+			livenessprob.Handler.HTTPGet.Path = &container.LivenessProbe.HTTPGet.Path
+			livenessprob.Handler.HTTPGet.Host = &container.LivenessProbe.HTTPGet.Host
+			livenessprob.Handler.HTTPGet.Scheme = (*string)(&container.LivenessProbe.HTTPGet.Scheme)
+			for i := 0; i < len(container.LivenessProbe.HTTPGet.HTTPHeaders); i++ {
+				var temp = types.HTTPHeader{&container.LivenessProbe.HTTPGet.HTTPHeaders[i].Name, &container.LivenessProbe.HTTPGet.HTTPHeaders[i].Value}
+				livenessprob.Handler.HTTPGet.HTTPHeaders = append(livenessprob.Handler.HTTPGet.HTTPHeaders, temp)
+			}
+			livenessprob.Handler.Type = "httpGet"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Http Get in Liveness Prob")
+		}
 
-	raw, err := json.Marshal(container.LivenessProbe)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
+	} else if container.LivenessProbe.TCPSocket != nil {
+		if port := container.LivenessProbe.TCPSocket.Port.IntValue(); port > 0 && port < 65536 {
+			livenessprob.Handler.TCPSocket = &types.TCPSocketAction{}
+			livenessprob.Handler.TCPSocket.Port = port
+			livenessprob.Handler.TCPSocket.Host = &container.LivenessProbe.TCPSocket.Host
+			livenessprob.Handler.Type = "tcpSocket"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Tcp Socket in Liveness Prob")
+
+		}
+
+	} else {
+		return types.Probe{}, errors.New("handler of liveness prob can not be nill")
 	}
-	raw = k8sToSvcKeys(raw)
-	err = json.Unmarshal(raw, &data)
-
-	return data, err
+	return livenessprob, err
 }
-func convertReadinessProbe(container *coreV1.Container) (data map[string]interface{}, err error) {
+func convertReadinessProbe(container *coreV1.Container) (readinessprob types.Probe, err error) {
 
-	raw, err := json.Marshal(container.ReadinessProbe)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
+	readinessprob = types.Probe{}
+	readinessprob.SuccessThreshold = &container.ReadinessProbe.SuccessThreshold
+	readinessprob.FailureThreshold = &container.ReadinessProbe.FailureThreshold
+	readinessprob.TimeoutSeconds = &container.ReadinessProbe.TimeoutSeconds
+	readinessprob.PeriodSeconds = &container.ReadinessProbe.PeriodSeconds
+	readinessprob.InitialDelaySeconds = &container.ReadinessProbe.InitialDelaySeconds
+	readinessprob.Handler = &types.Handler{}
+	if container.ReadinessProbe.Exec != nil {
+		readinessprob.Handler.Exec = (*types.ExecAction)(container.ReadinessProbe.Exec)
+		readinessprob.Handler.Type = "exec"
+	} else if container.ReadinessProbe.HTTPGet != nil {
+		if port := container.ReadinessProbe.HTTPGet.Port.IntValue(); port > 0 && port < 65536 {
+			readinessprob.Handler.HTTPGet = &types.HTTPGetAction{}
+			readinessprob.Handler.HTTPGet.Port = port
+			readinessprob.Handler.HTTPGet.Path = &container.ReadinessProbe.HTTPGet.Path
+			readinessprob.Handler.HTTPGet.Host = &container.ReadinessProbe.HTTPGet.Host
+			readinessprob.Handler.HTTPGet.Scheme = (*string)(&container.ReadinessProbe.HTTPGet.Scheme)
+			for i := 0; i < len(container.ReadinessProbe.HTTPGet.HTTPHeaders); i++ {
+				var temp = types.HTTPHeader{&container.ReadinessProbe.HTTPGet.HTTPHeaders[i].Name, &container.ReadinessProbe.HTTPGet.HTTPHeaders[i].Value}
+				readinessprob.Handler.HTTPGet.HTTPHeaders = append(readinessprob.Handler.HTTPGet.HTTPHeaders, temp)
+			}
+			readinessprob.Handler.Type = "httpGet"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Http Get in Liveness Prob")
+		}
+
+	} else if container.ReadinessProbe.TCPSocket != nil {
+		if port := container.ReadinessProbe.TCPSocket.Port.IntValue(); port > 0 && port < 65536 {
+			readinessprob.Handler.TCPSocket = &types.TCPSocketAction{}
+			readinessprob.Handler.TCPSocket.Port = port
+			readinessprob.Handler.TCPSocket.Host = &container.ReadinessProbe.TCPSocket.Host
+			readinessprob.Handler.Type = "tcpSocket"
+		} else {
+			return types.Probe{}, errors.New("Invalid Port in Tcp Socket in Liveness Prob")
+
+		}
+
+	} else {
+		return types.Probe{}, errors.New("handler of liveness prob can not be nill")
 	}
-	raw = k8sToSvcKeys(raw)
-	err = json.Unmarshal(raw, &data)
-
-	return data, err
+	return readinessprob, err
 }
 func revertSecurityContext(scontext *coreV1.SecurityContext) (securityContext types.SecurityContextStruct, err error) {
 	if scontext == nil {

@@ -530,37 +530,135 @@ func ScaleUnit(unit string) resource.Scale {
 	}
 
 }
+func setLabelSelector(service types.Service, sel *metav1.LabelSelector) (*metav1.LabelSelector, error) {
+	var serviceAttributes = types.DockerServiceAttributes{}
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+	lenl := len(serviceAttributes.LabelSelector.MatchLabel)
+	lene := len(serviceAttributes.LabelSelector.MatchExpression)
+	if lenl <= 0 && lene <= 0 {
+		//		return nil,nil
+		return &metav1.LabelSelector{make(map[string]string), nil}, nil
+	}
+
+	if (!(lenl > 0)) && lene > 0 {
+
+		sel = &metav1.LabelSelector{nil, nil}
+	} else if lene > 0 || lenl > 0 {
+		sel = &metav1.LabelSelector{make(map[string]string), nil}
+
+	}
+
+	for k, v := range serviceAttributes.LabelSelector.MatchLabel {
+		sel.MatchLabels[k] = v
+	}
+	for i := 0; i < len(serviceAttributes.LabelSelector.MatchExpression); i++ {
+		if len(serviceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpDoesNotExist ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpExists ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpIn ||
+			serviceAttributes.LabelSelector.MatchExpression[i].Operator == types.LabelSelectorOpNotIn) {
+			byteData, err := json.Marshal(serviceAttributes.LabelSelector.MatchExpression[i])
+			if err != nil {
+				return sel, err
+			}
+			var temp metav1.LabelSelectorRequirement
+
+			err = json.Unmarshal(byteData, &temp)
+			if err != nil {
+				return nil, err
+			}
+			sel.MatchExpressions = append(sel.MatchExpressions, temp)
+		} else {
+			return nil, errors.New("Can not Apply Labels.Inavlid MatchExpression Label type")
+		}
+	}
+	return sel, nil
+}
+
+func setNodeSelector(service types.Service, sel map[string]string) (map[string]string, error) {
+	var serviceAttributes types.DockerServiceAttributes
+	if data, err := json.Marshal(service.ServiceAttributes); err == nil {
+
+		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	} else {
+		return nil, err
+	}
+
+	if len(sel) <= 0 {
+		sel = make(map[string]string)
+	}
+	for k, v := range serviceAttributes.NodeSelector {
+		sel[k] = v
+	}
+	return sel, nil
+}
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
 	var deployment = v12.Deployment{}
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
 
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
-	deployment.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
-
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
-	deployment.Spec.Selector = &selector
+	//add label to deployment object
+	var err2 error
+	deploymentLabels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+	if deploymentLabels == nil {
+		deploymentLabels = make(map[string]string)
+	}
+
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	deployment.ObjectMeta.Name = service.Name + "-" + service.Version
+	deployment.ObjectMeta.Labels = deploymentLabels
+
+	//add label to container in deployment object
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	deployment.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, deployment.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.Deployment{}, err2
+	}
+	//adding label selector
+	deployment.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
+	deployment.Spec.Selector.MatchLabels = labels
 	deployment.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.Deployment{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "true"
 	deployment.Spec.Template.ObjectMeta.Annotations = Annotations
 	var err error
@@ -632,35 +730,65 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 func getDaemonSetObject(service types.Service) (v12.DaemonSet, error) {
 	var secrets, configMaps []string
 	var daemonset = v12.DaemonSet{}
-	daemonset.Kind = "DaemonSet"
-	daemonset.APIVersion = "apps/v1"
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
-
 	if service.Name == "" {
 		//Failed
 		return v12.DaemonSet{}, errors.New("Service name not found")
 	}
-	daemonset.ObjectMeta.Name = service.Name + "-" + service.Version
-	daemonset.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
 		daemonset.ObjectMeta.Namespace = "default"
 	} else {
 		daemonset.ObjectMeta.Namespace = service.Namespace
 	}
-	daemonset.Spec.Selector = &selector
+
+	daemonset.Kind = "DaemonSet"
+	daemonset.APIVersion = "apps/v1"
+	// Label Selector
+	//keel labels
+	var err2 error
+	deploymentLabels := make(map[string]string)
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels, err2 = getLabels(service)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+	daemonset.ObjectMeta.Name = service.Name + "-" + service.Version
+	daemonset.ObjectMeta.Labels = deploymentLabels
+
+	/*	daemonset.Spec.Selector, err2 = setLabelSelector(service, daemonset.Spec.Selector)
+		if err2 != nil {
+			return v12.DaemonSet{}, err2
+		}
+	*/
+	daemonset.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
+	daemonset.Spec.Selector.MatchLabels = labels
+	daemonset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, daemonset.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.DaemonSet{}, err2
+	}
+
 	daemonset.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.DaemonSet{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
+
 	Annotations["sidecar.istio.io/inject"] = "true"
 	daemonset.Spec.Template.ObjectMeta.Annotations = Annotations
 
@@ -736,15 +864,32 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	cronjob.Kind = "CronJob"
 	cronjob.APIVersion = "batch/v1beta1"
 	// Label Selector
-
 	//keel labels
-	deploymentLabels := make(map[string]string)
+
+	deploymentLabels, err2 := getLabels(service)
+
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+	if deploymentLabels == nil {
+		deploymentLabels = make(map[string]string)
+	}
+
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	deploymentLabels["keel.sh/policy"] = "force"
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
+
+	labels, err2 := getLabels(service)
+
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -761,9 +906,20 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	} else {
 		cronjob.ObjectMeta.Namespace = service.Namespace
 	}
-	//cronjob.Spec.JobTemplate.Spec.Selector = &selector
+
+	cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, cronjob.Spec.JobTemplate.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v2alpha1.CronJob{}, err2
+	}
+
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v2alpha1.CronJob{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "false"
 	cronjob.Spec.JobTemplate.Spec.Template.ObjectMeta.Annotations = Annotations
 	//
@@ -771,7 +927,13 @@ func getCronJobObject(service types.Service) (v2alpha1.CronJob, error) {
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
+	if len(serviceAttr.CronJobScheduleString) <= 0 {
+		return v2alpha1.CronJob{}, errors.New("cron job schedule can not be zero")
 
+	}
+	if errrr := standardParser.Parse(serviceAttr.CronJobScheduleString); errrr != nil {
+		return v2alpha1.CronJob{}, errors.New("invalid  cron job schedule")
+	}
 	cronjob.Spec.Schedule = serviceAttr.CronJobScheduleString
 
 	var err error
@@ -856,7 +1018,14 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	//deploymentLabels["keel.sh/trigger"] = "poll"
 
 	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
+	var err2 error
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v13.Job{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
 	labels["app"] = service.Name
 	labels["version"] = strings.ToLower(service.Version)
 
@@ -873,12 +1042,20 @@ func getJobObject(service types.Service) (v13.Job, error) {
 	} else {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
-	//job.Spec.Selector = &selector
+	job.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, job.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v13.Job{}, err2
+	}
 	job.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v13.Job{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "false"
 	job.Spec.Template.ObjectMeta.Annotations = Annotations
-
 	var err error
 	job.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
 	if err != nil {
@@ -949,36 +1126,57 @@ func getJobObject(service types.Service) (v13.Job, error) {
 func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	var secrets, configMaps []string
 	var statefulset = v12.StatefulSet{}
-	statefulset.Kind = "StatefulSet"
-	statefulset.APIVersion = "v1"
-	// Label Selector
-	//keel labels
-	deploymentLabels := make(map[string]string)
-	//deploymentLabels["keel.sh/match-tag"] = "true"
-	deploymentLabels["keel.sh/policy"] = "force"
-	//deploymentLabels["keel.sh/trigger"] = "poll"
-
-	var selector metav1.LabelSelector
-	labels, _ := getLabels(service)
-	labels["app"] = service.Name
-	labels["version"] = strings.ToLower(service.Version)
-
 	if service.Name == "" {
 		//Failed
 		return v12.StatefulSet{}, errors.New("Service name not found")
 	}
-	statefulset.ObjectMeta.Name = service.Name + "-" + service.Version
-	statefulset.ObjectMeta.Labels = deploymentLabels
-	selector.MatchLabels = labels
 
 	if service.Namespace == "" {
 		statefulset.ObjectMeta.Namespace = "default"
 	} else {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
-	statefulset.Spec.Selector = &selector
+	statefulset.Kind = "StatefulSet"
+	statefulset.APIVersion = "v1"
+	// Label Selector
+	//keel labels
+	var err2 error
+	deploymentLabels := make(map[string]string)
+	deploymentLabels, err2 = getLabels(service)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
+	//deploymentLabels["keel.sh/match-tag"] = "true"
+	deploymentLabels["keel.sh/policy"] = "force"
+	//deploymentLabels["keel.sh/trigger"] = "poll"
+
+	labels, err2 := getLabels(service)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	labels["app"] = service.Name
+	labels["version"] = strings.ToLower(service.Version)
+
+	statefulset.ObjectMeta.Name = service.Name + "-" + service.Version
+	statefulset.ObjectMeta.Labels = deploymentLabels
+
+	statefulset.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, statefulset.Spec.Template.Spec.NodeSelector)
+	if err2 != nil {
+		return v12.StatefulSet{}, err2
+	}
+	statefulset.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
-	Annotations, _ := getAnnotations(service)
+	statefulset.Spec.Selector.MatchLabels = labels
+	Annotations, err4 := getAnnotations(service)
+	if err4 != nil {
+		return v12.StatefulSet{}, err4
+	}
+	if Annotations == nil {
+		Annotations = make(map[string]string)
+	}
 	Annotations["sidecar.istio.io/inject"] = "true"
 	statefulset.Spec.Template.ObjectMeta.Annotations = Annotations
 
@@ -1346,6 +1544,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			if service.Namespace != "" {
 				attributes.Volume.Namespace = service.Namespace
 			}
+
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
 			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
 		}
@@ -1394,7 +1593,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
 				}
 			}
-
+			utils.Info.Println(deployment.Name)
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 			//add rbac classes
@@ -1842,6 +2041,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 
 	}
+
 	x, err = json.Marshal(finalObj)
 	if err != nil {
 		utils.Info.Println(err)
@@ -1982,6 +2182,7 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		req.Header.Set("user", cpContext.GetString("user_id"))
 	}
 	client := &http.Client{}
+	//issue here
 	resp, err := client.Do(req)
 	if err != nil {
 		utils.Info.Println(err)
@@ -2142,7 +2343,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		notification.Status = "fail"
 	} else {
 
-		utils.Info.Println("Deployment Successful\n")
+		utils.Info.Println("Deployment Successful")
 		notification.Status = "success"
 		x, err := json.Marshal(result)
 		if err == nil {
@@ -2322,62 +2523,230 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 func putCommandAndArguments(container *v1.Container, command, args []string) error {
 	if len(command) > 0 && command[0] != "" {
 		container.Command = command
-		container.Args = args
-	} else if len(args) > 0 {
-		return errors.New("Error Found: Arguments provided without a command.")
-	}
-	return nil
-}
-func putLimitResource(container *v1.Container, limitResourceTypes, limitResourceQuantities []string) error {
-	temp := make(map[v1.ResourceName]resource.Quantity)
-	for i := 0; i < len(limitResourceTypes) && i < len(limitResourceQuantities); i++ {
-		if limitResourceTypes[i] == "memory" || limitResourceTypes[i] == "cpu" {
-			quantity, err := resource.ParseQuantity(limitResourceQuantities[i])
-			if err != nil {
-				return err
-			}
-			temp[v1.ResourceName(limitResourceTypes[i])] = quantity
+		if len(args) > 0 {
+			container.Args = args
 		} else {
-			return errors.New("Error Found: Invalid Limit Resource Provided. Valid: 'cpu','memory'")
+			container.Args = []string{}
 		}
+
+	} else if len(args) > 0 {
+		container.Args = args
 	}
-	container.Resources.Limits = temp
 	return nil
 }
-func putRequestResource(container *v1.Container, requestResourceTypes, requestResourceQuantities []string) error {
+func putLimitResource(container *v1.Container, limitResources map[types.RecourceType]string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
-	for i := 0; i < len(requestResourceTypes) && i < len(requestResourceQuantities); i++ {
-		if requestResourceTypes[i] == "memory" || requestResourceTypes[i] == "cpu" {
-			quantity, err := resource.ParseQuantity(requestResourceQuantities[i])
+	for t, v := range limitResources {
+		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+			quantity, err := resource.ParseQuantity(v)
 			if err != nil {
 				return err
 			}
-			temp[v1.ResourceName(requestResourceTypes[i])] = quantity
+			temp[v1.ResourceName(t)] = quantity
 		} else {
 			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
 	}
+
+	container.Resources.Limits = temp
+	return nil
+}
+func putRequestResource(container *v1.Container, requestResources map[types.RecourceType]string) error {
+	temp := make(map[v1.ResourceName]resource.Quantity)
+	for t, v := range requestResources {
+		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+			quantity, err := resource.ParseQuantity(v)
+			if err != nil {
+				return err
+			}
+			//
+			temp[v1.ResourceName(t)] = quantity
+		} else {
+			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
+		}
+	}
+
 	container.Resources.Requests = temp
 	return nil
 }
-func putLivenessProbe(container *v1.Container, byteData []byte) error {
+func putLivenessProbe(container *v1.Container, prob *types.Probe) error {
 
-	strLowerCamel := convertKeys(byteData)
-	var tempLivenessProbe tempProbing
-	json.Unmarshal(strLowerCamel, &tempLivenessProbe)
-	utils.Info.Println(tempLivenessProbe)
-	container.LivenessProbe = tempLivenessProbe.LivenessProbe
+	var temp v1.Probe
+	if prob != nil {
+		if prob.Handler != nil {
+			if prob.InitialDelaySeconds != nil {
+				temp.InitialDelaySeconds = *prob.InitialDelaySeconds
+			}
+			if prob.FailureThreshold != nil {
+				temp.FailureThreshold = *prob.FailureThreshold
+			}
+			if prob.PeriodSeconds != nil {
+				temp.PeriodSeconds = *prob.PeriodSeconds
+			}
+			if prob.SuccessThreshold != nil {
+				temp.SuccessThreshold = *prob.SuccessThreshold
+			}
+			if prob.TimeoutSeconds != nil {
+				temp.TimeoutSeconds = *prob.TimeoutSeconds
+			}
+			switch typeHandler := prob.Handler.Type; typeHandler {
+			case "exec":
+				if prob.Handler.Exec == nil {
+					return errors.New("there is no liveness handler of exec type")
+				}
+				temp.Handler.Exec = &v1.ExecAction{}
+				for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+				}
 
+			case "httpGet":
+				if prob.Handler.HTTPGet == nil {
+					return errors.New("there is no liveness handler of httpGet type")
+				}
+				temp.Handler.HTTPGet = &v1.HTTPGetAction{}
+				if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
+					if prob.Handler.HTTPGet.Host != nil {
+						temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
+					}
+					if prob.Handler.HTTPGet.Path != nil {
+						temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
+
+					}
+					if prob.Handler.HTTPGet.Scheme != nil {
+						if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
+
+							temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
+						} else {
+							return errors.New("invalid urischeme ")
+						}
+					}
+					if prob.Handler.HTTPGet.HTTPHeaders != nil {
+						temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
+						for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
+							if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
+								return errors.New("http header name and values are required")
+							}
+							tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
+							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+						}
+					}
+					temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
+				} else {
+					return errors.New("Invalid Port number for http Get")
+				}
+			case "tcpSocket":
+				if prob.Handler.TCPSocket == nil {
+					return errors.New("there is no liveness handler of tcpSocket type")
+				}
+				temp.Handler.TCPSocket = &v1.TCPSocketAction{}
+				if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
+					temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
+					if prob.Handler.TCPSocket.Host != nil {
+						temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+					}
+				} else {
+					return errors.New("Invalid Port number for tcp socket")
+				}
+
+			default:
+				return errors.New("There Must be liveness handler of valid type")
+
+			}
+		} else {
+			return errors.New("Liveness prob header can not be nil")
+		}
+		container.LivenessProbe = &temp
+	}
 	return nil
 }
-func putReadinessProbe(container *v1.Container, byteData []byte) error {
 
-	strLowerCamel := convertKeys(byteData)
-	var tempReadinessProbe tempProbing
-	json.Unmarshal(strLowerCamel, &tempReadinessProbe)
-	utils.Info.Println(tempReadinessProbe)
-	container.ReadinessProbe = tempReadinessProbe.ReadinessProbe
+func putReadinessProbe(container *v1.Container, prob *types.Probe) error {
+	var temp v1.Probe
+	if prob != nil {
+		if prob.Handler != nil {
+			if prob.InitialDelaySeconds != nil {
+				temp.InitialDelaySeconds = *prob.InitialDelaySeconds
+			}
+			if prob.FailureThreshold != nil {
+				temp.FailureThreshold = *prob.FailureThreshold
+			}
+			if prob.PeriodSeconds != nil {
+				temp.PeriodSeconds = *prob.PeriodSeconds
+			}
+			if prob.SuccessThreshold != nil {
+				temp.SuccessThreshold = *prob.SuccessThreshold
+			}
+			if prob.TimeoutSeconds != nil {
+				temp.TimeoutSeconds = *prob.TimeoutSeconds
+			}
+			switch typeHandler := prob.Handler.Type; typeHandler {
+			case "exec":
+				if prob.Handler.Exec == nil {
+					return errors.New("there is no readiness handler of exec type")
+				}
+				temp.Handler.Exec = &v1.ExecAction{}
+				for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+				}
 
+			case "httpGet":
+				if prob.Handler.HTTPGet == nil {
+					return errors.New("there is no readiness handler of httpGet type")
+				}
+				temp.Handler.HTTPGet = &v1.HTTPGetAction{}
+				if prob.Handler.HTTPGet.Port > 0 && prob.Handler.HTTPGet.Port < 65536 {
+					if prob.Handler.HTTPGet.Host != nil {
+						temp.HTTPGet.Host = *prob.Handler.HTTPGet.Host
+					}
+					if prob.Handler.HTTPGet.Path != nil {
+						temp.HTTPGet.Path = *prob.Handler.HTTPGet.Path
+
+					}
+					if prob.Handler.HTTPGet.Scheme != nil {
+						if *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTP || *prob.Handler.HTTPGet.Scheme == types.URISchemeHTTPS {
+
+							temp.HTTPGet.Scheme = v1.URIScheme(*prob.Handler.HTTPGet.Scheme)
+						} else {
+							return errors.New("invalid urischeme ")
+						}
+					}
+					if prob.Handler.HTTPGet.HTTPHeaders != nil {
+						temp.HTTPGet.HTTPHeaders = []v1.HTTPHeader{}
+						for i := 0; i < len(prob.Handler.HTTPGet.HTTPHeaders); i++ {
+							if prob.Handler.HTTPGet.HTTPHeaders[i].Value == nil || prob.Handler.HTTPGet.HTTPHeaders[i].Name == nil {
+								return errors.New("http header name and values are required")
+							}
+							tempheader := v1.HTTPHeader{*prob.Handler.HTTPGet.HTTPHeaders[i].Name, *prob.Handler.HTTPGet.HTTPHeaders[i].Value}
+							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+						}
+					}
+					temp.HTTPGet.Port = intstr.FromInt(prob.Handler.HTTPGet.Port)
+				} else {
+					return errors.New("Invalid Port number for http Get")
+				}
+			case "tcpSocket":
+				if prob.Handler.TCPSocket == nil {
+					return errors.New("there is no readiness handler of tcpSocket type")
+				}
+				temp.Handler.TCPSocket = &v1.TCPSocketAction{}
+				if prob.Handler.TCPSocket.Port > 0 && prob.Handler.TCPSocket.Port < 65536 {
+					temp.TCPSocket.Port = intstr.FromInt(prob.Handler.TCPSocket.Port)
+					if prob.Handler.TCPSocket.Host != nil {
+						temp.TCPSocket.Host = *prob.Handler.TCPSocket.Host
+					}
+				} else {
+					return errors.New("Invalid Port number for tcp socket")
+				}
+
+			default:
+				return errors.New("There Must be readiness handler of valid type")
+
+			}
+		} else {
+			return errors.New("Readiness prob handler can not be nil")
+		}
+		container.ReadinessProbe = &temp
+	}
 	return nil
 }
 
@@ -2405,11 +2774,33 @@ func fixKey(key string) string {
 	return strcase.ToLowerCamel(key)
 }
 
+/*
 type tempProbing struct {
 	LivenessProbe  *v1.Probe `json:"livenessProbe"`
 	ReadinessProbe *v1.Probe `json:"readinessProbe"`
 }
-
+*/
+func checkRequestIsLessThanLimit(serviceAttr types.DockerServiceAttributes) (error, bool) {
+	for t, v := range serviceAttr.LimitResources {
+		r, found := serviceAttr.RequestResources[t]
+		if found {
+			rr, err := resource.ParseQuantity(r)
+			if err != nil {
+				return err, false
+			}
+			lr, err := resource.ParseQuantity(v)
+			if err != nil {
+				return err, false
+			}
+			rrint := rr.AsDec()
+			lrint := lr.AsDec()
+			if rrint.Cmp(lrint) == 1 {
+				return nil, false
+			}
+		}
+	}
+	return nil, true
+}
 func getInitContainers(service types.Service) ([]v1.Container, []string, []string, error) {
 	var configMapsArray, secretsArray []string
 	fmt.Println(service)
@@ -2433,21 +2824,24 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	var container v1.Container
 	byteData, _ := json.Marshal(initContainerServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-	container.Name = serviceAttr.ImageName
-	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putLivenessProbe(&container, byteData); err != nil {
+	var err = json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
 
+	container.Name = serviceAttr.Name
+	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
+		return nil, secretsArray, configMapsArray, err
+	}
+
+	if err := putLimitResource(&container, serviceAttr.LimitResources); err != nil {
+		return nil, secretsArray, configMapsArray, err
+	}
+	if err := putRequestResource(&container, serviceAttr.RequestResources); err != nil {
+		return nil, secretsArray, configMapsArray, err
+	}
+
+	//init container do not have readiness prob
 	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
@@ -2523,20 +2917,30 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	container.Name = service.Name
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
+	if err := json.Unmarshal(byteData, &serviceAttr); err != nil {
+		return nil, nil, nil, err
+	}
+
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putLimitResource(&container, serviceAttr.LimitResourceTypes, serviceAttr.LimitResourceQuantities); err != nil {
+	errr, isOk := checkRequestIsLessThanLimit(serviceAttr)
+	if errr != nil {
+		return nil, secretsArray, configMapsArray, errr
+	} else if isOk == false {
+		return nil, secretsArray, configMapsArray, errors.New("Request Resource is greater limit resource")
+
+	}
+	if err := putLimitResource(&container, serviceAttr.LimitResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putRequestResource(&container, serviceAttr.RequestResourceTypes, serviceAttr.RequestResourceQuantities); err != nil {
+	if err := putRequestResource(&container, serviceAttr.RequestResources); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putLivenessProbe(&container, byteData); err != nil {
+	if err := putLivenessProbe(&container, serviceAttr.LivenessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-	if err := putReadinessProbe(&container, byteData); err != nil {
+	if err := putReadinessProbe(&container, serviceAttr.RedinessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
 
@@ -2788,6 +3192,7 @@ func getLabels(data types.Service) (map[string]string, error) {
 
 	var serviceAttributes types.DockerServiceAttributes
 	if data, err := json.Marshal(data.ServiceAttributes); err == nil {
+
 		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
 			utils.Error.Println(err)
 			return nil, err
@@ -2817,4 +3222,128 @@ func getAnnotations(data types.Service) (map[string]string, error) {
 		annotations[key] = value
 	}
 	return annotations, nil
+}
+func (p Parser) Parse(spec string) error {
+	if len(spec) == 0 {
+		return fmt.Errorf("empty spec string")
+	}
+
+	// Split on whitespace.
+	fields := strings.Fields(spec)
+
+	// Validate & fill in any omitted or optional fields
+	var err error
+	fields, err = normalizeFields(fields, p.options)
+
+	return err
+}
+
+// A custom Parser that can be configured.
+type Parser struct {
+	options ParseOption
+}
+type ParseOption int
+
+const (
+	Second         ParseOption = 1 << iota // Seconds field, default 0
+	SecondOptional                         // Optional seconds field, default 0
+	Minute                                 // Minutes field, default 0
+	Hour                                   // Hours field, default 0
+	Dom                                    // Day of month field, default *
+	Month                                  // Month field, default *
+	Dow                                    // Day of week field, default *
+	DowOptional                            // Optional day of week field, default *
+	Descriptor                             // Allow descriptors such as @monthly, @weekly, etc.
+)
+
+var places = []ParseOption{
+	Minute,
+	Hour,
+	Dom,
+	Month,
+	Dow,
+}
+
+var defaults = []string{
+	"0",
+	"0",
+	"0",
+	"*",
+	"*",
+	"*",
+}
+
+func normalizeFields(fields []string, options ParseOption) ([]string, error) {
+	// Validate optionals & add their field to options
+	optionals := 0
+	if options&SecondOptional > 0 {
+		options |= Second
+		optionals++
+	}
+	if options&DowOptional > 0 {
+		options |= Dow
+		optionals++
+	}
+	if optionals > 1 {
+		return nil, fmt.Errorf("multiple optionals may not be configured")
+	}
+
+	// Figure out how many fields we need
+	max := 0
+	for _, place := range places {
+		if options&place > 0 {
+			max++
+		}
+	}
+	min := max - optionals
+
+	// Validate number of fields
+	if count := len(fields); count < min || count > max {
+		if min == max {
+			return nil, fmt.Errorf("expected exactly %d fields, found %d: %s", min, count, fields)
+		}
+		return nil, fmt.Errorf("expected %d to %d fields, found %d: %s", min, max, count, fields)
+	}
+
+	// Populate the optional field if not provided
+	if min < max && len(fields) == min {
+		switch {
+		case options&DowOptional > 0:
+			fields = append(fields, defaults[5]) // TODO: improve access to default
+		case options&SecondOptional > 0:
+			fields = append([]string{defaults[0]}, fields...)
+		default:
+			return nil, fmt.Errorf("unknown optional field")
+		}
+	}
+
+	// Populate all fields not part of options with their defaults
+	n := 0
+	expandedFields := make([]string, len(places))
+	copy(expandedFields, defaults)
+	for i, place := range places {
+		if options&place > 0 {
+			expandedFields[i] = fields[n]
+			n++
+		}
+	}
+	return expandedFields, nil
+}
+
+var standardParser = NewParser(
+	Minute | Hour | Dom | Month | Dow,
+)
+
+func NewParser(options ParseOption) Parser {
+	optionals := 0
+	if options&DowOptional > 0 {
+		optionals++
+	}
+	if options&SecondOptional > 0 {
+		optionals++
+	}
+	if optionals > 1 {
+		panic("multiple optionals may not be configured")
+	}
+	return Parser{options}
 }
