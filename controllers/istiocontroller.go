@@ -2262,24 +2262,36 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	err := cpContext.ReadLoggingParameters(r)
 	if err != nil {
 		utils.Error.Println(err)
-		http.Error(w, err.Error(), 500)
-		return
+
 		//http.Error(w, err.Error(), 500)
 
 	} else {
 
+		backwardCompatiblity := true
 
 		projectId := r.Header.Get("projectId")
-		solutionId := r.Header.Get("solutionId")
+		if projectId == "" {
+			backwardCompatiblity = false
 
-		if(projectId == "" || solutionId == ""){
-			utils.Error.Println("project id or solution id empty")
-			http.Error(w, err.Error(), 500)
-			return
+			utils.Error.Println("projectId not found in request")
+			//http.Error(w,"projectId is missing in request", 500)
+			//return
 		}
-		cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
-		cpContext.AddProjectId(projectId)
-		
+		solutionId := r.Header.Get("solutionId")
+		if projectId == "" {
+			backwardCompatiblity = false
+
+			utils.Error.Println("solutionId not found in request")
+			//http.Error(w,"solutionId not found in request", 500)
+			//return
+
+		}
+		if backwardCompatiblity {
+			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
+			cpContext.AddProjectId(projectId)
+		}
+		_ = solutionId
+
 	}
 
 	//Logging Initializations End
