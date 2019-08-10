@@ -10,7 +10,6 @@ import (
 	googl_types "github.com/gogo/protobuf/types"
 	"github.com/iancoleman/strcase"
 	"istio-service-mesh/core"
-
 	//"github.com/istio/api/networking/v1alpha3"
 	"io/ioutil"
 	"istio-service-mesh/constants"
@@ -1538,7 +1537,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 	}
 
-	secret, exists := CreateDockerCfgSecret(service)
+	secret, exists := CreateDockerCfgSecret(service , input.ProjectId)
 	if exists {
 		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
 	}
@@ -2263,36 +2262,24 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 	err := cpContext.ReadLoggingParameters(r)
 	if err != nil {
 		utils.Error.Println(err)
-
+		http.Error(w, err.Error(), 500)
+		return
 		//http.Error(w, err.Error(), 500)
 
 	} else {
 
-		backwardCompatiblity := true
 
 		projectId := r.Header.Get("projectId")
-		if projectId == "" {
-			backwardCompatiblity = false
-
-			utils.Error.Println("projectId not found in request")
-			//http.Error(w,"projectId is missing in request", 500)
-			//return
-		}
 		solutionId := r.Header.Get("solutionId")
-		if projectId == "" {
-			backwardCompatiblity = false
 
-			utils.Error.Println("solutionId not found in request")
-			//http.Error(w,"solutionId not found in request", 500)
-			//return
-
+		if(projectId == "" || solutionId == ""){
+			utils.Error.Println("project id or solution id empty")
+			http.Error(w, err.Error(), 500)
+			return
 		}
-		if backwardCompatiblity {
-			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
-			cpContext.AddProjectId(projectId)
-		}
-		_ = solutionId
-
+		cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
+		cpContext.AddProjectId(projectId)
+		
 	}
 
 	//Logging Initializations End
@@ -2396,12 +2383,35 @@ func getSecretObject(service types.Service) (*v1.Secret, error) {
 }
 
 // this will be used by revions to pull the image from registry
-func CreateDockerCfgSecret(service types.Service) (v1.Secret, bool) {
+func CreateDockerCfgSecret(service types.Service , projectId string) (v1.Secret, bool) {
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
+	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
+	if profileId != ""{
+		var vault types.VaultCredentialsConfigurations
+		req, err := http.Get(constants.VAULT_BACKEND+profileId)
+		if err == nil {
+			result, err := ioutil.ReadAll(req.Body)
+			if(err == nil){
+				err = json.Unmarshal(result, &vault)
+				utils.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password , "error" , projectId)
+				if(err == nil){
+					if vault.Credentials.Username != "" && vault.Credentials.Password != ""{
+						serviceAttr.ImageRepositoryConfigurations.Credentials.Username = vault.Credentials.Username
+						serviceAttr.ImageRepositoryConfigurations.Credentials.Password = vault.Credentials.Password
+					}
+				}
+			}
+		}else{
+			utils.SendLog("vault fetch failure "+err.Error() , "error" , projectId)
+		}
+
+	}else{
+		utils.SendLog("profile id empty " , "error" , projectId)
+	}
 	if serviceAttr.ImageRepositoryConfigurations.Credentials.Username == "" || serviceAttr.ImageRepositoryConfigurations.Credentials.Password == "" {
 		return v1.Secret{}, false
 	}

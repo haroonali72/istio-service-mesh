@@ -19,6 +19,7 @@ const (
 	LOGGING_LEVEL_ERROR      = "error"
 	LOGGING_LEVEL_WARN       = "warn"
 	BACKEND_LOGGING_ENDPOINT = "/elephant/api/v1/backend/logging"
+	VAULT_BACKEND = "http://robin:8093/robin/api/v1/template/docker/credentials/"
 
 	//Kubernetes Component
 	Deployment  K8sKind = "Deployment"
