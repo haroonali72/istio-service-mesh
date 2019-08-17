@@ -28,6 +28,7 @@ func SendLog(msg, message_type, env_id string) (int, error) {
 	return response.StatusCode, response.Error
 
 }
+
 func Notify_Generic(state interface{}, path string) {
 
 	url := path

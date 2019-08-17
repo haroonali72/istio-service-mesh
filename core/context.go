@@ -208,6 +208,19 @@ func (c *Context) InitializeLogger(requestURL, method, path, body string) {
 func (c *Context) AddProjectId(projectId string) {
 	c.Set("project_id", projectId)
 }
+
+func (c *Context) SendLog(message string, severity string, logType []string) {
+	for i := 0; i < len(logType); i++ {
+		switch constants.Logger(logType[i]) {
+		case constants.Backend_logging:
+			c.SendBackendLogs(message, severity)
+		case constants.Frontend_logging:
+			c.SendFrontendLogs(message, severity)
+
+		}
+	}
+}
+
 func (c *Context) SendBackendLogs(message interface{}, severity string) {
 	if c.initialized {
 		url := constants.LoggingURL + constants.BACKEND_LOGGING_ENDPOINT
@@ -218,5 +231,25 @@ func (c *Context) SendBackendLogs(message interface{}, severity string) {
 		if err != nil {
 			utils.Error.Println(err)
 		}
+	}
+}
+
+func (c *Context) SendFrontendLogs(message interface{}, severity string) {
+	url := constants.LoggingURL + constants.FRONTEND_LOGGING_ENDPOINT
+
+	c.Set("severity", severity)
+	c.Set("message", message)
+
+	var data types.LoggingRequest
+	data.Id = c.GetString("project_id")
+	data.Service = constants.SERVICE_NAME
+	data.Level = severity
+	data.Message = message
+	data.Type = "Project"
+	data.CompanyId = c.GetString("companyId")
+
+	_, err := utils.Post(url, data, map[string]string{"Content-Type": "application/json"})
+	if err != nil {
+		utils.Error.Println(err)
 	}
 }

@@ -15,6 +15,7 @@ type Route struct {
 	Host   string `json:"host"`
 	Subset string `json:"subset"`
 }
+
 type Port struct {
 	Host      string `json:"host"`
 	Container string `json:"container"`
@@ -25,6 +26,7 @@ type SEPort struct {
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
 }
+
 type SEEndpoints struct {
 	Address  string            `json:"address"`
 	Ports    map[string]uint32 `json:"ports,omitempty"`
@@ -495,12 +497,15 @@ type ResponseData struct {
 }
 
 type LoggingRequest struct {
-	Message     string `json:"message"`
-	Id          string `json:"id"`
-	Environment string `json:"environment"`
-	Service     string `json:"service"`
-	Level       string `json:"level"`
+	CompanyId   string      `json:"company"`
+	Message     interface{} `json:"message"`
+	Id          string      `json:"id"`
+	Environment string      `json:"environment"`
+	Service     string      `json:"service"`
+	Level       string      `json:"level"`
+	Type        string      `json:"type"`
 }
+
 type Notifier struct {
 	Id string `json:"_id"`
 	//EnvId  string `json:"environment_id"`
@@ -529,16 +534,15 @@ type ResponseServiceRequestFailure struct {
 	Error string `json:"error"`
 }
 
-
 type VaultCredentialsConfigurations struct {
 	Credentials BasicAuthCredentails `json:"docker_credentials"`
-	Profile string `json:"profile_name"`
+	Profile     string               `json:"profile_name"`
 }
 type ImageRepositoryConfigurations struct {
 	Url         string               `json:"url"`
 	Tag         string               `json:"tag"`
 	Credentials BasicAuthCredentails `json:"credentials"`
-	Profile string `json:"profile_id"`
+	Profile     string               `json:"profile_id"`
 }
 
 type BasicAuthCredentails struct {
