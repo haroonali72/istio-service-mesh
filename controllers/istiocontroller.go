@@ -1537,7 +1537,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 	}
 
-	secret, exists := CreateDockerCfgSecret(service , input.ProjectId)
+	secret, exists := CreateDockerCfgSecret(service, input.ProjectId)
 	if exists {
 		finalObj.Services.Secrets = append(finalObj.Services.Secrets, secret)
 	}
@@ -2268,18 +2268,17 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-
 		projectId := r.Header.Get("projectId")
 		solutionId := r.Header.Get("solutionId")
 
-		if(projectId == "" || solutionId == ""){
+		if projectId == "" || solutionId == "" {
 			utils.Error.Println("project id or solution id empty")
-			http.Error(w, err.Error(), 500)
+			http.Error(w, "project id and solution id is missing", 500)
 			return
 		}
 		cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
 		cpContext.AddProjectId(projectId)
-		
+
 	}
 
 	//Logging Initializations End
@@ -2383,34 +2382,34 @@ func getSecretObject(service types.Service) (*v1.Secret, error) {
 }
 
 // this will be used by revions to pull the image from registry
-func CreateDockerCfgSecret(service types.Service , projectId string) (v1.Secret, bool) {
+func CreateDockerCfgSecret(service types.Service, projectId string) (v1.Secret, bool) {
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
 	json.Unmarshal(byteData, &serviceAttr)
 
 	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
-	if profileId != ""{
+	if profileId != "" {
 		var vault types.VaultCredentialsConfigurations
-		req, err := http.Get(constants.VAULT_BACKEND+profileId)
+		req, err := http.Get(constants.VAULT_BACKEND + profileId)
 		if err == nil {
 			result, err := ioutil.ReadAll(req.Body)
-			if(err == nil){
+			if err == nil {
 				err = json.Unmarshal(result, &vault)
-				utils.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password , "error" , projectId)
-				if(err == nil){
-					if vault.Credentials.Username != "" && vault.Credentials.Password != ""{
+				utils.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password, "error", projectId)
+				if err == nil {
+					if vault.Credentials.Username != "" && vault.Credentials.Password != "" {
 						serviceAttr.ImageRepositoryConfigurations.Credentials.Username = vault.Credentials.Username
 						serviceAttr.ImageRepositoryConfigurations.Credentials.Password = vault.Credentials.Password
 					}
 				}
 			}
-		}else{
-			utils.SendLog("vault fetch failure "+err.Error() , "error" , projectId)
+		} else {
+			utils.SendLog("vault fetch failure "+err.Error(), "error", projectId)
 		}
 
-	}else{
-		utils.SendLog("profile id empty " , "error" , projectId)
+	} else {
+		utils.SendLog("profile id empty ", "error", projectId)
 	}
 	if serviceAttr.ImageRepositoryConfigurations.Credentials.Username == "" || serviceAttr.ImageRepositoryConfigurations.Credentials.Password == "" {
 		return v1.Secret{}, false

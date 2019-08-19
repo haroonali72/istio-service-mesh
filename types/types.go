@@ -529,16 +529,15 @@ type ResponseServiceRequestFailure struct {
 	Error string `json:"error"`
 }
 
-
 type VaultCredentialsConfigurations struct {
 	Credentials BasicAuthCredentails `json:"docker_credentials"`
-	Profile string `json:"profile_name"`
+	Profile     string               `json:"profile_name"`
 }
 type ImageRepositoryConfigurations struct {
 	Url         string               `json:"url"`
 	Tag         string               `json:"tag"`
 	Credentials BasicAuthCredentails `json:"credentials"`
-	Profile string `json:"profile_id"`
+	Profile     string               `json:"profile_id"`
 }
 
 type BasicAuthCredentails struct {
