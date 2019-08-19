@@ -385,7 +385,7 @@ type Service struct {
 	ServiceType           string              `json:"service_type"`
 	SubType               string              `json:"service_sub_type"`
 	Name                  string              `json:"name"`
-	ID                    string              `json:"_id"`
+	ID                    string              `json:"service_id"`
 	Version               string              `json:"version"`
 	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
 	ServiceAttributes     interface{}         `json:"service_attributes"`
@@ -396,7 +396,7 @@ type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
 }
 type SolutionInfo struct {
-	ID      string  `json:"_id"`
+	ID      string  `json:"serivce_"`
 	Name    string  `json:"name"`
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
@@ -513,11 +513,12 @@ type KubeResponse struct {
 }
 
 type StatusRequest struct {
-	ID      string   `json:"_id"`
-	Name    string   `json:"name"`
-	Status  []string `json:"status_individual"`
-	StatusF string   `json:"status"`
-	Reason  string   `json:"reason"`
+	ID        string   `json:"_id"`
+	ServiceId string   `json:"service_id"`
+	Name      string   `json:"name"`
+	Status    []string `json:"status_individual"`
+	StatusF   string   `json:"status"`
+	Reason    string   `json:"reason"`
 }
 
 type ResponseRequest struct {
