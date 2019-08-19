@@ -396,7 +396,7 @@ type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
 }
 type SolutionInfo struct {
-	ID      string  `json:"serivce_"`
+	ID      string  `json:"_id"`
 	Name    string  `json:"name"`
 	Version string  `json:"version"`
 	PoolId  string  `json:"pool_id"`
