@@ -2245,7 +2245,12 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		} else {
 			utils.Info.Println(string(result))
 			if requestType != "GET" {
-				utils.SendLog(string(result), "info", env_id)
+				var rt map[string]interface{}
+				utils.Error.Println(json.Unmarshal(result, &rt))
+				rr, err := json.MarshalIndent(rt, "", "	")
+				utils.Info.Printf("%s", rr)
+				utils.Error.Println(err)
+				utils.SendLog(string(rr), "info", env_id)
 				cpContext.SendBackendLogs(string(result), constants.LOGGING_LEVEL_INFO)
 
 			}
