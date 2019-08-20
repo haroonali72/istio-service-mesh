@@ -1605,7 +1605,6 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 			utils.Info.Println(deployment.Name)
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
-
 			//add rbac classes
 
 			byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -1922,21 +1921,39 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 
 		}
+		//todo: create function and call it
+		fmt.Println("Hi: ", requestType, service.GroupId)
+		if service.GroupId == "" {
+			//Getting Kubernetes Service Object
+			serv, err := getServiceObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
 
-		//Getting Kubernetes Service Object
-		serv, err := getServiceObject(service)
-		if err != nil {
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
-			if requestType != "GET" {
-				utils.SendLog(ret.Reason, "error", input.ProjectId)
-				cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
-
+				}
+				return ret
 			}
-			return ret
-		}
-		if serv != nil {
-			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			if serv != nil {
+				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			}
+		} else if service.GroupId != "" && requestType != "DELETE" {
+			serv, err := getServiceObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+				if requestType != "GET" {
+					utils.SendLog(ret.Reason, "error", input.ProjectId)
+					cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
+				}
+				return ret
+			}
+			if serv != nil {
+				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			}
 		}
 	}
 

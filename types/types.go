@@ -390,6 +390,7 @@ type Service struct {
 	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
 	ServiceAttributes     interface{}         `json:"service_attributes"`
 	Namespace             string              `json:"namespace"`
+	GroupId               string              `json:"group_id"`
 	Hostnames             []string            `json:"hostnames"`
 }
 type IstioConfig struct {
