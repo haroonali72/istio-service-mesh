@@ -24,6 +24,7 @@ type Port struct {
 type SEPort struct {
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
+	Name     string `json:"name"`
 }
 type SEEndpoints struct {
 	Address  string            `json:"address"`

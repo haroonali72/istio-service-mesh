@@ -250,7 +250,7 @@ func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttribute
 	var ports []*v1alpha3.Port
 	for _, port := range serviceAttr.Ports {
 		var p v1alpha3.Port
-		p.Name = port.Protocol
+		p.Name = port.Name
 		p.Protocol = port.Protocol
 		p.Number = uint32(port.Port)
 		ports = append(ports, &p)
