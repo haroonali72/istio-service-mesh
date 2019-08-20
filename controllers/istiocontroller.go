@@ -2879,7 +2879,7 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	container.Name = serviceAttr.Name
+	container.Name = "init-container-dummy"
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
