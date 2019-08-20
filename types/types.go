@@ -497,7 +497,7 @@ type ResponseData struct {
 }
 
 type LoggingRequest struct {
-	CompanyId   string      `json:"company"`
+	CompanyId   string      `json:"company_id"`
 	Message     interface{} `json:"message"`
 	Id          string      `json:"id"`
 	Environment string      `json:"environment"`
