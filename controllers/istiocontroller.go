@@ -2269,28 +2269,30 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 
 		backwardCompatiblity := true
 
-		projectId := r.Header.Get("projectId")
-		if projectId == "" {
+		userId := r.Header.Get("user")
+		companyId := r.Header.Get("company_id")
+		//	projectId := r.Header.Get("projectId")
+		if userId == "" {
 			backwardCompatiblity = false
 
-			utils.Error.Println("projectId not found in request")
+			utils.Error.Println("userId not found in request")
 			//http.Error(w,"projectId is missing in request", 500)
 			//return
 		}
-		solutionId := r.Header.Get("solutionId")
-		if projectId == "" {
+		//solutionId := r.Header.Get("solutionId")
+		if companyId == "" {
 			backwardCompatiblity = false
 
-			utils.Error.Println("solutionId not found in request")
+			utils.Error.Println("companyId not found in request")
 			//http.Error(w,"solutionId not found in request", 500)
 			//return
 
 		}
 		if backwardCompatiblity {
 			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
-			cpContext.AddProjectId(projectId)
+			cpContext.AddProjectId(r.Header.Get("projectId"))
 		}
-		_ = solutionId
+		//	_ = solutionId
 
 	}
 
@@ -2314,6 +2316,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cpContext.AddProjectId(r.Header.Get("projectId"))
 	var notification types.Notifier
 	notification.Component = "Service"
 	notification.Id = input.SolutionInfo.Service.ID

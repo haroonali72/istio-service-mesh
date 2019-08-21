@@ -209,6 +209,9 @@ func (c *Context) AddProjectId(projectId string) {
 	c.Set("project_id", projectId)
 }
 
+func (c *Context) AddUserId(projectId string) {
+	c.Set("user_id", projectId)
+}
 func (c *Context) SendLog(message string, severity string, logType []string) {
 	for i := 0; i < len(logType); i++ {
 		switch constants.Logger(logType[i]) {
