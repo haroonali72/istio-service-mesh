@@ -250,7 +250,7 @@ func getIstioServiceEntry(service interface{}) (types.IstioServiceEntryAttribute
 	var ports []*v1alpha3.Port
 	for _, port := range serviceAttr.Ports {
 		var p v1alpha3.Port
-		p.Name = port.Protocol
+		p.Name = port.Name
 		p.Protocol = port.Protocol
 		p.Number = uint32(port.Port)
 		ports = append(ports, &p)
@@ -1464,6 +1464,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 
 	var ret types.StatusRequest
 	ret.ID = input.SolutionInfo.Service.ID
+	ret.ServiceId = input.SolutionInfo.Service.ID
 	ret.Name = input.SolutionInfo.Service.Name
 
 	var finalObj types.ServiceOutput
@@ -1607,7 +1608,6 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 			utils.Info.Println(deployment.Name)
 			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
-
 			//add rbac classes
 
 			byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -1923,21 +1923,40 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 
 		}
-
-		//Getting Kubernetes Service Object
-		serv, err := getServiceObject(service)
-		if err != nil {
-			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Service Object. Error : " + err.Error()
-			if requestType != "GET" {
-				typeArray := []string{"backendLogging", "frontendLogging"}
-				cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
-
+		//todo: create function and call it
+		fmt.Println("Hi: ", requestType, service.GroupId)
+		if service.GroupId == "" {
+			//Getting Kubernetes Service Object
+			serv, err := getServiceObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+				if requestType != "GET" {
+					typeArray := []string{"backendLogging", "frontendLogging"}
+					cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+				}
+				return ret
 			}
-			return ret
-		}
-		if serv != nil {
-			finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			if serv != nil {
+				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			}
+		} else if service.GroupId != "" && requestType != "DELETE" {
+			serv, err := getServiceObject(service)
+			if err != nil {
+				ret.Status = append(ret.Status, "failed")
+				ret.Reason = "Not a valid Service Object. Error : " + err.Error()
+				if requestType != "GET" {
+					typeArray := []string{"backendLogging", "frontendLogging"}
+					cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+					//utils.SendLog(ret.Reason, "error", input.ProjectId)
+					//cpContext.SendBackendLogs(ret.Reason, constants.LOGGING_LEVEL_ERROR)
+
+				}
+				return ret
+			}
+			if serv != nil {
+				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+			}
 		}
 	}
 
@@ -2185,11 +2204,14 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
 	}
 
-	if cpContext.Exists("company") {
-		req.Header.Set("company", cpContext.GetString("company"))
+	if cpContext.Exists("company_id") {
+		req.Header.Set("company_id", cpContext.GetString("company_id"))
 	}
-	if cpContext.Exists("user_id") {
-		req.Header.Set("user", cpContext.GetString("user_id"))
+	if cpContext.Exists("user") {
+		req.Header.Set("user", cpContext.GetString("user"))
+	}
+	if cpContext.Exists("token") {
+		req.Header.Set("token", cpContext.GetString("token"))
 	}
 	client := &http.Client{}
 	//issue here
@@ -2226,9 +2248,13 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 		} else {
 			utils.Info.Println(string(result))
 			if requestType != "GET" {
-
+				var rt map[string]interface{}
+				utils.Error.Println(json.Unmarshal(result, &rt))
+				rr, err := json.MarshalIndent(rt, "", "	")
+				utils.Info.Printf("%s", rr)
+				utils.Error.Println(err)
 				typeArray := []string{"backendLogging", "frontendLogging"}
-				cpContext.SendLog(string(result), constants.LOGGING_LEVEL_INFO, typeArray)
+				cpContext.SendLog(string(rr), constants.LOGGING_LEVEL_INFO, typeArray)
 
 			}
 			if statusCode != 200 {
@@ -2266,36 +2292,8 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		//http.Error(w, err.Error(), 500)
 
 	} else {
-
-		backwardCompatiblity := true
-
-		userId := r.Header.Get("user")
-		companyId := r.Header.Get("company_id")
-		//	projectId := r.Header.Get("projectId")
-		if userId == "" {
-			backwardCompatiblity = false
-
-			utils.Error.Println("userId not found in request")
-			//http.Error(w,"projectId is missing in request", 500)
-			//return
-		}
-		//solutionId := r.Header.Get("solutionId")
-		if companyId == "" {
-			backwardCompatiblity = false
-
-			utils.Error.Println("companyId not found in request")
-			//http.Error(w,"solutionId not found in request", 500)
-			//return
-
-		}
-		if backwardCompatiblity {
-			cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
-			cpContext.AddProjectId(r.Header.Get("projectId"))
-		}
-		//	_ = solutionId
-
+		cpContext.InitializeLogger(r.Host, r.Method, r.URL.Host, "")
 	}
-
 	//Logging Initializations End
 
 	utils.Info.Println(r.Body)
@@ -2316,7 +2314,7 @@ func ServiceRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cpContext.AddProjectId(r.Header.Get("projectId"))
+	cpContext.AddProjectId(input.ProjectId)
 	var notification types.Notifier
 	notification.Component = "Service"
 	notification.Id = input.SolutionInfo.Service.ID
@@ -2870,7 +2868,7 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	container.Name = serviceAttr.Name
+	container.Name = "init-container-dummy"
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}

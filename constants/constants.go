@@ -22,7 +22,7 @@ const (
 
 	BACKEND_LOGGING_ENDPOINT  = "/elephant/api/v1/backend/logging"
 	FRONTEND_LOGGING_ENDPOINT = "/elephant/api/v1/frontend/logging"
-	VAULT_BACKEND             = "http://robin:8093/robin/api/v1/template/docker/credentials/"
+	VAULT_BACKEND             = "http://robin:8092/robin/api/v1/template/docker/credentials/"
 	LOGGING_ENDPOINT          = "/api/v1/logger"
 	//logger
 	Backend_logging  Logger = "backendLogging"

@@ -179,7 +179,7 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 }
 
 func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
-	company := r.Header.Get("company")
+	company := r.Header.Get("company_id")
 	if company == "" {
 		utils.Error.Println("company info not found in request")
 		return nil //errors.New("company info not found in request")
@@ -189,8 +189,9 @@ func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
 		utils.Error.Println("user info not found in request")
 		return nil //errors.New("user info not found in request")
 	}
-	c.Set("company", company)
-	c.Set("user_id", user)
+	c.Set("company_id", company)
+	c.Set("user", user)
+	c.Set("token", r.Header.Get("token"))
 	return nil
 }
 func (c *Context) InitializeLogger(requestURL, method, path, body string) {
