@@ -211,7 +211,7 @@ func (c *Context) AddProjectId(projectId string) {
 }
 
 func (c *Context) AddUserId(projectId string) {
-	c.Set("user_id", projectId)
+	c.Set("user", projectId)
 }
 func (c *Context) SendLog(message string, severity string, logType []string) {
 	for i := 0; i < len(logType); i++ {
@@ -250,7 +250,7 @@ func (c *Context) SendFrontendLogs(message interface{}, severity string) {
 	data.Level = severity
 	data.Message = message
 	data.Type = "Project"
-	data.CompanyId = c.GetString("companyId")
+	data.CompanyId = c.GetString("company_id")
 
 	_, err := utils.Post(url, data, map[string]string{"Content-Type": "application/json"})
 	if err != nil {

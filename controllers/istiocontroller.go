@@ -2098,18 +2098,15 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
 	//Adding Headers
-	if cpContext.Exists("projectId") {
-		req.Header.Set("projectId", cpContext.GetString("projectId"))
-	}
-	if cpContext.Exists("solutionId") {
-		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
+	if cpContext.Exists("project_id") {
+		req.Header.Set("project_id", cpContext.GetString("project_id"))
 	}
 
-	if cpContext.Exists("company") {
-		req.Header.Set("company", cpContext.GetString("company"))
+	if cpContext.Exists("company_id") {
+		req.Header.Set("company_id", cpContext.GetString("company_id"))
 	}
-	if cpContext.Exists("user_id") {
-		req.Header.Set("user", cpContext.GetString("user_id"))
+	if cpContext.Exists("user") {
+		req.Header.Set("user", cpContext.GetString("user"))
 	}
 
 	client := &http.Client{}
@@ -2197,8 +2194,8 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 
 	req.Header.Set("Content-Type", "application/json")
 	//Adding Headers
-	if cpContext.Exists("projectId") {
-		req.Header.Set("projectId", cpContext.GetString("projectId"))
+	if cpContext.Exists("project_id") {
+		req.Header.Set("project_id", cpContext.GetString("project_id"))
 	}
 	if cpContext.Exists("solutionId") {
 		req.Header.Set("solutionId", cpContext.GetString("solutionId"))
