@@ -2108,7 +2108,9 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 	if cpContext.Exists("user") {
 		req.Header.Set("user", cpContext.GetString("user"))
 	}
-
+	if cpContext.Exists("token") {
+		req.Header.Set("token", cpContext.GetString("token"))
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
