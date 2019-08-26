@@ -7,6 +7,7 @@ var (
 	ServicePort         string
 	KubernetesEngineURL string
 	NotificationURL     string
+	RbacURL             string
 )
 
 type K8sKind string
@@ -49,4 +50,6 @@ const (
 	RoleBinding        K8sKind = "RoleBinding"
 	ClusterRole        K8sKind = "ClusterRole"
 	ClusterRoleBinding K8sKind = "ClusterRoleBinding"
+	//RBAc
+	Rbac_Token_Info = "security/api/rbac/token/info"
 )
