@@ -2405,7 +2405,7 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
 	if profileId != "" {
 		var vault types.VaultCredentialsConfigurations
-		req, err := http.Get(constants.VAULT_BACKEND + profileId)
+		req, err := http.Get(constants.VaultURL + constants.VAULT_BACKEND + profileId)
 		if err == nil {
 			result, err := ioutil.ReadAll(req.Body)
 			if err == nil {
