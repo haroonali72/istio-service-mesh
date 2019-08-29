@@ -19,6 +19,8 @@ func main() {
 	redisEngine := flag.String("REDIS_ENGINE_URL", "", "Redis url")
 	loggingEngine := flag.String("LOGGING_ENGINE_URL", "", "Logger url")
 	vaultEngine := flag.String("VAULT_ENGINE_URL", "", "vault url")
+	rbac := flag.String("RBAC_URL", "", "Rbac url")
+
 	flag.Parse()
 	if *Port == "" {
 		log.Fatal("PORT flag missing.\nTerminating....")
@@ -48,6 +50,7 @@ func main() {
 	constants.NotificationURL = *redisEngine
 	constants.LoggingURL = *loggingEngine
 	constants.VaultURL = *vaultEngine
+	constants.RbacURL = *rbac
 	utils.LoggerInit(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 	controllers.Notifier.Init_notifier()
 
