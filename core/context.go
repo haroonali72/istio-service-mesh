@@ -213,7 +213,7 @@ func (c *Context) SendBackendLogs(message interface{}, severity string) {
 		url := constants.LoggingURL + constants.BACKEND_LOGGING_ENDPOINT
 		c.Set("severity", severity)
 		c.Set("message", message)
-
+		c.Set("resource_name", "solution")
 		_, err := utils.Post(url, c.Keys, map[string]string{"Content-Type": "application/json"})
 		if err != nil {
 			utils.Error.Println(err)
