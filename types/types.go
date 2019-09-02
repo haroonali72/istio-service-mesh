@@ -15,6 +15,7 @@ type Route struct {
 	Host   string `json:"host"`
 	Subset string `json:"subset"`
 }
+
 type Port struct {
 	Host      string `json:"host"`
 	Container string `json:"container"`
@@ -26,6 +27,7 @@ type SEPort struct {
 	Protocol string `json:"protocol"`
 	Name     string `json:"name"`
 }
+
 type SEEndpoints struct {
 	Address  string            `json:"address"`
 	Ports    map[string]uint32 `json:"ports,omitempty"`
@@ -497,12 +499,15 @@ type ResponseData struct {
 }
 
 type LoggingRequest struct {
-	Message     string `json:"message"`
-	Id          string `json:"id"`
-	Environment string `json:"environment"`
-	Service     string `json:"service"`
-	Level       string `json:"level"`
+	CompanyId   string      `json:"company_id"`
+	Message     interface{} `json:"message"`
+	Id          string      `json:"id"`
+	Environment string      `json:"environment"`
+	Service     string      `json:"service"`
+	Level       string      `json:"level"`
+	Type        string      `json:"type"`
 }
+
 type Notifier struct {
 	Id string `json:"_id"`
 	//EnvId  string `json:"environment_id"`
