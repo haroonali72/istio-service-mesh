@@ -449,8 +449,12 @@ type OutputServices struct {
 	ServiceAccountClasses  []v1.ServiceAccount                   `json:"service-account-classes"`
 	PersistentVolumeClaims []v1.PersistentVolumeClaim            `json:"persistent-volume-claims"`
 	Secrets                []interface{}                         `json:"secrets"`
+	Nodes                  []v1.Node                             `json:"nodes"`
 }
-
+type NooeWrapper struct {
+	Error string      `json:"error"`
+	Nodes v1.NodeList `json:"data"`
+}
 type DeploymentWrapper struct {
 	Error       string         `json:"error"`
 	Deployments v12.Deployment `json:"data"`
@@ -468,6 +472,7 @@ type OutputResp struct {
 	Kubernetes  []KubernetesWrapper `json:"kubernetes-service"`
 	Istio       []IstioWrapper      `json:"istio-component"`
 	Secrets     []interface{}       `json:"secrets"`
+	Nodes       []NooeWrapper       `json:"nodes"`
 }
 
 type ServiceOutput struct {
