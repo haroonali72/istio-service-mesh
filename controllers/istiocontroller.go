@@ -1459,7 +1459,104 @@ func getRbacObjects(serviceAttr types.DockerServiceAttributes, serviceName strin
 
 	return account, roles, roleBindings, nil
 }
+func getAllNodes(service types.Service, ret types.StatusRequest, cpContext *core.Context) (types.ResponseRequest, error) {
+	var nodes v1.Node
+	nodes.Kind = "Node"
+	nodes.APIVersion = "v1"
+	var serviceOutput types.ServiceOutput
+	serviceOutput.Services.Nodes = append(serviceOutput.Services.Nodes, nodes)
 
+	if pId, ok := cpContext.Keys["project_id"]; ok {
+		serviceOutput.ProjectId = fmt.Sprintf("%v", pId)
+	}
+	cpContext.Keys["service_type"] = "Node"
+	x, err := json.Marshal(serviceOutput)
+	if err != nil {
+		return types.ResponseRequest{}, err
+	}
+	utils.Info.Println("kubernetes request payload", string(x))
+	cpContext.Keys["service_type"] = "Node"
+	resp, res := GetFromKube(x, serviceOutput.ProjectId, ret, "GET", cpContext)
+	if resp.Reason != "" {
+		return types.ResponseRequest{}, errors.New(resp.Reason)
+	}
+	return res, nil
+}
+func patchNodes(service types.Service, res types.ResponseRequest, ret types.StatusRequest, cpContext *core.Context) error {
+	sericeAttrinutes := make(map[string]interface{})
+	byteData, err := json.Marshal(service.ServiceAttributes)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(byteData, &sericeAttrinutes)
+	if err != nil {
+		return err
+	}
+	var existingLabel string
+	byteData, err = json.Marshal(sericeAttrinutes["nodepool"])
+	if err != nil {
+		return err
+
+	}
+	err = json.Unmarshal(byteData, &existingLabel)
+	if err != nil {
+		return err
+	}
+
+	nodeLabel := make(map[string]string)
+	byteData, err = json.Marshal(sericeAttrinutes["nodelabel"])
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(byteData, &nodeLabel)
+	if err != nil {
+		return err
+	}
+	if existingLabel == "" {
+		return errors.New("can not find nodepool in request")
+	}
+	if nodeLabel == nil {
+		return errors.New("no label to add")
+
+	}
+	var temp4 types.ServiceOutput
+	k := 0
+	for i := 0; i < len(res.Service.Nodes[0].Nodes.Items); i++ {
+
+		nl := res.Service.Nodes[0].Nodes.Items[i].Labels
+		if existingLabel == nl["nodepool"] {
+			temp4.Services.Nodes = append(temp4.Services.Nodes, v1.Node{})
+			temp4.Services.Nodes[k].ObjectMeta = metav1.ObjectMeta{
+				Name:        res.Service.Nodes[0].Nodes.Items[i].Name,
+				UID:         res.Service.Nodes[0].Nodes.Items[i].UID,
+				Generation:  0,
+				Labels:      nodeLabel,
+				ClusterName: "",
+			}
+
+			temp4.Services.Nodes[k].Kind = "Node"
+			temp4.Services.Nodes[k].APIVersion = "v1"
+			k++
+
+		}
+
+	}
+	if pId, ok := cpContext.Keys["project_id"]; ok {
+		temp4.ProjectId = fmt.Sprintf("%v", pId)
+	}
+	byteData, err = json.Marshal(temp4)
+	if err != nil {
+		return err
+	}
+	utils.Info.Println("kubernetes request payload", string(byteData))
+
+	resp := ForwardToKube(byteData, temp4.ProjectId, "PATCH", ret, cpContext)
+
+	if resp.Reason != "" {
+		return errors.New(resp.Reason)
+	}
+	return nil
+}
 func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.Context) types.StatusRequest {
 
 	var ret types.StatusRequest
@@ -1508,6 +1605,32 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			return ret
 		}
 		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
+
+	}
+
+	if service.ServiceType == "node" {
+		res, err := getAllNodes(service, ret, cpContext)
+		if err != nil {
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Can Not Get Nodes : " + err.Error()
+			if requestType != "GET" {
+				typeArray := []string{"backendLogging", "frontendLogging"}
+				cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+
+			}
+			return ret
+		}
+		err = patchNodes(service, res, ret, cpContext)
+		if err != nil {
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Can Not Patch Nodes : " + err.Error()
+			if requestType != "GET" {
+				typeArray := []string{"backendLogging", "frontendLogging"}
+				cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+
+			}
+			return ret
+		}
 
 	}
 
@@ -1570,9 +1693,11 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 					typeArray := []string{"frontendLogging"}
 					cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
 				}
+
 				return ret
 			}
-
+			hpa.Kind = "HorizontalPodAutoscaler"
+			hpa.APIVersion = "autoscaling/v2beta2"
 			finalObj.Services.HPA = append(finalObj.Services.HPA, hpa)
 
 		case "deployment":
@@ -2095,6 +2220,10 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, requestType string, cpContext *core.Context) (types.StatusRequest, types.ResponseRequest) {
 	url := constants.KubernetesEngineURL
 	var res types.ResponseRequest
+	if cpContext.Keys["service_type"] == "Node" {
+		url += constants.Ksd_Get_Nobe
+		cpContext.Keys["service_type"] = ""
+	}
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
 	//Adding Headers
@@ -2426,8 +2555,8 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 		}
 
 	} else {
-		typeArray := []string{"frontendLogging"}
-		cpContext.SendLog("profile id empty ", "error", typeArray)
+		//typeArray := []string{"frontendLogging"}
+		//cpContext.SendLog("profile id empty ", "error", typeArray)
 
 	}
 	if serviceAttr.ImageRepositoryConfigurations.Credentials.Username == "" || serviceAttr.ImageRepositoryConfigurations.Credentials.Password == "" {
@@ -2866,8 +2995,11 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	if err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-
-	container.Name = "init-container-dummy"
+	if serviceAttr.Name != "" {
+		container.Name = serviceAttr.Name
+	} else {
+		container.Name = "init-container-dummy"
+	}
 	if err := putCommandAndArguments(&container, serviceAttr.Command, serviceAttr.Args); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
