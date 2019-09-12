@@ -1527,22 +1527,11 @@ func patchNodes(service types.Service, res types.ResponseRequest, ret types.Stat
 		if existingLabel == nl["nodepool"] {
 			temp4.Services.Nodes = append(temp4.Services.Nodes, v1.Node{})
 			temp4.Services.Nodes[k].ObjectMeta = metav1.ObjectMeta{
-				Name:                       res.Service.Nodes[0].Nodes.Items[i].Name,
-				GenerateName:               "",
-				Namespace:                  "",
-				SelfLink:                   "",
-				UID:                        res.Service.Nodes[0].Nodes.Items[i].UID,
-				ResourceVersion:            "",
-				Generation:                 0,
-				DeletionTimestamp:          nil,
-				DeletionGracePeriodSeconds: nil,
-				Labels:                     nodeLabel,
-				Annotations:                nil,
-				OwnerReferences:            nil,
-				Initializers:               nil,
-				Finalizers:                 nil,
-				ClusterName:                "",
-				ManagedFields:              nil,
+				Name:        res.Service.Nodes[0].Nodes.Items[i].Name,
+				UID:         res.Service.Nodes[0].Nodes.Items[i].UID,
+				Generation:  0,
+				Labels:      nodeLabel,
+				ClusterName: "",
 			}
 
 			temp4.Services.Nodes[k].Kind = "Node"
@@ -2566,8 +2555,8 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 		}
 
 	} else {
-		typeArray := []string{"frontendLogging"}
-		cpContext.SendLog("profile id empty ", "error", typeArray)
+		//typeArray := []string{"frontendLogging"}
+		//cpContext.SendLog("profile id empty ", "error", typeArray)
 
 	}
 	if serviceAttr.ImageRepositoryConfigurations.Credentials.Username == "" || serviceAttr.ImageRepositoryConfigurations.Credentials.Password == "" {

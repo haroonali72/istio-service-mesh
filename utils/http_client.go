@@ -48,6 +48,7 @@ func Post(url string, data interface{}, headers map[string]string) ([]byte, erro
 		Info.Println(err1)
 	}
 	Info.Println("notification endpoint:", url)
+
 	Info.Println("notification payload:", string(b))
 	req := resty.New()
 
