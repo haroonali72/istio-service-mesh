@@ -1492,11 +1492,10 @@ func patchNodes(service types.Service, res types.ResponseRequest, ret types.Stat
 	if err != nil {
 		return err
 	}
-	var existingLabel string
+	var existingLabel []string
 	byteData, err = json.Marshal(sericeAttrinutes["nodepool"])
 	if err != nil {
 		return err
-
 	}
 	err = json.Unmarshal(byteData, &existingLabel)
 	if err != nil {
@@ -1512,33 +1511,41 @@ func patchNodes(service types.Service, res types.ResponseRequest, ret types.Stat
 	if err != nil {
 		return err
 	}
-	if existingLabel == "" {
+	if len(existingLabel) == 0 {
 		return errors.New("can not find nodepool in request")
 	}
 	if nodeLabel == nil {
 		return errors.New("no label to add")
 
 	}
-	var temp4 types.ServiceOutput
-	k := 0
+	var finalNodes []v1.Node
 	for i := 0; i < len(res.Service.Nodes[0].Nodes.Items); i++ {
 
 		nl := res.Service.Nodes[0].Nodes.Items[i].Labels
-		if existingLabel == nl["nodepool"] {
-			temp4.Services.Nodes = append(temp4.Services.Nodes, v1.Node{})
-			temp4.Services.Nodes[k].ObjectMeta = metav1.ObjectMeta{
-				Name:        res.Service.Nodes[0].Nodes.Items[i].Name,
-				UID:         res.Service.Nodes[0].Nodes.Items[i].UID,
-				Generation:  0,
-				Labels:      nodeLabel,
-				ClusterName: "",
+		for j := 0; j < len(existingLabel); j++ {
+			if existingLabel[j] == nl["nodepool"] {
+				finalNodes = append(finalNodes, res.Service.Nodes[0].Nodes.Items[i])
 			}
-
-			temp4.Services.Nodes[k].Kind = "Node"
-			temp4.Services.Nodes[k].APIVersion = "v1"
-			k++
-
 		}
+
+	}
+
+	var temp4 types.ServiceOutput
+	k := 0
+	for i := 0; i < len(finalNodes); i++ {
+
+		temp4.Services.Nodes = append(temp4.Services.Nodes, v1.Node{})
+		temp4.Services.Nodes[k].ObjectMeta = metav1.ObjectMeta{
+			Name:        finalNodes[i].Name,
+			UID:         finalNodes[i].UID,
+			Generation:  0,
+			Labels:      nodeLabel,
+			ClusterName: "",
+		}
+
+		temp4.Services.Nodes[k].Kind = "Node"
+		temp4.Services.Nodes[k].APIVersion = "v1"
+		k++
 
 	}
 	if pId, ok := cpContext.Keys["project_id"]; ok {
@@ -3036,15 +3043,24 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 			utils.Info.Println(err)
 			continue
 		}
-
-		temp.ContainerPort = int32(i)
+		if i > 0 && i < 65536 {
+			temp.ContainerPort = int32(i)
+		} else {
+			utils.Info.Println("invalid prot number")
+			continue
+		}
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
 				utils.Info.Println(err)
 				continue
 			}
-			temp.HostPort = int32(i)
+			if i > 0 && i < 65536 {
+				temp.HostPort = int32(i)
+			} else {
+				utils.Info.Println("invalid prot number")
+				continue
+			}
 		}
 		ports = append(ports, temp)
 	}
@@ -3138,15 +3154,25 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 			utils.Info.Println(err)
 			continue
 		}
-
-		temp.ContainerPort = int32(i)
+		if i > 0 && i < 65536 {
+			temp.ContainerPort = int32(i)
+		} else {
+			utils.Info.Println("invalid prot number")
+			continue
+		}
 		if port.Host != "" {
 			i, err = strconv.Atoi(port.Host)
 			if err != nil {
 				utils.Info.Println(err)
 				continue
 			}
-			temp.HostPort = int32(i)
+			if i > 0 && i < 65536 {
+				temp.HostPort = int32(i)
+			} else {
+				utils.Info.Println("invalid prot number")
+				continue
+			}
+
 		}
 		ports = append(ports, temp)
 	}
