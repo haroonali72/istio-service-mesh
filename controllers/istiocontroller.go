@@ -1973,7 +1973,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 		return ret
 	}
-	utils.Info.Println("kubernetes request payload", string(x))
+	utils.Info.Printf("kubernetes request payload, requestTyp: %s, data: %s", requestType, string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType, cpContext)
