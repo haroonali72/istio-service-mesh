@@ -341,6 +341,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 			utils.Error.Println("There is error in deployment")
 			return components, err
 		}
+
 		utils.Info.Println(attrib.IsMtlsEnable)
 		if attrib.IsMtlsEnable {
 			for i := range attrib.Hosts {
@@ -370,6 +371,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 	case "virtual_service":
@@ -389,6 +391,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 
@@ -425,6 +428,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 	}
@@ -1516,7 +1520,6 @@ func patchNodes(service types.Service, res types.ResponseRequest, ret types.Stat
 	}
 	if nodeLabel == nil {
 		return errors.New("no label to add")
-
 	}
 	var finalNodes []v1.Node
 	for i := 0; i < len(res.Service.Nodes[0].Nodes.Items); i++ {
