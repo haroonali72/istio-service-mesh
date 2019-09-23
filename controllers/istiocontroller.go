@@ -367,6 +367,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
@@ -387,6 +390,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
@@ -411,6 +417,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 				var policyService types.IstioObject
 				labels := make(map[string]interface{})
 				labels["name"] = strings.ToLower(input.Name)
+				if input.Namespace == "" {
+					input.Namespace = "default"
+				}
 				labels["namespace"] = strings.ToLower(input.Namespace)
 				policyService.Metadata = labels
 				policyService.Kind = "Policy"
@@ -424,6 +433,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
