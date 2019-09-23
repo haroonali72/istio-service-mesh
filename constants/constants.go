@@ -53,4 +53,5 @@ const (
 	ClusterRoleBinding K8sKind = "ClusterRoleBinding"
 	//RBAc
 	Rbac_Token_Info = "/security/api/rbac/token/info"
+	Ksd_Get_Nobe    = "/all"
 )
