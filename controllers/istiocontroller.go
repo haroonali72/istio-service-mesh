@@ -341,6 +341,7 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 			utils.Error.Println("There is error in deployment")
 			return components, err
 		}
+
 		utils.Info.Println(attrib.IsMtlsEnable)
 		if attrib.IsMtlsEnable {
 			for i := range attrib.Hosts {
@@ -366,10 +367,14 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 	case "virtual_service":
@@ -385,10 +390,14 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 
@@ -408,6 +417,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 				var policyService types.IstioObject
 				labels := make(map[string]interface{})
 				labels["name"] = strings.ToLower(input.Name)
+				if input.Namespace == "" {
+					input.Namespace = "default"
+				}
 				labels["namespace"] = strings.ToLower(input.Namespace)
 				policyService.Metadata = labels
 				policyService.Kind = "Policy"
@@ -421,10 +433,14 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
 		istioServ.ApiVersion = "networking.istio.io/v1alpha3"
+		istioServ.Metadata["namespace"] = input.Namespace
 		components = append(components, istioServ)
 		return components, nil
 	}
@@ -1517,7 +1533,6 @@ func patchNodes(service types.Service, res types.ResponseRequest, ret types.Stat
 	}
 	if nodeLabel == nil {
 		return errors.New("no label to add")
-
 	}
 	var finalNodes []v1.Node
 	for i := 0; i < len(res.Service.Nodes[0].Nodes.Items); i++ {
@@ -2108,7 +2123,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 		return ret
 	}
-	utils.Info.Println("kubernetes request payload", string(x))
+	utils.Info.Printf("kubernetes request payload, requestTyp: %s, data: %s", requestType, string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType, cpContext)

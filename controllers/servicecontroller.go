@@ -372,18 +372,23 @@ func getContainerData(c *coreV1.Container) (service types.DockerServiceAttribute
 	service.Command, service.Args = convertCommandAndArguments(c)
 	service.LimitResources = convertLimitResource(c)
 	service.RequestResources = convertRequestResource(c)
-	limitprob, err := convertLivenessProbe(c)
-	if err != nil {
-		utils.Error.Println(err)
-		return service, err
+	if c.LivenessProbe != nil {
+		limitprob, err := convertLivenessProbe(c)
+		if err != nil {
+			utils.Error.Println(err)
+			return service, err
+		}
+
+		service.LivenessProb = &limitprob
 	}
-	service.LivenessProb = &limitprob
-	requestProb, err := convertReadinessProbe(c)
-	if err != nil {
-		utils.Error.Println(err)
-		return service, err
+	if c.ReadinessProbe != nil {
+		requestProb, err := convertReadinessProbe(c)
+		if err != nil {
+			utils.Error.Println(err)
+			return service, err
+		}
+		service.RedinessProb = &requestProb
 	}
-	service.RedinessProb = &requestProb
 	service.SecurityContext, err = revertSecurityContext(c.SecurityContext)
 	if err != nil {
 		return service, err
