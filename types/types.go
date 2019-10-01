@@ -338,6 +338,10 @@ type VolumeAttributes struct {
 	Volume Volume `json:"volume"`
 }
 
+type VolumeAttributesList struct {
+	Volume []Volume `json:"volumes"`
+}
+
 type RbacAttributes struct {
 	RbacService Role `json:"role"`
 }

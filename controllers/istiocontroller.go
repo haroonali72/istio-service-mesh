@@ -367,6 +367,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels := make(map[string]interface{})
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "ServiceEntry"
@@ -387,6 +390,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "VirtualService"
@@ -411,6 +417,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 				var policyService types.IstioObject
 				labels := make(map[string]interface{})
 				labels["name"] = strings.ToLower(input.Name)
+				if input.Namespace == "" {
+					input.Namespace = "default"
+				}
 				labels["namespace"] = strings.ToLower(input.Namespace)
 				policyService.Metadata = labels
 				policyService.Kind = "Policy"
@@ -424,6 +433,9 @@ func getIstioObject(input types.Service) (components []types.IstioObject, err er
 		labels["name"] = strings.ToLower(input.Name)
 		labels["app"] = strings.ToLower(input.Name)
 		labels["version"] = strings.ToLower(input.Version)
+		if input.Namespace == "" {
+			input.Namespace = "default"
+		}
 		labels["namespace"] = strings.ToLower(input.Namespace)
 		istioServ.Metadata = labels
 		istioServ.Kind = "DestinationRule"
@@ -617,12 +629,13 @@ func setNodeSelector(service types.Service, sel map[string]string) (map[string]s
 }
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
-	var deployment = v12.Deployment{}
+	var deployment v12.Deployment
 
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
+
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
@@ -1580,6 +1593,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		finalObj.ClusterInfo.KubernetesUsername = input.Creds.KubernetesUsername
 		finalObj.ClusterInfo.KubernetesPassword = input.Creds.KubernetesPassword
 	}
+
 	finalObj.ProjectId = input.ProjectId
 	//for _,service :=range input.SolutionInfo.Service{
 	service := input.SolutionInfo.Service
@@ -1678,10 +1692,11 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 	}
 
 	if service.ServiceType == "volume" {
+
 		byteData, _ := json.Marshal(service.ServiceAttributes)
 		var attributes types.VolumeAttributes
 		err := json.Unmarshal(byteData, &attributes)
-
+		fmt.Println("zunnoarinn" + attributes.Volume.Name)
 		if err == nil && attributes.Volume.Name != "" {
 			//Creating a new storage-class and persistent-volume-claim for each volume
 			attributes.Volume.Namespace = "default"
@@ -1732,13 +1747,13 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			//Mounting each volume to container and adding corresponding volume to pod
 			if len(deployment.Spec.Template.Spec.Containers) > 0 {
 				byteData, _ := json.Marshal(service.ServiceAttributes)
-				var attributes types.VolumeAttributes
+				var attributes types.VolumeAttributesList
 				err = json.Unmarshal(byteData, &attributes)
 
-				if err == nil && attributes.Volume.Name != "" {
-					volumesData := []types.Volume{attributes.Volume}
-					deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(volumesData)
-					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(volumesData)
+				if err == nil && len(attributes.Volume) > 0 {
+
+					deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumes.GenerateVolumeMounts(attributes.Volume)
+					deployment.Spec.Template.Spec.Volumes = volumes.GeneratePodVolumes(attributes.Volume)
 				}
 			}
 			utils.Info.Println(deployment.Name)
@@ -2108,7 +2123,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 		return ret
 	}
-	utils.Info.Println("kubernetes request payload", string(x))
+	utils.Info.Printf("kubernetes request payload, requestTyp: %s, data: %s", requestType, string(x))
 
 	if requestType != "POST" {
 		ret, resp := GetFromKube(x, input.ProjectId, ret, requestType, cpContext)
@@ -2413,7 +2428,6 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 			}
 			ret.Status = append(ret.Status, "successful")
 		}
-
 	}
 	return ret
 }
