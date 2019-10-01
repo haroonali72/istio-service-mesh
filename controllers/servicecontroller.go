@@ -59,6 +59,7 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 		kind := metdata[0]
 		switch constants.K8sKind(kind) {
 		case constants.Deployment:
+			initcont := false
 			var dep v1.Deployment
 			err := json.Unmarshal(obj, &dep)
 			if err != nil {
@@ -68,18 +69,6 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.Name = dep.Name
 				svc.ServiceType = "container"
 				svc.SubType = strings.ToLower(string(constants.Deployment))
-				if len(dep.Spec.Template.Spec.Containers) > 0 {
-					attrib, err := getContainerData(&dep.Spec.Template.Spec.Containers[0])
-					if err != nil {
-						utils.Error.Println(err)
-						errs = append(errs, err)
-
-					} else {
-						addData(&attrib, k8sRoles, istioRoles, nil)
-						svc.ServiceAttributes = attrib
-						svcs = append(svcs, svc)
-					}
-				}
 				if len(dep.Spec.Template.Spec.InitContainers) > 0 {
 					svc1 := types.Service{
 						Name:        "in_" + dep.Name,
@@ -97,6 +86,20 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 						} else {
 							svc1.ServiceAttributes = attrib
 							svcs = append(svcs, svc1)
+							initcont = true
+						}
+					}
+				}
+				if len(dep.Spec.Template.Spec.Containers) > 0 {
+					attrib, err := getContainerData(&dep.Spec.Template.Spec.Containers[0])
+					if err != nil {
+						utils.Error.Println(err)
+						errs = append(errs, err)
+
+					} else {
+						addData(&attrib, k8sRoles, istioRoles, nil)
+						svc.ServiceAttributes = attrib
+						if initcont {
 							map1 := make(map[string]interface{})
 							byteData, err := json.Marshal(svc.ServiceAttributes)
 							if err != nil {
@@ -112,12 +115,16 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 									svc.ServiceAttributes = map1
 								}
 							}
+
 						}
+						svcs = append(svcs, svc)
 					}
+
 				}
 				deployments = append(deployments, svc)
 			}
 		case constants.StatefulSet:
+			initcont := false
 			var ss v1.StatefulSet
 			err := json.Unmarshal(obj, &ss)
 			if err != nil {
@@ -127,18 +134,6 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.Name = ss.Name
 				svc.ServiceType = "container"
 				svc.SubType = strings.ToLower(string(constants.StatefulSet))
-				if len(ss.Spec.Template.Spec.Containers) > 0 {
-					attrib, err := getContainerData(&ss.Spec.Template.Spec.Containers[0])
-					if err != nil {
-						utils.Error.Println(err)
-						errs = append(errs, err)
-
-					} else {
-						addData(&attrib, k8sRoles, istioRoles, nil)
-						svc.ServiceAttributes = attrib
-						svcs = append(svcs, svc)
-					}
-				}
 				if len(ss.Spec.Template.Spec.InitContainers) > 0 {
 					svc1 := types.Service{
 						Name:        "in_" + ss.Name,
@@ -156,6 +151,21 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 						} else {
 							svc1.ServiceAttributes = attrib
 							svcs = append(svcs, svc1)
+							initcont = true
+						}
+					}
+				}
+
+				if len(ss.Spec.Template.Spec.Containers) > 0 {
+					attrib, err := getContainerData(&ss.Spec.Template.Spec.Containers[0])
+					if err != nil {
+						utils.Error.Println(err)
+						errs = append(errs, err)
+
+					} else {
+						addData(&attrib, k8sRoles, istioRoles, nil)
+						svc.ServiceAttributes = attrib
+						if initcont {
 							map1 := make(map[string]interface{})
 							byteData, err := json.Marshal(svc.ServiceAttributes)
 							if err != nil {
@@ -171,12 +181,16 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 									svc.ServiceAttributes = map1
 								}
 							}
+
 						}
+						svcs = append(svcs, svc)
 					}
+
 				}
 				deployments = append(deployments, svc)
 			}
 		case constants.CronJob:
+			initcont := false
 			var ss v1beta12.CronJob
 			err := json.Unmarshal(obj, &ss)
 			if err != nil {
@@ -186,18 +200,6 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.Name = ss.Name
 				svc.ServiceType = "container"
 				svc.SubType = strings.ToLower(string(constants.StatefulSet))
-				if len(ss.Spec.JobTemplate.Spec.Template.Spec.Containers) > 0 {
-					attrib, err := getContainerData(&ss.Spec.JobTemplate.Spec.Template.Spec.Containers[0])
-					if err != nil {
-						utils.Error.Println(err)
-						errs = append(errs, err)
-
-					} else {
-						addData(&attrib, k8sRoles, istioRoles, nil)
-						svc.ServiceAttributes = attrib
-						svcs = append(svcs, svc)
-					}
-				}
 				if len(ss.Spec.JobTemplate.Spec.Template.Spec.InitContainers) > 0 {
 					svc1 := types.Service{
 						Name:        "in_" + ss.Name,
@@ -215,6 +217,20 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 						} else {
 							svc1.ServiceAttributes = attrib
 							svcs = append(svcs, svc1)
+							initcont = true
+						}
+					}
+				}
+				if len(ss.Spec.JobTemplate.Spec.Template.Spec.Containers) > 0 {
+					attrib, err := getContainerData(&ss.Spec.JobTemplate.Spec.Template.Spec.Containers[0])
+					if err != nil {
+						utils.Error.Println(err)
+						errs = append(errs, err)
+
+					} else {
+						addData(&attrib, k8sRoles, istioRoles, nil)
+						svc.ServiceAttributes = attrib
+						if initcont {
 							map1 := make(map[string]interface{})
 							byteData, err := json.Marshal(svc.ServiceAttributes)
 							if err != nil {
@@ -230,12 +246,16 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 									svc.ServiceAttributes = map1
 								}
 							}
+
 						}
+						svcs = append(svcs, svc)
 					}
 				}
+
 				deployments = append(deployments, svc)
 			}
 		case constants.Job:
+			initcont := false
 			var ss batchV1.Job
 			err := json.Unmarshal(obj, &ss)
 			if err != nil {
@@ -245,18 +265,6 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.Name = ss.Name
 				svc.ServiceType = "container"
 				svc.SubType = strings.ToLower(string(constants.StatefulSet))
-				if len(ss.Spec.Template.Spec.Containers) > 0 {
-					attrib, err := getContainerData(&ss.Spec.Template.Spec.Containers[0])
-					if err != nil {
-						utils.Error.Println(err)
-						errs = append(errs, err)
-
-					} else {
-						addData(&attrib, k8sRoles, istioRoles, nil)
-						svc.ServiceAttributes = attrib
-						svcs = append(svcs, svc)
-					}
-				}
 				if len(ss.Spec.Template.Spec.InitContainers) > 0 {
 					svc1 := types.Service{
 						Name:        "in_" + ss.Name,
@@ -274,6 +282,21 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 						} else {
 							svc1.ServiceAttributes = attrib
 							svcs = append(svcs, svc1)
+							initcont = true
+						}
+					}
+				}
+
+				if len(ss.Spec.Template.Spec.Containers) > 0 {
+					attrib, err := getContainerData(&ss.Spec.Template.Spec.Containers[0])
+					if err != nil {
+						utils.Error.Println(err)
+						errs = append(errs, err)
+
+					} else {
+						addData(&attrib, k8sRoles, istioRoles, nil)
+						svc.ServiceAttributes = attrib
+						if initcont {
 							map1 := make(map[string]interface{})
 							byteData, err := json.Marshal(svc.ServiceAttributes)
 							if err != nil {
@@ -290,6 +313,7 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 								}
 							}
 						}
+						svcs = append(svcs, svc)
 					}
 				}
 				deployments = append(deployments, svc)
