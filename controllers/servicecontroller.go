@@ -316,7 +316,12 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 	}
 	return svcs, errs
 }
-func addData(svc *types.DockerServiceAttributes, k8sroles []types.K8sRbacAttribute, istioroles []types.IstioRbacAttribute, secrets *types.KubernetesSecret) {
+func addData(ss interface{}, k8sroles []types.K8sRbacAttribute, istioroles []types.IstioRbacAttribute, secrets *types.KubernetesSecret) {
+	svc := types.DockerServiceAttributes{}
+	byteData, err := json.Marshal(ss)
+	if err == nil {
+		json.Unmarshal(byteData, svc)
+	}
 	if len(k8sroles) > 0 {
 		svc.RbacRoles = k8sroles
 		svc.IsRbac = true
@@ -368,7 +373,8 @@ func parseK8sYaml(fileR []byte) (map[string][]byte, []error) {
 	}
 	return files, errs
 }
-func getContainerData(c *coreV1.Container) (service types.DockerServiceAttributes, err error) {
+func getContainerData(c *coreV1.Container) (str interface{}, err error) {
+	service := types.DockerServiceAttributes{}
 	service.Command, service.Args = convertCommandAndArguments(c)
 	service.LimitResources = convertLimitResource(c)
 	service.RequestResources = convertRequestResource(c)
@@ -407,7 +413,7 @@ func getContainerData(c *coreV1.Container) (service types.DockerServiceAttribute
 		if containerPort == "0" {
 			containerPort = ""
 		}
-		service.Ports = append(service.Ports, types.Port{
+		service.Ports = append(service.Ports, &types.Port{
 			Container: containerPort,
 			Host:      hostPort,
 			Name:      c.Ports[i].Name,
@@ -435,9 +441,14 @@ func getContainerData(c *coreV1.Container) (service types.DockerServiceAttribute
 				envVar.IsConfigMap = true
 			}
 		}
-		service.EnvironmentVariables = append(service.EnvironmentVariables, envVar)
+		service.EnvironmentVariables = append(service.EnvironmentVariables, &envVar)
 	}
-	return service, nil
+	mp := make(map[string]interface{})
+	bytedata, err := json.Marshal(service)
+	if err == nil {
+		err = json.Unmarshal(bytedata, &mp)
+	}
+	return mp, nil
 }
 func convertCommandAndArguments(container *coreV1.Container) (command []string, args []string) {
 	if len(container.Command) > 0 {
@@ -552,7 +563,7 @@ func convertReadinessProbe(container *coreV1.Container) (readinessprob types.Pro
 	}
 	return readinessprob, err
 }
-func revertSecurityContext(scontext *coreV1.SecurityContext) (securityContext types.SecurityContextStruct, err error) {
+func revertSecurityContext(scontext *coreV1.SecurityContext) (securityContext *types.SecurityContextStruct, err error) {
 	if scontext == nil {
 		return securityContext, nil
 	}
