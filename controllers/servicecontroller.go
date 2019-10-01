@@ -99,6 +99,20 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 							svcs = append(svcs, svc1)
 						}
 					}
+					map1 := make(map[string]interface{})
+					byteData, err := json.Marshal(svc.ServiceAttributes)
+					if err != nil {
+						utils.Error.Println(err)
+						errs = append(errs, err)
+					} else {
+						err = json.Unmarshal(byteData, &map1)
+						if err != nil {
+							utils.Error.Println(err)
+							errs = append(errs, err)
+						} else {
+							map1["enable_init"] = true
+						}
+					}
 				}
 				deployments = append(deployments, svc)
 			}
