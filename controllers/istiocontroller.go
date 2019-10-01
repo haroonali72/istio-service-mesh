@@ -3022,7 +3022,7 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	}
 
 	//init container do not have readiness prob
-	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+	if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
 		container.SecurityContext = securityContext
@@ -3133,7 +3133,7 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 		return nil, secretsArray, configMapsArray, err
 	}
 
-	if securityContext, err := configureSecurityContext(serviceAttr.SecurityContext); err != nil {
+	if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	} else {
 		container.SecurityContext = securityContext

@@ -17,9 +17,9 @@ type Route struct {
 }
 
 type Port struct {
-	Host      string `json:"host"`
-	Container string `json:"container"`
-	Name      string `json:"name"`
+	Host      string `json:"host,omitempty"`
+	Container string `json:"container,omitempty"`
+	Name      string `json:"name,omitempty"`
 }
 
 type SEPort struct {
@@ -244,42 +244,42 @@ type Probe struct {
 }
 
 type DockerServiceAttributes struct {
-	DistributionType      string `json:"distribution_type"`
-	DefaultConfigurations string `json:"default_configurations"`
-	EnvironmentVariables  []struct {
+	DistributionType      string `json:"distribution_type,omitempty"`
+	DefaultConfigurations string `json:"default_configurations,omitempty"`
+	EnvironmentVariables  []*struct {
 		Key         string `json:"key"`
 		Value       string `json:"value"`
 		IsSecret    bool   `json:"secrets"`
 		IsConfigMap bool   `json:"configmap"`
-	} `json:"environment_variables"`
-	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
-	Ports                         []Port                        `json:"ports"`
-	Files                         []string                      `json:"files"`
-	Tag                           string                        `json:"tag"`
-	ImagePrefix                   string                        `json:"image_prefix"`
-	ImageName                     string                        `json:"image_name"`
-	MeshConfig                    IstioConfig                   `json:"istio_config"`
-	LabelSelector                 LabelSelectorObj              `json:"label_selector"`
-	NodeSelector                  map[string]string             `json:"node_selector"`
-	Command                       []string                      `json:"command"`
-	Args                          []string                      `json:"args"`
-	SecurityContext               SecurityContextStruct         `json:"security_context"`
+	} `json:"environment_variables,omitempty"`
+	ImageRepositoryConfigurations *ImageRepositoryConfigurations `json:"image_repository_configurations,omitempty" binding:"required"`
+	Ports                         []*Port                        `json:"ports,omitempty"`
+	Files                         []string                       `json:"files,omitempty"`
+	Tag                           string                         `json:"tag,omitempty"`
+	ImagePrefix                   string                         `json:"image_prefix,omitempty"`
+	ImageName                     string                         `json:"image_name,omitempty"`
+	MeshConfig                    *IstioConfig                   `json:"istio_config,omitempty"`
+	LabelSelector                 *LabelSelectorObj              `json:"label_selector,omitempty"`
+	NodeSelector                  map[string]string              `json:"node_selector,omitempty"`
+	Command                       []string                       `json:"command,omitempty"`
+	Args                          []string                       `json:"args,omitempty"`
+	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
 	//resource types: cpu, memory
-	LimitResources        map[RecourceType]string `json:"limit_resources"`
-	RequestResources      map[RecourceType]string `json:"request_resources"`
-	Labels                map[string]string       `json:"labels"`
-	Annotations           map[string]string       `json:"annotations"`
-	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
-	LivenessProb          *Probe                  `json:"liveness_probe"`
-	RedinessProb          *Probe                  `json:"readiness_probe"`
-	Name                  string                  `json:"name"`
-	IsRbac                bool                    `json:"is_rbac_enabled"`
+	LimitResources        map[RecourceType]string `json:"limit_resources,omitempty"`
+	RequestResources      map[RecourceType]string `json:"request_resources,omitempty"`
+	Labels                map[string]string       `json:"labels,omitempty"`
+	Annotations           map[string]string       `json:"annotations,omitempty"`
+	CronJobScheduleString string                  `json:"cron_job_schedule_string,omitempty"`
+	LivenessProb          *Probe                  `json:"liveness_probe,omitempty"`
+	RedinessProb          *Probe                  `json:"readiness_probe,omitempty"`
+	Name                  string                  `json:"name,omitempty"`
+	IsRbac                bool                    `json:"is_rbac_enabled,omitempty"`
 
-	RbacRoles []K8sRbacAttribute `json:"roles"`
+	RbacRoles []K8sRbacAttribute `json:"roles,omitempty"`
 
-	IstioRoles []IstioRbacAttribute `json:"istio_roles"`
+	IstioRoles []IstioRbacAttribute `json:"istio_roles,omitempty"`
 
-	IsInitContainerEnable bool `json:"enable_init"`
+	IsInitContainerEnable bool `json:"enable_init,omitempty"`
 }
 type K8sRbacAttribute struct {
 	Resource string   `json:"resource"`
@@ -547,15 +547,15 @@ type VaultCredentialsConfigurations struct {
 	Profile     string               `json:"profile_name"`
 }
 type ImageRepositoryConfigurations struct {
-	Url         string               `json:"url"`
-	Tag         string               `json:"tag"`
-	Credentials BasicAuthCredentails `json:"credentials"`
-	Profile     string               `json:"profile_id"`
+	Url         string               `json:"url,omitempty"`
+	Tag         string               `json:"tag,omitempty"`
+	Credentials BasicAuthCredentails `json:"credentials,omitempty"`
+	Profile     string               `json:"profile_id,omitempty"`
 }
 
 type BasicAuthCredentails struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 type LoggingHttpRequest struct {
