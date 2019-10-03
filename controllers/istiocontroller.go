@@ -3041,10 +3041,12 @@ func getInitContainers(service types.Service) ([]v1.Container, []string, []strin
 	}
 
 	//init container do not have readiness prob
-	if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	} else {
-		container.SecurityContext = securityContext
+	if serviceAttr.SecurityContext != nil {
+		if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
+			return nil, secretsArray, configMapsArray, err
+		} else {
+			container.SecurityContext = securityContext
+		}
 	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
@@ -3151,11 +3153,12 @@ func getContainers(service types.Service) ([]v1.Container, []string, []string, e
 	if err := putReadinessProbe(&container, serviceAttr.RedinessProb); err != nil {
 		return nil, secretsArray, configMapsArray, err
 	}
-
-	if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	} else {
-		container.SecurityContext = securityContext
+	if serviceAttr.SecurityContext != nil {
+		if securityContext, err := configureSecurityContext(*serviceAttr.SecurityContext); err != nil {
+			return nil, secretsArray, configMapsArray, err
+		} else {
+			container.SecurityContext = securityContext
+		}
 	}
 	container.Image = serviceAttr.ImagePrefix + serviceAttr.ImageName
 	if serviceAttr.Tag != "" {
@@ -3306,6 +3309,7 @@ func timeParser(str string, str2 string) string {
 }
 
 func configureSecurityContext(securityContext types.SecurityContextStruct) (*v1.SecurityContext, error) {
+
 	var context v1.SecurityContext
 	context.Capabilities = &v1.Capabilities{}
 	for _, addCapability := range securityContext.CapabilitiesAdd {
