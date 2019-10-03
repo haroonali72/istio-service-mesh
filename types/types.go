@@ -17,9 +17,9 @@ type Route struct {
 }
 
 type Port struct {
-	Host      string `json:"host,omitempty"`
-	Container string `json:"container,omitempty"`
-	Name      string `json:"name,omitempty"`
+	Host      string `json:"host"`
+	Container string `json:"container"`
+	Name      string `json:"name"`
 }
 
 type SEPort struct {
@@ -255,12 +255,12 @@ type DockerServiceAttributes struct {
 	ImageRepositoryConfigurations *ImageRepositoryConfigurations `json:"image_repository_configurations,omitempty" binding:"required"`
 	Ports                         []*Port                        `json:"ports,omitempty"`
 	Files                         []string                       `json:"files,omitempty"`
-	Tag                           string                         `json:"tag,omitempty"`
-	ImagePrefix                   string                         `json:"image_prefix,omitempty"`
-	ImageName                     string                         `json:"image_name,omitempty"`
+	Tag                           string                         `json:"tag"`
+	ImagePrefix                   string                         `json:"image_prefix"`
+	ImageName                     string                         `json:"image_name"`
 	MeshConfig                    *IstioConfig                   `json:"istio_config,omitempty"`
 	LabelSelector                 *LabelSelectorObj              `json:"label_selector,omitempty"`
-	NodeSelector                  map[string]string              `json:"node_selector,omitempty"`
+	NodeSelector                  map[string]string              `json:"node_selector"`
 	Command                       []string                       `json:"command,omitempty"`
 	Args                          []string                       `json:"args,omitempty"`
 	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
@@ -269,7 +269,7 @@ type DockerServiceAttributes struct {
 	RequestResources      map[RecourceType]string `json:"request_resources,omitempty"`
 	Labels                map[string]string       `json:"labels,omitempty"`
 	Annotations           map[string]string       `json:"annotations,omitempty"`
-	CronJobScheduleString string                  `json:"cron_job_schedule_string,omitempty"`
+	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
 	LivenessProb          *Probe                  `json:"liveness_probe,omitempty"`
 	RedinessProb          *Probe                  `json:"readiness_probe,omitempty"`
 	Name                  string                  `json:"name,omitempty"`
