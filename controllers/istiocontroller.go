@@ -2552,8 +2552,13 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 
 	byteData, _ := json.Marshal(service.ServiceAttributes)
 	var serviceAttr types.DockerServiceAttributes
-	json.Unmarshal(byteData, &serviceAttr)
-
+	err := json.Unmarshal(byteData, &serviceAttr)
+	if err != nil {
+		return v1.Secret{}, false
+	}
+	if serviceAttr.ImageRepositoryConfigurations == nil {
+		return v1.Secret{}, false
+	}
 	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
 	if profileId != "" {
 		var vault types.VaultCredentialsConfigurations

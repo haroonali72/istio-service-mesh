@@ -273,7 +273,7 @@ type DockerServiceAttributes struct {
 	LivenessProb          *Probe                  `json:"liveness_probe,omitempty"`
 	RedinessProb          *Probe                  `json:"readiness_probe,omitempty"`
 	Name                  string                  `json:"name,omitempty"`
-	IsRbac                bool                    `json:"is_rbac_enabled,omitempty"`
+	IsRbac                bool                    `json:"is_rbac_enabled"`
 
 	RbacRoles []K8sRbacAttribute `json:"roles,omitempty"`
 
