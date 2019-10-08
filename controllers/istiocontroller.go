@@ -2112,7 +2112,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				}
 				return ret
 			}
-			if serv != nil {
+			if serv != nil && serv.Spec.Ports != nil {
 				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 			}
 		} else if service.GroupId != "" && requestType != "DELETE" {
@@ -2129,7 +2129,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				}
 				return ret
 			}
-			if serv != nil {
+			if serv != nil && serv.Spec.Ports != nil {
 				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
 			}
 		}
