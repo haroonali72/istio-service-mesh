@@ -630,7 +630,6 @@ func setNodeSelector(service types.Service, sel map[string]string) (map[string]s
 func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	var secrets, configMaps []string
 	var deployment v12.Deployment
-
 	if service.Name == "" {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
@@ -673,6 +672,12 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	deployment.Spec.Template.Spec.NodeSelector, err2 = setNodeSelector(service, deployment.Spec.Template.Spec.NodeSelector)
 	if err2 != nil {
 		return v12.Deployment{}, err2
+	}
+	// adding replica
+	{
+		if service.Replicas > 0 {
+			deployment.Spec.Replicas = &service.Replicas
+		}
 	}
 	//adding label selector
 	deployment.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
@@ -1196,6 +1201,12 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
 	statefulset.Spec.Template.ObjectMeta.Labels = labels
 	statefulset.Spec.Selector.MatchLabels = labels
+	// adding replica
+	{
+		if service.Replicas > 0 {
+			statefulset.Spec.Replicas = &service.Replicas
+		}
+	}
 	Annotations, err4 := getAnnotations(service)
 	if err4 != nil {
 		return v12.StatefulSet{}, err4
@@ -1321,6 +1332,7 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 	return &configmap, nil
 }
 func getServiceObject(input types.Service) (*v1.Service, error) {
+
 	service := v1.Service{}
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name

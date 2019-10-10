@@ -261,8 +261,8 @@ type DockerServiceAttributes struct {
 	MeshConfig                    *IstioConfig                   `json:"istio_config,omitempty"`
 	LabelSelector                 *LabelSelectorObj              `json:"label_selector,omitempty"`
 	NodeSelector                  map[string]string              `json:"node_selector"`
-	Command                       []string                       `json:"command,omitempty"`
-	Args                          []string                       `json:"args,omitempty"`
+	Command                       multiString                    `json:"command,omitempty"`
+	Args                          multiString                    `json:"args,omitempty"`
 	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
 	//resource types: cpu, memory
 	LimitResources        map[RecourceType]string `json:"limit_resources,omitempty"`
@@ -399,6 +399,7 @@ type Service struct {
 	Namespace             string              `json:"namespace"`
 	GroupId               string              `json:"group_id"`
 	Hostnames             []string            `json:"hostnames"`
+	Replicas              int32               `json:"replicas"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
