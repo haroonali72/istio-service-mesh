@@ -21,6 +21,7 @@ import (
 
 func ImportServiceRequest(w http.ResponseWriter, r *http.Request) {
 
+	//b,err:=json.Marshal(r.Body)
 	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -71,7 +72,7 @@ func GetServices(rawData []byte) (svcs []types.Service, errs []error) {
 				svc.SubType = strings.ToLower(string(constants.Deployment))
 				if len(dep.Spec.Template.Spec.InitContainers) > 0 {
 					svc1 := types.Service{
-						Name:        "in_" + dep.Name,
+						Name:        dep.Spec.Template.Spec.InitContainers[0].Name, //becasue we only allow one init-cont
 						Namespace:   dep.Namespace,
 						ServiceType: "init_container",
 						SubType:     "",

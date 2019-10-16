@@ -27,7 +27,7 @@ func (ms *multiString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (ms multiString) MarshalJSON() ([]byte, error) {
+/*func (ms multiString) MarshalJSON() ([]byte, error) {
 
 	if len(ms) == 1 && (ms)[0] == "" {
 		var arr []string
@@ -36,4 +36,4 @@ func (ms multiString) MarshalJSON() ([]byte, error) {
 
 		return json.Marshal(ms)
 	}
-}
+}*/
