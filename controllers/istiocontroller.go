@@ -675,7 +675,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	// adding replica
 	{
-		if service.Replicas > 0 {
+		if service.Replicas >= 0 {
 			deployment.Spec.Replicas = &service.Replicas
 		}
 	}
@@ -1203,7 +1203,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 	statefulset.Spec.Selector.MatchLabels = labels
 	// adding replica
 	{
-		if service.Replicas > 0 {
+		if service.Replicas >= 0 {
 			statefulset.Spec.Replicas = &service.Replicas
 		}
 	}
