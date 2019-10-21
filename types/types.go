@@ -473,13 +473,32 @@ type IstioWrapper struct {
 	Istio IstioObject `json:"data"`
 }
 type OutputResp struct {
-	Deployments []DeploymentWrapper `json:"deployment"`
-	Kubernetes  []KubernetesWrapper `json:"kubernetes-service"`
-	Istio       []IstioWrapper      `json:"istio-component"`
-	Secrets     []interface{}       `json:"secrets"`
-	Nodes       []NooeWrapper       `json:"nodes"`
+	Deployments  []DeploymentWrapper  `json:"deployment"`
+	Kubernetes   []KubernetesWrapper  `json:"kubernetes-service"`
+	Istio        []IstioWrapper       `json:"istio-component"`
+	Secrets      []interface{}        `json:"secrets"`
+	Nodes        []NooeWrapper        `json:"nodes"`
+	StatefulSets []StatefulSetWrapper `json:"statefulset"`
+	DaemonSets   []DeploymentWrapper  `json:"daemonsets"`
+	Jobs         []DaemonSetWrapper   `json:"jobs"`
+	CronJobs     []CronJobWrapper     `json:"cronjobs"`
 }
-
+type StatefulSetWrapper struct {
+	Error        string          `json:"error"`
+	StatefulSets v12.StatefulSet `json:"data"`
+}
+type DaemonSetWrapper struct {
+	Error      string        `json:"error"`
+	DaemonSets v12.DaemonSet `json:"data"`
+}
+type JobWrapper struct {
+	Error string  `json:"error"`
+	Jobs  v13.Job `json:"data"`
+}
+type CronJobWrapper struct {
+	Error    string           `json:"error"`
+	CronJobs v2alpha1.CronJob `json:"data"`
+}
 type ServiceOutput struct {
 	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
 	ConfigMap   []v1.ConfigMap `json:"configmap"`

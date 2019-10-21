@@ -2136,7 +2136,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 					x, err := json.Marshal(serviceOutput)
 					if err != nil {
 						ret.Status = append(ret.Status, "failed")
-						ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+						ret.Reason = "Not a valid service Object. Error : " + err.Error()
 						if requestType != "GET" {
 							typeArray := []string{"frontendLogging"}
 							cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
@@ -2452,7 +2452,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest, cpContext *core.Context) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
-
+	var res types.ResponseRequest
 	utils.Info.Println("forward to kube: " + url)
 	utils.Info.Println("request type: " + requestType)
 
@@ -2514,6 +2514,72 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 				var rt map[string]interface{}
 				utils.Error.Println(json.Unmarshal(result, &rt))
 				rr, err := json.MarshalIndent(rt, "", "	")
+				utils.Error.Println(json.Unmarshal(result, &res))
+				for _, each := range res.Service.Kubernetes {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.Nodes {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.Istio {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.Deployments {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.StatefulSets {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.DaemonSets {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.Jobs {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+				for _, each := range res.Service.CronJobs {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					}
+				}
+
 				utils.Info.Printf("%s", rr)
 				utils.Error.Println(err)
 				typeArray := []string{"backendLogging", "frontendLogging"}
