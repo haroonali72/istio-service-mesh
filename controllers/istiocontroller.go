@@ -2126,7 +2126,43 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				return ret
 			}
 			if serv != nil && serv.Spec.Ports != nil {
-				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+				if strings.EqualFold(requestType, "patch") {
+					var serviceOutput types.ServiceOutput
+					serviceOutput.Services.Kubernetes = append(serviceOutput.Services.Kubernetes, *serv)
+
+					if pId, ok := cpContext.Keys["project_id"]; ok {
+						serviceOutput.ProjectId = fmt.Sprintf("%v", pId)
+					}
+					x, err := json.Marshal(serviceOutput)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+						if requestType != "GET" {
+							typeArray := []string{"frontendLogging"}
+							cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+						}
+						return ret
+					}
+					utils.Info.Println("kubernetes request payload", string(x))
+					resp, res := GetFromKube(x, serviceOutput.ProjectId, ret, "GET", cpContext)
+					if len(res.Service.Kubernetes) > 0 && strings.Contains(res.Service.Kubernetes[0].Error, "not found") {
+						resp = ForwardToKube(x, serviceOutput.ProjectId, "POST", ret, cpContext)
+						if resp.Reason != "" {
+							ret.Status = append(ret.Status, "failed")
+							ret.Reason = "Not a valid Deployment Object. Error : " + resp.Reason
+							if requestType != "GET" {
+								typeArray := []string{"frontendLogging"}
+								cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+							}
+							return ret
+						}
+					} else {
+						finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+					}
+				} else {
+					finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+				}
+
 			}
 		} else if service.GroupId != "" && requestType != "DELETE" {
 			serv, err := getServiceObject(service)
@@ -2143,7 +2179,43 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				return ret
 			}
 			if serv != nil && serv.Spec.Ports != nil {
-				finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+				if strings.EqualFold(requestType, "patch") {
+					var serviceOutput types.ServiceOutput
+					serviceOutput.Services.Kubernetes = append(serviceOutput.Services.Kubernetes, *serv)
+
+					if pId, ok := cpContext.Keys["project_id"]; ok {
+						serviceOutput.ProjectId = fmt.Sprintf("%v", pId)
+					}
+					x, err := json.Marshal(serviceOutput)
+					if err != nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = "Not a valid Deployment Object. Error : " + err.Error()
+						if requestType != "GET" {
+							typeArray := []string{"frontendLogging"}
+							cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+						}
+						return ret
+					}
+					utils.Info.Println("kubernetes request payload", string(x))
+					resp, res := GetFromKube(x, serviceOutput.ProjectId, ret, "GET", cpContext)
+					if len(res.Service.Kubernetes) > 0 && strings.Contains(res.Service.Kubernetes[0].Error, "not found") {
+						resp = ForwardToKube(x, serviceOutput.ProjectId, "POST", ret, cpContext)
+						if resp.Reason != "" {
+							ret.Status = append(ret.Status, "failed")
+							ret.Reason = "Not a valid Deployment Object. Error : " + resp.Reason
+							if requestType != "GET" {
+								typeArray := []string{"frontendLogging"}
+								cpContext.SendLog(ret.Reason, constants.LOGGING_LEVEL_ERROR, typeArray)
+							}
+							return ret
+						}
+					} else {
+						finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+					}
+				} else {
+					finalObj.Services.Kubernetes = append(finalObj.Services.Kubernetes, *serv)
+				}
+
 			}
 		}
 	}
