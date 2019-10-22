@@ -2452,7 +2452,7 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 func ForwardToKube(requestBody []byte, env_id string, requestType string, ret types.StatusRequest, cpContext *core.Context) types.StatusRequest {
 
 	url := constants.KubernetesEngineURL
-	var res types.ResponseRequest
+	var res types.KSDResponse
 	utils.Info.Println("forward to kube: " + url)
 	utils.Info.Println("request type: " + requestType)
 
@@ -2521,6 +2521,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Kubernetes == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.Nodes {
@@ -2529,14 +2532,33 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Nodes == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
+					}
+
+				}
+				for _, each := range res.Service.HPAS {
+					if strings.Contains(each.Error, "already exists") {
+						continue
+					} else if each.Error != "" {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Hpas == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
+
 				for _, each := range res.Service.Istio {
 					if strings.Contains(each.Error, "already exists") {
 						continue
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Istio == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.Deployments {
@@ -2545,6 +2567,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Deployments == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.StatefulSets {
@@ -2553,6 +2578,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.StatefulSets == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.DaemonSets {
@@ -2561,6 +2589,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.DaemonSets == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.Jobs {
@@ -2569,6 +2600,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.Jobs == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 				for _, each := range res.Service.CronJobs {
@@ -2577,6 +2611,9 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 					} else if each.Error != "" {
 						ret.Status = append(ret.Status, "failed")
 						ret.Reason = ret.Reason + ";" + each.Error
+					} else if each.Error == "" && each.CronJobs == nil {
+						ret.Status = append(ret.Status, "failed")
+						ret.Reason = ret.Reason + "; error from ksd data null error null"
 					}
 				}
 
