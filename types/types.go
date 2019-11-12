@@ -472,6 +472,7 @@ type IstioWrapper struct {
 	Error string      `json:"error"`
 	Istio IstioObject `json:"data"`
 }
+
 type OutputResp struct {
 	Deployments []DeploymentWrapper `json:"deployment"`
 	Kubernetes  []KubernetesWrapper `json:"kubernetes-service"`
@@ -479,7 +480,6 @@ type OutputResp struct {
 	Secrets     []interface{}       `json:"secrets"`
 	Nodes       []NooeWrapper       `json:"nodes"`
 }
-
 type ServiceOutput struct {
 	ClusterInfo KubernetesCred `json:"kubernetes_credentials"`
 	ConfigMap   []v1.ConfigMap `json:"configmap"`
