@@ -1619,7 +1619,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 	service := input.SolutionInfo.Service
 	//**Making Service Object*//
 
-	res, err := CheckGateway(service)
+	respons, err := CheckGateway(service)
 	if err != nil {
 		utils.Info.Println("There is error in deployment")
 		ret.Status = append(ret.Status, "failed")
@@ -1630,13 +1630,27 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 		}
 		return ret
 	}
-	if res.Spec != nil && res.Metadata != nil {
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res)
+	if respons.Spec != nil && respons.Metadata != nil {
+
+		if strings.EqualFold(requestType, "patch") {
+			ok, err := notAlreadyExistIstioObject(respons, cpContext, ret)
+			if err != nil {
+				typeArray := []string{"frontendLogging"}
+				cpContext.SendLog(err.Error(), constants.LOGGING_LEVEL_ERROR, typeArray)
+				return ret
+			}
+			if ok {
+				finalObj.Services.Istio = append(finalObj.Services.Istio, respons)
+			}
+
+		} else {
+			finalObj.Services.Istio = append(finalObj.Services.Istio, respons)
+		}
 	}
 
 	if service.ServiceType == "mesh" || service.ServiceType == "other" {
 
-		res, err := getIstioObject(service)
+		respnse, err := getIstioObject(service)
 		if err != nil {
 			utils.Info.Println("There is error in deployment")
 			ret.Status = append(ret.Status, "failed")
@@ -1648,7 +1662,27 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 			return ret
 		}
-		finalObj.Services.Istio = append(finalObj.Services.Istio, res...)
+		if strings.EqualFold(requestType, "patch") {
+			for _, each := range respnse {
+				if each.Spec != nil && each.Metadata != nil {
+
+					ok, err := notAlreadyExistIstioObject(each, cpContext, ret)
+					if err != nil {
+						typeArray := []string{"frontendLogging"}
+						cpContext.SendLog(err.Error(), constants.LOGGING_LEVEL_ERROR, typeArray)
+						return ret
+					}
+					if ok {
+						finalObj.Services.Istio = append(finalObj.Services.Istio, each)
+					}
+
+				} else {
+					finalObj.Services.Istio = append(finalObj.Services.Istio, each)
+				}
+			}
+		} else {
+			finalObj.Services.Istio = append(finalObj.Services.Istio, respnse...)
+		}
 
 	}
 
@@ -3781,4 +3815,28 @@ func NewParser(options ParseOption) Parser {
 		panic("multiple optionals may not be configured")
 	}
 	return Parser{options}
+}
+func notAlreadyExistIstioObject(respons types.IstioObject, cpContext *core.Context, ret types.StatusRequest) (bool, error) {
+	var serviceOutput types.ServiceOutput
+	serviceOutput.Services.Istio = append(serviceOutput.Services.Istio, respons)
+	if pId, ok := cpContext.Keys["project_id"]; ok {
+		serviceOutput.ProjectId = fmt.Sprintf("%v", pId)
+	}
+	x, err := json.Marshal(serviceOutput)
+	if err != nil {
+		return false, err
+	}
+
+	utils.Info.Println("kubernetes request payload", string(x))
+	resp, res := GetFromKube(x, serviceOutput.ProjectId, ret, "GET", cpContext)
+	if len(res.Service.Istio) > 0 && strings.Contains(res.Service.Istio[0].Error, "not found") {
+		resp = ForwardToKube(x, serviceOutput.ProjectId, "POST", ret, cpContext)
+		if resp.Reason != "" {
+			ret.Status = append(ret.Status, "failed")
+			ret.Reason = "Not a valid Gateway Object. Error : " + resp.Reason
+			return false, errors.New(resp.Reason)
+		}
+		return false, nil
+	}
+	return true, nil
 }
