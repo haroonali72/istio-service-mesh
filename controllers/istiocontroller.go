@@ -3833,7 +3833,7 @@ func notAlreadyExistIstioObject(respons types.IstioObject, cpContext *core.Conte
 		resp = ForwardToKube(x, serviceOutput.ProjectId, "POST", ret, cpContext)
 		if resp.Reason != "" {
 			ret.Status = append(ret.Status, "failed")
-			ret.Reason = "Not a valid Gateway Object. Error : " + resp.Reason
+			ret.Reason = "Not a valid Istio Object. Error : " + resp.Reason
 			return false, errors.New(resp.Reason)
 		}
 		return false, nil
