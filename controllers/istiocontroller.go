@@ -1759,7 +1759,12 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 			}
 
 			finalObj.Services.StorageClasses = append(finalObj.Services.StorageClasses, volumes.ProvisionStorageClass(attributes.Volume))
-			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, volumes.ProvisionVolumeClaim(attributes.Volume))
+			temppvc := volumes.ProvisionVolumeClaim(attributes.Volume)
+			temppvc.Namespace = service.Namespace
+			if service.Namespace == "" {
+				temppvc.Namespace = "default"
+			}
+			finalObj.Services.PersistentVolumeClaims = append(finalObj.Services.PersistentVolumeClaims, temppvc)
 		}
 	} else if service.ServiceType == "container" {
 		switch service.SubType {
