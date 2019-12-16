@@ -14,7 +14,7 @@ func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 	storageClass.TypeMeta.APIVersion = "storage.k8s.io/v1"
 	storageClass.Name = GetStorageClassName(volume.Name)
 	storageClass.ObjectMeta.Name = storageClass.Name
-	storageClass.Namespace = volume.Namespace
+	//storageClass.Namespace = volume.Namespace
 
 	reclaimPolicy := core.PersistentVolumeReclaimRetain
 	storageClass.ReclaimPolicy = &reclaimPolicy //default policy is to retain the volume
