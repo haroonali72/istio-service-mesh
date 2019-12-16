@@ -1,0 +1,70 @@
+module istio-service-mesh
+
+go 1.12
+
+require (
+	github.com/BurntSushi/toml v0.3.1
+	github.com/astaxie/beego v1.12.0
+	github.com/cpuguy83/go-md2man v0.0.0-20190314233015-f79a8a8ca69d
+	github.com/davecgh/go-spew v1.1.1
+	github.com/envoyproxy/go-control-plane v0.9.1
+	github.com/envoyproxy/protoc-gen-validate v0.1.0
+	github.com/ghodss/yaml v1.0.0
+	github.com/go-redis/redis v6.15.6+incompatible
+	github.com/gogo/protobuf v1.3.1
+	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
+	github.com/golang/protobuf v1.3.2
+	github.com/google/gofuzz v1.0.0
+	github.com/google/uuid v1.1.1
+	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d
+	github.com/hashicorp/errwrap v1.0.0
+	github.com/hashicorp/go-multierror v1.0.0
+	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
+	github.com/imdario/mergo v0.3.5
+	github.com/inconshreveable/mousetrap v1.0.0
+	github.com/json-iterator/go v1.1.8
+	github.com/mitchellh/copystructure v1.0.0
+	github.com/mitchellh/reflectwalk v1.0.1
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v1.0.1
+	github.com/natefinch/lumberjack v0.0.0-20170531160350-a96e63847dc3
+	github.com/pkg/errors v0.8.1
+	github.com/russross/blackfriday v0.0.0-20180920171615-d3b5b032dc8e
+	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644
+	github.com/shurcooL/sanitized_anchor_name v1.0.0
+	github.com/spaolacci/murmur3 v0.0.0-20170819071325-9f5d223c6079
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.1
+	github.com/urfave/cli v0.0.0-20191115071912-754ed1bf85da
+	go.opencensus.io v0.22.2
+	go.uber.org/atomic v1.5.1
+	go.uber.org/multierr v1.4.0
+	go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee
+	go.uber.org/zap v1.13.0
+	golang.org/x/crypto v0.0.0-20181025213731-e84da0312774
+	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
+	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
+	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449
+	golang.org/x/text v0.3.2
+	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d
+	golang.org/x/tools v0.0.0-20191212051200-825cb0626375
+	google.golang.org/appengine v1.6.5
+	google.golang.org/genproto v0.0.0-20191206224255-0243a4be9c8f
+	google.golang.org/grpc v1.25.1
+	gopkg.in/inf.v0 v0.9.1
+	gopkg.in/resty.v1 v1.12.0
+	gopkg.in/yaml.v2 v2.2.7
+	honnef.co/go/tools v0.0.1-2019.2.3
+	istio.io/api v0.0.0-20191115173247-e1a1952e5b81
+	istio.io/client-go v0.0.0-20191120150049-26c62a04cdbc
+	istio.io/gogo-genproto v0.0.0-20191029161641-f7d19ec0141d
+	istio.io/istio v0.0.0-20191205163441-35eb9dc7c6e7
+	istio.io/pkg v0.0.0-20191030005435-10d06b6b315e
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.0.0-20191121175448-79c2a76c473a
+	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+	k8s.io/klog v1.0.0
+	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
+	sigs.k8s.io/yaml v1.1.0
+)

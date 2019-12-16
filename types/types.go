@@ -9,6 +9,7 @@ import (
 	rbacV1 "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"time"
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
 type Route struct {
@@ -448,6 +449,7 @@ type OutputServices struct {
 	ConfigMap              []v1.ConfigMap                        `json:"configmap"`
 	Kubernetes             []v1.Service                          `json:"kubernetes-service"`
 	Istio                  []IstioObject                         `json:"istio-component"`
+	IstioGateway		   []*istioClient.Gateway `json:"gateway"`
 	StorageClasses         []storage.StorageClass                `json:"storage-classes"`
 	RoleClasses            []rbacV1.Role                         `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding                  `json:"role-binding-classes"`

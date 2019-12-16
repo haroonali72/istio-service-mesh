@@ -19,7 +19,7 @@ import (
 	policy "istio.io/api/authentication/v1alpha1"
 	"istio.io/api/networking/v1alpha3"
 	ist_rbac "istio.io/api/rbac/v1alpha1"
-	"istio.io/istio/pilot/pkg/model"
+	model "istio.io/istio/pkg/util/gogoprotomarshal"
 	v12 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
@@ -60,7 +60,7 @@ func getIstioVirtualService(service interface{}) (string, error) {
 			var httpD v1alpha3.HTTPRouteDestination
 			httpD.Destination = &v1alpha3.Destination{Subset: route.Destination.Subset, Host: route.Destination.Host}
 			if route.Destination.Port != 0 {
-				httpD.Destination.Port = &v1alpha3.PortSelector{Port: &v1alpha3.PortSelector_Number{Number: uint32(route.Destination.Port)}}
+				httpD.Destination.Port = &v1alpha3.PortSelector{Number: uint32(route.Destination.Port)}
 
 			}
 			if route.Weight > 0 {

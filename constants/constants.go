@@ -6,6 +6,7 @@ var (
 	KnativeEngineURL    string
 	ServicePort         string
 	KubernetesEngineURL string
+	K8sEngineGRPCURL string
 	NotificationURL     string
 	VaultURL            string
 	RbacURL             string
@@ -16,6 +17,9 @@ type Logger string
 
 const (
 	SERVICE_NAME = "istio-mesh-engine"
+
+	//KSD
+	KUBERNETES_SERVICES_DEPLOYMENT   = "/ksd/api/v1/solution"
 	//Logging
 
 	LOGGING_LEVEL_INFO  = "info"
