@@ -14,15 +14,16 @@ message NameRequest {
 }
 
 message GatewayService {
-    string ProjectId = 1;
-    string serviceId = 2;
+    string project_id = 1;
+    string service_id = 2;
     string name = 3;
     string version = 4;
-    string type = 5;
-    string sub_type = 6;
+    string service_type = 5;
+    string service_sub_type = 6;
     string namespace = 7;
-    string companyId = 8;
-    GatewayServiceAttributes serviceAttributes = 9;
+    string token = 8;
+    string company_id = 9;
+    GatewayServiceAttributes service_attributes = 10;
 }
 message GatewayServiceResponse {
     string error = 1;

@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -17,6 +16,7 @@ type Server struct{
 
 }
 func (s *Server)CreateGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id: req.ServiceId,
@@ -49,6 +49,8 @@ func (s *Server)CreateGateway(ctx context.Context,req *pb.GatewayService)(*pb.Se
 	result, err := pb.NewServiceClient(conn).CreateService(ctx,&pb.ServiceRequest{
 		ProjectId:req.ProjectId,
 		Service: raw,
+		CompanyId:req.CompanyId,
+		Token: req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -106,6 +108,8 @@ func (s *Server)GetGateway(ctx context.Context,req *pb.GatewayService)(*pb.Servi
 	result, err := pb.NewServiceClient(conn).GetService(ctx,&pb.ServiceRequest{
 		ProjectId:req.ProjectId,
 		Service: raw,
+		CompanyId:req.CompanyId,
+		Token: req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -150,6 +154,8 @@ func (s *Server)DeleteGateway(ctx context.Context,req *pb.GatewayService)(*pb.Se
 	result, err := pb.NewServiceClient(conn).DeleteService(ctx,&pb.ServiceRequest{
 		ProjectId:req.ProjectId,
 		Service: raw,
+		CompanyId:req.CompanyId,
+		Token: req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -194,6 +200,8 @@ func (s *Server)PatchGateway(ctx context.Context,req *pb.GatewayService)(*pb.Ser
 	result, err := pb.NewServiceClient(conn).PatchService(ctx,&pb.ServiceRequest{
 		ProjectId:req.ProjectId,
 		Service: raw,
+		CompanyId:req.CompanyId,
+		Token: req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -238,6 +246,8 @@ func (s *Server)PutGateway(ctx context.Context,req *pb.GatewayService)(*pb.Servi
 	result, err := pb.NewServiceClient(conn).PutService(ctx,&pb.ServiceRequest{
 		ProjectId:req.ProjectId,
 		Service: raw,
+		CompanyId:req.CompanyId,
+		Token: req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -256,26 +266,38 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 	var istioServ = new(istioClient.Gateway)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
-	labels["name"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	labels["namespace"] = strings.ToLower(input.Namespace)
 	istioServ.Labels = labels
 	istioServ.Kind = "Gateway"
 	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-
+	istioServ.Name = input.Name
+	istioServ.Namespace = input.Namespace
 	gateway := v1alpha3.Gateway{}
 
 	gateway.Selector = input.ServiceAttributes.Selectors
 
-	raw, err := json.Marshal(input.ServiceAttributes)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal gateway input object. Error: %s",err.Error())
+	for _, serverInput := range input.ServiceAttributes.Servers{
+		server := new(v1alpha3.Server)
+		if serverInput.Port != nil {
+			server.Port = new(v1alpha3.Port)
+			server.Port.Name = serverInput.Port.Name
+			server.Port.Number = serverInput.Port.Nummber
+			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+		}
+		if serverInput.Tls != nil {
+			server.Tls = new(v1alpha3.Server_TLSOptions)
+			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
+			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
+			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
+			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
+			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
+			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
+			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
+			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
+		}
+		server.Hosts = serverInput.Hosts
+		gateway.Servers = append(gateway.Servers,server )
 	}
-	err = json.Unmarshal(raw,gateway)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal gateway input object to istio object. Error: %s",err.Error())
-	}
-
 	istioServ.Spec = gateway
 	return istioServ, nil
 }
