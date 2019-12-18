@@ -1,0 +1,51 @@
+syntax= "proto3";
+import "service.proto";
+package proto;
+
+
+service Kubernetes{
+    rpc CreateKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc GetKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc PutKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc PatchKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc DeleteKubernetesService(KubernetesService) returns (ServiceResponse){}
+}
+message NameRequest{
+    string name =1;
+}
+message KubernetesService{
+    string service_id = 1;
+    string token = 2;
+    string project_id = 3;
+    string company_id = 4;
+    string name = 5;
+    string version =6;
+    string service_type= 7;
+    string service_sub_type =8;
+    repeated string service_dependency_info=9;
+    string namespace =10;
+    repeated KubeServiceAttributes ports =11;
+    repeated KubeSelector select=12;
+    string cluster_ip=13;
+    string type=14;
+    string external_traffic_policy=15;
+}
+
+message KubeServiceAttributes {
+    string name =1;
+    string protocol=2;
+    int64 port =3;
+    int64 target_port =4;
+    int64 node_port =5;
+}
+
+message KubeSelector{
+    string label1 =1;
+    string label2 =2;
+}
+
+message KubernetesServiceResponse {
+    string error = 1;
+    KubernetesService resp = 2;
+}
+
