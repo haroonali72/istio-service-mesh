@@ -233,6 +233,39 @@ func (this *TLSSettings) UnmarshalJSON(b []byte) error {
 	return DestinationRuleUnmarshaler.Unmarshal(bytes.NewReader(b), this)
 }
 
+// MarshalJSON is a custom marshaler for LocalityLoadBalancerSetting
+func (this *LocalityLoadBalancerSetting) MarshalJSON() ([]byte, error) {
+	str, err := DestinationRuleMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for LocalityLoadBalancerSetting
+func (this *LocalityLoadBalancerSetting) UnmarshalJSON(b []byte) error {
+	return DestinationRuleUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for LocalityLoadBalancerSetting_Distribute
+func (this *LocalityLoadBalancerSetting_Distribute) MarshalJSON() ([]byte, error) {
+	str, err := DestinationRuleMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for LocalityLoadBalancerSetting_Distribute
+func (this *LocalityLoadBalancerSetting_Distribute) UnmarshalJSON(b []byte) error {
+	return DestinationRuleUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
+// MarshalJSON is a custom marshaler for LocalityLoadBalancerSetting_Failover
+func (this *LocalityLoadBalancerSetting_Failover) MarshalJSON() ([]byte, error) {
+	str, err := DestinationRuleMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for LocalityLoadBalancerSetting_Failover
+func (this *LocalityLoadBalancerSetting_Failover) UnmarshalJSON(b []byte) error {
+	return DestinationRuleUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
 var (
 	DestinationRuleMarshaler   = &github_com_gogo_protobuf_jsonpb.Marshaler{}
 	DestinationRuleUnmarshaler = &github_com_gogo_protobuf_jsonpb.Unmarshaler{}
