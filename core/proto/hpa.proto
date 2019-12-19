@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package proto;
+
+import "serviceresponse.proto";
+
+service hpa {
+   rpc CreateHPA (HPA) returns (ServiceResponse) {}
+   rpc GetHPA (HPA) returns (ServiceResponse) {}
+   rpc DeleteHPA (HPA) returns (ServiceResponse) {}
+   rpc PatchHPA (HPA) returns (ServiceResponse) {}
+   rpc PutHPA (HPA) returns (ServiceResponse) {}
+}
+
+message HPA {
+    string ProjectId = 1;
+	string ServiceId = 2;
+	string Name = 3;
+	string ServiceType = 4;
+	string token = 5;
+	string Status = 6;
+	string ServiceSubType = 7;
+	repeated string ServiceDependencyInfo = 8;
+	string Namespace = 9;
+	HpaSvcAttr ServiceAttributes = 10;
+	string company_id = 11;
+}
+
+message HpaSvcAttr {
+    int64 MinReplicas = 1;
+	int64 MaxReplicas = 2;
+	CrossObjectVersion CrossObjectVersion = 3;
+	repeated MetricValue MetricValues = 4;
+}
+
+message CrossObjectVersion {
+	string Name = 1;
+	string Version = 2;
+	string Type = 3;
+}
+
+message MetricValue {
+	string TargetValueKind = 1;
+	string TargetValue = 2;
+	string TargetValueUnit = 3;
+	string ResourceKind = 4;
+}

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package proto;
+
+import "serviceresponse.proto";
+
+service Clusterrole {
+   rpc CreateClusterRole (ClusterRole) returns (ServiceResponse) {}
+   rpc GetClusterRole (ClusterRole) returns (ServiceResponse) {}
+   rpc DeleteClusterRole (ClusterRole) returns (ServiceResponse) {}
+   rpc PatchClusterRole (ClusterRole) returns (ServiceResponse) {}
+   rpc PutClusterRole (ClusterRole) returns (ServiceResponse) {}
+}
+
+message ClusterRole {
+   string ProjectId = 1;
+   string ServiceId = 2;
+   string Name = 3;
+   string ServiceType = 4;
+   string ServiceSubType = 5;
+   string Status = 6;
+   string token = 7;
+   repeated string ServiceDependencyInfo = 8;
+   ClusterRoleSvcAttr ServiceAttributes = 9;
+   string company_id = 10;
+}
+
+message ClusterRoleSvcAttr {
+   repeated Rules Rules = 1;
+}
+
+message Rules {
+   repeated string ResourceName = 1;
+   repeated string Verbs = 2;
+   repeated string ApiGroup = 3;
+}

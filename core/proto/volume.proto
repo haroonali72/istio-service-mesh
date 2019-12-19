@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package proto;
+
+import "serviceresponse.proto";
+
+service volume {
+   rpc CreateVolume (Volume) returns (ServiceResponse) {}
+   rpc GetVolume (Volume) returns (ServiceResponse) {}
+   rpc DeleteVolume (Volume) returns (ServiceResponse) {}
+   rpc PatchVolume (Volume) returns (ServiceResponse) {}
+   rpc PutVolume (Volume) returns (ServiceResponse) {}
+}
+
+message Volume {
+    string ProjectId = 1;
+	string ServiceId = 2;
+	string Name = 3;
+	string ServiceType = 4;
+	string ServiceSubType = 5;
+	string Status = 6;
+	string token = 7;
+	repeated string ServiceDependencyInfo = 8;
+	VolumeAttr ServiceAttributes = 9;
+	string company_id = 10;
+}
+
+message VolumeAttr {
+	string Size = 1;
+	string Cloud = 2;
+	string MountPath = 3;
+	Parameter Params = 4;
+}
+
+message Parameter {
+	string Type = 1;
+	string ReplicationType = 2;
+	string IOPS = 3;
+	string Plugin = 4;
+	string SkuName = 5;
+	string Location = 6;
+	string StorageAccount = 7;
+}
