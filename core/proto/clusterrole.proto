@@ -23,6 +23,8 @@ message ClusterRole {
    repeated string ServiceDependencyInfo = 8;
    ClusterRoleSvcAttr ServiceAttributes = 9;
    string company_id = 10;
+   string kind = 11;
+   string apiVersion = 12;
 }
 
 message ClusterRoleSvcAttr {
