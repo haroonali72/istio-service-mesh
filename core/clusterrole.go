@@ -7,6 +7,8 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	v1 "k8s.io/api/rbac/v1"
+	"strings"
 )
 
 func (s *Server) CreateClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb.ServiceResponse, error) {
@@ -17,14 +19,12 @@ func (s *Server) CreateClusterRole(ctx context.Context, req *pb.ClusterRole) (*p
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	//ksdRequest ,err := getRequestObject(req)
-	//
-	//if err != nil {
-	//	utils.Error.Println(err)
-	//	getErrorResp(serviceResp,err)
-	//	return serviceResp,err
-	//}
-	ksdRequest := req
+	ksdRequest, err := getClusterRole(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -56,19 +56,6 @@ func (s *Server) CreateClusterRole(ctx context.Context, req *pb.ClusterRole) (*p
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
 	return serviceResp, nil
-
-	/*converToResp(serviceResp,req.ProjectId,statusCode,resp)
-
-	url := fmt.Sprintf("%s%s",constants.KubernetesEngineURL,constants.KUBERNETES_SERVICES_DEPLOYMENT)
-	statusCode, resp, err := utils.Post(url,ksdRequest,getHeaders(ctx,req.ProjectId))
-
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
-	}
-	converToResp(serviceResp,req.ProjectId,statusCode,resp)
-	return serviceResp,nil*/
 }
 func (s *Server) GetClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
@@ -77,15 +64,12 @@ func (s *Server) GetClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb.S
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	//ksdRequest ,err := getRequestObject(req)
-	//
-	//if err != nil {
-	//	utils.Error.Println(err)
-	//	getErrorResp(serviceResp,err)
-	//	return serviceResp,err
-	//}
-
-	ksdRequest := req
+	ksdRequest, err := getClusterRole(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -125,15 +109,12 @@ func (s *Server) DeleteClusterRole(ctx context.Context, req *pb.ClusterRole) (*p
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	//ksdRequest ,err := getRequestObject(req)
-	//
-	//if err != nil {
-	//	utils.Error.Println(err)
-	//	getErrorResp(serviceResp,err)
-	//	return serviceResp,err
-	//}
-
-	ksdRequest := req
+	ksdRequest, err := getClusterRole(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -173,15 +154,13 @@ func (s *Server) PatchClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	//ksdRequest ,err := getRequestObject(req)
-	//
-	//if err != nil {
-	//	utils.Error.Println(err)
-	//	getErrorResp(serviceResp,err)
-	//	return serviceResp,err
-	//}
+	ksdRequest, err := getClusterRole(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
-	ksdRequest := req
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
@@ -220,15 +199,13 @@ func (s *Server) PutClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb.S
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	//ksdRequest ,err := getRequestObject(req)
-	//
-	//if err != nil {
-	//	utils.Error.Println(err)
-	//	getErrorResp(serviceResp,err)
-	//	return serviceResp,err
-	//}
+	ksdRequest, err := getClusterRole(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
-	ksdRequest := req
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
@@ -259,4 +236,36 @@ func (s *Server) PutClusterRole(ctx context.Context, req *pb.ClusterRole) (*pb.S
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
 	return serviceResp, nil
+}
+
+func getClusterRole(input *pb.ClusterRole) (*v1.ClusterRole, error) {
+	var clstrRolSvc = new(v1.ClusterRole)
+	labels := make(map[string]string)
+	labels["app"] = strings.ToLower(input.Name)
+	labels["version"] = strings.ToLower(input.Version)
+	clstrRolSvc.Kind = "ClusterRole"
+	clstrRolSvc.APIVersion = "rbac.authorization.k8s.io/v1"
+	clstrRolSvc.Name = input.Name
+	clstrRolSvc.Labels = labels
+
+	for _, rule := range input.ServiceAttributes.Rules {
+		var policyrule v1.PolicyRule
+		for _, apigroup := range rule.ApiGroup {
+			policyrule.APIGroups = append(policyrule.APIGroups, apigroup)
+		}
+
+		for _, verb := range rule.Verbs {
+			policyrule.Verbs = append(policyrule.Verbs, verb)
+		}
+
+		for _, resourcename := range rule.ResourceName {
+			policyrule.ResourceNames = append(policyrule.ResourceNames, resourcename)
+			policyrule.Resources = append(policyrule.Resources, resourcename)
+		}
+
+		clstrRolSvc.Rules = append(clstrRolSvc.Rules, policyrule)
+
+	}
+
+	return clstrRolSvc, nil
 }

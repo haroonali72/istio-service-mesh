@@ -13,26 +13,27 @@ service Clusterrole {
 }
 
 message ClusterRole {
-   string ProjectId = 1;
-   string ServiceId = 2;
-   string Name = 3;
-   string ServiceType = 4;
-   string ServiceSubType = 5;
-   string Status = 6;
+   string project_id = 1;
+   string service_id = 2;
+   string name = 3;
+   string service_type = 4;
+   string service_sub_type = 5;
+   string status = 6;
    string token = 7;
-   repeated string ServiceDependencyInfo = 8;
-   ClusterRoleSvcAttr ServiceAttributes = 9;
+   repeated string service_dependency_info = 8;
+   ClusterRoleSvcAttr service_attributes = 9;
    string company_id = 10;
-   string kind = 11;
-   string apiVersion = 12;
+   string version = 11;
+   string namespace = 12;
 }
 
 message ClusterRoleSvcAttr {
-   repeated Rules Rules = 1;
+   repeated Rules rules = 1;
 }
 
 message Rules {
-   repeated string ResourceName = 1;
-   repeated string Verbs = 2;
-   repeated string ApiGroup = 3;
+   repeated string resource_name = 1;
+   repeated string verbs = 2;
+   repeated string api_group = 3;
 }
+

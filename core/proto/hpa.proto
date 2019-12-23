@@ -13,35 +13,37 @@ service hpa {
 }
 
 message HPA {
-    string ProjectId = 1;
-	string ServiceId = 2;
-	string Name = 3;
-	string ServiceType = 4;
-	string token = 5;
-	string Status = 6;
-	string ServiceSubType = 7;
-	repeated string ServiceDependencyInfo = 8;
-	string Namespace = 9;
-	HpaSvcAttr ServiceAttributes = 10;
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string service_type = 4;
+    string service_sub_type = 5;
+    string status = 6;
+    string token = 7;
+    repeated string service_dependency_info = 8;
+	string namespace = 9;
+	HpaSvcAttr service_attributes = 10;
 	string company_id = 11;
+	string version = 12;
 }
 
 message HpaSvcAttr {
-    int64 MinReplicas = 1;
-	int64 MaxReplicas = 2;
-	CrossObjectVersion CrossObjectVersion = 3;
-	repeated MetricValue MetricValues = 4;
+    int64 min_replicas = 1;
+	int64 max_replicas = 2;
+	CrossObjectVersion cross_object_version = 3;
+	repeated MetricValue metric_values = 4;
 }
 
 message CrossObjectVersion {
-	string Name = 1;
-	string Version = 2;
-	string Type = 3;
+	string name = 1;
+	string version = 2;
+	string type = 3;
 }
 
 message MetricValue {
-	string TargetValueKind = 1;
-	string TargetValue = 2;
-	string TargetValueUnit = 3;
-	string ResourceKind = 4;
+	string target_value_kind = 1;
+	string target_value = 2;
+	string target_value_unit = 3;
+	string resource_kind = 4;
 }
+
