@@ -73,6 +73,7 @@ func main() {
 	pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
+	pb.RegisterHpaServer(srv, svc)
 
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
