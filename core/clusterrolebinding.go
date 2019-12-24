@@ -43,8 +43,8 @@ func (s *Server) CreateClusterRoleBinding(ctx context.Context, req *pb.ClusterRo
 	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
-		//CompanyId:req.CompanyId,
-		Token: req.Token,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -88,8 +88,8 @@ func (s *Server) GetClusterRoleBinding(ctx context.Context, req *pb.ClusterRoleB
 	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
-		//CompanyId:req.CompanyId,
-		Token: req.Token,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -133,8 +133,8 @@ func (s *Server) DeleteClusterRoleBinding(ctx context.Context, req *pb.ClusterRo
 	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
-		//CompanyId:req.CompanyId,
-		Token: req.Token,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -178,8 +178,8 @@ func (s *Server) PatchClusterRoleBinding(ctx context.Context, req *pb.ClusterRol
 	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
-		//CompanyId:req.CompanyId,
-		Token: req.Token,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -223,8 +223,8 @@ func (s *Server) PutClusterRoleBinding(ctx context.Context, req *pb.ClusterRoleB
 	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
-		//CompanyId:req.CompanyId,
-		Token: req.Token,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
