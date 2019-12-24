@@ -316,6 +316,8 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 		if err != nil {
 			return nil, errors.New("invalid storage capacity ")
 		}
+		pvc.Spec.Resources.Requests = make(map[core.ResourceName]resource.Quantity)
+
 		pvc.Spec.Resources.Requests["storage"] = quantity
 	}
 	if input.ServiceAttributes.LimitQuantity != "" {
@@ -323,6 +325,8 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 		if err != nil {
 			return nil, errors.New("invalid storage capacity ")
 		}
+		pvc.Spec.Resources.Limits = make(map[core.ResourceName]resource.Quantity)
+
 		pvc.Spec.Resources.Limits["storage"] = quantity
 	}
 

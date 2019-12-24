@@ -13,7 +13,6 @@ import (
 )
 
 func (s *Server) CreateStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -262,7 +261,7 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 	sc.Name = input.Name
 	sc.TypeMeta.Kind = "StorageClass"
 	sc.TypeMeta.APIVersion = "storage.k8s.io/v1"
-	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMod_WaitForFirstCustomer.String() {
+	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMode_WaitForFirstCustomer.String() {
 		vbm := v1.VolumeBindingWaitForFirstConsumer
 		sc.VolumeBindingMode = &vbm
 	}
@@ -270,6 +269,7 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		rcp := core.PersistentVolumeReclaimRetain
 		sc.ReclaimPolicy = &rcp
 	}
+	sc.Parameters = make(map[string]string)
 	// SC  AWSEBS
 	if len(input.ServiceAttributes.ScParameters.AwsebsscParm) > 0 {
 		sc.Provisioner = "kubernetes.io/aws-ebs"

@@ -13,7 +13,6 @@ import (
 )
 
 func (s *Server) CreatePersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -282,14 +281,18 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	if err != nil {
 		return nil, errors.New("invalid storage capacity ")
 	}
+	pv.Spec.Capacity = make(map[core.ResourceName]resource.Quantity)
 	pv.Spec.Capacity["storage"] = quantity
-	if input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName != "" {
+	if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
+		pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
 		pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
 		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.ReadOnly
-	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId != "" {
+	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
+		pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
 		pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
 		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.ReadOnly
-	} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName != "" {
+	} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk != nil {
+		pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
 		pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName
 		pv.Spec.AzureDisk.DataDiskURI = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI
 		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "None" {
@@ -303,7 +306,8 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 			pv.Spec.AzureDisk.CachingMode = &temp
 		}
 		pv.Spec.AzureDisk.ReadOnly = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly
-	} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName != "" {
+	} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile != nil {
+		pv.Spec.AzureFile = new(core.AzureFilePersistentVolumeSource)
 		pv.Spec.AzureFile.SecretName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName
 		pv.Spec.AzureFile.ShareName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName
 		pv.Spec.AzureFile.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly

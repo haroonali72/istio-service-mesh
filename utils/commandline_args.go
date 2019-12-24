@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/urfave/cli/v2"
 	"istio-service-mesh/constants"
 	"log"
@@ -57,7 +56,6 @@ func InitFlags() error {
 	app.Action = func(c *cli.Context) error {
 		return nil
 	}
-	fmt.Println(constants.ServicePort)
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Println(err)
