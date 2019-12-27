@@ -248,12 +248,12 @@ func getServiceAccount(input *pb.ServiceAccountService) (*kb.ServiceAccount, err
 	labels["app"] = strings.ToLower(input.Name)
 	return kube, nil
 }
-func getRequestServiceAccountObject(req *pb.KubernetesService) (*kb.Service, error) {
-	gtwReq, err := getKubernetesService(req)
+func getRequestServiceAccountObject(req *pb.ServiceAccountService) (*kb.ServiceAccount, error) {
+	srvReq, err := getServiceAccount(req)
 	if err != nil {
 		utils.Error.Println(err)
 
 		return nil, err
 	}
-	return gtwReq, nil
+	return srvReq, nil
 }
