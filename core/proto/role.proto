@@ -1,0 +1,41 @@
+syntax= "proto3";
+
+package proto;
+import "service.proto";
+service Role{
+    rpc CreateRoleService(RoleService) returns (ServiceResponse){}
+    rpc GetRoleService(RoleService) returns (ServiceResponse){}
+    rpc PutRoleService(RoleService) returns (ServiceResponse){}
+    rpc PatchRoleService(RoleService) returns (ServiceResponse){}
+    rpc DeleteRoleService(RoleService) returns (ServiceResponse){}
+}
+message NameRequest{
+    string name =1;
+}
+message RoleService {
+    string service_id = 1;
+    string token=2;
+    string project_id=3;
+    string company_id = 4;
+    string name = 5;
+    string service_type= 6;
+    string service_sub_type =7;
+    repeated string service_dependency_info=8;
+    string namespace =9;
+    RoleServiceAttributes service_attribute =10;
+}
+
+message RoleServiceAttributes {
+    repeated RoleRule rules=1;
+}
+
+message RoleRule{
+    repeated string resources =1;
+    repeated string verbs =2;
+    repeated string api_groups=3;
+}
+
+message RoleServiceResponse {
+    string error = 1;
+    RoleService resp = 2;
+}
