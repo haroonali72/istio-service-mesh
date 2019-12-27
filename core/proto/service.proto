@@ -17,28 +17,8 @@ message ServiceStatus {
 
 }
 
-enum Mode {
-    PASSTHROUGH = 0;
-    SIMPLE = 1;
-    MUTUAL = 2;
-    AUTO_PASSTHROUGH = 3;
-    ISTIO_MUTUAL = 4;
+message NameRequest {
+    string name = 1;
 }
 
-enum ProtocolVersion {
-    TLS_AUTO = 0;
-    TLSV1_0 = 1;
-    TLSV1_1 = 2;
-    TLSV1_2 = 3;
-    TLSV1_3 = 4;
-}
 
-enum Protocols {
-    HTTP = 0;
-    HTTPS = 1;
-    GRPC = 2;
-    HTTP2 = 3;
-    MONGO = 4;
-    TCP = 5;
-    TLS = 6;
-}

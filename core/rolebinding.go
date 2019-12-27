@@ -7,19 +7,23 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	v1 "k8s.io/api/rbac/v1"
+	"strings"
 )
 
-type RoleBindingServer struct {
-}
-
-func (s *RoleBindingServer) CreateRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest := req
+	roleBinbRequest, err := getRequestRoleBindObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -29,7 +33,7 @@ func (s *RoleBindingServer) CreateRoleBinding(ctx context.Context, req *pb.RoleB
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -53,15 +57,19 @@ func (s *RoleBindingServer) CreateRoleBinding(ctx context.Context, req *pb.RoleB
 	return serviceResp, nil
 
 }
-func (s *RoleBindingServer) GetRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) GetRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest := req
-
+	roleBinbRequest, err := getRequestRoleBindObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
@@ -70,7 +78,7 @@ func (s *RoleBindingServer) GetRoleBinding(ctx context.Context, req *pb.RoleBind
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -93,14 +101,19 @@ func (s *RoleBindingServer) GetRoleBinding(ctx context.Context, req *pb.RoleBind
 
 	return serviceResp, nil
 }
-func (s *RoleBindingServer) DeleteRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest := req
+	roleBinbRequest, err := getRequestRoleBindObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -110,7 +123,7 @@ func (s *RoleBindingServer) DeleteRoleBinding(ctx context.Context, req *pb.RoleB
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -133,14 +146,19 @@ func (s *RoleBindingServer) DeleteRoleBinding(ctx context.Context, req *pb.RoleB
 
 	return serviceResp, nil
 }
-func (s *RoleBindingServer) PatchRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest := req
+	roleBinbRequest, err := getRequestRoleBindObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -150,7 +168,7 @@ func (s *RoleBindingServer) PatchRoleBinding(ctx context.Context, req *pb.RoleBi
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -173,14 +191,19 @@ func (s *RoleBindingServer) PatchRoleBinding(ctx context.Context, req *pb.RoleBi
 
 	return serviceResp, nil
 }
-func (s *RoleBindingServer) PutRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) PutRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest := req
+	roleBinbRequest, err := getRequestRoleBindObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
@@ -190,7 +213,7 @@ func (s *RoleBindingServer) PutRoleBinding(ctx context.Context, req *pb.RoleBind
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -212,4 +235,38 @@ func (s *RoleBindingServer) PutRoleBinding(ctx context.Context, req *pb.RoleBind
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
 	return serviceResp, nil
+}
+
+func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
+	var roleBind = new(v1.RoleBinding)
+	labels := make(map[string]string)
+	labels["app"] = strings.ToLower(input.Name)
+	labels["version"] = strings.ToLower(input.Version)
+	roleBind.Kind = "RoleBinding"
+	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
+	roleBind.Name = input.Name
+	roleBind.Labels = labels
+
+	for _, subject := range input.ServiceAttributes.Subjects {
+		var sub v1.Subject
+		sub.Name = subject.Name
+		sub.Kind = subject.Kind
+		sub.APIGroup = subject.ApiGroup
+		roleBind.Subjects = append(roleBind.Subjects, sub)
+	}
+
+	roleBind.RoleRef.Kind = input.ServiceAttributes.Reference.Kind
+	roleBind.RoleRef.Name = input.ServiceAttributes.Reference.Name
+	roleBind.RoleRef.APIGroup = input.ServiceAttributes.Reference.ApiGroup
+
+	return roleBind, nil
+}
+func getRequestRoleBindObject(req *pb.RoleBindingService) (*v1.RoleBinding, error) {
+	roleReq, err := getRoleBinding(req)
+	if err != nil {
+		utils.Error.Println(err)
+
+		return nil, err
+	}
+	return roleReq, nil
 }

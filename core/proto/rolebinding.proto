@@ -9,9 +9,7 @@ service RoleBinding{
     rpc PatchRoleBindingService(RoleBindingService) returns (ServiceResponse){}
     rpc DeleteRoleBindingService(RoleBindingService) returns (ServiceResponse){}
 }
-message NameRequest{
-    string name =1;
-}
+
 message RoleBindingService{
     string service_id = 1;
     string token = 2;
@@ -23,15 +21,19 @@ message RoleBindingService{
     repeated string service_dependency_info=8;
     string namespace =9;
     repeated string host_name=10;
-    repeated RoleBServiceAttributee service_attributes =11;
+    string version =11;
+    RoleBServiceAttributee service_attributes =12;
 }
 
 message RoleBServiceAttributee {
     repeated RoleBSubject subjects=1;
+    RoleBReference reference=2;
 }
 
 message RoleBSubject{
-    RoleBReference role_ref =1;
+    string kind = 1;
+    string name = 2;
+    string api_group=3;
 }
 
 message RoleBReference {

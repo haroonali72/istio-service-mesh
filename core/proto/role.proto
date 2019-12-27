@@ -9,9 +9,7 @@ service Role{
     rpc PatchRoleService(RoleService) returns (ServiceResponse){}
     rpc DeleteRoleService(RoleService) returns (ServiceResponse){}
 }
-message NameRequest{
-    string name =1;
-}
+
 message RoleService {
     string service_id = 1;
     string token=2;
@@ -22,7 +20,8 @@ message RoleService {
     string service_sub_type =7;
     repeated string service_dependency_info=8;
     string namespace =9;
-    RoleServiceAttributes service_attribute =10;
+    string version =10;
+    RoleServiceAttributes service_attribute =11;
 }
 
 message RoleServiceAttributes {
