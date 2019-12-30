@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package proto;
+import "service.proto";
+
+service Virtual {
+    rpc CreateVirtualService (VirtualService) returns (ServiceResponse) {}
+    rpc GetVirtualService (VirtualService) returns (ServiceResponse) {}
+    rpc DeleteVirtualService (VirtualService) returns (ServiceResponse) {}
+    rpc PatchVirtualService (VirtualService) returns (ServiceResponse) {}
+    rpc PutVirtualService (VirtualService) returns (ServiceResponse) {}
+}
+
+
+message VirtualService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string namespace = 7;
+    string token = 8;
+    string company_id = 9;
+    VSAttributes service_attributes = 10;
+}
+message VSAttributes {
+    repeated        string      Hosts	            =1;
+	repeated        string      Gateways	        =2;
+	repeated        Http        Http		        =3;
+	repeated        Tls         Tls			        =4;
+	repeated        Tcp         Tcp 		        =5;
+}
+message Http {
+    string                      Name 		        =1;
+    HttpMatchRequest            MatchRequest        =2;
+	HttpRoute			        Route               =3;
+	HttpRedirect		        HttpRedirect        =4;
+	HttpRewrite			        HttpRewrite         =5;
+	string                      Timeout			    =6;
+    HttpRetry				    Retry               =7;
+    HttpFaultInjection		    FaultInjection      =8;
+    HttpCorsPolicy 			    CorsPolicy          =9;
+}
+
+message HttpMatchRequest {
+    string                      Name				=1;
+    HttpMatch                   Uri					=2;
+    HttpMatch                   Scheme				=3;
+    HttpMatch                   Method				=4;
+    HttpMatch                   Authority 			=5;
+}
+message  HttpMatch {
+    string                      Type				 =1;
+    string                      Value				 =2;
+}
+message HttpRoute {
+    HttpRouteDestination        Routes			    =1;
+	int64                       Weight				=2;
+}
+message HttpRouteDestination {
+    int64                       Port 			    =1;
+    string                      Host				=2;
+    string                      Subset				=3;
+}
+message HttpRedirect {
+    string                      Uri				    =1;
+    string                      Authority			=2;
+    int64                       RedirectCode		=3;
+}
+message HttpRewrite {
+    string                      Uri					=1;
+    string                      Authority			=2;
+}
+message HttpRetry {
+    int64                       TotalAttempts		=1;
+    string                      PerTryTimeOut		=2;
+    string                      RetryOn				=3;
+}
+message  HttpFaultInjection {
+    string                      DelayType		    =1;
+    string                      DelayValue			=2;
+    float                       FaultPercentage		=3;
+    string                      AbortErrorValue		=4;
+    float                       AbortPercentage	    =5;
+}
+message HttpCorsPolicy{
+    repeated          string    AllowOrigin         =1;
+    repeated          string    AllMethod			=2;
+	repeated          string    AllowHeaders		=3;
+	repeated          string    ExposeHeaders		=4;
+	string                      MaxAge				=5;
+	bool                        AllowCrentials		=6;
+}
+
+message Tls{
+    repeated    TcpMatchRequest  Match 				=1;
+    repeated    TcpRoutes        Routes				=2;
+}
+message TlsMatchAttribute{
+    repeated        string      SniHosts			=1;
+	repeated        string      DestinationSubnets	=2;
+	int64                       Port				=3;
+	string                      SourceSubnet		=4;
+	repeated        string      Gateways			=5;
+}
+message TlsRoute{
+    RouteDestination		    RouteDestination    =1;
+    int64                         Weight				=2;
+}
+message RouteDestination{
+    string                      Host			    =1;
+    string                      Subnet				=2;
+    int64                       Port				=3;
+}
+message Tcp{
+    repeated        TcpMatchRequest Match 				=1;
+	repeated        TcpRoutes       Routes				=2;
+}
+message TcpMatchRequest {
+    repeated          string    DestinationSubnets	=1;
+    int64                       Port				=2;
+    string                      SourceSubnet		=3;
+    SourceLabel				    SourceLabels        =4;
+    repeated          string    Gateways			=5;
+}
+message SourceLabel{
+    string                      Key					=1;
+}
+message TcpRoutes {
+    RouteDestination              Destination = 1;
+    int64                         Weight = 2;
+}
+
