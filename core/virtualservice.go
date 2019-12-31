@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
+	types "github.com/gogo/protobuf/types"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"istio.io/api/networking/v1alpha3"
 	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	"net/http"
 	"strings"
 )
 
@@ -254,52 +256,110 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	vServ.APIVersion = "networking.v.io/v1alpha3"
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
+
 	vService := v1alpha3.VirtualService{}
-	for i, _ := range input.ServiceAttributes.Hosts {
-		vService.Hosts[i] = input.ServiceAttributes.Hosts[i]
-	}
-	for i, _ := range input.ServiceAttributes.Gateways {
-		vService.Gateways[i] = input.ServiceAttributes.Gateways[i]
+	vService.Hosts= input.ServiceAttributes.Hosts
+	vService.Gateways=input.ServiceAttributes.Gateways
 
-	}
-	for i, _ := range input.ServiceAttributes.Http {
-		vService.Http[i].Name = input.ServiceAttributes.Http[i].Name
-		vService.Http[i].CorsPolicy.AllowOrigin = input.ServiceAttributes.Http[i].CorsPolicy.AllowOrigin
-		vService.Http[i].CorsPolicy.AllowMethods = input.ServiceAttributes.Http[i].CorsPolicy.AllMethod
-		vService.Http[i].CorsPolicy.AllowHeaders = input.ServiceAttributes.Http[i].CorsPolicy.AllowHeaders
-		vService.Http[i].CorsPolicy.ExposeHeaders = input.ServiceAttributes.Http[i].CorsPolicy.ExposeHeaders
-		vService.Http[i].CorsPolicy.MaxAge = input.ServiceAttributes.Http[i].CorsPolicy.MaxAge
-		vService.Http[i].CorsPolicy.AllowCredentials = input.ServiceAttributes.Http[i].CorsPolicy.AllowCrentials
 
-	}
-	vService.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+	for _,http := range input.ServiceAttributes.Http {
+		vSer := v1alpha3.HTTPRoute{}
+		vSer.Name = http.Name
+		for i, match := range http.MatchRequest {
+			vSer.Match[i] = &v1alpha3.HTTPMatchRequest{}
+			vSer.Match[i].Name = match.Name
+			vSer.Match[i].Uri.MatchType = match.Uri.Type
+			vSer.Match[i].Scheme = match.Scheme
+			vSer.Match[i].Method = match.Method
+			vSer.Match[i].Authority = match.Authority
 		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
+		for i, route := range http.Route {
+			vSer.Route[i] = &v1alpha3.HTTPRouteDestination{}
+			vSer.Route[i].Destination.Port.Number = uint32(route.Routes.Port)
+			vSer.Route[i].Destination.Host = route.Routes.Host
+			vSer.Route[i].Destination.Subset = route.Routes.Subset
+			vSer.Route[i].Weight = route.Weight
 		}
-		server.Hosts = serverInput.Hosts
-		vService.Servers = append(vService.Servers, server)
+
+		vSer.Redirect = &v1alpha3.HTTPRedirect{}
+		vSer.Redirect.Uri = http.HttpRedirect.Uri
+		vSer.Redirect.Authority = http.HttpRedirect.Authority
+		vSer.Redirect.RedirectCode = uint32(http.HttpRedirect.RedirectCode)
+
+		vSer.Rewrite = &v1alpha3.HTTPRewrite{}
+		vSer.Rewrite.Uri = http.HttpRewrite.Uri
+		vSer.Rewrite.Authority = http.HttpRewrite.Authority
+
+		vSer.Timeout.Seconds = http.Timeout
+
+		vSer.Retries = &v1alpha3.HTTPRetry{}
+		vSer.Retries.Attempts = http.Retry.TotalAttempts
+		vSer.Retries.PerTryTimeout.Seconds = http.Retry.PerTryTimeout
+		vSer.Retries.RetryOn = http.Retry.RetryOn
+
+		vSer.Fault = &v1alpha3.HTTPFaultInjection{}
+		vSer.Fault.Abort.ErrorType = http.FaultInjection.AbortErrorValue
+		vSer.Fault.Abort.Percentage.Value = float64(http.FaultInjection.AbortPercentage)
+		vSer.Fault.Delay.HttpDelayType = http.FaultInjection.DelayType
+		vSer.Fault.Delay.Percentage.Value = float64(http.FaultInjection.DelayValue)
+
+		//vService.Http[i].Mirror.Subset=http.Route.Routes.Subset
+		//vService.Http[i].Mirror.Host=http.Route.Routes.Host
+		//vService.Http[i].Mirror.Port.Number=uint32(http.Route.Routes.Port)
+
+		vSer.CorsPolicy = &v1alpha3.CorsPolicy{}
+		vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
+		vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllMethod
+		vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
+		vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
+		vSer.CorsPolicy.MaxAge.Seconds = http.CorsPolicy.MaxAge
+		vSer.CorsPolicy.AllowCredentials.Value = http.CorsPolicy.AllowCredentials
 	}
-	vServ.Spec = vService
+
+
+
+	for i,serv := range input.ServiceAttributes.Tls {
+		tls := v1alpha3.TLSRoute{}
+		for i,match :=range serv.Match{
+			tls.Match[i] = &v1alpha3.TLSMatchAttributes{}
+			tls.Match[i].SniHosts =match.SniHosts
+			tls.Match[i].DestinationSubnets= match.DestinationSubnets
+			tls.Match[i].Gateways = match.Gateways
+			tls.Match[i].Port =  uint32(match.Port)
+			tls.Match[i].SourceSubnet =  match.SourceSubnet
+		}
+
+		for i,route :=range serv.Routes{
+			tls.Route[i] := &v1alpha3.RouteDestination{}
+			tls.Route[i].Weight = route.Weight
+			tls.Route[i].Destination.Port.Number=uint32(route.RouteDestination.Port)
+			tls.Route[i].Destination.Subset=route.RouteDestination.Subnet
+			tls.Route[i].Destination.Host=route.RouteDestination.Host
+		}
+	}
+
+	for i,serv := range input.ServiceAttributes.Tcp {
+		tcp := v1alpha3.TCPRoute{}
+		for i,match :=range serv.Match{
+			tcp.Match[i] = &v1alpha3.L4MatchAttributes{}
+			tcp.Match[i].SourceLabels =match.SourceLabels
+			tcp.Match[i].DestinationSubnets= match.DestinationSubnets
+			tcp.Match[i].Gateways = match.Gateways
+			tcp.Match[i].Port =  uint32(match.Port)
+			tcp.Match[i].SourceSubnet =  match.SourceSubnet
+		}
+
+		for i,route :=range serv.Routes{
+			tls.Route[i] := &v1alpha3.RouteDestination{}
+			tls.Route[i].Weight = route.Weight
+			tls.Route[i].Destination.Port.Number=uint32(route.RouteDestination.Port)
+			tls.Route[i].Destination.Subset=route.RouteDestination.Subnet
+			tls.Route[i].Destination.Host=route.RouteDestination.Host
+		}
+	}
 	return vServ, nil
 }
-func getIstioGatewaySpec() (v1alpha3.VirtualService, error) {
+func getVirtualServiceSpec() (v1alpha3.VirtualService, error) {
 
 	vService := v1alpha3.Gateway{}
 	var hosts []string
