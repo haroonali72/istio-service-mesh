@@ -3,6 +3,7 @@ syntax = "proto3";
 package proto;
 
 import "serviceresponse.proto";
+import "google/protobuf/any.proto";
 
 service Clusterrole {
    rpc CreateClusterRole (ClusterRole) returns (ServiceResponse) {}
@@ -20,7 +21,7 @@ message ClusterRole {
    string service_sub_type = 5;
    string status = 6;
    string token = 7;
-   repeated string service_dependency_info = 8;
+   google.protobuf.Any service_dependency_info = 8;
    ClusterRoleSvcAttr service_attributes = 9;
    string company_id = 10;
    string version = 11;

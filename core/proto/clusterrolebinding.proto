@@ -3,6 +3,7 @@ syntax = "proto3";
 package proto;
 
 import "serviceresponse.proto";
+import "google/protobuf/any.proto";
 
 service Clusterrolebinding {
    rpc CreateClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
@@ -20,7 +21,7 @@ message ClusterRoleBinding {
    string service_sub_type = 5;
    string status = 6;
    string token = 7;
-   repeated string service_dependency_info = 8;
+   google.protobuf.Any service_dependency_info = 8;
    ClusterRoleBindingSvcAttr service_attributes = 9;
    string company_id = 10;
    string version = 11;
