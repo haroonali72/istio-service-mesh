@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (s *Server) CreateRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -57,7 +57,7 @@ func (s *Server) CreateRoleBinding(ctx context.Context, req *pb.RoleBindingServi
 	return serviceResp, nil
 
 }
-func (s *Server) GetRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) GetRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -101,7 +101,7 @@ func (s *Server) GetRoleBinding(ctx context.Context, req *pb.RoleBindingService)
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -146,7 +146,7 @@ func (s *Server) DeleteRoleBinding(ctx context.Context, req *pb.RoleBindingServi
 
 	return serviceResp, nil
 }
-func (s *Server) PatchRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -191,7 +191,7 @@ func (s *Server) PatchRoleBinding(ctx context.Context, req *pb.RoleBindingServic
 
 	return serviceResp, nil
 }
-func (s *Server) PutRoleBinding(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
+func (s *Server) PutRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -245,6 +245,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	roleBind.Kind = "RoleBinding"
 	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
 	roleBind.Name = input.Name
+	roleBind.Namespace = input.Namespace
 	roleBind.Labels = labels
 
 	for _, subject := range input.ServiceAttributes.Subjects {

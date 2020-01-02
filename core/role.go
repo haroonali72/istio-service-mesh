@@ -12,7 +12,7 @@ import (
 	"istio-service-mesh/utils"
 )
 
-func (s *Server) CreateRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -58,7 +58,7 @@ func (s *Server) CreateRole(ctx context.Context, req *pb.RoleService) (*pb.Servi
 	return serviceResp, nil
 
 }
-func (s *Server) GetRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
+func (s *Server) GetRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -103,7 +103,7 @@ func (s *Server) GetRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceR
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -147,7 +147,7 @@ func (s *Server) DeleteRole(ctx context.Context, req *pb.RoleService) (*pb.Servi
 
 	return serviceResp, nil
 }
-func (s *Server) PatchRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -192,7 +192,7 @@ func (s *Server) PatchRole(ctx context.Context, req *pb.RoleService) (*pb.Servic
 
 	return serviceResp, nil
 }
-func (s *Server) PutRole(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
+func (s *Server) PutRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -247,6 +247,7 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 	role.Kind = "Role"
 	role.APIVersion = "rbac.authorization.k8s.io/v1"
 	role.Name = input.Name
+	role.Namespace = input.Namespace
 	role.Labels = labels
 
 	for _, rule := range input.ServiceAttribute.Rules {

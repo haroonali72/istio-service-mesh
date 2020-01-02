@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (s *Server) CreateServiceAccount(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateServiceAccountService(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -57,7 +57,7 @@ func (s *Server) CreateServiceAccount(ctx context.Context, req *pb.ServiceAccoun
 	return serviceResp, nil
 
 }
-func (s *Server) GetServiceAccount(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
+func (s *Server) GetServiceAccountService(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -102,7 +102,7 @@ func (s *Server) GetServiceAccount(ctx context.Context, req *pb.ServiceAccountSe
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteServiceAccount(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteServiceAccountService(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -147,7 +147,7 @@ func (s *Server) DeleteServiceAccount(ctx context.Context, req *pb.ServiceAccoun
 
 	return serviceResp, nil
 }
-func (s *Server) PatchServiceAccount(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchServiceAccountService(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -192,7 +192,7 @@ func (s *Server) PatchServiceAccount(ctx context.Context, req *pb.ServiceAccount
 
 	return serviceResp, nil
 }
-func (s *Server) PutServiceAccount(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
+func (s *Server) PutServiceAccountService(ctx context.Context, req *pb.ServiceAccountService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
