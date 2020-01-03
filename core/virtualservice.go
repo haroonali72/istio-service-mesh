@@ -3,14 +3,14 @@ package core
 import (
 	"context"
 	"encoding/json"
+	types "github.com/gogo/protobuf/types"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	types "github.com/gogo/protobuf/types"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"istio.io/api/networking/v1alpha3"
 	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -258,21 +258,95 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	vServ.Namespace = input.Namespace
 
 	vService := v1alpha3.VirtualService{}
-	vService.Hosts= input.ServiceAttributes.Hosts
-	vService.Gateways=input.ServiceAttributes.Gateways
+	vService.Hosts = input.ServiceAttributes.Hosts
+	vService.Gateways = input.ServiceAttributes.Gateways
 
-
-	for _,http := range input.ServiceAttributes.Http {
+	for _, http := range input.ServiceAttributes.Http {
 		vSer := v1alpha3.HTTPRoute{}
 		vSer.Name = http.Name
 		for i, match := range http.MatchRequest {
 			vSer.Match[i] = &v1alpha3.HTTPMatchRequest{}
 			vSer.Match[i].Name = match.Name
-			vSer.Match[i].Uri.MatchType = match.Uri.Type
-			vSer.Match[i].Scheme = match.Scheme
-			vSer.Match[i].Method = match.Method
-			vSer.Match[i].Authority = match.Authority
+			if match.Uri.Type == "prefix" {
+				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Prefix{
+						Prefix: match.Uri.Value,
+					},
+				}
+			} else if match.Uri.Type == "exact" {
+				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Exact{
+						Exact: match.Uri.Value,
+					},
+				}
+			} else if match.Uri.Type == "regex" {
+				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Regex{
+						Regex: match.Uri.Value,
+					},
+				}
+			}
+			if match.Scheme.Type == "prefix" {
+				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Prefix{
+						Prefix: match.Scheme.Value,
+					},
+				}
+			} else if match.Scheme.Type == "exact" {
+				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Exact{
+						Exact: match.Scheme.Value,
+					},
+				}
+			} else if match.Scheme.Type == "regex" {
+				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Regex{
+						Regex: match.Scheme.Value,
+					},
+				}
+			}
+
+			if match.Method.Type == "prefix" {
+				vSer.Match[i].Method = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Prefix{
+						Prefix: match.Method.Value,
+					},
+				}
+			} else if match.Method.Type == "exact" {
+				vSer.Match[i].Method = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Exact{
+						Exact: match.Method.Value,
+					},
+				}
+			} else if match.Method.Type == "regex" {
+				vSer.Match[i].Method = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Regex{
+						Regex: match.Method.Value,
+					},
+				}
+			}
+			if match.Authority.Type == "prefix" {
+				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Prefix{
+						Prefix: match.Authority.Value,
+					},
+				}
+			} else if match.Authority.Type == "exact" {
+				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Exact{
+						Exact: match.Authority.Value,
+					},
+				}
+			} else if match.Authority.Type == "regex" {
+				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+					MatchType: &v1alpha3.StringMatch_Regex{
+						Regex: match.Authority.Value,
+					},
+				}
+			}
+
 		}
+
 		for i, route := range http.Route {
 			vSer.Route[i] = &v1alpha3.HTTPRouteDestination{}
 			vSer.Route[i].Destination.Port.Number = uint32(route.Routes.Port)
@@ -298,14 +372,34 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		vSer.Retries.RetryOn = http.Retry.RetryOn
 
 		vSer.Fault = &v1alpha3.HTTPFaultInjection{}
-		vSer.Fault.Abort.ErrorType = http.FaultInjection.AbortErrorValue
-		vSer.Fault.Abort.Percentage.Value = float64(http.FaultInjection.AbortPercentage)
-		vSer.Fault.Delay.HttpDelayType = http.FaultInjection.DelayType
-		vSer.Fault.Delay.Percentage.Value = float64(http.FaultInjection.DelayValue)
-
-		//vService.Http[i].Mirror.Subset=http.Route.Routes.Subset
-		//vService.Http[i].Mirror.Host=http.Route.Routes.Host
-		//vService.Http[i].Mirror.Port.Number=uint32(http.Route.Routes.Port)
+		if http.FaultInjection.DelayType == "fixed_delay" {
+			vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
+				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
+					FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+				},
+			}
+		} else if http.FaultInjection.DelayType == "exponential_delay" {
+			vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
+				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
+					FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+				},
+				Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
+			}
+		}
+		value, _ := strconv.ParseInt(http.FaultInjection.AbortPercentage, 10, 32)
+		if http.FaultInjection.AbortErrorValue == "http_status" {
+			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
+			}
+		} else if http.FaultInjection.AbortErrorValue == "grpc_status" {
+			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortPercentage},
+			}
+		} else if http.FaultInjection.AbortErrorValue == "http2_status" {
+			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortPercentage},
+			}
+		}
 
 		vSer.CorsPolicy = &v1alpha3.CorsPolicy{}
 		vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
@@ -316,29 +410,28 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		vSer.CorsPolicy.AllowCredentials.Value = http.CorsPolicy.AllowCredentials
 	}
 
-
-
-	for i,serv := range input.ServiceAttributes.Tls {
+	for _, serv := range input.ServiceAttributes.Tls {
 		tls := v1alpha3.TLSRoute{}
-		for i,match :=range serv.Match{
+		for i, match := range serv.Match {
 			tls.Match[i] = &v1alpha3.TLSMatchAttributes{}
-			tls.Match[i].SniHosts =match.SniHosts
-			tls.Match[i].DestinationSubnets= match.DestinationSubnets
+			tls.Match[i].SniHosts = match.SniHosts
+			tls.Match[i].DestinationSubnets = match.DestinationSubnets
 			tls.Match[i].Gateways = match.Gateways
-			tls.Match[i].Port =  uint32(match.Port)
-			tls.Match[i].SourceSubnet =  match.SourceSubnet
+			tls.Match[i].Port = uint32(match.Port)
+			tls.Match[i].SourceSubnet = match.SourceSubnet
+
 		}
 
-		for i,route :=range serv.Routes{
-			tls.Route[i] := &v1alpha3.RouteDestination{}
+		for i, route := range serv.Routes {
+			//tls.Route[i] := &v1alpha3.RouteDestination{}
 			tls.Route[i].Weight = route.Weight
-			tls.Route[i].Destination.Port.Number=uint32(route.RouteDestination.Port)
-			tls.Route[i].Destination.Subset=route.RouteDestination.Subnet
-			tls.Route[i].Destination.Host=route.RouteDestination.Host
+			tls.Route[i].Destination.Port.Number = uint32(route.RouteDestination.Port)
+			tls.Route[i].Destination.Subset = route.RouteDestination.Subnet
+			tls.Route[i].Destination.Host = route.RouteDestination.Host
 		}
 	}
 
-	for i,serv := range input.ServiceAttributes.Tcp {
+	/*for_,serv := range input.ServiceAttributes.Tcp {
 		tcp := v1alpha3.TCPRoute{}
 		for i,match :=range serv.Match{
 			tcp.Match[i] = &v1alpha3.L4MatchAttributes{}
@@ -356,31 +449,13 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			tls.Route[i].Destination.Subset=route.RouteDestination.Subnet
 			tls.Route[i].Destination.Host=route.RouteDestination.Host
 		}
-	}
+	}*/
 	return vServ, nil
 }
 func getVirtualServiceSpec() (v1alpha3.VirtualService, error) {
 
-	vService := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
+	vService := v1alpha3.VirtualService{}
 
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	vService.Selector = selector
-	vService.Servers = servers
 	return vService, nil
 }
 
