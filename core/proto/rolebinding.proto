@@ -2,6 +2,7 @@ syntax= "proto3";
 
 package proto;
 import "service.proto";
+import "google/protobuf/any.proto";
 service RoleBinding{
     rpc CreateRoleBindingService(RoleBindingService) returns (ServiceResponse){}
     rpc GetRoleBindingService(RoleBindingService) returns (ServiceResponse){}
@@ -18,16 +19,16 @@ message RoleBindingService{
     string name = 5;
     string service_type= 6;
     string service_sub_type =7;
-    repeated string service_dependency_info=8;
+    google.protobuf.Any service_dependency_info=8;
     string namespace =9;
-    repeated string host_name=10;
-    string version =11;
-    RoleBServiceAttributee service_attributes =12;
+    string version =10;
+    RoleBServiceAttributee service_attributes =11;
 }
 
 message RoleBServiceAttributee {
     repeated RoleBSubject subjects=1;
     RoleBReference reference=2;
+    repeated string host_name=3;
 }
 
 message RoleBSubject{
