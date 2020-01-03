@@ -255,9 +255,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		sub.APIGroup = subject.ApiGroup
 		roleBind.Subjects = append(roleBind.Subjects, sub)
 	}
-	for _, host := range input.ServiceAttributes.Hosts {
-		roleBind.Hosts = append(roleBind.Hosts, host)
-	}
+
 	roleBind.RoleRef.Kind = input.ServiceAttributes.Reference.Kind
 	roleBind.RoleRef.Name = input.ServiceAttributes.Reference.Name
 	roleBind.RoleRef.APIGroup = input.ServiceAttributes.Reference.ApiGroup
