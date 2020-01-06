@@ -122,7 +122,7 @@ message TcpMatchRequest {
     repeated          string    destination_subnets	 =1;
     int32                       port				 =2;
     string                      source_subnet		 =3;
-    SourceLabel				    Source_labels        =4;
+    map<string,string>			Source_labels        =4;
     repeated          string    gateways			 =5;
 }
 message SourceLabel{

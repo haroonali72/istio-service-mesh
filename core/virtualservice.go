@@ -344,10 +344,10 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 					},
 				}
 			}
-
+			vService.Http = append(vService.Http, &vSer)
 		}
 
-		for i, route := range http.Route {
+		for i, route := range http.HttpRoute {
 			vSer.Route[i] = &v1alpha3.HTTPRouteDestination{}
 			vSer.Route[i].Destination.Port.Number = uint32(route.Routes.Port)
 			vSer.Route[i].Destination.Host = route.Routes.Host
@@ -364,12 +364,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		vSer.Rewrite.Uri = http.HttpRewrite.Uri
 		vSer.Rewrite.Authority = http.HttpRewrite.Authority
 
-		vSer.Timeout.Seconds = http.Timeout
-
-		vSer.Retries = &v1alpha3.HTTPRetry{}
-		vSer.Retries.Attempts = http.Retry.TotalAttempts
-		vSer.Retries.PerTryTimeout.Seconds = http.Retry.PerTryTimeout
-		vSer.Retries.RetryOn = http.Retry.RetryOn
+		vSer.Timeout = &types.Duration{Seconds: http.Timeout}
 
 		vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 		if http.FaultInjection.DelayType == "fixed_delay" {
@@ -406,8 +401,10 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllMethod
 		vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
 		vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
-		vSer.CorsPolicy.MaxAge.Seconds = http.CorsPolicy.MaxAge
-		vSer.CorsPolicy.AllowCredentials.Value = http.CorsPolicy.AllowCredentials
+		vSer.CorsPolicy.MaxAge = &types.Duration{Seconds: http.CorsPolicy.MaxAge}
+		vSer.CorsPolicy.AllowCredentials = &types.BoolValue{Value: http.CorsPolicy.AllowCredentials}
+
+		vService.Http = append(vService.Http, &vSer)
 	}
 
 	for _, serv := range input.ServiceAttributes.Tls {
@@ -429,27 +426,30 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			tls.Route[i].Destination.Subset = route.RouteDestination.Subnet
 			tls.Route[i].Destination.Host = route.RouteDestination.Host
 		}
+		vService.Tls = append(vService.Tls, &tls)
 	}
 
-	/*for_,serv := range input.ServiceAttributes.Tcp {
+	for _, serv := range input.ServiceAttributes.Tcp {
 		tcp := v1alpha3.TCPRoute{}
-		for i,match :=range serv.Match{
+		for i, match := range serv.Match {
 			tcp.Match[i] = &v1alpha3.L4MatchAttributes{}
-			tcp.Match[i].SourceLabels =match.SourceLabels
-			tcp.Match[i].DestinationSubnets= match.DestinationSubnets
+			tcp.Match[i].SourceLabels = match.SourceLabels
+			tcp.Match[i].DestinationSubnets = match.DestinationSubnets
 			tcp.Match[i].Gateways = match.Gateways
-			tcp.Match[i].Port =  uint32(match.Port)
-			tcp.Match[i].SourceSubnet =  match.SourceSubnet
+			tcp.Match[i].Port = uint32(match.Port)
+			tcp.Match[i].SourceSubnet = match.SourceSubnet
 		}
 
-		for i,route :=range serv.Routes{
-			tls.Route[i] := &v1alpha3.RouteDestination{}
-			tls.Route[i].Weight = route.Weight
-			tls.Route[i].Destination.Port.Number=uint32(route.RouteDestination.Port)
-			tls.Route[i].Destination.Subset=route.RouteDestination.Subnet
-			tls.Route[i].Destination.Host=route.RouteDestination.Host
+		for _, route := range serv.Routes {
+			destination := &v1alpha3.RouteDestination{}
+			destination.Weight = route.Weight
+			destination.Destination.Port.Number = uint32(route.Destination.Port)
+			destination.Destination.Subset = route.Destination.Subnet
+			destination.Destination.Host = route.Destination.Host
+			tcp.Route = append(tcp.Route, destination)
 		}
-	}*/
+		vService.Tcp = append(vService.Tcp, &tcp)
+	}
 	return vServ, nil
 }
 func getVirtualServiceSpec() (v1alpha3.VirtualService, error) {

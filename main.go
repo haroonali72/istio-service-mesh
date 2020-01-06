@@ -70,7 +70,6 @@ func main() {
 	}
 	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	svc := &core.Server{}
-	//pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterVirtualServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
