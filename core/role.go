@@ -249,7 +249,7 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 	role.Name = input.Name
 	role.Namespace = input.Namespace
 	role.Labels = labels
-
+	role.ResourceVersion = input.Version
 	for _, rule := range input.ServiceAttribute.Rules {
 		var policyRule v1.PolicyRule
 		for _, apigroup := range rule.ApiGroups {
@@ -261,7 +261,6 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 		}
 
 		for _, resource := range rule.Resources {
-			policyRule.ResourceNames = append(policyRule.ResourceNames, resource)
 			policyRule.Resources = append(policyRule.Resources, resource)
 		}
 
