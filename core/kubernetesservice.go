@@ -240,7 +240,7 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	var kube = new(kb.Service)
 	kube.Kind = "Service"
-	kube.APIVersion = "golang.org/x/build/kubernetes/api"
+	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace
 	kube.ResourceVersion = input.Version
@@ -255,7 +255,7 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 		spec.Port = int(port.Port)
 		spec.Protocol = kb.Protocol(port.Protocol)
 		spec.NodePort = int(port.NodePort)
-		g := kb.IntOrString{IntVal: int(port.TargetPort), StrVal: string(port.TargetPort), Kind: kb.IntstrKind(1)}
+		g := kb.IntOrString{IntVal: int(port.TargetPort), Kind: kb.IntstrKind(1)}
 		spec.TargetPort = g
 		kube.Spec.Ports = append(kube.Spec.Ports, spec)
 	}

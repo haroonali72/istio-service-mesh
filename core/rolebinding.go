@@ -243,7 +243,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	roleBind.Kind = "RoleBinding"
-	roleBind.APIVersion = "v1"
+	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
 	roleBind.Name = input.Name
 	roleBind.Namespace = input.Namespace
 	roleBind.Labels = labels
