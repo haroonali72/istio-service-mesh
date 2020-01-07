@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package proto;
+import "service.proto";
+
+service DRules{
+    rpc CreateDestinationRules (DestinationRules) returns (ServiceResponse) {}
+    rpc GetDestinationRules (DestinationRules) returns (ServiceResponse) {}
+    rpc DeleteDestinationRules (DestinationRules) returns (ServiceResponse) {}
+    rpc PatchDestinationRules (DestinationRules) returns (ServiceResponse) {}
+    rpc PutDestinationRules (DestinationRules) returns (ServiceResponse) {}
+}
+
+
+message DestinationRules {
+    string                      project_id          =1;
+    string                      service_id          =2;
+    string                      company_id          =3;
+    string                      name                =4;
+    string                      service_type        =5;
+    string                      service_sub_type    =6;
+    string                      namespace           =7;
+    string                      token               =8;
+
+    DRAttributes                service_attributes  =10;
+}
+message DRAttributes {
+    string                      host	            =1;
+    TrafficPolicy               traffic_policy	    =2;
+    repeated Subset             subsets		        =3;
+    }
+message TrafficPolicy {
+    string                      name 		         =1;
+    LoadBalancer                load_balancer        =2;
+    repeated PortLevelSetting	port_level_settings  =3;
+    ConnectionPool			    connection_pool      =4;
+    OutlierDetection            outlier_detection    =5;
+    DRTls				            tls                  =6;
+}
+
+message LoadBalancer {
+    int32                      simple				 =1;
+    ConsistentHash              consistent_hash		 =2;
+}
+message  ConsistentHash {
+    string                      http_header_name	  =1;
+    bool                        use_source_ip 		  =2;
+    string                      minimum_ring_size     =3;
+    HttpCookie                  http_cookie           =4;
+}
+message HttpCookie  {
+    string                      name			      =1;
+    string                      path			      =2;
+    int64                      ttl                   =3;
+}
+message  PortLevelSetting {
+    Port                      port 			          =1;
+    LoadBalancer              load_balancer			  =2;
+    ConnectionPool            connection_pool	      =3;
+    OutlierDetection          outlier_detection       =4;
+    DRTls                       tls                     =5;
+}
+message  Port  {
+    int32                      number         		  =1;
+}
+message  ConnectionPool {
+    DRTcp                      tcp					  =1;
+    DRHttp                     http			          =2;
+}
+message DRTcp {
+    int32                     max_connections 	      =1;
+    TcpKeepalive              tcp_keep_alive		  =2;
+    int64                    connect_timeout		  =3;
+}
+message  TcpKeepalive {
+    int64                    time                     =1;
+    int64                    interval                 =2;
+    uint32                     probes                   =3;
+}
+message DRHttp{
+    int32                     http_1_max_pending_requests =1;
+    int32                     http_2_max_requests         =2;
+    int32                     max_requests_per_connection =3;
+    int32                     max_retries                 =4;
+    int32                     idle_timeout                =5;
+    int32                     connection_pool_settings_http_settings_h2_upgrade_policy   =6;
+}
+
+message  OutlierDetection{
+    int32                    consecutive_errors        =1;
+    int64                    interval				    =2;
+    int64                    base_ejection_time        =3;
+    int32                    max_ejection_percent      =4;
+    int32                    min_health_percent        =5;
+}
+message Subset{
+    repeated    string        name      			    =1;
+    repeated    Labels        labels	                =2;
+    TrafficPolicy             traffic_policy		    =3;
+}
+message Labels{
+    string		              version                   =1;
+}
+message DRTls{
+    int32                     mode			            =1;
+    string                    client_certificate	    =2;
+    string                     private_key		        =3;
+    string                    ca_certificate            =4;
+    string                    subject_alt_names         =5;
+    repeated string           name                      =6;
+}
