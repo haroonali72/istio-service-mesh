@@ -1,23 +1,19 @@
 package core
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	cor "k8s.io/api/core/v1"
+	net "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -25,7 +21,7 @@ func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.Persis
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getPersistentVolumeClaim(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -77,14 +73,14 @@ func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.Persis
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) GetNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getPersistentVolumeClaim(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -123,14 +119,14 @@ func (s *Server) GetPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 
 	return serviceResp, nil
 }
-func (s *Server) DeletePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getPersistentVolumeClaim(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -169,14 +165,14 @@ func (s *Server) DeletePersistentVolumeClaim(ctx context.Context, req *pb.Persis
 
 	return serviceResp, nil
 }
-func (s *Server) PatchPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getPersistentVolumeClaim(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -215,14 +211,14 @@ func (s *Server) PatchPersistentVolumeClaim(ctx context.Context, req *pb.Persist
 
 	return serviceResp, nil
 }
-func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) PutNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getPersistentVolumeClaim(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -262,90 +258,140 @@ func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 	return serviceResp, nil
 }
 
-func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.PersistentVolumeClaim, error) {
-	var pvc = new(core.PersistentVolumeClaim)
-	m := jsonpb.Marshaler{
-		EnumsAsInts:  false,
-		EmitDefaults: false,
-		Indent:       "",
-		OrigName:     false,
-		AnyResolver:  nil,
-	}
-	var b bytes.Buffer
-	foo := bufio.NewWriter(&b)
-	err := m.Marshal(foo, input)
-	if err != nil {
-		fmt.Println(err)
-	}
-	pvc.Name = input.Name
-	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
-	pvc.TypeMeta.APIVersion = "v1"
-	pvc.Namespace = input.Namespace
-	if input.ServiceAttributes.StorageClassName != "" {
-		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
-	} else if input.ServiceAttributes.VolumeName != "" {
-		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
-		//label selector applied
-		lenl := len(input.ServiceAttributes.LabelSelector.MatchLabel)
-		lene := len(input.ServiceAttributes.LabelSelector.MatchExpression)
-
-		if (!(lenl > 0)) && lene > 0 {
-
-			pvc.Spec.Selector = &metav1.LabelSelector{nil, nil}
-		} else if lene > 0 || lenl > 0 {
-			pvc.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
-
+func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error) {
+	var np = new(net.NetworkPolicy)
+	np.Name = input.Name
+	np.TypeMeta.Kind = "NetworkPolicy"
+	np.TypeMeta.APIVersion = "networking.k8s.io/v1"
+	np.Namespace = input.Namespace
+	if ls, err := getLabelSelector(input.ServiceAttributes.PodSelector); err == nil {
+		if ls != nil {
+			np.Spec.PodSelector = *ls
 		}
-
-		for k, v := range input.ServiceAttributes.LabelSelector.MatchLabel {
-			pvc.Spec.Selector.MatchLabels[k] = v
-		}
-		for i := 0; i < len(input.ServiceAttributes.LabelSelector.MatchExpression); i++ {
-			if len(input.ServiceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
-				byteData, err := json.Marshal(input.ServiceAttributes.LabelSelector.MatchExpression[i])
+	} else {
+		utils.Error.Println(err)
+	}
+	var err error
+	if len(input.ServiceAttributes.Ingress) > 0 {
+		for _, each := range input.ServiceAttributes.Ingress {
+			temp := net.NetworkPolicyIngressRule{}
+			for _, each2 := range each.From {
+				temp2 := net.NetworkPolicyPeer{}
+				temp2.PodSelector, err = getLabelSelector(each2.PodSelector)
 				if err != nil {
 					return nil, err
 				}
-				var temp metav1.LabelSelectorRequirement
-
-				err = json.Unmarshal(byteData, &temp)
+				temp2.NamespaceSelector, err = getLabelSelector(each2.NamespaceSelector)
 				if err != nil {
 					return nil, err
 				}
-				pvc.Spec.Selector.MatchExpressions = append(pvc.Spec.Selector.MatchExpressions, temp)
+				temp2.IPBlock = new(net.IPBlock)
+				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+				temp2.IPBlock.Except = each2.IpBlock.Except
+				temp.From = append(temp.From, temp2)
 			}
-		}
-	}
-	for _, each := range input.ServiceAttributes.AccessMode {
-		if each == pb.AccessMode_ReadOnlyMany {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadOnlyMany)
-		} else if each == pb.AccessMode_ReadWriteMany {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteMany)
-		} else if each == pb.AccessMode_ReadWriteOnce {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteOnce)
-		}
-	}
-	if input.ServiceAttributes.RequestQuantity != "" {
-		quantity, err := resource.ParseQuantity(input.ServiceAttributes.RequestQuantity)
-		if err != nil {
-			return nil, errors.New("invalid storage capacity ")
-		}
-		pvc.Spec.Resources.Requests = make(map[core.ResourceName]resource.Quantity)
+			for _, each2 := range each.Ports {
+				temp2 := net.NetworkPolicyPort{}
+				if each2.Port.PortName != "" {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				} else {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				}
+				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
+					tcp := cor.ProtocolSCTP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_UDP.String() {
+					tcp := cor.ProtocolUDP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_TCP.String() {
+					tcp := cor.ProtocolTCP
+					temp2.Protocol = &tcp
+				}
 
-		pvc.Spec.Resources.Requests["storage"] = quantity
-	}
-	if input.ServiceAttributes.LimitQuantity != "" {
-		quantity, err := resource.ParseQuantity(input.ServiceAttributes.LimitQuantity)
-		if err != nil {
-			return nil, errors.New("invalid storage capacity ")
+				temp.Ports = append(temp.Ports, temp2)
+			}
+			np.Spec.Ingress = append(np.Spec.Ingress, temp)
 		}
-		pvc.Spec.Resources.Limits = make(map[core.ResourceName]resource.Quantity)
-
-		pvc.Spec.Resources.Limits["storage"] = quantity
+		np.Spec.PolicyTypes = append(np.Spec.PolicyTypes, net.PolicyTypeIngress)
 	}
+	if len(input.ServiceAttributes.Egress) > 0 {
 
-	return pvc, nil
+		for _, each := range input.ServiceAttributes.Egress {
+			temp := net.NetworkPolicyEgressRule{}
+			for _, each2 := range each.To {
+				temp2 := net.NetworkPolicyPeer{}
+				temp2.PodSelector, err = getLabelSelector(each2.PodSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.NamespaceSelector, err = getLabelSelector(each2.NamespaceSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.IPBlock = new(net.IPBlock)
+				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+				temp2.IPBlock.Except = each2.IpBlock.Except
+				temp.To = append(temp.To, temp2)
+			}
+			for _, each2 := range each.Ports {
+				temp2 := net.NetworkPolicyPort{}
+				if each2.Port.PortName != "" {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				} else {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				}
+				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
+					tcp := cor.ProtocolSCTP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_UDP.String() {
+					tcp := cor.ProtocolUDP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_TCP.String() {
+					tcp := cor.ProtocolTCP
+					temp2.Protocol = &tcp
+				}
+
+				temp.Ports = append(temp.Ports, temp2)
+			}
+			np.Spec.Egress = append(np.Spec.Egress, temp)
+		}
+		np.Spec.PolicyTypes = append(np.Spec.PolicyTypes, net.PolicyTypeEgress)
+	}
+	return np, nil
+}
+
+func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, error) {
+	lenl := len(service.MatchLabel)
+	lene := len(service.MatchExpression)
+	if lene == 0 && lenl == 0 {
+		return nil, nil
+	}
+	ls := new(metav1.LabelSelector)
+
+	for k, v := range service.MatchLabel {
+		ls.MatchLabels[k] = v
+	}
+	for i := 0; i < len(service.MatchExpression); i++ {
+		if len(service.MatchExpression[i].Key) > 0 && (service.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
+			byteData, err := json.Marshal(service.MatchExpression[i])
+			if err != nil {
+				return nil, err
+			}
+			var temp metav1.LabelSelectorRequirement
+
+			err = json.Unmarshal(byteData, &temp)
+			if err != nil {
+				return nil, err
+			}
+			ls.MatchExpressions = append(ls.MatchExpressions, temp)
+		}
+	}
+	return ls, nil
 }

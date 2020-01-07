@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 import "storageclass.proto";
-import "gateway.proto";
+import "service.proto";
 service PersistentVolume {
     rpc CreatePersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
     rpc GetPersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
@@ -22,10 +22,7 @@ message PersistentVolumeService {
     string company_id = 8;
     PersistentVolumeAttributes service_attributes = 9;
 }
-message PersistentVolumeServiceResponse {
-    string error = 1;
-    PersistentVolumeService resp = 2;
-}
+
 message PersistentVolumeAttributes{
     map<string,string>  labels    =1;
     ReclaimPolicy reclaimPolicy =2;
@@ -40,10 +37,10 @@ message PersistentVolumeSource {
     AzureFile azureFile=4;
 }
 message GCPPD {
-    string pdName=1;
-    string fileSystem=2;
-    int64 partation=3;
-    bool readOnly=4;
+string pdName=1;
+string fileSystem=2;
+int64 partation=3;
+bool readOnly=4;
 }
 
 message AWSEBS {
