@@ -1,19 +1,24 @@
 package core
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	"k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) CreatDeployment(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -73,7 +78,7 @@ func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.Persis
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) GetDeployment(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -119,7 +124,7 @@ func (s *Server) GetPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 
 	return serviceResp, nil
 }
-func (s *Server) DeletePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteDeployment(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -165,7 +170,7 @@ func (s *Server) DeletePersistentVolumeClaim(ctx context.Context, req *pb.Persis
 
 	return serviceResp, nil
 }
-func (s *Server) PatchPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchDeployment(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -211,7 +216,7 @@ func (s *Server) PatchPersistentVolumeClaim(ctx context.Context, req *pb.Persist
 
 	return serviceResp, nil
 }
-func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
+func (s *Server) PutDeployment(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -258,77 +263,39 @@ func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 	return serviceResp, nil
 }
 
-func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.PersistentVolumeClaim, error) {
-	var pvc = new(core.PersistentVolumeClaim)
-	pvc.Name = input.Name
-	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
-	pvc.TypeMeta.APIVersion = "v1"
-	pvc.Namespace = input.Namespace
-	if input.ServiceAttributes.StorageClassName != "" {
-		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
-	} else if input.ServiceAttributes.VolumeName != "" {
-		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
-		//label selector applied
-		lenl := len(input.ServiceAttributes.LabelSelector.MatchLabel)
-		lene := len(input.ServiceAttributes.LabelSelector.MatchExpression)
+func getDeployment(input *pb.PersistentVolumeClaimService) (*v1.Deployment, error) {
+	var deploy = new(v1.Deployment)
 
-		if (!(lenl > 0)) && lene > 0 {
+	deploy.Name = input.Name
+	deploy.TypeMeta.Kind = "Deployment"
+	deploy.TypeMeta.APIVersion = "apps/v1"
+	deploy.Namespace = input.Namespace
+	deploy.Labels = make(map[string]string)
+	deploy.Labels["keel.sh/policy"] = "force"
+	deploy.Labels["version"] = input.Version
 
-			pvc.Spec.Selector = &metav1.LabelSelector{nil, nil}
-		} else if lene > 0 || lenl > 0 {
-			pvc.Spec.Selector = &metav1.LabelSelector{MatchLabels: make(map[string]string)}
+	//deploy.Labels=input.Labels
+	deploy.Annotations = make(map[string]string)
+	//deploy.Annotations=input.Annotations
+	deploy.Spec.Selector = new(metav1.LabelSelector)
+	deploy.Spec.Selector.MatchLabels = make(map[string]string)
+	//deploy.Spec.Selector.MatchLabels=input.Labels
+	deploy.Spec.Selector.MatchLabels["app"] = input.Name
+	deploy.Spec.Selector.MatchLabels["version"] = input.Version
+	deploy.Spec.Template.Labels = make(map[string]string)
+	//deploy.Spec.Template.Labels=input.Labels
+	deploy.Spec.Template.Labels["app"] = input.Name
+	deploy.Spec.Template.Labels["version"] = input.Version
 
+	deploy.Spec.Template.Annotations = make(map[string]string)
+	deploy.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
+
+	if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
+		if ls != nil {
+			//		deploy.Spec. = *ls
 		}
-
-		for k, v := range input.ServiceAttributes.LabelSelector.MatchLabel {
-			pvc.Spec.Selector.MatchLabels[k] = v
-		}
-		for i := 0; i < len(input.ServiceAttributes.LabelSelector.MatchExpression); i++ {
-			if len(input.ServiceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
-				byteData, err := json.Marshal(input.ServiceAttributes.LabelSelector.MatchExpression[i])
-				if err != nil {
-					return nil, err
-				}
-				var temp metav1.LabelSelectorRequirement
-
-				err = json.Unmarshal(byteData, &temp)
-				if err != nil {
-					return nil, err
-				}
-				pvc.Spec.Selector.MatchExpressions = append(pvc.Spec.Selector.MatchExpressions, temp)
-			}
-		}
+	} else {
+		utils.Error.Println(err)
 	}
-	for _, each := range input.ServiceAttributes.AccessMode {
-		if each == pb.AccessMode_ReadOnlyMany {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadOnlyMany)
-		} else if each == pb.AccessMode_ReadWriteMany {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteMany)
-		} else if each == pb.AccessMode_ReadWriteOnce {
-			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteOnce)
-		}
-	}
-	if input.ServiceAttributes.RequestQuantity != "" {
-		quantity, err := resource.ParseQuantity(input.ServiceAttributes.RequestQuantity)
-		if err != nil {
-			return nil, errors.New("invalid storage capacity ")
-		}
-		pvc.Spec.Resources.Requests = make(map[core.ResourceName]resource.Quantity)
-
-		pvc.Spec.Resources.Requests["storage"] = quantity
-	}
-	if input.ServiceAttributes.LimitQuantity != "" {
-		quantity, err := resource.ParseQuantity(input.ServiceAttributes.LimitQuantity)
-		if err != nil {
-			return nil, errors.New("invalid storage capacity ")
-		}
-		pvc.Spec.Resources.Limits = make(map[core.ResourceName]resource.Quantity)
-
-		pvc.Spec.Resources.Limits["storage"] = quantity
-	}
-
-	return pvc, nil
+	return deploy, nil
 }
