@@ -1,0 +1,24 @@
+syntax= "proto3";
+package proto;
+
+message ServiceResponse{
+    string error = 1;
+    ServiceStatus status = 2;
+
+}
+
+message ServiceStatus {
+    string id = 1;
+    string service_id = 2;
+    string name = 3;
+    repeated string status_individual = 4;
+    string status = 5;
+    string reason = 6;
+
+}
+
+message NameRequest {
+    string name = 1;
+}
+
+
