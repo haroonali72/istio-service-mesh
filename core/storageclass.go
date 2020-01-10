@@ -283,7 +283,9 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 			sc.Parameters["iopsPerGB"] = io1IopsperGb
 		}
 		sc.Parameters["type"] = ebsType
-		sc.Parameters["encrypted"] = input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"]
+		if input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"] != "" {
+			sc.Parameters["encrypted"] = input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"]
+		}
 		if kmsKeyId := input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]; kmsKeyId != "" {
 			sc.Parameters["kmsKeyId"] = input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]
 		}
