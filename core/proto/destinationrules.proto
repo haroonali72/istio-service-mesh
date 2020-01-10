@@ -1,0 +1,123 @@
+syntax= "proto3";
+
+package proto;
+import "service.proto";
+//import "google/protobuf/timestamp.proto";
+
+service Destinationrules{
+    rpc CreateDestinationRules(DestinationRules) returns (ServiceResponse){}
+    rpc GetDestinationRules(DestinationRules) returns (ServiceResponse){}
+    rpc PutDestinationRules(DestinationRules) returns (ServiceResponse){}
+    rpc PatchDestinationRules(DestinationRules) returns (ServiceResponse){}
+    rpc DeleteDestinationRules(DestinationRules) returns (ServiceResponse){}
+}
+
+message DestinationRules {
+    string service_id = 1;
+    string token=2;
+    string project_id=3;
+    string company_id = 4;
+    string name = 5;
+    string service_type= 6;
+    string service_sub_type =7;
+    string namespace =9;
+    string version =10;
+    DRServiceAttributes service_attribute =11;
+}
+
+message DRServiceAttributes {
+    string host =1;
+    TrafficPolicy               traffic_policy	    =2;
+    Subset                      subsets		        =3;
+}
+message TrafficPolicy {
+    LoadBalancer                load_balancer        =1;
+    repeated PortLevelSetting	port_level_settings  =2;
+    ConnectionPool			    connection_pool      =3;
+    OutlierDetection            outlier_detection    =4;
+    DrTls				        dr_tls               =5;
+}
+
+message LoadBalancer {
+    string                      simple				 =1;
+    ConsistentHash              consistent_hash		 =2;
+}
+message  ConsistentHash {
+    string                      http_header_name	  =1;
+    bool                        use_source_ip 		  =2;
+    string                      minimum_ring_size     =3;
+    HttpCookie                  http_cookie           =4;
+}
+message HttpCookie  {
+    string                      name			      =1;
+    string                      path			      =2;
+    int64                       ttl                   =3;
+}
+message  PortLevelSetting {
+    DrPort                    dr_port 			        =1;
+    LoadBalancer              load_balancer			  =2;
+    ConnectionPool            connection_pool	      =3;
+    OutlierDetection          outlier_detection       =4;
+    DrTls                     dr_tls                  =5;
+}
+message  DrPort  {
+    int32                      number         		  =1;
+}
+message  ConnectionPool {
+    DrTcp                      dr_tcp					  =1;
+    DrHttp                     dr_http			          =2;
+}
+message DrTcp {
+    int32                     max_connections 	      =1;
+    TcpKeepalive              tcp_keep_alive		  =2;
+    int32                    connect_timeout		  =3;
+}
+message  TcpKeepalive {
+    int32                    time                     =1;
+    int32                    interval                 =2;
+    uint32                     probes                   =3;
+}
+message DrHttp{
+    int32                     http_1_max_pending_requests =1;
+    int32                     http_2_max_requests         =2;
+    int32                     max_requests_per_connection =3;
+    int32                     max_retries                 =4;
+    int32                     idle_timeout                =5;
+    int32                     connection_pool_settings_http_settings_h2_upgrade_policy   =6;
+}
+
+message  OutlierDetection{
+    int32                    consecutive_errors        =1;
+    int32                    interval				    =2;
+    int32                    base_ejection_time        =3;
+    int32                    max_ejection_percent      =4;
+    int32                    min_health_percent        =5;
+}
+message Subset{
+    repeated    string        name      			    =1;
+    map<string, string>       labels	                =2;
+    TrafficPolicy             traffic_policy		    =3;
+}
+
+message DrTls{
+    string                     mode			        =1;
+    string                    client_certificate	    =2;
+    string                     private_key		        =3;
+    string                    ca_certificate            =4;
+    string                    subject_alt_names         =5;
+    repeated string           name                      =6;
+}
+
+//enum Mode {
+//    DISABLE = 0;
+//    SIMPLE = 1;
+//    MUTUAL = 2;
+//    ISTIO_MUTUAL = 3;
+//}
+
+//enum Simple{
+//    ROUND_ROBIN=0;
+//    LEAST_CONN=1;
+//    RANDOM=2;
+//    PASSTHROUGH=3;
+//}

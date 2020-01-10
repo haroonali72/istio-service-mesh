@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package proto;
-
+import "service.proto";
 service Gateway {
     rpc CreateGateway (GatewayService) returns (ServiceResponse) {}
     rpc GetGateway (GatewayService) returns (ServiceResponse) {}
@@ -9,9 +9,7 @@ service Gateway {
     rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
     rpc PutGateway (GatewayService) returns (ServiceResponse) {}
 }
-message NameRequest {
-    string name = 1;
-}
+
 
 message GatewayService {
     string project_id = 1;
@@ -54,13 +52,8 @@ message TlsConfig {
     ProtocolVersion minProtocolVersion = 7;
     ProtocolVersion maxProtocolVersion = 8;
 }
-enum Mode {
-    PASSTHROUGH = 0;
-    SIMPLE = 1;
-    MUTUAL = 2;
-    AUTO_PASSTHROUGH = 3;
-    ISTIO_MUTUAL = 4;
-}
+
+
 enum ProtocolVersion {
     TLS_AUTO = 0;
     TLSV1_0 = 1;
@@ -68,6 +61,7 @@ enum ProtocolVersion {
     TLSV1_2 = 3;
     TLSV1_3 = 4;
 }
+
 enum Protocols {
     HTTP = 0;
     HTTPS = 1;
@@ -76,19 +70,4 @@ enum Protocols {
     MONGO = 4;
     TCP = 5;
     TLS = 6;
-}
-
-message ServiceResponse{
-    string error = 1;
-    ServiceStatus status = 2;
-
-}
-message ServiceStatus {
-    string id = 1;
-    string serviceId = 2;
-    string name = 3;
-    repeated string statusIndividual = 4;
-    string status = 5;
-    string reason = 6;
-
 }
