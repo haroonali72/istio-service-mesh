@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package proto;
+import "service.proto";
 
 service Gateway {
     rpc CreateGateway (GatewayService) returns (ServiceResponse) {}
@@ -9,9 +10,7 @@ service Gateway {
     rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
     rpc PutGateway (GatewayService) returns (ServiceResponse) {}
 }
-message NameRequest {
-    string name = 1;
-}
+
 
 message GatewayService {
     string project_id = 1;
@@ -78,17 +77,3 @@ enum Protocols {
     TLS = 6;
 }
 
-message ServiceResponse{
-    string error = 1;
-    ServiceStatus status = 2;
-
-}
-message ServiceStatus {
-    string id = 1;
-    string serviceId = 2;
-    string name = 3;
-    repeated string statusIndividual = 4;
-    string status = 5;
-    string reason = 6;
-
-}
