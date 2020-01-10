@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package proto;
+import "storageclass.proto";
+import "service.proto";
+service PersistentVolume {
+    rpc CreatePersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
+    rpc GetPersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
+    rpc DeletePersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
+    rpc PatchPersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
+    rpc PutPersistentVolume (PersistentVolumeService) returns (ServiceResponse) {}
+}
+
+message PersistentVolumeService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string token = 7;
+    string company_id = 8;
+    PersistentVolumeAttributes service_attributes = 9;
+}
+
+message PersistentVolumeAttributes{
+    map<string,string>  labels    =1;
+    ReclaimPolicy reclaimPolicy =2;
+    repeated AccessMode accessMode =3;
+    string capcity =4;
+    PersistentVolumeSource persistentVolumeSource=5;
+}
+message PersistentVolumeSource {
+    GCPPD  gcpPd=1;
+    AWSEBS  awsEbs=2;
+    AzureDisk azureDisk=3;
+    AzureFile azureFile=4;
+}
+message GCPPD {
+string pdName=1;
+string fileSystem=2;
+int64 partation=3;
+bool readOnly=4;
+}
+
+message AWSEBS {
+    string volumeId=1;
+    string fileSystem=2;
+    int64 partation=3;
+    bool readOnly=4;
+}
+
+message AzureDisk {
+    string cachingMode=1;
+    string fileSystem=2;
+    string diskName=3;
+    bool readOnly=4;
+    string diskURI =5;
+}
+
+
+message AzureFile {
+    string secretName=1;
+    string shareName=2;
+    bool readOnly=3;
+}
+
+enum AccessMode{
+    ReadWriteOnce=0;
+    ReadOnlyMany=1;
+    ReadWriteMany=2;
+}

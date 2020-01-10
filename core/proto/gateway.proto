@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package proto;
+
 import "service.proto";
 service Gateway {
     rpc CreateGateway (GatewayService) returns (ServiceResponse) {}
