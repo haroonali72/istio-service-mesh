@@ -253,7 +253,8 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 	var vServ = new(istioClient.DestinationRule)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower("networking.v.io/v1alpha3")
+	//destinationrules.networking.istio.io
+	labels["version"] = strings.ToLower("v1")
 	vServ.Labels = labels
 	vServ.Kind = "DestinationRule"
 	vServ.APIVersion = "networking.v.io/v1alpha3"

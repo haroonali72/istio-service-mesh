@@ -39,7 +39,7 @@ message TrafficPolicy {
 }
 
 message LoadBalancer {
-    string                      simple				 =1;
+    Simple                      simple				 =1;
     ConsistentHash              consistent_hash		 =2;
 }
 message  ConsistentHash {
@@ -100,7 +100,7 @@ message Subset{
 }
 
 message DrTls{
-    string                     mode			        =1;
+    MODE                        mode			            =1;
     string                    client_certificate	    =2;
     string                     private_key		        =3;
     string                    ca_certificate            =4;
@@ -108,16 +108,16 @@ message DrTls{
     repeated string           name                      =6;
 }
 
-//enum Mode {
-//    DISABLE = 0;
-//    SIMPLE = 1;
-//    MUTUAL = 2;
-//    ISTIO_MUTUAL = 3;
-//}
+enum MODE {
+    MODE_DISABLE = 0;
+    MODE_SIMPLE = 1;
+    MODE_MUTUAL = 2;
+    MODE_ISTIO_MUTUAL = 3;
+}
 
-//enum Simple{
-//    ROUND_ROBIN=0;
-//    LEAST_CONN=1;
-//    RANDOM=2;
-//    PASSTHROUGH=3;
-//}
+enum Simple{
+    ROUND_ROBIN=0;
+    LEAST_CONN=1;
+    RANDOM=2;
+    PASSTHROUGH=3;
+}
