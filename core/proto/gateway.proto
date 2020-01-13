@@ -53,13 +53,7 @@ message TlsConfig {
     ProtocolVersion minProtocolVersion = 7;
     ProtocolVersion maxProtocolVersion = 8;
 }
-enum Mode {
-    PASSTHROUGH = 0;
-    SIMPLE = 1;
-    MUTUAL = 2;
-    AUTO_PASSTHROUGH = 3;
-    ISTIO_MUTUAL = 4;
-}
+
 
 enum ProtocolVersion {
     TLS_AUTO = 0;

@@ -40,6 +40,7 @@ message NetworkPolicyPort{
     Protocol protocol=1;
     PortItntOrString port=2;
 }
+
 enum Protocol{
     TCP=0;
     UDP=1;
