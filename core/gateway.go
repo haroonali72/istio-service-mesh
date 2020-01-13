@@ -278,7 +278,7 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 		if serverInput.Port != nil {
 			server.Port = new(v1alpha3.Port)
 			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
+			server.Port.Number = serverInput.Port.Number
 			server.Port.Protocol = serverInput.Port.GetProtocol().String()
 		}
 		if serverInput.Tls != nil {

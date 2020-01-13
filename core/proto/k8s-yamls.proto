@@ -6,11 +6,7 @@ service YamlService {
     rpc GetYamlService (YamlServiceRequest) returns (YamlServiceResponse) {}
 }
 message YamlServiceResponse {
-    string project_id = 1;
-    string company_id = 2;
-    string solution_id = 3;
-    string service_id=4;
-    bytes service = 5;
+    bytes service = 1;
 }
 message YamlServiceRequest{
     string type =1;
