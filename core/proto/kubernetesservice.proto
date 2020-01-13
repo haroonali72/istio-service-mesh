@@ -28,8 +28,8 @@ message KubernetesService {
 
 }
 message KubeServiceAttributes{
-    repeated KubePort ports = 1;
-    KubeSelector select = 2;
+    repeated KubePort kube_ports = 1;
+    KubeSelector selector = 2;
     string cluster_ip = 3;
     string type = 4;
     string external_traffic_policy = 5;

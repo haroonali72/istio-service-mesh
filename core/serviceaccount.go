@@ -241,11 +241,13 @@ func (s *Server) PutServiceAccountService(ctx context.Context, req *pb.ServiceAc
 func getServiceAccount(input *pb.ServiceAccountService) (*kb.ServiceAccount, error) {
 	var kube = new(kb.ServiceAccount)
 	kube.Kind = "ServiceAccount"
-	kube.APIVersion = "golang.org/x/build/kubernetes/api"
+	kube.APIVersion = "v1"
+	kube.ResourceVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
+	kube.Labels = labels
 	return kube, nil
 }
 func getRequestServiceAccountObject(req *pb.ServiceAccountService) (*kb.ServiceAccount, error) {

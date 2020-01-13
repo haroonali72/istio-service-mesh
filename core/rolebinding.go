@@ -253,6 +253,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		sub.Name = subject.Name
 		sub.Kind = subject.Kind
 		sub.APIGroup = subject.ApiGroup
+		//sub.Namespace=subject.Namespace
 		roleBind.Subjects = append(roleBind.Subjects, sub)
 	}
 
