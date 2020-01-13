@@ -7,23 +7,18 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	v1 "k8s.io/api/rbac/v1"
 	"strings"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
+func (s *Server) CreateRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	roleBinbRequest, err := getRequestRoleBindObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -38,7 +33,7 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -61,34 +56,20 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 
-	/*converToResp(serviceResp,req.ProjectId,statusCode,resp)
-
-	url := fmt.Sprintf("%s%s",constants.KubernetesEngineURL,constants.KUBERNETES_SERVICES_DEPLOYMENT)
-	statusCode, resp, err := utils.Post(url,ksdRequest,getHeaders(ctx,req.ProjectId))
-
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
-	}
-	converToResp(serviceResp,req.ProjectId,statusCode,resp)
-	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	roleBinbRequest, err := getRequestRoleBindObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
@@ -97,7 +78,7 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -120,15 +101,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	roleBinbRequest, err := getRequestRoleBindObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -143,7 +123,7 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -166,15 +146,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	roleBinbRequest, err := getRequestRoleBindObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -189,7 +168,7 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -212,15 +191,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutRoleBindingService(ctx context.Context, req *pb.RoleBindingService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	roleBinbRequest, err := getRequestRoleBindObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -235,7 +213,7 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(roleBinbRequest)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -259,76 +237,37 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
+func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
+	var roleBind = new(v1.RoleBinding)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
+	roleBind.Kind = "RoleBinding"
+	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
+	roleBind.Name = input.Name
+	roleBind.Namespace = input.Namespace
+	roleBind.Labels = labels
 
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
-		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+	for _, subject := range input.ServiceAttributes.Subjects {
+		var sub v1.Subject
+		sub.Name = subject.Name
+		sub.Kind = subject.Kind
+		sub.APIGroup = subject.ApiGroup
+		roleBind.Subjects = append(roleBind.Subjects, sub)
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
+
+	roleBind.RoleRef.Kind = input.ServiceAttributes.Reference.Kind
+	roleBind.RoleRef.Name = input.ServiceAttributes.Reference.Name
+	roleBind.RoleRef.APIGroup = input.ServiceAttributes.Reference.ApiGroup
+
+	return roleBind, nil
 }
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
+func getRequestRoleBindObject(req *pb.RoleBindingService) (*v1.RoleBinding, error) {
+	roleReq, err := getRoleBinding(req)
 	if err != nil {
 		utils.Error.Println(err)
 
 		return nil, err
 	}
-	return gtwReq, nil
+	return roleReq, nil
 }

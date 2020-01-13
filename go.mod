@@ -10,7 +10,6 @@ require (
 	dmitri.shuralyov.com/gpu/mtl v0.0.0-20191203043605-d42048ed14fd // indirect
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
-	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/astaxie/beego v1.12.0
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
@@ -42,6 +41,7 @@ require (
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/urfave/cli/v2 v2.0.0
 	go.opencensus.io v0.22.2
+	golang.org/x/build v0.0.0-20191220001908-17a7d8724fa7
 	golang.org/x/image v0.0.0-20191214001246-9130b4cfad52 // indirect
 	golang.org/x/mobile v0.0.0-20191210151939-1a1fef82734d // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
