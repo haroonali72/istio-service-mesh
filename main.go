@@ -71,11 +71,11 @@ func main() {
 	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	svc := &core.Server{}
 	pb.RegisterGatewayServer(srv, svc)
-	pb.RegisterRoleBindingServer(srv, svc)
-	pb.RegisterRoleServer(srv, svc)
-	pb.RegisterKubernetesServer(srv, svc)
-	pb.RegisterServiceAccountServer(srv, svc)
-
+	pb.RegisterClusterroleServer(srv, svc)
+	pb.RegisterClusterrolebindingServer(srv, svc)
+	pb.RegisterHpaServer(srv, svc)
+	pb.RegisterVirtualServer(srv, svc)
+	pb.RegisterDestinationrulesServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {

@@ -14,44 +14,43 @@ func InitFlags() error {
 			Name:        "port",
 			Usage:       "port for the application. default:8654",
 			Destination: &constants.ServicePort,
-			EnvVars:      []string{"PORT"},
-
+			EnvVars:     []string{"PORT"},
 		},
 		&cli.StringFlag{
 			Name:        "logging_engine_url",
 			Usage:       "logging ip:port",
 			Destination: &constants.LoggingURL,
-			EnvVars:      []string{"LOGGING_ENGINE_URL"},
+			EnvVars:     []string{"LOGGING_ENGINE_URL"},
 		},
 		&cli.StringFlag{
 			Name:        "kubernetes_engine_url",
 			Usage:       "kubernetes ip:port ",
 			Destination: &constants.KubernetesEngineURL,
-			EnvVars:      []string{"KUBERNETES_ENGINE_URL"},
+			EnvVars:     []string{"KUBERNETES_ENGINE_URL"},
 		},
 		&cli.StringFlag{
 			Name:        "redis_url",
 			Usage:       "cluster ip:port ",
 			Destination: &constants.NotificationURL,
-			EnvVars:      []string{"REDIS_ENGINE_URL"},
+			EnvVars:     []string{"REDIS_ENGINE_URL"},
 		},
 		&cli.StringFlag{
 			Name:        "k8s_engine_url",
 			Usage:       "cluster ip:port ",
 			Destination: &constants.K8sEngineGRPCURL,
-			EnvVars:      []string{"K8S_ENGINE_URL"},
+			EnvVars:     []string{"K8S_ENGINE_URL"},
 		},
 		&cli.StringFlag{
 			Name:        "vault_url",
 			Usage:       "cluster ip:port ",
 			Destination: &constants.VaultURL,
-			EnvVars:      []string{"VAULT_ENGINE_URL"},
+			EnvVars:     []string{"VAULT_ENGINE_URL"},
 		},
 		&cli.StringFlag{
 			Name:        "rbac_url",
 			Usage:       "cluster ip:port ",
 			Destination: &constants.RbacURL,
-			EnvVars:      []string{"RBAC_URL"},
+			EnvVars:     []string{"RBAC_URL"},
 		},
 	}
 	app.Action = func(c *cli.Context) error {
