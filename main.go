@@ -70,6 +70,10 @@ func main() {
 	}
 	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	svc := &core.Server{}
+	pb.RegisterKubernetesServer(srv, svc)
+	pb.RegisterRoleServer(srv, svc)
+	pb.RegisterRoleBindingServer(srv, svc)
+	pb.RegisterServiceAccountServer(srv, svc)
 	pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
