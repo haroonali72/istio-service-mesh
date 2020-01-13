@@ -249,7 +249,7 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	labels["version"] = strings.ToLower(input.Version)
 	kube.Labels = labels
 
-	for _, port := range input.KubeServiceAttributes.Ports {
+	for _, port := range input.KubeServiceAttributes.KubePorts {
 		spec := *new(kb.ServicePort)
 		spec.Name = port.Name
 		spec.Port = int(port.Port)
@@ -261,8 +261,8 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	}
 
 	thisMap := make(map[string]string)
-	thisMap["label1"] = input.KubeServiceAttributes.Select.Label1
-	thisMap["label2"] = input.KubeServiceAttributes.Select.Label2
+	thisMap["label1"] = input.KubeServiceAttributes.Selector.Label1
+	thisMap["label2"] = input.KubeServiceAttributes.Selector.Label2
 	kube.Spec.Selector = thisMap
 	kube.Spec.Type = kb.ServiceType(input.KubeServiceAttributes.Type)
 	kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
