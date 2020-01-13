@@ -10,7 +10,9 @@ service Gateway {
     rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
     rpc PutGateway (GatewayService) returns (ServiceResponse) {}
 }
-
+message NameRequest {
+    string name = 1;
+}
 
 message GatewayService {
     string project_id = 1;
