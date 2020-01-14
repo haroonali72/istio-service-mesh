@@ -7,8 +7,8 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	istioClient "istio.io/api/authentication/v1alpha1"
-	"istio.io/api/networking/v1alpha3"
+	"istio.io/api/authentication/v1alpha1"
+	istioClient "istio.io/client-go/pkg/apis/authentication/v1alpha1"
 	"strings"
 )
 
@@ -20,7 +20,7 @@ func (s *Server) CreatePolicy(ctx context.Context, req *pb.PolicyService) (*pb.S
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPolicyRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -67,7 +67,7 @@ func (s *Server) GetPolicy(ctx context.Context, req *pb.PolicyService) (*pb.Serv
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPolicyRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -113,7 +113,7 @@ func (s *Server) DeletePolicy(ctx context.Context, req *pb.PolicyService) (*pb.S
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPolicyRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -159,7 +159,7 @@ func (s *Server) PatchPolicy(ctx context.Context, req *pb.PolicyService) (*pb.Se
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPolicyRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -205,7 +205,7 @@ func (s *Server) PutPolicy(ctx context.Context, req *pb.PolicyService) (*pb.Serv
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPolicyRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -246,71 +246,205 @@ func (s *Server) PutPolicy(ctx context.Context, req *pb.PolicyService) (*pb.Serv
 }
 
 func getPolicy(input *pb.PolicyService) (*istioClient.Policy, error) {
-	var istioServ = new(istioClient.Policy)
+	var policyServ = new(istioClient.Policy)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Policy"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	Policy := v1alpha3.Policy{}
+	policyServ.Labels = labels
+	policyServ.Kind = "Policy"
+	policyServ.APIVersion = "authentication.policy.io/v1alpha1"
+	policyServ.Name = input.Name
+	policyServ.Namespace = input.Namespace
 
-	Policy.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+	for _, t := range input.ServiceAttributes.Target {
+		target := v1alpha1.TargetSelector{}
+		target.Name = t.Name
+		for _, p := range t.Ports {
+			port := &v1alpha1.PortSelector{}
+			if p.Name != "" {
+				port.Port = &v1alpha1.PortSelector_Name{Name: p.Name}
+			} else if p.Number != 0 {
+				port.Port = &v1alpha1.PortSelector_Number{Number: uint32(p.Number)}
+			}
+			target.Ports = append(target.Ports, port)
 		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		Policy.Servers = append(Policy.Servers, server)
+		policyServ.Spec.Targets = append(policyServ.Spec.Targets, &target)
 	}
-	istioServ.Spec = Policy
-	return istioServ, nil
+
+	for _, t := range input.ServiceAttributes.Peers {
+		peer := v1alpha1.PeerAuthenticationMethod{}
+
+		var trigger []*v1alpha1.Jwt_TriggerRule
+		for _, t := range t.Jwt.TriggerRules {
+			tr := &v1alpha1.Jwt_TriggerRule{}
+			for _, e := range t.ExcludedPath {
+				if e.Type == "Exact" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Exact{
+							Exact: e.Value,
+						},
+					})
+				} else if e.Type == "Prefix" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Prefix{
+							Prefix: e.Value,
+						},
+					})
+				} else if e.Type == "Regex" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Regex{
+							Regex: e.Value,
+						},
+					})
+				} else if e.Type == "Suffix" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Suffix{
+							Suffix: e.Value,
+						},
+					})
+				}
+			}
+			for _, e := range t.IncludedPath {
+				if e.Type == "Exact" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Exact{
+							Exact: e.Value,
+						},
+					})
+				} else if e.Type == "Prefix" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Prefix{
+							Prefix: e.Value,
+						},
+					})
+				} else if e.Type == "Regex" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Regex{
+							Regex: e.Value,
+						},
+					})
+				} else if e.Type == "Suffix" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Suffix{
+							Suffix: e.Value,
+						},
+					})
+				}
+			}
+
+			trigger = append(trigger, tr)
+		}
+
+		if t.Jwt != nil {
+			peer.Params = &v1alpha1.PeerAuthenticationMethod_Jwt{
+				Jwt: &v1alpha1.Jwt{
+					Issuer: t.Jwt.Issuer,
+					//	for _,a :=range t.Jwt.Audiences{
+					Audiences:    t.Jwt.Audiences,
+					Jwks:         t.Jwt.Jwks,
+					JwksUri:      t.Jwt.JwksUri,
+					JwtHeaders:   t.Jwt.JwtHeader,
+					JwtParams:    t.Jwt.JwtParams,
+					TriggerRules: trigger,
+				},
+			}
+		}
+		if t.Mtls != nil {
+			peer.Params = &v1alpha1.PeerAuthenticationMethod_Mtls{
+				&v1alpha1.MutualTls{
+					AllowTls: t.Mtls.AllowTls,
+					Mode:     v1alpha1.MutualTls_Mode(int32(t.Mtls.GetMode())),
+				},
+			}
+		}
+		policyServ.Spec.Peers = append(policyServ.Spec.Peers, &peer)
+	}
+
+	policyServ.Spec.PeerIsOptional = input.ServiceAttributes.PeerIsOptional
+	for _, o := range input.ServiceAttributes.Origin {
+
+		origin := v1alpha1.OriginAuthenticationMethod{}
+		origin.Jwt = &v1alpha1.Jwt{}
+		origin.Jwt.Issuer = o.Jwt.Issuer
+		for _, a := range o.Jwt.Audiences {
+			origin.Jwt.Audiences = append(origin.Jwt.Audiences, a)
+		}
+		origin.Jwt.JwksUri = o.Jwt.JwksUri
+		origin.Jwt.Jwks = o.Jwt.Jwks
+		for _, h := range o.Jwt.JwtHeader {
+			origin.Jwt.JwtHeaders = append(origin.Jwt.JwtHeaders, h)
+		}
+		origin.Jwt.JwtParams = o.Jwt.JwtParams
+		origin.Jwt.JwtHeaders = o.Jwt.JwtHeader
+		for _, t := range o.Jwt.TriggerRules {
+			tr := &v1alpha1.Jwt_TriggerRule{}
+			for _, e := range t.ExcludedPath {
+				if e.Type == "Exact" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Exact{
+							Exact: e.Value,
+						},
+					})
+				} else if e.Type == "Prefix" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Prefix{
+							Prefix: e.Value,
+						},
+					})
+				} else if e.Type == "Regex" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Regex{
+							Regex: e.Value,
+						},
+					})
+				} else if e.Type == "Suffix" {
+					tr.ExcludedPaths = append(tr.ExcludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Suffix{
+							Suffix: e.Value,
+						},
+					})
+				}
+			}
+			for _, e := range t.IncludedPath {
+				if e.Type == "Exact" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Exact{
+							Exact: e.Value,
+						},
+					})
+				} else if e.Type == "Prefix" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Prefix{
+							Prefix: e.Value,
+						},
+					})
+				} else if e.Type == "Regex" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Regex{
+							Regex: e.Value,
+						},
+					})
+				} else if e.Type == "Suffix" {
+					tr.IncludedPaths = append(tr.IncludedPaths, &v1alpha1.StringMatch{
+						MatchType: &v1alpha1.StringMatch_Suffix{
+							Suffix: e.Value,
+						},
+					})
+				}
+			}
+			origin.Jwt.TriggerRules = append(origin.Jwt.TriggerRules, tr)
+		}
+		policyServ.Spec.Origins = append(policyServ.Spec.Origins, &origin)
+	}
+
+	policyServ.Spec.OriginIsOptional = input.ServiceAttributes.OriginIsOptional
+	policyServ.Spec.PrincipalBinding = v1alpha1.PrincipalBinding(int32(input.ServiceAttributes.PrincipalBinding))
+
+	return policyServ, nil
 }
-func getPolicySpec() (v1alpha1.Policy, error) {
 
-	Policy := v1alpha3.Policy{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressPolicy"
-	Policy.Selector = selector
-	Policy.Servers = servers
-	return Policy, nil
-}
-
-func getRequestObject(req *pb.PolicyService) (*istioClient.Policy, error) {
-	gtwReq, err := getIstioPolicy(req)
+func getPolicyRequestObject(req *pb.PolicyService) (*istioClient.Policy, error) {
+	gtwReq, err := getPolicy(req)
 	if err != nil {
 		utils.Error.Println(err)
 

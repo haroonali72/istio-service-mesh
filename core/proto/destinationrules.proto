@@ -54,7 +54,7 @@ message HttpCookie  {
     int64                       ttl                   =3;
 }
 message  PortLevelSetting {
-    DrPort                    dr_port 			        =1;
+    DrPort                    dr_port 			      =1;
     LoadBalancer              load_balancer			  =2;
     ConnectionPool            connection_pool	      =3;
     OutlierDetection          outlier_detection       =4;
@@ -100,7 +100,7 @@ message Subset{
 }
 
 message DrTls{
-    MODE                        mode			            =1;
+    MODE                       mode			            =1;
     string                    client_certificate	    =2;
     string                     private_key		        =3;
     string                    ca_certificate            =4;
@@ -109,15 +109,16 @@ message DrTls{
 }
 
 enum MODE {
-    MODE_DISABLE = 0;
-    MODE_SIMPLE = 1;
-    MODE_MUTUAL = 2;
-    MODE_ISTIO_MUTUAL = 3;
+    DISABLE = 0;
+    SIMPLE = 1;
+    MUTUAL = 2;
+    ISTIO_MUTUAL = 3;
 }
 
 enum Simple{
-    ROUND_ROBIN=0;
-    LEAST_CONN=1;
-    RANDOM=2;
-    PASSTHROUGH=3;
+   ROUND_ROBIN=0;
+  LEAST_CONN=1;
+   RANDOM=2;
+   PASSTHROUGH=3;
 }
+

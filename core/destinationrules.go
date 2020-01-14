@@ -265,11 +265,11 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 	vService.Host = input.ServiceAttribute.Host
 	vService.TrafficPolicy = &v1alpha3.TrafficPolicy{}
 	vService.TrafficPolicy.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
-	//if input.ServiceAttributes.TrafficPolicy.LoadBalancer.Simple != nil {
-	//	vService.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
-	//  Simple: v1alpha3.LoadBalancerSettings_SimpleLB(input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple),
-	//	}
-	//} else if input.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash != null {
+	//	if input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple != nil {
+	vService.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+		Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple)),
+	}
+	//} else if input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash != null {
 	if input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie != nil {
 		t := time.Duration(input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
 		vService.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
@@ -352,9 +352,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 
 		setting.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
 		//if port.LoadBalancer.Simple != nil {
-		//	setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
-		//  Simple: v1alpha3.LoadBalancerSettings_SimpleLB(port.LoadBalancer.Simple),
-		//	}
+		setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+			Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(port.LoadBalancer.Simple)),
+		}
 		//} else if port.LoadBalancer.ConsistentHash != null {
 		if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
 			t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
@@ -443,9 +443,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 
 		setting.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
 		//if port.LoadBalancer.Simple != nil {
-		//	setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
-		//  Simple: v1alpha3.LoadBalancerSettings_SimpleLB(port.LoadBalancer.Simple),
-		//	}
+		setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+			Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(port.LoadBalancer.Simple)),
+		}
 		//} else if port.LoadBalancer.ConsistentHash != null {
 		if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
 			t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
@@ -487,8 +487,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 
 		setting.Tls = &v1alpha3.TLSSettings{}
 
-		//TLSSettings_TLSmode
-		//vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(input.ServiceAttributes.TrafficPolicy.DrTls.Mode)
+		vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(int32(input.ServiceAttribute.TrafficPolicy.DrTls.Mode))
 		setting.Tls.ClientCertificate = port.DrTls.ClientCertificate
 		setting.Tls.PrivateKey = port.DrTls.PrivateKey
 		setting.Tls.CaCertificates = port.DrTls.CaCertificate
@@ -500,9 +499,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 
 	ser.TrafficPolicy.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
 	//if input.ServiceAttributes.Subsets.TrafficPolicy.LoadBalancer.Simple != nil {
-	//	ser.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
-	//  Simple: v1alpha3.LoadBalancerSettings_SimpleLB(input.ServiceAttribute.Subsets.TrafficPolicy.LoadBalancer.Simple),
-	//	}
+	ser.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+		Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(input.ServiceAttribute.Subsets.TrafficPolicy.LoadBalancer.Simple)),
+	}
 	//} else if input.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash != null {
 	if input.ServiceAttribute.Subsets.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie != nil {
 		t := time.Duration(input.ServiceAttribute.Subsets.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
@@ -564,8 +563,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 
 	ser.TrafficPolicy.Tls = &v1alpha3.TLSSettings{}
 
-	//TLSSettings_TLSmode
-	//vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(input.ServiceAttributes.TrafficPolicy.DrTls.Mode)
+	vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(int32(input.ServiceAttribute.TrafficPolicy.DrTls.Mode))
 	ser.TrafficPolicy.Tls.ClientCertificate = input.ServiceAttribute.Subsets.TrafficPolicy.DrTls.ClientCertificate
 	ser.TrafficPolicy.Tls.PrivateKey = input.ServiceAttribute.Subsets.TrafficPolicy.DrTls.PrivateKey
 	ser.TrafficPolicy.Tls.CaCertificates = input.ServiceAttribute.Subsets.TrafficPolicy.DrTls.CaCertificate
