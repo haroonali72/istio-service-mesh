@@ -498,11 +498,11 @@ func getContainerData(c *coreV1.Container) (str interface{}, err error) {
 		if containerPort == "0" {
 			containerPort = ""
 		}
-		service.Ports = append(service.Ports, &types.Port{
-			Container: containerPort,
-			Host:      hostPort,
-			Name:      c.Ports[i].Name,
-		})
+		/*		service.Ports = append(service.Ports, &types.Port{
+				Container: containerPort,
+				Host:      hostPort,
+				Name:      c.Ports[i].Name,
+			})*/
 	}
 
 	for _, variable := range c.Env {

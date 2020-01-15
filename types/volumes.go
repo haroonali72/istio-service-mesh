@@ -8,6 +8,7 @@ const (
 	GCP   Cloud = "gcp"
 )
 
+/*
 type Parameters struct {
 	Type            string `json:"type"`
 	ReplicationType string `json:"replication_type"`
@@ -26,7 +27,7 @@ type Volume struct {
 	MountPath string     `json:"mount_path"`
 	Params    Parameters `json:"params"`
 }
-
+*/
 type KeytoPath struct {
 	Key  string `json:"key"`
 	Path string `json:"path"`

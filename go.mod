@@ -54,6 +54,7 @@ require (
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
 	google.golang.org/grpc v1.26.0
 	gopkg.in/resty.v1 v1.12.0
+	gopkg.in/yaml.v2 v2.2.7
 	istio.io/api v0.0.0-20191218031825-7bafbd24c11c
 	istio.io/client-go v0.0.0-20191218043923-5fad2566daf6
 	istio.io/istio v0.0.0-20191218042323-ae27ee6c4bf5

@@ -6,7 +6,7 @@ var (
 	KnativeEngineURL    string
 	ServicePort         string
 	KubernetesEngineURL string
-	K8sEngineGRPCURL string
+	K8sEngineGRPCURL    string
 	NotificationURL     string
 	VaultURL            string
 	RbacURL             string
@@ -19,7 +19,7 @@ const (
 	SERVICE_NAME = "istio-mesh-engine"
 
 	//KSD
-	KUBERNETES_SERVICES_DEPLOYMENT   = "/ksd/api/v1/solution"
+	KUBERNETES_SERVICES_DEPLOYMENT = "/ksd/api/v1/solution"
 	//Logging
 
 	LOGGING_LEVEL_INFO  = "info"
@@ -59,3 +59,10 @@ const (
 	Rbac_Token_Info = "/security/api/rbac/token/info"
 	Ksd_Get_Nobe    = "/all"
 )
+
+var ListOfNonKubernetesSupportedObjects = []string{
+	"Gateway",
+	"ServiceEntry",
+	"DestinationRule",
+	"VirtualService",
+}

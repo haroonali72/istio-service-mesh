@@ -261,6 +261,14 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 	sc.Name = input.Name
 	sc.TypeMeta.Kind = "StorageClass"
 	sc.TypeMeta.APIVersion = "storage.k8s.io/v1"
+	if input.ServiceAttributes.AllowVolumeExpansion == "true" {
+		vE := true
+		sc.AllowVolumeExpansion = &vE
+	} else if input.ServiceAttributes.AllowVolumeExpansion == "false" {
+		vE := false
+		sc.AllowVolumeExpansion = &vE
+	}
+
 	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMode_WaitForFirstCustomer.String() {
 		vbm := v1.VolumeBindingWaitForFirstConsumer
 		sc.VolumeBindingMode = &vbm

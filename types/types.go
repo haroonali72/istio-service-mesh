@@ -1,6 +1,7 @@
 package types
 
 import (
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v12 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
@@ -9,7 +10,6 @@ import (
 	rbacV1 "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"time"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
 type Route struct {
@@ -17,12 +17,13 @@ type Route struct {
 	Subset string `json:"subset"`
 }
 
+/*
 type Port struct {
 	Host      string `json:"host"`
 	Container string `json:"container"`
 	Name      string `json:"name"`
 }
-
+*/
 type SEPort struct {
 	Port     int32  `json:"port"`
 	Protocol string `json:"protocol"`
@@ -336,13 +337,16 @@ type SELinuxOptionsStruct struct {
 // spec:
 
 type VolumeAttributes struct {
-	Volume Volume `json:"volume"`
+	//	Volume Volume `json:"volume"`
 }
 
 type VolumeAttributesList struct {
-	Volume []Volume `json:"volumes"`
+	//	Volume []Volume `json:"volumes"`
 }
 
+type Yamlservice struct {
+	Kind string `json:"kind"`
+}
 type RbacAttributes struct {
 	RbacService Role `json:"role"`
 }
@@ -449,7 +453,7 @@ type OutputServices struct {
 	ConfigMap              []v1.ConfigMap                        `json:"configmap"`
 	Kubernetes             []v1.Service                          `json:"kubernetes-service"`
 	Istio                  []IstioObject                         `json:"istio-component"`
-	IstioGateway		   []*istioClient.Gateway `json:"gateway"`
+	IstioGateway           []*istioClient.Gateway                `json:"gateway"`
 	StorageClasses         []storage.StorageClass                `json:"storage-classes"`
 	RoleClasses            []rbacV1.Role                         `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding                  `json:"role-binding-classes"`

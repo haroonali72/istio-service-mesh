@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"io/ioutil"
 	"istio-service-mesh/constants"
-	"istio-service-mesh/controllers"
 	"istio-service-mesh/core"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
@@ -61,7 +60,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_ = controllers.Notifier.Init_notifier()
+	//	_ = controllers.Notifier.Init_notifier()
 
 	port := fmt.Sprintf(":%s", constants.ServicePort)
 	lis, err := net.Listen("tcp", port)
@@ -73,6 +72,7 @@ func main() {
 	pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterStorageClassServer(srv, svc)
 	pb.RegisterYamlServiceServer(srv, svc)
+	pb.RegisterYamlToCPServiceServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {

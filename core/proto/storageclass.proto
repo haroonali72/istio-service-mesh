@@ -27,7 +27,7 @@ message StorageClassServiceResponse {
 
 message StorageClassAttributes{
     VolumeBindingMode volumeBindingMode =1;
-    bool allowVolumeExpansion  =2;
+    string allowVolumeExpansion  =2;
     string  provisioner =3;
     Parameters scParameters =4;
     ReclaimPolicy reclaimPolicy =5;

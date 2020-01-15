@@ -285,9 +285,11 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 				if err != nil {
 					return nil, err
 				}
-				temp2.IPBlock = new(net.IPBlock)
-				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
-				temp2.IPBlock.Except = each2.IpBlock.Except
+				if each2.IpBlock != nil {
+					temp2.IPBlock = new(net.IPBlock)
+					temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+					temp2.IPBlock.Except = each2.IpBlock.Except
+				}
 				temp.From = append(temp.From, temp2)
 			}
 			for _, each2 := range each.Ports {
@@ -296,7 +298,7 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 					port := intstr.FromString(each2.Port.PortName)
 					temp2.Port = &port
 				} else {
-					port := intstr.FromString(each2.Port.PortName)
+					port := intstr.FromInt(int(each2.Port.PortNumber))
 					temp2.Port = &port
 				}
 				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
@@ -330,9 +332,11 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 				if err != nil {
 					return nil, err
 				}
-				temp2.IPBlock = new(net.IPBlock)
-				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
-				temp2.IPBlock.Except = each2.IpBlock.Except
+				if each2.IpBlock != nil {
+					temp2.IPBlock = new(net.IPBlock)
+					temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+					temp2.IPBlock.Except = each2.IpBlock.Except
+				}
 				temp.To = append(temp.To, temp2)
 			}
 			for _, each2 := range each.Ports {
@@ -341,7 +345,7 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 					port := intstr.FromString(each2.Port.PortName)
 					temp2.Port = &port
 				} else {
-					port := intstr.FromString(each2.Port.PortName)
+					port := intstr.FromInt(int(each2.Port.PortNumber))
 					temp2.Port = &port
 				}
 				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
@@ -365,13 +369,18 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 }
 
 func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, error) {
+	if service == nil {
+		return nil, nil
+	}
 	lenl := len(service.MatchLabel)
 	lene := len(service.MatchExpression)
 	if lene == 0 && lenl == 0 {
 		return nil, nil
 	}
 	ls := new(metav1.LabelSelector)
-
+	if lenl > 0 {
+		ls.MatchLabels = make(map[string]string)
+	}
 	for k, v := range service.MatchLabel {
 		ls.MatchLabels[k] = v
 	}
