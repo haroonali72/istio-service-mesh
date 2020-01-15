@@ -264,42 +264,42 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	for _, http := range input.ServiceAttributes.Http {
 		vSer := v1alpha3.HTTPRoute{}
 		vSer.Name = http.Name
-		for i, match := range http.MatchRequest {
-			vSer.Match[i] = &v1alpha3.HTTPMatchRequest{}
-			vSer.Match[i].Name = match.Name
+		for _, match := range http.HttpMatch {
+			m := &v1alpha3.HTTPMatchRequest{}
+			m.Name = match.Name
 			if match.Uri.Type == "prefix" {
-				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Uri.Value,
 					},
 				}
 			} else if match.Uri.Type == "exact" {
-				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Uri.Value,
 					},
 				}
 			} else if match.Uri.Type == "regex" {
-				vSer.Match[i].Uri = &v1alpha3.StringMatch{
+				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Uri.Value,
 					},
 				}
 			}
 			if match.Scheme.Type == "prefix" {
-				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Scheme.Value,
 					},
 				}
 			} else if match.Scheme.Type == "exact" {
-				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Scheme.Value,
 					},
 				}
 			} else if match.Scheme.Type == "regex" {
-				vSer.Match[i].Scheme = &v1alpha3.StringMatch{
+				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Scheme.Value,
 					},
@@ -307,52 +307,56 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			}
 
 			if match.Method.Type == "prefix" {
-				vSer.Match[i].Method = &v1alpha3.StringMatch{
+				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Method.Value,
 					},
 				}
 			} else if match.Method.Type == "exact" {
-				vSer.Match[i].Method = &v1alpha3.StringMatch{
+				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Method.Value,
 					},
 				}
 			} else if match.Method.Type == "regex" {
-				vSer.Match[i].Method = &v1alpha3.StringMatch{
+				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Method.Value,
 					},
 				}
 			}
 			if match.Authority.Type == "prefix" {
-				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Authority.Value,
 					},
 				}
 			} else if match.Authority.Type == "exact" {
-				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Authority.Value,
 					},
 				}
 			} else if match.Authority.Type == "regex" {
-				vSer.Match[i].Authority = &v1alpha3.StringMatch{
+				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Authority.Value,
 					},
 				}
 			}
-			vService.Http = append(vService.Http, &vSer)
+			vSer.Match = append(vSer.Match, m)
 		}
-
-		for i, route := range http.HttpRoute {
-			vSer.Route[i] = &v1alpha3.HTTPRouteDestination{}
-			vSer.Route[i].Destination.Port.Number = uint32(route.Routes.Port)
-			vSer.Route[i].Destination.Host = route.Routes.Host
-			vSer.Route[i].Destination.Subset = route.Routes.Subset
-			vSer.Route[i].Weight = route.Weight
+		//	vService.Http = append(vService.Http, &vSer)
+		//	}
+		for _, route := range http.HttpRoute {
+			r := &v1alpha3.HTTPRouteDestination{}
+			r.Destination = &v1alpha3.Destination{}
+			r.Destination.Port = &v1alpha3.PortSelector{}
+			r.Destination.Port.Number = uint32(route.Routes.Port)
+			r.Destination.Host = route.Routes.Host
+			r.Destination.Subset = route.Routes.Subset
+			r.Weight = route.Weight
+			vSer.Route = append(vSer.Route, r)
 		}
 
 		vSer.Redirect = &v1alpha3.HTTPRedirect{}
@@ -364,7 +368,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		vSer.Rewrite.Uri = http.HttpRewrite.Uri
 		vSer.Rewrite.Authority = http.HttpRewrite.Authority
 
-		vSer.Timeout = &types.Duration{Seconds: http.Timeout}
+		vSer.Timeout = &types.Duration{Nanos: http.Timeout}
 
 		vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 		if http.FaultInjection.DelayType == "fixed_delay" {
@@ -398,10 +402,10 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 
 		vSer.CorsPolicy = &v1alpha3.CorsPolicy{}
 		vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
-		vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllMethod
+		vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllowMethod
 		vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
 		vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
-		vSer.CorsPolicy.MaxAge = &types.Duration{Seconds: http.CorsPolicy.MaxAge}
+		vSer.CorsPolicy.MaxAge = &types.Duration{Nanos: http.CorsPolicy.MaxAge}
 		vSer.CorsPolicy.AllowCredentials = &types.BoolValue{Value: http.CorsPolicy.AllowCredentials}
 
 		vService.Http = append(vService.Http, &vSer)
@@ -409,44 +413,56 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 
 	for _, serv := range input.ServiceAttributes.Tls {
 		tls := v1alpha3.TLSRoute{}
-		for i, match := range serv.Match {
-			tls.Match[i] = &v1alpha3.TLSMatchAttributes{}
-			tls.Match[i].SniHosts = match.SniHosts
-			tls.Match[i].DestinationSubnets = match.DestinationSubnets
-			tls.Match[i].Gateways = match.Gateways
-			tls.Match[i].Port = uint32(match.Port)
-			tls.Match[i].SourceSubnet = match.SourceSubnet
-
+		for _, match := range serv.TlsMatch {
+			m := &v1alpha3.TLSMatchAttributes{}
+			for _, s := range match.SniHosts {
+				m.SniHosts = append(m.SniHosts, s)
+			}
+			for _, d := range match.DestinationSubnets {
+				m.DestinationSubnets = append(m.DestinationSubnets, d)
+			}
+			for _, g := range match.Gateways {
+				m.Gateways = append(m.Gateways, g)
+			}
+			m.Port = uint32(match.Port)
+			m.SourceSubnet = match.SourceSubnet
+			tls.Match = append(tls.Match, m)
 		}
 
-		for i, route := range serv.Routes {
-			//tls.Route[i] := &v1alpha3.RouteDestination{}
-			tls.Route[i].Weight = route.Weight
-			tls.Route[i].Destination.Port.Number = uint32(route.RouteDestination.Port)
-			tls.Route[i].Destination.Subset = route.RouteDestination.Subnet
-			tls.Route[i].Destination.Host = route.RouteDestination.Host
+		for _, route := range serv.TlsRoute {
+			r := &v1alpha3.RouteDestination{}
+			r.Destination = &v1alpha3.Destination{}
+			r.Weight = route.Weight
+			r.Destination.Port = &v1alpha3.PortSelector{}
+			r.Destination.Port.Number = uint32(route.RouteDestination.Port)
+			r.Destination.Subset = route.RouteDestination.Subnet
+			r.Destination.Host = route.RouteDestination.Host
+			tls.Route = append(tls.Route, r)
 		}
 		vService.Tls = append(vService.Tls, &tls)
 	}
 
 	for _, serv := range input.ServiceAttributes.Tcp {
 		tcp := v1alpha3.TCPRoute{}
-		for i, match := range serv.Match {
-			tcp.Match[i] = &v1alpha3.L4MatchAttributes{}
-			tcp.Match[i].SourceLabels = match.SourceLabels
-			tcp.Match[i].DestinationSubnets = match.DestinationSubnets
-			tcp.Match[i].Gateways = match.Gateways
-			tcp.Match[i].Port = uint32(match.Port)
-			tcp.Match[i].SourceSubnet = match.SourceSubnet
+		for _, match := range serv.TcpMatch {
+			m := &v1alpha3.L4MatchAttributes{}
+			m.SourceLabels = match.SourceLabels
+			m.DestinationSubnets = match.DestinationSubnets
+			m.Gateways = match.Gateways
+			m.Port = uint32(match.Port)
+			m.SourceSubnet = match.SourceSubnet
+			tcp.Match = append(tcp.Match, m)
 		}
 
-		for _, route := range serv.Routes {
-			destination := &v1alpha3.RouteDestination{}
-			destination.Weight = route.Weight
-			destination.Destination.Port.Number = uint32(route.Destination.Port)
-			destination.Destination.Subset = route.Destination.Subnet
-			destination.Destination.Host = route.Destination.Host
-			tcp.Route = append(tcp.Route, destination)
+		for _, route := range serv.TcpRoutes {
+			d := &v1alpha3.RouteDestination{}
+			d.Destination = &v1alpha3.Destination{}
+			d.Destination.Port = &v1alpha3.PortSelector{}
+			d.Destination.Port.Number = uint32(route.Destination.Port)
+			d.Destination.Subset = route.Destination.Subnet
+			d.Destination.Host = route.Destination.Host
+			d.Weight = route.Weight
+			tcp.Route = append(tcp.Route, d)
 		}
 		vService.Tcp = append(vService.Tcp, &tcp)
 	}
