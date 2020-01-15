@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package proto;
+import "service.proto";
+service StorageClass {
+    rpc CreateStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc GetStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc DeleteStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc PatchStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc PutStorageClass (StorageClassService) returns (ServiceResponse) {}
+}
+message StorageClassService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string token = 7;
+    string company_id = 8;
+    StorageClassAttributes service_attributes = 9;
+}
+message StorageClassServiceResponse {
+    string error = 1;
+    StorageClassService resp = 2;
+}
+
+message StorageClassAttributes{
+    VolumeBindingMode volumeBindingMode =1;
+    bool allowVolumeExpansion  =2;
+    string  provisioner =3;
+    Parameters scParameters =4;
+    ReclaimPolicy reclaimPolicy =5;
+}
+
+enum VolumeBindingMode{
+    Immediate=0;
+    WaitForFirstCustomer=1;
+}
+
+enum ReclaimPolicy{
+    Retain=0;
+    Delete=1;
+}
+
+message Parameters{
+    map<string,string>  gcppdscParm    =1;
+    map<string,string>  awsebsscParm    =2;
+    map<string,string>  azurdiskscParm    =3;
+    map<string,string>  azurfilescParm  =4;
+}

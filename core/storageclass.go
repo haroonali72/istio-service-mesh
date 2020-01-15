@@ -3,27 +3,24 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	"strings"
+	core "k8s.io/api/core/v1"
+	"k8s.io/api/storage/v1"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
+func (s *Server) CreateStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getStorageClass(req)
+
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -74,14 +71,14 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getStorageClass(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -120,14 +117,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getStorageClass(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -166,14 +163,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getStorageClass(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -212,14 +209,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutStorageClass(ctx context.Context, req *pb.StorageClassService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getStorageClass(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -259,76 +256,83 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
-	labels := make(map[string]string)
-	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
-
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
-		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
+	var sc = new(v1.StorageClass)
+	sc.Name = input.Name
+	sc.TypeMeta.Kind = "StorageClass"
+	sc.TypeMeta.APIVersion = "storage.k8s.io/v1"
+	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMode_WaitForFirstCustomer.String() {
+		vbm := v1.VolumeBindingWaitForFirstConsumer
+		sc.VolumeBindingMode = &vbm
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
-}
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
-	if err != nil {
-		utils.Error.Println(err)
-
-		return nil, err
+	if reclaimPoilcy := input.ServiceAttributes.ReclaimPolicy.String(); reclaimPoilcy == pb.ReclaimPolicy_Retain.String() {
+		rcp := core.PersistentVolumeReclaimRetain
+		sc.ReclaimPolicy = &rcp
 	}
-	return gtwReq, nil
+	sc.Parameters = make(map[string]string)
+	// SC  AWSEBS
+	if len(input.ServiceAttributes.ScParameters.AwsebsscParm) > 0 {
+		sc.Provisioner = "kubernetes.io/aws-ebs"
+		ebsType := input.ServiceAttributes.ScParameters.AwsebsscParm["type"]
+		if ebsType == "io1" {
+
+			io1IopsperGb := input.ServiceAttributes.ScParameters.AwsebsscParm["iopsPerGB"]
+			if io1IopsperGb == "" {
+				return nil, errors.New("can not find io1 IopsperGb in sc parameters")
+			}
+			sc.Parameters["iopsPerGB"] = io1IopsperGb
+		}
+		sc.Parameters["type"] = ebsType
+		sc.Parameters["encrypted"] = input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"]
+		if kmsKeyId := input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]; kmsKeyId != "" {
+			sc.Parameters["kmsKeyId"] = input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]
+		}
+	}
+
+	// SC  GCPPD
+	if len(input.ServiceAttributes.ScParameters.GcppdscParm) > 0 {
+		sc.Provisioner = "kubernetes.io/gce-pd"
+
+		if gcppdType := input.ServiceAttributes.ScParameters.GcppdscParm["type"]; gcppdType == "pd-standard" {
+			sc.Parameters["type"] = gcppdType
+		}
+		if regionalpd := input.ServiceAttributes.ScParameters.GcppdscParm["replication-type"]; regionalpd == "regional-pd" {
+			sc.Parameters["replication-type"] = regionalpd
+		}
+	}
+	// SC  Azuredisk
+	if len(input.ServiceAttributes.ScParameters.AzurdiskscParm) > 0 {
+		sc.Provisioner = "kubernetes.io/azure-disk"
+		if skuName := input.ServiceAttributes.ScParameters.AzurdiskscParm["skuName"]; skuName != "" {
+			sc.Parameters["skuName"] = skuName
+		}
+		if location := input.ServiceAttributes.ScParameters.AzurdiskscParm["location"]; location != "" {
+			sc.Parameters["location"] = location
+		}
+		if sa := input.ServiceAttributes.ScParameters.AzurdiskscParm["storageAccount"]; sa != "" {
+			sc.Parameters["storageAccount"] = sa
+		}
+
+	}
+	// SC  AzureFile
+	if len(input.ServiceAttributes.ScParameters.AzurfilescParm) > 0 {
+		sc.Provisioner = "kubernetes.io/azure-file"
+		if skuName := input.ServiceAttributes.ScParameters.AzurfilescParm["skuName"]; skuName != "" {
+			sc.Parameters["skuName"] = skuName
+		}
+		if location := input.ServiceAttributes.ScParameters.AzurfilescParm["location"]; location != "" {
+			sc.Parameters["location"] = location
+		}
+		if sa := input.ServiceAttributes.ScParameters.AzurfilescParm["storageAccount"]; sa != "" {
+			sc.Parameters["storageAccount"] = sa
+		}
+		if scNs := input.ServiceAttributes.ScParameters.AzurfilescParm["secretNamespace"]; scNs != "" {
+			sc.Parameters["secretNamespace"] = scNs
+		}
+		if sa := input.ServiceAttributes.ScParameters.AzurfilescParm["secretName"]; sa != "" {
+			sc.Parameters["secretName"] = sa
+		}
+
+	}
+	return sc, nil
 }

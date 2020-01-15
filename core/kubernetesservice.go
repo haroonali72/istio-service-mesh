@@ -3,27 +3,22 @@ package core
 import (
 	"context"
 	"encoding/json"
+	kb "golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	"strings"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
+func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getRequestKubeObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -61,28 +56,15 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 
-	/*converToResp(serviceResp,req.ProjectId,statusCode,resp)
-
-	url := fmt.Sprintf("%s%s",constants.KubernetesEngineURL,constants.KUBERNETES_SERVICES_DEPLOYMENT)
-	statusCode, resp, err := utils.Post(url,ksdRequest,getHeaders(ctx,req.ProjectId))
-
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
-	}
-	converToResp(serviceResp,req.ProjectId,statusCode,resp)
-	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	ksdRequest, err := getRequestKubeObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -120,15 +102,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	ksdRequest, err := getRequestKubeObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -166,21 +147,19 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	ksdRequest, err := getRequestKubeObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
@@ -212,15 +191,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
-
+	ksdRequest, err := getRequestKubeObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -259,72 +237,39 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
+func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
+	var kube = new(kb.Service)
+	kube.Kind = "Service"
+	kube.APIVersion = "v1"
+	kube.Name = input.Name
+	kube.Namespace = input.Namespace
+	kube.ResourceVersion = input.Version
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
+	kube.Labels = labels
 
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
-		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+	for _, port := range input.KubeServiceAttributes.KubePorts {
+		spec := *new(kb.ServicePort)
+		spec.Name = port.Name
+		spec.Port = int(port.Port)
+		spec.Protocol = kb.Protocol(port.Protocol)
+		spec.NodePort = int(port.NodePort)
+		g := kb.IntOrString{IntVal: int(port.TargetPort), Kind: kb.IntstrKind(1)}
+		spec.TargetPort = g
+		kube.Spec.Ports = append(kube.Spec.Ports, spec)
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
+
+	thisMap := make(map[string]string)
+	thisMap["label1"] = input.KubeServiceAttributes.Selector.Label1
+	thisMap["label2"] = input.KubeServiceAttributes.Selector.Label2
+	kube.Spec.Selector = thisMap
+	kube.Spec.Type = kb.ServiceType(input.KubeServiceAttributes.Type)
+	kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+	return kube, nil
 }
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
+func getRequestKubeObject(req *pb.KubernetesService) (*kb.Service, error) {
+	gtwReq, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 

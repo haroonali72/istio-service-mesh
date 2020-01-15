@@ -1,0 +1,44 @@
+syntax= "proto3";
+
+package proto;
+import "service.proto";
+import "google/protobuf/any.proto";
+service RoleBinding{
+    rpc CreateRoleBindingService(RoleBindingService) returns (ServiceResponse){}
+    rpc GetRoleBindingService(RoleBindingService) returns (ServiceResponse){}
+    rpc PutRoleBindingService(RoleBindingService) returns (ServiceResponse){}
+    rpc PatchRoleBindingService(RoleBindingService) returns (ServiceResponse){}
+    rpc DeleteRoleBindingService(RoleBindingService) returns (ServiceResponse){}
+}
+
+message RoleBindingService{
+    string service_id = 1;
+    string token = 2;
+    string project_id=3;
+    string company_id = 4;
+    string name = 5;
+    string service_type= 6;
+    string service_sub_type =7;
+    google.protobuf.Any service_dependency_info=8;
+    string namespace =9;
+    string version =10;
+    RoleBServiceAttributee service_attributes =11;
+}
+
+message RoleBServiceAttributee {
+    repeated RoleBSubject subjects=1;
+    RoleBReference reference=2;
+    repeated string host_name=3;
+}
+
+message RoleBSubject{
+    string kind = 1;
+    string name = 2;
+    string api_group=3;
+}
+
+message RoleBReference {
+    string kind = 1;
+    string name = 2;
+    string api_group=3;
+}

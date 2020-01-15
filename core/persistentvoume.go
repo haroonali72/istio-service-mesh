@@ -3,27 +3,24 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	"strings"
+	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
+func (s *Server) CreatePersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolume(req)
+
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -74,14 +71,14 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetPersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolume(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -120,14 +117,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeletePersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolume(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -166,14 +163,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchPersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolume(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -212,14 +209,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutPersistentVolume(ctx context.Context, req *pb.PersistentVolumeService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolume(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -259,76 +256,61 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
-	labels := make(map[string]string)
-	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
-
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
-		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVolume, error) {
+	var pv = new(core.PersistentVolume)
+	pv.Name = input.Name
+	pv.TypeMeta.Kind = "PersistentVolume"
+	pv.TypeMeta.APIVersion = "v1"
+	if len(input.ServiceAttributes.Labels) > 0 {
+		pv.Labels = input.ServiceAttributes.Labels
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
-}
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
+	if reclaimPoilcy := input.ServiceAttributes.ReclaimPolicy.String(); reclaimPoilcy == pb.ReclaimPolicy_Delete.String() {
+		rcp := core.PersistentVolumeReclaimDelete
+		pv.Spec.PersistentVolumeReclaimPolicy = rcp
+	}
+	for _, each := range input.ServiceAttributes.AccessMode {
+		if each == pb.AccessMode_ReadOnlyMany {
+			pv.Spec.AccessModes = append(pv.Spec.AccessModes, core.ReadOnlyMany)
+		} else if each == pb.AccessMode_ReadWriteMany {
+			pv.Spec.AccessModes = append(pv.Spec.AccessModes, core.ReadWriteMany)
+		} else if each == pb.AccessMode_ReadWriteOnce {
+			pv.Spec.AccessModes = append(pv.Spec.AccessModes, core.ReadWriteOnce)
+		}
+	}
+	quantity, err := resource.ParseQuantity(input.ServiceAttributes.Capcity)
 	if err != nil {
-		utils.Error.Println(err)
-
-		return nil, err
+		return nil, errors.New("invalid storage capacity ")
 	}
-	return gtwReq, nil
+	pv.Spec.Capacity = make(map[core.ResourceName]resource.Quantity)
+	pv.Spec.Capacity["storage"] = quantity
+	if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
+		pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
+		pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
+		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.ReadOnly
+	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
+		pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
+		pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
+		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.ReadOnly
+	} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk != nil {
+		pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
+		pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName
+		pv.Spec.AzureDisk.DataDiskURI = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI
+		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "None" {
+			temp := core.AzureDataDiskCachingNone
+			pv.Spec.AzureDisk.CachingMode = &temp
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "ReadOnly" {
+			temp := core.AzureDataDiskCachingReadOnly
+			pv.Spec.AzureDisk.CachingMode = &temp
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "ReadWrite" {
+			temp := core.AzureDataDiskCachingReadWrite
+			pv.Spec.AzureDisk.CachingMode = &temp
+		}
+		pv.Spec.AzureDisk.ReadOnly = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly
+	} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile != nil {
+		pv.Spec.AzureFile = new(core.AzureFilePersistentVolumeSource)
+		pv.Spec.AzureFile.SecretName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName
+		pv.Spec.AzureFile.ShareName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName
+		pv.Spec.AzureFile.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly
+	}
+	return pv, nil
 }

@@ -7,15 +7,13 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	"strings"
+	cor "k8s.io/api/core/v1"
+	net "k8s.io/api/networking/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -23,7 +21,8 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getNetworkPolicy(req)
+
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -74,14 +73,14 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -120,14 +119,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -166,14 +165,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -212,14 +211,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getNetworkPolicy(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -259,76 +258,140 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
-	labels := make(map[string]string)
-	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
-
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error) {
+	var np = new(net.NetworkPolicy)
+	np.Name = input.Name
+	np.TypeMeta.Kind = "NetworkPolicy"
+	np.TypeMeta.APIVersion = "networking.k8s.io/v1"
+	np.Namespace = input.Namespace
+	if ls, err := getLabelSelector(input.ServiceAttributes.PodSelector); err == nil {
+		if ls != nil {
+			np.Spec.PodSelector = *ls
 		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
-	}
-	istioServ.Spec = gateway
-	return istioServ, nil
-}
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
-	if err != nil {
+	} else {
 		utils.Error.Println(err)
-
-		return nil, err
 	}
-	return gtwReq, nil
+	var err error
+	if len(input.ServiceAttributes.Ingress) > 0 {
+		for _, each := range input.ServiceAttributes.Ingress {
+			temp := net.NetworkPolicyIngressRule{}
+			for _, each2 := range each.From {
+				temp2 := net.NetworkPolicyPeer{}
+				temp2.PodSelector, err = getLabelSelector(each2.PodSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.NamespaceSelector, err = getLabelSelector(each2.NamespaceSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.IPBlock = new(net.IPBlock)
+				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+				temp2.IPBlock.Except = each2.IpBlock.Except
+				temp.From = append(temp.From, temp2)
+			}
+			for _, each2 := range each.Ports {
+				temp2 := net.NetworkPolicyPort{}
+				if each2.Port.PortName != "" {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				} else {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				}
+				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
+					tcp := cor.ProtocolSCTP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_UDP.String() {
+					tcp := cor.ProtocolUDP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_TCP.String() {
+					tcp := cor.ProtocolTCP
+					temp2.Protocol = &tcp
+				}
+
+				temp.Ports = append(temp.Ports, temp2)
+			}
+			np.Spec.Ingress = append(np.Spec.Ingress, temp)
+		}
+		np.Spec.PolicyTypes = append(np.Spec.PolicyTypes, net.PolicyTypeIngress)
+	}
+	if len(input.ServiceAttributes.Egress) > 0 {
+
+		for _, each := range input.ServiceAttributes.Egress {
+			temp := net.NetworkPolicyEgressRule{}
+			for _, each2 := range each.To {
+				temp2 := net.NetworkPolicyPeer{}
+				temp2.PodSelector, err = getLabelSelector(each2.PodSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.NamespaceSelector, err = getLabelSelector(each2.NamespaceSelector)
+				if err != nil {
+					return nil, err
+				}
+				temp2.IPBlock = new(net.IPBlock)
+				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+				temp2.IPBlock.Except = each2.IpBlock.Except
+				temp.To = append(temp.To, temp2)
+			}
+			for _, each2 := range each.Ports {
+				temp2 := net.NetworkPolicyPort{}
+				if each2.Port.PortName != "" {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				} else {
+					port := intstr.FromString(each2.Port.PortName)
+					temp2.Port = &port
+				}
+				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
+					tcp := cor.ProtocolSCTP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_UDP.String() {
+					tcp := cor.ProtocolUDP
+					temp2.Protocol = &tcp
+				} else if each2.Protocol.String() == pb.Protocol_TCP.String() {
+					tcp := cor.ProtocolTCP
+					temp2.Protocol = &tcp
+				}
+
+				temp.Ports = append(temp.Ports, temp2)
+			}
+			np.Spec.Egress = append(np.Spec.Egress, temp)
+		}
+		np.Spec.PolicyTypes = append(np.Spec.PolicyTypes, net.PolicyTypeEgress)
+	}
+	return np, nil
+}
+
+func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, error) {
+	lenl := len(service.MatchLabel)
+	lene := len(service.MatchExpression)
+	if lene == 0 && lenl == 0 {
+		return nil, nil
+	}
+	ls := new(metav1.LabelSelector)
+
+	for k, v := range service.MatchLabel {
+		ls.MatchLabels[k] = v
+	}
+	for i := 0; i < len(service.MatchExpression); i++ {
+		if len(service.MatchExpression[i].Key) > 0 && (service.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
+			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
+			byteData, err := json.Marshal(service.MatchExpression[i])
+			if err != nil {
+				return nil, err
+			}
+			var temp metav1.LabelSelectorRequirement
+
+			err = json.Unmarshal(byteData, &temp)
+			if err != nil {
+				return nil, err
+			}
+			ls.MatchExpressions = append(ls.MatchExpressions, temp)
+		}
+	}
+	return ls, nil
 }

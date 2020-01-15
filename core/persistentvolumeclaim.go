@@ -3,19 +3,17 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	"strings"
+	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -23,7 +21,8 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolumeClaim(req)
+
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -74,14 +73,14 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolumeClaim(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -120,14 +119,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeletePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolumeClaim(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -166,14 +165,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolumeClaim(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -212,14 +211,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	ksdRequest, err := getPersistentVolumeClaim(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -259,76 +258,77 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
-	labels := make(map[string]string)
-	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
+func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.PersistentVolumeClaim, error) {
+	var pvc = new(core.PersistentVolumeClaim)
+	pvc.Name = input.Name
+	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
+	pvc.TypeMeta.APIVersion = "v1"
+	pvc.Namespace = input.Namespace
+	if input.ServiceAttributes.StorageClassName != "" {
+		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
+	} else if input.ServiceAttributes.VolumeName != "" {
+		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
+		//label selector applied
+		lenl := len(input.ServiceAttributes.LabelSelector.MatchLabel)
+		lene := len(input.ServiceAttributes.LabelSelector.MatchExpression)
 
-	gateway.Selector = input.ServiceAttributes.Selectors
+		if (!(lenl > 0)) && lene > 0 {
 
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+			pvc.Spec.Selector = &metav1.LabelSelector{nil, nil}
+		} else if lene > 0 || lenl > 0 {
+			pvc.Spec.Selector = &metav1.LabelSelector{MatchLabels: make(map[string]string)}
+
 		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
+
+		for k, v := range input.ServiceAttributes.LabelSelector.MatchLabel {
+			pvc.Spec.Selector.MatchLabels[k] = v
 		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+		for i := 0; i < len(input.ServiceAttributes.LabelSelector.MatchExpression); i++ {
+			if len(input.ServiceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
+				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
+				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
+				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
+				byteData, err := json.Marshal(input.ServiceAttributes.LabelSelector.MatchExpression[i])
+				if err != nil {
+					return nil, err
+				}
+				var temp metav1.LabelSelectorRequirement
+
+				err = json.Unmarshal(byteData, &temp)
+				if err != nil {
+					return nil, err
+				}
+				pvc.Spec.Selector.MatchExpressions = append(pvc.Spec.Selector.MatchExpressions, temp)
+			}
+		}
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
-}
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
-
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
-
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
-}
-
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
-	if err != nil {
-		utils.Error.Println(err)
-
-		return nil, err
+	for _, each := range input.ServiceAttributes.AccessMode {
+		if each == pb.AccessMode_ReadOnlyMany {
+			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadOnlyMany)
+		} else if each == pb.AccessMode_ReadWriteMany {
+			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteMany)
+		} else if each == pb.AccessMode_ReadWriteOnce {
+			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadWriteOnce)
+		}
 	}
-	return gtwReq, nil
+	if input.ServiceAttributes.RequestQuantity != "" {
+		quantity, err := resource.ParseQuantity(input.ServiceAttributes.RequestQuantity)
+		if err != nil {
+			return nil, errors.New("invalid storage capacity ")
+		}
+		pvc.Spec.Resources.Requests = make(map[core.ResourceName]resource.Quantity)
+
+		pvc.Spec.Resources.Requests["storage"] = quantity
+	}
+	if input.ServiceAttributes.LimitQuantity != "" {
+		quantity, err := resource.ParseQuantity(input.ServiceAttributes.LimitQuantity)
+		if err != nil {
+			return nil, errors.New("invalid storage capacity ")
+		}
+		pvc.Spec.Resources.Limits = make(map[core.ResourceName]resource.Quantity)
+
+		pvc.Spec.Resources.Limits["storage"] = quantity
+	}
+
+	return pvc, nil
 }
