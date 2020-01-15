@@ -543,20 +543,20 @@ func convertCommandAndArguments(container *coreV1.Container) (command []string, 
 	return command, args
 }
 
-func convertLimitResource(container *coreV1.Container) map[types.RecourceType]string {
-	var limitResources = make(map[types.RecourceType]string)
+func convertLimitResource(container *coreV1.Container) map[string]string {
+	var limitResources = make(map[string]string)
 	for rName, rValue := range container.Resources.Limits {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			limitResources[types.RecourceType(rName)] = rValue.String()
+			limitResources[string(rName)] = rValue.String()
 		}
 	}
 	return limitResources
 }
-func convertRequestResource(container *coreV1.Container) map[types.RecourceType]string {
-	var requestResources = make(map[types.RecourceType]string)
+func convertRequestResource(container *coreV1.Container) map[string]string {
+	var requestResources = make(map[string]string)
 	for rName, rValue := range container.Resources.Requests {
 		if rName == coreV1.ResourceCPU || rName == coreV1.ResourceMemory || rName == coreV1.ResourceStorage || rName == coreV1.ResourceEphemeralStorage {
-			requestResources[types.RecourceType(rName)] = rValue.String()
+			requestResources[string(rName)] = rValue.String()
 		}
 	}
 	return requestResources

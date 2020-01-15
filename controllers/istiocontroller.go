@@ -699,6 +699,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 	}
 	isExistSecret := make(map[string]bool)
 	isExistConfigMap := make(map[string]bool)
+
 	for _, every := range secrets {
 		isExistSecret[every] = true
 		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
@@ -710,6 +711,7 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 			},
 		})
 	}
+
 	for _, every := range configMaps {
 		isExistConfigMap[every] = true
 		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v1.Volume{
@@ -2982,10 +2984,10 @@ func putCommandAndArguments(container *v1.Container, command, args []string) err
 	}
 	return nil
 }
-func putLimitResource(container *v1.Container, limitResources map[types.RecourceType]string) error {
+func putLimitResource(container *v1.Container, limitResources map[string]string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for t, v := range limitResources {
-		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+		if t == types.ResourceTypeCpu || t == types.ResourceTypeMemory {
 			quantity, err := resource.ParseQuantity(v)
 			if err != nil {
 				return err
@@ -2999,10 +3001,10 @@ func putLimitResource(container *v1.Container, limitResources map[types.Recource
 	container.Resources.Limits = temp
 	return nil
 }
-func putRequestResource(container *v1.Container, requestResources map[types.RecourceType]string) error {
+func putRequestResource(container *v1.Container, requestResources map[string]string) error {
 	temp := make(map[v1.ResourceName]resource.Quantity)
 	for t, v := range requestResources {
-		if t == types.RecourceTypeCpu || t == types.RecourceTypeMemory {
+		if t == types.ResourceTypeCpu || t == types.ResourceTypeMemory {
 			quantity, err := resource.ParseQuantity(v)
 			if err != nil {
 				return err

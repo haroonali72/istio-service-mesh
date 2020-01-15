@@ -1,6 +1,7 @@
 package types
 
 import (
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v12 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
@@ -9,7 +10,6 @@ import (
 	rbacV1 "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"time"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
 type Route struct {
@@ -142,11 +142,10 @@ type ScaleTargetRef struct {
 	Version string `json:"version"`
 	Type    string `json:"type"`
 }
-type RecourceType string
 
 const (
-	RecourceTypeMemory RecourceType = "memory"
-	RecourceTypeCpu    RecourceType = "cpu"
+	ResourceTypeMemory string = "memory"
+	ResourceTypeCpu    string = "cpu"
 )
 
 type ExecAction struct {
@@ -266,15 +265,15 @@ type DockerServiceAttributes struct {
 	Args                          multiString                    `json:"args,omitempty"`
 	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
 	//resource types: cpu, memory
-	LimitResources        map[RecourceType]string `json:"limit_resources,omitempty"`
-	RequestResources      map[RecourceType]string `json:"request_resources,omitempty"`
-	Labels                map[string]string       `json:"labels,omitempty"`
-	Annotations           map[string]string       `json:"annotations,omitempty"`
-	CronJobScheduleString string                  `json:"cron_job_schedule_string"`
-	LivenessProb          *Probe                  `json:"liveness_probe,omitempty"`
-	RedinessProb          *Probe                  `json:"readiness_probe,omitempty"`
-	Name                  string                  `json:"name,omitempty"`
-	IsRbac                bool                    `json:"is_rbac_enabled"`
+	LimitResources        map[string]string `json:"limit_resources,omitempty"`
+	RequestResources      map[string]string `json:"request_resources,omitempty"`
+	Labels                map[string]string `json:"labels,omitempty"`
+	Annotations           map[string]string `json:"annotations,omitempty"`
+	CronJobScheduleString string            `json:"cron_job_schedule_string"`
+	LivenessProb          *Probe            `json:"liveness_probe,omitempty"`
+	RedinessProb          *Probe            `json:"readiness_probe,omitempty"`
+	Name                  string            `json:"name,omitempty"`
+	IsRbac                bool              `json:"is_rbac_enabled"`
 
 	RbacRoles []K8sRbacAttribute `json:"roles,omitempty"`
 
@@ -449,7 +448,7 @@ type OutputServices struct {
 	ConfigMap              []v1.ConfigMap                        `json:"configmap"`
 	Kubernetes             []v1.Service                          `json:"kubernetes-service"`
 	Istio                  []IstioObject                         `json:"istio-component"`
-	IstioGateway		   []*istioClient.Gateway `json:"gateway"`
+	IstioGateway           []*istioClient.Gateway                `json:"gateway"`
 	StorageClasses         []storage.StorageClass                `json:"storage-classes"`
 	RoleClasses            []rbacV1.Role                         `json:"role-classes"`
 	RoleBindingClasses     []rbacV1.RoleBinding                  `json:"role-binding-classes"`
