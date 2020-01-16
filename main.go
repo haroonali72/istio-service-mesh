@@ -81,6 +81,7 @@ func main() {
 	pb.RegisterVirtualServer(srv, svc)
 	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterPolicyServer(srv, svc)
+	pb.RegisterSecretServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {

@@ -466,6 +466,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		}
 		vService.Tcp = append(vService.Tcp, &tcp)
 	}
+	vServ.Spec = vService
 	return vServ, nil
 }
 func getVirtualServiceSpec() (v1alpha3.VirtualService, error) {
