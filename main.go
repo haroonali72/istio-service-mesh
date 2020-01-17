@@ -80,6 +80,7 @@ func main() {
 	pb.RegisterHpaServer(srv, svc)
 	pb.RegisterVirtualServer(srv, svc)
 	pb.RegisterDestinationrulesServer(srv, svc)
+	pb.RegisterK8SResourceServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {
