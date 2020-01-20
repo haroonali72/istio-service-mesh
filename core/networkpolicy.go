@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -385,15 +386,23 @@ func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, erro
 		ls.MatchLabels[k] = v
 	}
 	for i := 0; i < len(service.MatchExpression); i++ {
-		if len(service.MatchExpression[i].Key) > 0 && (service.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
+		if len(service.MatchExpression[i].Key) > 0 {
+			var temp metav1.LabelSelectorRequirement
+			if service.MatchExpression[i].Operator.String() == pb.LabelSelectorOperator_DoesNotExist.String() {
+				temp.Operator = metav1.LabelSelectorOpDoesNotExist
+			} else if service.MatchExpression[i].Operator.String() == pb.LabelSelectorOperator_Exists.String() {
+				temp.Operator = metav1.LabelSelectorOpExists
+			} else if service.MatchExpression[i].Operator.String() == pb.LabelSelectorOperator_In.String() {
+				temp.Operator = metav1.LabelSelectorOpIn
+			} else if service.MatchExpression[i].Operator.String() == pb.LabelSelectorOperator_NotIn.String() {
+				temp.Operator = metav1.LabelSelectorOpNotIn
+			} else {
+				return nil, errors.New("Invalid operator in label selector")
+			}
 			byteData, err := json.Marshal(service.MatchExpression[i])
 			if err != nil {
 				return nil, err
 			}
-			var temp metav1.LabelSelectorRequirement
 
 			err = json.Unmarshal(byteData, &temp)
 			if err != nil {

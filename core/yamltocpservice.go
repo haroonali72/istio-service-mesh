@@ -273,10 +273,26 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*types.Per
 	}
 	persistentVolume.ServiceAttributes.LabelSelector = getCPLabelSelector(pvc.Spec.Selector)
 	persistentVolume.ServiceAttributes.VolumeName = pvc.Spec.VolumeName
-	qu := pvc.Spec.Resources.Requests[v1.ResourceStorage]
-	persistentVolume.ServiceAttributes.Request = qu.String()
-	qu = pvc.Spec.Resources.Limits[v1.ResourceStorage]
-	persistentVolume.ServiceAttributes.Limit = qu.String()
+	if len(pvc.Spec.Resources.Requests) > 0 {
+		qu := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+		persistentVolume.ServiceAttributes.Request = qu.String()
+
+	}
+
+	if len(pvc.Spec.Resources.Limits) > 0 {
+		qu := pvc.Spec.Resources.Limits[v1.ResourceStorage]
+		persistentVolume.ServiceAttributes.Limit = qu.String()
+
+	}
+	if pvc.Spec.DataSource != nil {
+		persistentVolume.ServiceAttributes.DataSource = new(types.TypedLocalObjectReference)
+		persistentVolume.ServiceAttributes.DataSource.Name = pvc.Spec.DataSource.Name
+		persistentVolume.ServiceAttributes.DataSource.Kind = pvc.Spec.DataSource.Kind
+		if pvc.Spec.DataSource.APIGroup != nil {
+			persistentVolume.ServiceAttributes.DataSource.APIGroup = pvc.Spec.DataSource.APIGroup
+		}
+
+	}
 	for _, each := range pvc.Spec.AccessModes {
 		var am types.AccessMode
 		if each == v1.ReadWriteOnce {

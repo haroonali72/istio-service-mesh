@@ -36,6 +36,12 @@ message PersistentVolumeClaimAttributes {
     string requestQuantity=5;
     string limitQuantity=6;
     PersistentVolumeMode volumeMode=7;
+    TypedLocalObjectReference dataSource=8;
+}
+message  TypedLocalObjectReference  {
+ string apiGroup=1;
+ string kind=2;
+string name=3;
 }
 message LabelSelectorObj {
     map<string,string>  match_label=1;

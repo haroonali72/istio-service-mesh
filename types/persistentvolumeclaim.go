@@ -15,11 +15,26 @@ type PersistentVolumeClaimService struct {
 	ServiceAttributes *PersistentVolumeClaimServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type PersistentVolumeClaimServiceAttribute struct {
-	LabelSelector    *LabelSelectorObj     `json:"label_selector,omitempty"`
-	VolumeName       string                `json:"volumeName,omitempty"`
-	AccessMode       []AccessMode          `json:"accessMode,omitempty"`
-	StorageClassName string                `json:"storageClassName,omitempty"`
-	Request          string                `json:"requestQuantity,omitempty"`
-	Limit            string                `json:"limitQuantity,omitempty"`
-	VolumeMode       *PersistentVolumeMode `json:"volumeMode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
+	LabelSelector    *LabelSelectorObj          `json:"label_selector,omitempty"`
+	VolumeName       string                     `json:"volumeName,omitempty"`
+	AccessMode       []AccessMode               `json:"accessMode,omitempty"`
+	StorageClassName string                     `json:"storageClassName,omitempty"`
+	Request          string                     `json:"requestQuantity,omitempty"`
+	Limit            string                     `json:"limitQuantity,omitempty"`
+	VolumeMode       *PersistentVolumeMode      `json:"volumeMode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
+	DataSource       *TypedLocalObjectReference `json:"dataSource,omitempty" protobuf:"bytes,7,opt,name=dataSource"`
+}
+
+// TypedLocalObjectReference contains enough information to let you locate the
+// typed referenced object inside the same namespace.
+type TypedLocalObjectReference struct {
+	// APIGroup is the group for the resource being referenced.
+	// If APIGroup is not specified, the specified Kind must be in the core API group.
+	// For any other third-party types, APIGroup is required.
+	// +optional
+	APIGroup *string `json:"apiGroup,omitempty" protobuf:"bytes,1,opt,name=apiGroup"`
+	// Kind is the type of resource being referenced
+	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
+	// Name is the name of resource being referenced
+	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 }
