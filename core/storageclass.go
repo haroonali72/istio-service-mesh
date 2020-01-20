@@ -261,6 +261,9 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 	sc.Name = input.Name
 	sc.TypeMeta.Kind = "StorageClass"
 	sc.TypeMeta.APIVersion = "storage.k8s.io/v1"
+	if input.ServiceAttributes == nil {
+		return nil, errors.New("not found")
+	}
 	if input.ServiceAttributes.AllowVolumeExpansion == "true" {
 		vE := true
 		sc.AllowVolumeExpansion = &vE
@@ -269,13 +272,27 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		sc.AllowVolumeExpansion = &vE
 	}
 
-	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMode_WaitForFirstCustomer.String() {
+	if volBindingMod := input.ServiceAttributes.VolumeBindingMode.String(); volBindingMod == pb.VolumeBindingMode_WaitForFirstConsumer.String() {
 		vbm := v1.VolumeBindingWaitForFirstConsumer
 		sc.VolumeBindingMode = &vbm
 	}
 	if reclaimPoilcy := input.ServiceAttributes.ReclaimPolicy.String(); reclaimPoilcy == pb.ReclaimPolicy_Retain.String() {
 		rcp := core.PersistentVolumeReclaimRetain
 		sc.ReclaimPolicy = &rcp
+	}
+
+	for _, each := range input.ServiceAttributes.AllowedTopologies {
+		aT := core.TopologySelectorTerm{}
+		for _, each2 := range each.MatchLabelExpressions {
+			tr := core.TopologySelectorLabelRequirement{}
+			tr.Key = each2.Key
+			for _, value := range each2.Values {
+				tr.Values = append(tr.Values, value)
+			}
+			aT.MatchLabelExpressions = append(aT.MatchLabelExpressions, tr)
+
+		}
+		sc.AllowedTopologies = append(sc.AllowedTopologies, aT)
 	}
 	sc.Parameters = make(map[string]string)
 	// SC  AWSEBS
@@ -297,6 +314,17 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		if kmsKeyId := input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]; kmsKeyId != "" {
 			sc.Parameters["kmsKeyId"] = input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]
 		}
+		if fsType := input.ServiceAttributes.ScParameters.AwsebsscParm["fsType"]; fsType != "" {
+			sc.Parameters["fsType"] = fsType
+		}
+		for _, each := range input.ServiceAttributes.MountOptions {
+			sc.MountOptions = append(sc.MountOptions, each)
+		}
+		if input.ServiceAttributes.ScParameters.AwsebsscParm["zone"] != "" {
+			sc.Parameters["zone"] = input.ServiceAttributes.ScParameters.AwsebsscParm["zone"]
+		} else if input.ServiceAttributes.ScParameters.AwsebsscParm["zones"] != "" {
+			sc.Parameters["zones"] = input.ServiceAttributes.ScParameters.AwsebsscParm["zones"]
+		}
 	}
 
 	// SC  GCPPD
@@ -308,6 +336,14 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		}
 		if regionalpd := input.ServiceAttributes.ScParameters.GcppdscParm["replication-type"]; regionalpd == "regional-pd" {
 			sc.Parameters["replication-type"] = regionalpd
+		}
+		for _, each := range input.ServiceAttributes.MountOptions {
+			sc.MountOptions = append(sc.MountOptions, each)
+		}
+		if input.ServiceAttributes.ScParameters.GcppdscParm["zone"] != "" {
+			sc.Parameters["zone"] = input.ServiceAttributes.ScParameters.GcppdscParm["zone"]
+		} else if input.ServiceAttributes.ScParameters.GcppdscParm["zones"] != "" {
+			sc.Parameters["zones"] = input.ServiceAttributes.ScParameters.GcppdscParm["zones"]
 		}
 	}
 	// SC  Azuredisk
@@ -322,7 +358,9 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		if sa := input.ServiceAttributes.ScParameters.AzurdiskscParm["storageAccount"]; sa != "" {
 			sc.Parameters["storageAccount"] = sa
 		}
-
+		for _, each := range input.ServiceAttributes.MountOptions {
+			sc.MountOptions = append(sc.MountOptions, each)
+		}
 	}
 	// SC  AzureFile
 	if len(input.ServiceAttributes.ScParameters.AzurfilescParm) > 0 {
@@ -342,7 +380,12 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		if sa := input.ServiceAttributes.ScParameters.AzurfilescParm["secretName"]; sa != "" {
 			sc.Parameters["secretName"] = sa
 		}
-
+		if re := input.ServiceAttributes.ScParameters.AzurfilescParm["readOnly"]; re != "" {
+			sc.Parameters["readOnly"] = re
+		}
+		for _, each := range input.ServiceAttributes.MountOptions {
+			sc.MountOptions = append(sc.MountOptions, each)
+		}
 	}
 	return sc, nil
 }

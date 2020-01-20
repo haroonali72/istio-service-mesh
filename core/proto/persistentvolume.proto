@@ -29,7 +29,12 @@ message PersistentVolumeAttributes{
     repeated AccessMode accessMode =3;
     string capcity =4;
     PersistentVolumeSource persistentVolumeSource=5;
+   string storageClassName =6;
+    repeated string mountOptions=7;
+    PersistentVolumeMode volumeMode=8;
+    VolumeNodeAffinity nodeAffinity=9;
 }
+
 message PersistentVolumeSource {
     GCPPD  gcpPd=1;
     AWSEBS  awsEbs=2;
@@ -51,7 +56,8 @@ message AWSEBS {
 }
 
 message AzureDisk {
-    string cachingMode=1;
+    AzureDataDiskCachingMode cachingMode=1;
+    AzureDataDiskKind kind=6;
     string fileSystem=2;
     string diskName=3;
     bool readOnly=4;
@@ -63,10 +69,52 @@ message AzureFile {
     string secretName=1;
     string shareName=2;
     bool readOnly=3;
+    string secretNamespace=4;
 }
 
 enum AccessMode{
     ReadWriteOnce=0;
     ReadOnlyMany=1;
     ReadWriteMany=2;
+}
+
+enum PersistentVolumeMode{
+    Block=0;
+    Filesystem=1;
+}
+
+enum AzureDataDiskCachingMode {
+    None=0;
+    ReadOnly=1;
+    ReadWrite=2;
+}
+
+enum AzureDataDiskKind {
+    Shared=0;
+    Dedicated=1;
+    Managed=2;
+}
+message VolumeNodeAffinity  {
+    NodeSelector required=1;
+}
+
+message NodeSelector {
+    repeated NodeSelectorTerm nodeSelectorTerms = 1;
+}
+message NodeSelectorTerm{
+    repeated NodeSelectorRequirement matchExpressions = 1;
+    repeated NodeSelectorRequirement matchFields = 2;
+}
+message NodeSelectorRequirement{
+    string key = 1;
+    NodeSelectorOperator operator = 2;
+    repeated string values = 3;
+}
+enum NodeSelectorOperator{
+    NodeSelectorOpIn = 0;
+    NodeSelectorOpNotIn = 1;
+    NodeSelectorOpExists = 2;
+    NodeSelectorOpDoesNotExists = 3;
+    NodeSelectorOpGt = 4;
+    NodeSelectorOpLt = 5;
 }

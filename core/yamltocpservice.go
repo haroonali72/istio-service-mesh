@@ -126,7 +126,29 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
+	case *v1.PersistentVolume:
+		pv, err := convertToCPPersistentVolume(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pv)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 
+	case *v1.PersistentVolumeClaim:
+		pvc, err := convertToCPPersistentVolumeClaim(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *apps.Deployment:
 		fmt.Println(o)
 	case *v1beta1.Role:
@@ -237,6 +259,103 @@ func getCPLabelSelector(selector *metav1.LabelSelector) *types.LabelSelectorObj 
 	return ls
 }
 
+func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*types.PersistentVolumeClaimService, error) {
+	persistentVolume := new(types.PersistentVolumeClaimService)
+	persistentVolume.Name = pvc.Name
+	persistentVolume.ServiceType = "k8s"
+	persistentVolume.ServiceSubType = "PVC"
+	persistentVolume.ServiceAttributes = new(types.PersistentVolumeClaimServiceAttribute)
+	if pvc.Spec.StorageClassName != nil {
+		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
+	}
+	persistentVolume.ServiceAttributes.LabelSelector = getCPLabelSelector(pvc.Spec.Selector)
+	persistentVolume.ServiceAttributes.VolumeName = pvc.Spec.VolumeName
+	qu := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+	persistentVolume.ServiceAttributes.Request = qu.String()
+	qu = pvc.Spec.Resources.Limits[v1.ResourceStorage]
+	persistentVolume.ServiceAttributes.Limit = qu.String()
+	for _, each := range pvc.Spec.AccessModes {
+		var am types.AccessMode
+		if each == v1.ReadWriteOnce {
+			am = types.AccessModeReadWriteOnce
+		} else if each == v1.ReadOnlyMany {
+			am = types.AccessModeReadOnlyMany
+		} else if each == v1.ReadWriteMany {
+			am = types.AccessModeReadWriteMany
+		} else {
+			continue
+		}
+
+		persistentVolume.ServiceAttributes.AccessMode = append(persistentVolume.ServiceAttributes.AccessMode, am)
+	}
+	return persistentVolume, nil
+}
+
+func convertToCPPersistentVolume(pv *v1.PersistentVolume) (*types.PersistentVolumeService, error) {
+	persistentVolume := new(types.PersistentVolumeService)
+	persistentVolume.Name = pv.Name
+	persistentVolume.ServiceType = "k8s"
+	persistentVolume.ServiceSubType = "PV"
+	persistentVolume.ServiceAttributes = new(types.PersistentVolumeServiceAttribute)
+	persistentVolume.ServiceAttributes.ReclaimPolicy = types.ReclaimPolicy(pv.Spec.PersistentVolumeReclaimPolicy)
+	qu := pv.Spec.Capacity[v1.ResourceStorage]
+	persistentVolume.ServiceAttributes.Capcity = qu.String()
+	if len(pv.Labels) > 0 {
+		persistentVolume.ServiceAttributes.Labels = make(map[string]string)
+	}
+	for k, v := range pv.Labels {
+		persistentVolume.ServiceAttributes.Labels[k] = v
+	}
+	persistentVolume.ServiceAttributes.StorageClassName = pv.Spec.StorageClassName
+	for _, each := range pv.Spec.MountOptions {
+		persistentVolume.ServiceAttributes.MountOptions = append(persistentVolume.ServiceAttributes.MountOptions, each)
+	}
+	if pv.Spec.VolumeMode != nil {
+		persistentVolume.ServiceAttributes.VolumeMode = (*types.PersistentVolumeMode)(pv.Spec.VolumeMode)
+	}
+	for _, each := range pv.Spec.AccessModes {
+		var am types.AccessMode
+		if each == v1.ReadWriteOnce {
+			am = types.AccessModeReadWriteOnce
+		} else if each == v1.ReadOnlyMany {
+			am = types.AccessModeReadOnlyMany
+		} else if each == v1.ReadWriteMany {
+			am = types.AccessModeReadWriteMany
+		} else {
+			continue
+		}
+
+		persistentVolume.ServiceAttributes.AccessMode = append(persistentVolume.ServiceAttributes.AccessMode, am)
+	}
+	if pv.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.VolumeId = pv.Spec.AWSElasticBlockStore.VolumeID
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.ReadOnly = pv.Spec.AWSElasticBlockStore.ReadOnly
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.Filesystem = pv.Spec.AWSElasticBlockStore.FSType
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.Partition = int(pv.Spec.AWSElasticBlockStore.Partition)
+	} else if pv.Spec.PersistentVolumeSource.GCEPersistentDisk != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.PdName = pv.Spec.GCEPersistentDisk.PDName
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.ReadOnly = pv.Spec.GCEPersistentDisk.ReadOnly
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.Filesystem = pv.Spec.GCEPersistentDisk.FSType
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.Partition = int(pv.Spec.GCEPersistentDisk.Partition)
+	} else if pv.Spec.PersistentVolumeSource.AzureFile != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly = pv.Spec.AzureFile.ReadOnly
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName = pv.Spec.AzureFile.ShareName
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName = pv.Spec.AzureFile.SecretName
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace = *pv.Spec.AzureFile.SecretNamespace
+	} else if pv.Spec.PersistentVolumeSource.AzureDisk != nil {
+		if pv.Spec.AzureDisk.ReadOnly != nil {
+			persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly = *pv.Spec.AzureDisk.ReadOnly
+		}
+		if pv.Spec.AzureDisk.FSType != nil {
+			persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk.Filesystem = *pv.Spec.AzureDisk.FSType
+		}
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI = pv.Spec.AzureDisk.DataDiskURI
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName = pv.Spec.AzureDisk.DiskName
+	}
+
+	return persistentVolume, nil
+}
+
 func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassService, error) {
 	storageClass := new(types.StorageClassService)
 	storageClass.Name = sc.Name
@@ -254,6 +373,21 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassServi
 			storageClass.ServiceAttributes.AllowVolumeExpansion = "false"
 		}
 	}
+
+	for _, each := range sc.AllowedTopologies {
+		aT := types.TopologySelectorTerm{}
+		for _, each2 := range each.MatchLabelExpressions {
+			tr := types.TopologySelectorLabelRequirement{}
+			tr.Key = each2.Key
+			for _, value := range each2.Values {
+				tr.Values = append(tr.Values, value)
+			}
+			aT.MatchLabelExpressions = append(aT.MatchLabelExpressions, tr)
+
+		}
+		storageClass.ServiceAttributes.AllowedTopologies = append(storageClass.ServiceAttributes.AllowedTopologies, aT)
+	}
+
 	if sc.Provisioner == "kubernetes.io/aws-ebs" {
 		storageClass.ServiceAttributes.SCParameters.AwsEbsScParm = make(map[string]string)
 		storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["type"] = sc.Parameters["type"]
@@ -266,9 +400,59 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassServi
 		if sc.Parameters["kmsKeyId"] != "" {
 			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["kmsKeyId"] = sc.Parameters["kmsKeyId"]
 		}
+		if sc.Parameters["zone"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["zone"] = sc.Parameters["zone"]
+		} else if sc.Parameters["zones"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["zones"] = sc.Parameters["zones"]
+		}
+	} else if sc.Provisioner == "kubernetes.io/gce-pd" {
+		storageClass.ServiceAttributes.SCParameters.GcpPdScParm = make(map[string]string)
+		storageClass.ServiceAttributes.SCParameters.GcpPdScParm["type"] = sc.Parameters["type"]
+		if sc.Parameters["replication-type"] != "" {
+			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["replication-type"] = sc.Parameters["replication-type"]
+		}
+		if sc.Parameters["zone"] != "" {
+			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["zone"] = sc.Parameters["zone"]
+		} else if sc.Parameters["zones"] != "" {
+			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["zones"] = sc.Parameters["zones"]
+		}
+	} else if sc.Provisioner == "kubernetes.io/azure-disk" {
+		storageClass.ServiceAttributes.SCParameters.AzureDiskScParm = make(map[string]string)
+		if sc.Parameters["skuName"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["skuName"] = sc.Parameters["skuName"]
+		}
+		if sc.Parameters["location"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["location"] = sc.Parameters["location"]
+		}
+		if sc.Parameters["storageAccount"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["storageAccount"] = sc.Parameters["storageAccount"]
+		}
+	} else if sc.Provisioner == "kubernetes.io/azure-file" {
+
+		storageClass.ServiceAttributes.SCParameters.AzureFileScParm = make(map[string]string)
+		if sc.Parameters["skuName"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["skuName"] = sc.Parameters["skuName"]
+		}
+		if sc.Parameters["location"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["location"] = sc.Parameters["location"]
+		}
+		if sc.Parameters["storageAccount"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["storageAccount"] = sc.Parameters["storageAccount"]
+		}
+		if sc.Parameters["secretNamespace"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["secretNamespace"] = sc.Parameters["secretNamespace"]
+		}
+		if sc.Parameters["secretName"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["secretName"] = sc.Parameters["secretName"]
+		}
+		if sc.Parameters["readOnly"] != "" {
+			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["readOnly"] = sc.Parameters["readOnly"]
+		}
+	}
+	if sc.VolumeBindingMode != nil {
+		storageClass.ServiceAttributes.BindingMod = types.VolumeBindingMode(*sc.VolumeBindingMode)
 	}
 
-	storageClass.ServiceAttributes.BindingMod = types.VolumeBindingMode(*sc.VolumeBindingMode)
 	return storageClass, nil
 }
 

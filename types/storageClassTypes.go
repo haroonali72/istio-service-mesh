@@ -14,25 +14,34 @@ type StorageClassService struct {
 	ServiceAttributes *StorageClassServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type StorageClassServiceAttribute struct {
-	BindingMod           VolumeBindingMode `json:"volumeBindingMode"`
-	AllowVolumeExpansion string            `json:"allowVolumeExpansion"`
-	Provisioner          string            `json:"provisioner"`
-	SCParameters         Parameters        `json:"scParameters"`
-	ReclaimPolicy        ReclaimPolicy     `json:"reclaimPolicy"`
+	BindingMod           VolumeBindingMode      `json:"volumeBindingMode,omitempty"`
+	AllowVolumeExpansion string                 `json:"allowVolumeExpansion,omitempty"`
+	Provisioner          string                 `json:"provisioner,omitempty"`
+	SCParameters         Parameters             `json:"scParameters,omitempty"`
+	ReclaimPolicy        ReclaimPolicy          `json:"reclaimPolicy,omitempty"`
+	MountOptions         []string               `json:"mountOptions,omitempty"`
+	AllowedTopologies    []TopologySelectorTerm `json:"allowedTopologies,omitempty"`
 }
 
+type TopologySelectorTerm struct {
+	MatchLabelExpressions []TopologySelectorLabelRequirement `json:"matchLabelExpressions,omitempty"`
+}
+type TopologySelectorLabelRequirement struct {
+	Key    string   `json:"key,omitempty"`
+	Values []string `json:"values,omitempty"`
+}
 type Parameters struct {
-	GcpPdScParm     map[string]string `json:"gcppdscParm"`
-	AwsEbsScParm    map[string]string `json:"awsebsscParm"`
-	AzureDiskScParm map[string]string `json:"azurdiskscParm"`
-	AzureFileScParm map[string]string `json:"azurfilescParm"`
+	GcpPdScParm     map[string]string `json:"gcppdscParm,omitempty"`
+	AwsEbsScParm    map[string]string `json:"awsebsscParm,omitempty"`
+	AzureDiskScParm map[string]string `json:"azurdiskscParm,omitempty"`
+	AzureFileScParm map[string]string `json:"azurfilescParm,omitempty"`
 }
 
 type VolumeBindingMode string
 
 const (
 	VolumeBindingModeImmediate            VolumeBindingMode = "Immediate"
-	VolumeBindingModeWaitForFirstCustomer VolumeBindingMode = "WaitForFirstCustomer"
+	VolumeBindingModeWaitForFirstConsumer VolumeBindingMode = "WaitForFirstConsumer"
 )
 
 type ReclaimPolicy string
