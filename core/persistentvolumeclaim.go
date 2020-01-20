@@ -302,6 +302,13 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 			}
 		}
 	}
+	if input.ServiceAttributes.String() == pb.PersistentVolumeMode_Filesystem.String() {
+		pvm := core.PersistentVolumeFilesystem
+		pvc.Spec.VolumeMode = &pvm
+	} else if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Block.String() {
+		pvm := core.PersistentVolumeBlock
+		pvc.Spec.VolumeMode = &pvm
+	}
 	for _, each := range input.ServiceAttributes.AccessMode {
 		if each == pb.AccessMode_ReadOnlyMany {
 			pvc.Spec.AccessModes = append(pvc.Spec.AccessModes, core.ReadOnlyMany)

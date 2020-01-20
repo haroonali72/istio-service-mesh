@@ -268,6 +268,9 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*types.Per
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
 	}
+	if pvc.Spec.VolumeMode != nil {
+		persistentVolume.ServiceAttributes.VolumeMode = (*types.PersistentVolumeMode)(pvc.Spec.VolumeMode)
+	}
 	persistentVolume.ServiceAttributes.LabelSelector = getCPLabelSelector(pvc.Spec.Selector)
 	persistentVolume.ServiceAttributes.VolumeName = pvc.Spec.VolumeName
 	qu := pvc.Spec.Resources.Requests[v1.ResourceStorage]

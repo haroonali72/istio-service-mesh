@@ -15,10 +15,11 @@ type PersistentVolumeClaimService struct {
 	ServiceAttributes *PersistentVolumeClaimServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type PersistentVolumeClaimServiceAttribute struct {
-	LabelSelector    *LabelSelectorObj `json:"label_selector,omitempty"`
-	VolumeName       string            `json:"volumeName"`
-	AccessMode       []AccessMode      `json:"accessMode"`
-	StorageClassName string            `json:"storageClassName"`
-	Request          string            `json:"requestQuantity"`
-	Limit            string            `json:"limitQuantity"`
+	LabelSelector    *LabelSelectorObj     `json:"label_selector,omitempty"`
+	VolumeName       string                `json:"volumeName,omitempty"`
+	AccessMode       []AccessMode          `json:"accessMode,omitempty"`
+	StorageClassName string                `json:"storageClassName,omitempty"`
+	Request          string                `json:"requestQuantity,omitempty"`
+	Limit            string                `json:"limitQuantity,omitempty"`
+	VolumeMode       *PersistentVolumeMode `json:"volumeMode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
 }

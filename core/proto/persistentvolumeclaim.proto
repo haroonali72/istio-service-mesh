@@ -22,6 +22,7 @@ message PersistentVolumeClaimService {
     string company_id = 8;
     PersistentVolumeClaimAttributes service_attributes = 9;
     string namespace = 10;
+
 }
 message PersistentVolumeClaimServiceResponse {
     string error = 1;
@@ -34,6 +35,7 @@ message PersistentVolumeClaimAttributes {
     string storageClassName=4;
     string requestQuantity=5;
     string limitQuantity=6;
+    PersistentVolumeMode volumeMode=7;
 }
 message LabelSelectorObj {
     map<string,string>  match_label=1;
