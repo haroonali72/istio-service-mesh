@@ -155,7 +155,6 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	var hosts []string
 	hosts = append(hosts, "*")
 	var servers []*v1alpha3.Server
-
 	var serv v1alpha3.Server
 	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
 	serv.Hosts = hosts
@@ -634,7 +633,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-
+	deployment.Kind = "Deployment"
+	deployment.APIVersion = "apps/v1"
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
@@ -1290,6 +1290,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 	}
 
 	var configmap = v1.ConfigMap{}
+	configmap.Kind = "ConfigMap"
+	configmap.APIVersion = "v1"
 	// Label Selector
 	//keel labels
 	//deploymentLabels := make(map[string]string)
@@ -1334,7 +1336,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 func getServiceObject(input types.Service) (*v1.Service, error) {
 
 	service := v1.Service{}
-
+	service.Kind = "Service"
+	service.APIVersion = "v1"
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
 
