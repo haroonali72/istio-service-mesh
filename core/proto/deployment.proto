@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "general.proto";
 import "service.proto";
+import "volume.proto";
 package proto;
 
 service Deployment {
@@ -27,28 +28,18 @@ message DeploymentService {
 }
 
 message DeploymentServiceAttributes {
-    map<string,EnvironmentVariable> environment_variables = 1;
-    ImageRepositoryConfigurations image_repository_configurations = 2;
-    map<string, ContainerPort> ports = 3;
-    string tag = 4;
-    string image_prefix = 5;
-    string image_name = 6;
-    IstioConfig istio_config = 7;
-    LabelSelectorObj label_selector = 8;
-    map<string, string> node_selector = 9;
-    repeated string command = 10;
-    repeated string args = 11;
-    SecurityContextStruct security_context = 12;
-    map<string, string> limit_resources = 13;
-    map<string, string> request_resources = 14;
-    map<string, string> labels = 15;
-    map<string, string> annotations = 16;
-    Probe liveness_probe = 17;
-    Probe readiness_probe = 18;
-    bool is_rbac_enabled = 19;
-    repeated K8sRbacAttribute roles= 20;
-    repeated IstioRbacAttribute istio_roles = 21;
-    bool enable_init = 22;
-
+    map<string, ContainerAttributes> containers = 1;
+    IstioConfig istio_config = 2;
+    LabelSelectorObj label_selector = 3;
+    map<string, string> node_selector = 4;
+    map<string, string> labels = 5;
+    map<string, string> annotations = 6;
+    bool is_rbac_enabled = 7;
+    repeated K8sRbacAttribute roles= 8;
+    repeated IstioRbacAttribute istio_roles = 9;
+    DeploymentStrategy strategy = 10;
+    repeated Volume volumes = 11;
+    Affinity affinity = 12;
+    map<string, ContainerAttributes> initContainers = 13;
 
 }

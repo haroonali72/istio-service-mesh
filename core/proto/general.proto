@@ -1,12 +1,95 @@
 syntax = "proto3";
 package proto;
 
+
+message ContainerAttributes{
+    map<string,EnvironmentVariable> environment_variables = 1;
+    ImageRepositoryConfigurations image_repository_configurations = 2;
+    map<string, ContainerPort> ports = 3;
+    string tag = 4;
+    string image_prefix = 5;
+    string image_name = 6;
+    repeated string command = 7;
+    repeated string args = 8;
+    map<string, string> limit_resources = 9;
+    map<string, string> request_resources = 10;
+    Probe liveness_probe = 11;
+    Probe readiness_probe = 12;
+    SecurityContextStruct security_context = 13;
+    repeated VolumeMount volumeMounts = 14;
+
+}
+message VolumeMount {
+    string name = 1;
+    bool readOnly = 2;
+    string mountPath = 3;
+    string subPath = 4;
+    string subPathExpr = 5;
+    MountPropagationMode mountPropagation = 6;
+}
+
+message Affinity{
+    NodeAffinity nodeAffinity = 1;
+    PodAffinity podAffinity = 2;
+    PodAntiAffinity podAntiAffinity = 3;
+
+}
+
+message NodeAffinity{
+    NodeSelector reqDuringSchedulingIgnDuringExec = 1;
+    repeated PreferredSchedulingTerm prefDuringIgnDuringExec = 2;
+
+}
+
+message NodeSelector {
+    repeated NodeSelectorTerm nodeSelectorTerms = 1;
+
+}
+
+message NodeSelectorTerm{
+    repeated NodeSelectorRequirement matchExpressions = 1;
+    repeated NodeSelectorRequirement matchFields = 2;
+}
+
+message NodeSelectorRequirement{
+    string key = 1;
+    NodeSelectorOperator operator = 2;
+    repeated string values = 3;
+}
+
+message PreferredSchedulingTerm{
+    int32 weight = 1;
+    NodeSelectorTerm preference = 2;
+}
+
+message PodAffinity{
+    repeated PodAffinityTerm reqDuringSchedulingIgnDuringExec = 1;
+    repeated WeightedPodAffinityTerm prefDuringIgnDuringExec = 2;
+}
+
+message PodAffinityTerm{
+    LabelSelectorObj label_selector = 1;
+    repeated string namespaces = 2;
+    string topologyKey = 3;
+
+}
+
+message WeightedPodAffinityTerm{
+    int32 weight = 1;
+    PodAffinityTerm podAffinityTerm = 2;
+}
+message PodAntiAffinity {
+    repeated PodAffinityTerm reqDuringSchedulingIgnDuringExec = 1;
+    repeated WeightedPodAffinityTerm prefDuringIgnDuringExec = 2;
+}
+
 message EnvironmentVariable {
     string key = 1;
     string value = 2;
     bool dynamic = 3;
     string type = 4;
 }
+
 
 message ImageRepositoryConfigurations {
     string url = 1;
@@ -32,8 +115,8 @@ message IstioConfig {
 }
 
 message LabelSelectorObj {
-    map<string, string> match_label = 1;
-    repeated LabelSelectorRequirement match_expression = 2;
+    map<string, string> match_labels = 1;
+    repeated LabelSelectorRequirement match_expressions = 2;
 
 }
 
@@ -122,14 +205,52 @@ message IstioRbacAttribute {
 
 }
 
+message DeploymentStrategy {
+    DeploymentStrategyType type = 1;
+    RollingUpdateDeployment rolling_update = 2;
+}
+
+message RollingUpdateDeployment {
+    IntOrString max_unavailable = 1;
+    IntOrString max_surge = 2;
+}
+
+message IntOrString {
+    int32 int_val = 1;
+    string str_val = 2;
+}
+
+
+enum DeploymentStrategyType {
+    Recreate = 0;
+    RollingUpdate = 1;
+}
+
 enum LabelSelectorOperator {
     In = 0;
     NotIn = 1;
     Exists = 2;
-    DoesNotExist = 3;
+    DoesNotExists = 3;
 }
 
 enum ProcMountType {
     Default = 0;
     Unmasked = 1;
 }
+
+enum MountPropagationMode {
+    None = 0;
+    HostToContainer = 1;
+    Bidirectional = 2;
+}
+
+enum NodeSelectorOperator{
+    NodeSelectorOpIn = 0;
+    NodeSelectorOpNotIn = 1;
+    NodeSelectorOpExists = 2;
+    NodeSelectorOpDoesNotExists = 3;
+    NodeSelectorOpGt = 4;
+    NodeSelectorOpLt = 5;
+
+}
+

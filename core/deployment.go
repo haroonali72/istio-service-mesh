@@ -254,7 +254,7 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 }
 
 func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, error) {
-	var secrets, configMaps []string
+
 	var deployment = new(v1.Deployment)
 	if service.Name == "" {
 		return &v1.Deployment{}, errors.New("Service name not found")
@@ -292,297 +292,685 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Template.Spec.NodeSelector = make(map[string]string)
 	deployment.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
-	deployment.Spec.Selector = &metav1.LabelSelector{make(map[string]string), nil}
-	deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
-	deployment.Spec.Template.ObjectMeta.Labels = service.ServiceAttributes.Labels
+	deployment.Spec.Strategy.Type = v1.DeploymentStrategyType(service.ServiceAttributes.Strategy.Type.String())
+	if service.ServiceAttributes.Strategy.RollingUpdate != nil {
 
-	var err error
-	deployment.Spec.Template.Spec.Containers, secrets, configMaps, err = getContainers(service)
-	if err != nil {
-		return &v1.Deployment{}, err
-	}
-
-	isExistSecret := make(map[string]bool)
-	isExistConfigMap := make(map[string]bool)
-
-	for _, every := range secrets {
-		isExistSecret[every] = true
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-			Name: every,
-			VolumeSource: v2.VolumeSource{
-				Secret: &v2.SecretVolumeSource{
-					SecretName: every,
-				},
+		deployment.Spec.Strategy.RollingUpdate = &v1.RollingUpdateDeployment{
+			MaxUnavailable: &intstr.IntOrString{
+				IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal,
+				StrVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal,
 			},
-		})
-	}
-
-	for _, every := range configMaps {
-		isExistConfigMap[every] = true
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-			Name: every,
-			VolumeSource: v2.VolumeSource{
-				ConfigMap: &v2.ConfigMapVolumeSource{
-					LocalObjectReference: v2.LocalObjectReference{
-						Name: every,
-					},
-				},
+			MaxSurge: &intstr.IntOrString{
+				IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal,
+				StrVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal,
 			},
-		})
-	}
-
-	deployment.Spec.Template.Spec.InitContainers, secrets, configMaps, err = getInitContainers(service)
-	if err != nil {
-		return &v1.Deployment{}, err
-	}
-
-	for _, every := range secrets {
-		if _, ok := isExistSecret[every]; !ok {
-			isExistSecret[every] = true
-			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-				Name: every,
-				VolumeSource: v2.VolumeSource{
-					Secret: &v2.SecretVolumeSource{
-						SecretName: every,
-					},
-				},
-			})
 		}
+
 	}
 
-	for _, every := range configMaps {
-		if _, ok := isExistConfigMap[every]; !ok {
-			isExistConfigMap[every] = true
-			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-				Name: every,
-				VolumeSource: v2.VolumeSource{
-					ConfigMap: &v2.ConfigMapVolumeSource{
-						LocalObjectReference: v2.LocalObjectReference{
-							Name: every,
-						},
-					},
-				},
-			})
+	var volumeMountNames1 = make(map[string]bool)
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+		if len(containersList) > 0 {
+			deployment.Spec.Template.Spec.Containers = containersList
+			volumeMountNames1 = volumeMounts
+		} else {
+			return nil, errors.New("no container exists")
 		}
+
+	} else {
+		return nil, err
 	}
+
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+		deployment.Spec.Template.Spec.InitContainers = containersList
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	if volumes, err := getVolumes(service.ServiceAttributes.Volumes, volumeMountNames1); err == nil {
+		deployment.Spec.Template.Spec.Volumes = volumes
+	} else {
+		return nil, err
+	}
+
+	if err := setAffinity(deployment.Spec.Template.Spec.Affinity, service.ServiceAttributes.Affinity); err != nil {
+		return nil, err
+	}
+
+	//isExistSecret := make(map[string]bool)
+	//isExistConfigMap := make(map[string]bool)
+
+	//for _, every := range secrets {
+	//	isExistSecret[every] = true
+	//	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
+	//		Name: every,
+	//		VolumeSource: v2.VolumeSource{
+	//			Secret: &v2.SecretVolumeSource{
+	//				SecretName: every,
+	//			},
+	//		},
+	//	})
+	//}
+
+	//for _, every := range configMaps {
+	//	isExistConfigMap[every] = true
+	//	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
+	//		Name: every,
+	//		VolumeSource: v2.VolumeSource{
+	//			ConfigMap: &v2.ConfigMapVolumeSource{
+	//				LocalObjectReference: v2.LocalObjectReference{
+	//					Name: every,
+	//				},
+	//			},
+	//		},
+	//	})
+	//}
+
+	//if service.ServiceAttributes.EnableInit {
+	//	deployment.Spec.Template.Spec.InitContainers, configMaps, err = getInitContainers(service)
+	//	if err != nil {
+	//		return &v1.Deployment{}, err
+	//	}
+	//
+	//	for _, every := range secrets {
+	//		if _, ok := isExistSecret[every]; !ok {
+	//			isExistSecret[every] = true
+	//			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
+	//				Name: every,
+	//				VolumeSource: v2.VolumeSource{
+	//					Secret: &v2.SecretVolumeSource{
+	//						SecretName: every,
+	//					},
+	//				},
+	//			})
+	//		}
+	//	}
+	//
+	//	for _, every := range configMaps {
+	//		if _, ok := isExistConfigMap[every]; !ok {
+	//			isExistConfigMap[every] = true
+	//			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
+	//				Name: every,
+	//				VolumeSource: v2.VolumeSource{
+	//					ConfigMap: &v2.ConfigMapVolumeSource{
+	//						LocalObjectReference: v2.LocalObjectReference{
+	//							Name: every,
+	//						},
+	//					},
+	//				},
+	//			})
+	//		}
+	//	}
+	//}
 
 	return deployment, nil
 }
 
-func getContainers(service *pb.DeploymentService) ([]v2.Container, []string, []string, error) {
+func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volume, error) {
 
-	var configMapsArray, secretsArray []string
-	var container v2.Container
-	container.Name = service.Name
-	if err := putCommandAndArguments(&container, service.ServiceAttributes.Command, service.ServiceAttributes.Args); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
+	var volumes []v2.Volume
+	for _, volume := range vols {
 
-	errr, isOk := checkRequestIsLessThanLimit(service.ServiceAttributes)
-	if errr != nil {
-		return nil, secretsArray, configMapsArray, errr
-	} else if isOk == false {
-		return nil, secretsArray, configMapsArray, errors.New("Request Resource is greater limit resource")
-
-	}
-
-	if err := putReadinessProbe(&container, service.ServiceAttributes.ReadinessProbe); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-
-	if err := putLivenessProbe(&container, service.ServiceAttributes.LivenessProbe); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putLimitResource(&container, service.ServiceAttributes.LimitResources); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putRequestResource(&container, service.ServiceAttributes.RequestResources); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-
-	if service.ServiceAttributes.SecurityContext != nil {
-		if securityContext, err := configureSecurityContext(service.ServiceAttributes.SecurityContext); err != nil {
-			return nil, secretsArray, configMapsArray, err
-		} else {
-			container.SecurityContext = securityContext
-		}
-	}
-
-	container.Image = service.ServiceAttributes.ImagePrefix + service.ServiceAttributes.ImageName
-	if service.ServiceAttributes.Tag != "" {
-		container.Image += ":" + service.ServiceAttributes.Tag
-	}
-
-	var ports []v2.ContainerPort
-	for _, port := range service.ServiceAttributes.Ports {
-		temp := v2.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
+		if !volumeMountNames[volume.Name] {
 			continue
 		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
+		volumeMountNames[volume.Name] = false
+		tempVolume := v2.Volume{}
+		tempVolume.Name = volume.Name
 
-		i, err := strconv.Atoi(port.Container)
-		if err != nil {
-			utils.Info.Println(err)
-			continue
-		}
-		if i > 0 && i < 65536 {
-			temp.ContainerPort = int32(i)
-		} else {
-			utils.Info.Println("invalid prot number")
-			continue
-		}
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
-			if err != nil {
-				utils.Info.Println(err)
-				continue
+		if volume.VolumeSource.Secret != nil {
+			tempVolume.Secret = new(v2.SecretVolumeSource)
+			tempVolume.Secret.SecretName = volume.VolumeSource.Secret.SecretName
+			tempVolume.Secret.DefaultMode = &volume.VolumeSource.Secret.DefaultMode
+			var secretItems []v2.KeyToPath
+			for _, item := range volume.VolumeSource.Secret.Items {
+				secretItem := v2.KeyToPath{
+					Key:  item.Key,
+					Path: item.Path,
+					Mode: &item.Mode,
+				}
+				secretItems = append(secretItems, secretItem)
 			}
-			if i > 0 && i < 65536 {
-				temp.HostPort = int32(i)
-			} else {
-				utils.Info.Println("invalid prot number")
-				continue
+			tempVolume.Secret.Items = secretItems
+		}
+		if volume.VolumeSource.ConfigMap != nil {
+			tempVolume.ConfigMap = new(v2.ConfigMapVolumeSource)
+			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
+
+			tempVolume.ConfigMap.DefaultMode = &volume.VolumeSource.ConfigMap.DefaultMode
+			var configMapItems []v2.KeyToPath
+			for _, item := range volume.VolumeSource.ConfigMap.Items {
+				configMapItem := v2.KeyToPath{
+					Key:  item.Key,
+					Path: item.Path,
+					Mode: &item.Mode,
+				}
+				configMapItems = append(configMapItems, configMapItem)
+			}
+			tempVolume.ConfigMap.Items = configMapItems
+		}
+
+		if volume.VolumeSource.AwsElasticBlockStore != nil {
+			tempVolume.AWSElasticBlockStore = new(v2.AWSElasticBlockStoreVolumeSource)
+			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AwsElasticBlockStore.ReadOnly
+			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AwsElasticBlockStore.Partition
+		}
+
+		if volume.VolumeSource.EmptyDir != nil {
+			tempVolume.EmptyDir = new(v2.EmptyDirVolumeSource)
+			quantity, _ := resource.ParseQuantity(volume.VolumeSource.EmptyDir.SizeLimit)
+			tempVolume.EmptyDir.SizeLimit = &quantity
+			if volume.VolumeSource.EmptyDir.Medium.String() == pb.StorageMedium_StorageMediumDefault.String() {
+				tempVolume.EmptyDir.Medium = v2.StorageMediumDefault
+
+			}
+			if volume.VolumeSource.EmptyDir.Medium.String() == pb.StorageMedium_Memory.String() {
+				tempVolume.EmptyDir.Medium = v2.StorageMediumMemory
+			}
+
+			if volume.VolumeSource.EmptyDir.Medium.String() == pb.StorageMedium_HugePages.String() {
+				tempVolume.EmptyDir.Medium = v2.StorageMediumHugePages
 			}
 
 		}
-		ports = append(ports, temp)
-	}
-	var envVariables []v2.EnvVar
-	for key, envVariable := range service.ServiceAttributes.EnvironmentVariables {
-		tempEnvVariable := v2.EnvVar{}
-		if strings.EqualFold(key, "ConfigMap") {
-			envVariableValue := strings.Split(envVariable.Value, ";")
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
-				ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
-					LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
-					Key:                  envVariableValue[1],
-				}}}
 
-		} else if strings.EqualFold(key, "Secret") {
-			envVariableValue := strings.Split(envVariable.Value, ";")
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
-				ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
-					LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
-					Key:                  envVariableValue[1],
-				}}}
-		} else {
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+		if volume.VolumeSource.GcePersistentDisk != nil {
+			tempVolume.GCEPersistentDisk = new(v2.GCEPersistentDiskVolumeSource)
+			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GcePersistentDisk.Partition
+			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GcePersistentDisk.ReadOnly
+			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GcePersistentDisk.PdName
 		}
-		envVariables = append(envVariables, tempEnvVariable)
-	}
 
-	container.Ports = ports
-	container.Env = envVariables
-	var containers []v2.Container
-	containers = append(containers, container)
-	return containers, secretsArray, configMapsArray, nil
+		if volume.VolumeSource.AzureDisk != nil {
+			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
+			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.ReadOnly
+			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskURI
+			diskName := volume.VolumeSource.AzureDisk.Kind.String()
+			tempDiskName := v2.AzureDataDiskKind(diskName)
+			tempVolume.AzureDisk.Kind = &tempDiskName
+			cachingMode := volume.VolumeSource.AzureDisk.Kind.String()
+			cachingModeTemp := v2.AzureDataDiskCachingMode(cachingMode)
+			tempVolume.AzureDisk.CachingMode = &cachingModeTemp
+
+		}
+
+		if volume.VolumeSource.AzureFile != nil {
+			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
+			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
+			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
+
+		}
+		if volume.VolumeSource.HostPath != nil {
+			tempVolume.HostPath = new(v2.HostPathVolumeSource)
+			tempVolume.HostPath.Path = volume.VolumeSource.HostPath.Path
+			hostPathType := volume.VolumeSource.HostPath.Type.String()
+			hostPathTypeTemp := v2.HostPathType(hostPathType)
+			tempVolume.HostPath.Type = &hostPathTypeTemp
+		}
+
+		volumes = append(volumes, tempVolume)
+
+	}
+	for key, _ := range volumeMountNames {
+		if volumeMountNames[key] == true {
+			return nil, errors.New("volume does not exist")
+		}
+	}
+	return volumes, nil
 
 }
 
-func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string, []string, error) {
-	var configMapsArray, secretsArray []string
-	if !service.ServiceAttributes.EnableInit {
-		return nil, secretsArray, configMapsArray, nil
-	}
+func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
 
-	var container v2.Container
-	if service.Name != "" {
-		container.Name = service.Name
-	} else {
-		container.Name = "init-container-dummy"
-	}
-	if err := putCommandAndArguments(&container, service.ServiceAttributes.Command, service.ServiceAttributes.Args); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putLimitResource(&container, service.ServiceAttributes.LimitResources); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
-	if err := putRequestResource(&container, service.ServiceAttributes.RequestResources); err != nil {
-		return nil, secretsArray, configMapsArray, err
-	}
+	volumeMountNames := make(map[string]bool)
 
-	if service.ServiceAttributes.SecurityContext != nil {
-		if securityContext, err := configureSecurityContext(service.ServiceAttributes.SecurityContext); err != nil {
-			return nil, secretsArray, configMapsArray, err
-		} else {
-			container.SecurityContext = securityContext
+	var containers []v2.Container
+
+	for key, container := range conts {
+		var containerTemp v2.Container
+		containerTemp.Name = key
+		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			return nil, nil, err
 		}
-	}
+		err, isOk := checkRequestIsLessThanLimit(container)
 
-	container.Image = service.ServiceAttributes.ImagePrefix + service.ServiceAttributes.ImageName
-	if service.ServiceAttributes.Tag != "" {
-		container.Image += ":" + service.ServiceAttributes.Tag
-	}
-	var ports []v2.ContainerPort
-
-	for _, port := range service.ServiceAttributes.Ports {
-		temp := v2.ContainerPort{}
-		if port.Container == "" && port.Host == "" {
-			continue
-		}
-		if port.Container == "" && port.Host != "" {
-			port.Container = port.Host
-		}
-
-		i, err := strconv.Atoi(port.Container)
 		if err != nil {
-			utils.Info.Println(err)
-			continue
+			return nil, nil, err
+		} else if isOk == false {
+			return nil, nil, errors.New("Request Resource is greater limit resource")
+
 		}
-		if i > 0 && i < 65536 {
-			temp.ContainerPort = int32(i)
-		} else {
-			utils.Info.Println("invalid prot number")
-			continue
+
+		if err := putReadinessProbe(&containerTemp, container.ReadinessProbe); err != nil {
+			return nil, nil, err
 		}
-		if port.Host != "" {
-			i, err = strconv.Atoi(port.Host)
+		if err := putLivenessProbe(&containerTemp, container.LivenessProbe); err != nil {
+			return nil, nil, err
+		}
+		if err := putLimitResource(&containerTemp, container.LimitResources); err != nil {
+			return nil, nil, err
+		}
+		if err := putRequestResource(&containerTemp, container.RequestResources); err != nil {
+			return nil, nil, err
+		}
+		if container.SecurityContext != nil {
+			if securityContext, err := configureSecurityContext(container.SecurityContext); err != nil {
+				return nil, nil, err
+			} else {
+
+				containerTemp.SecurityContext = securityContext
+			}
+		}
+
+		containerTemp.Image = container.ImagePrefix + container.ImageName
+		if container.Tag != "" {
+			containerTemp.Image += ":" + container.Tag
+		}
+		// volume mounts
+		var volumeMounts []v2.VolumeMount
+		for _, volumeMount := range container.VolumeMounts {
+			volumeMountNames[volumeMount.Name] = true
+			temp := v2.VolumeMount{}
+			temp.Name = volumeMount.Name
+			temp.MountPath = volumeMount.MountPath
+			temp.SubPath = volumeMount.SubPath
+			temp.SubPathExpr = volumeMount.SubPathExpr
+			if volumeMount.MountPropagation.String() == pb.MountPropagationMode_None.String() {
+				none := v2.MountPropagationNone
+				temp.MountPropagation = &none
+
+			}
+
+			if volumeMount.MountPropagation.String() == pb.MountPropagationMode_HostToContainer.String() {
+				htc := v2.MountPropagationNone
+				temp.MountPropagation = &htc
+
+			}
+			if volumeMount.MountPropagation.String() == pb.MountPropagationMode_Bidirectional.String() {
+				bi := v2.MountPropagationBidirectional
+				temp.MountPropagation = &bi
+
+			}
+			volumeMounts = append(volumeMounts, temp)
+
+		}
+
+		var ports []v2.ContainerPort
+		for _, port := range container.Ports {
+			temp := v2.ContainerPort{}
+			if port.Container == "" && port.Host == "" {
+				continue
+			}
+			if port.Container == "" && port.Host != "" {
+				port.Container = port.Host
+			}
+
+			i, err := strconv.Atoi(port.Container)
 			if err != nil {
 				utils.Info.Println(err)
 				continue
 			}
 			if i > 0 && i < 65536 {
-				temp.HostPort = int32(i)
+				temp.ContainerPort = int32(i)
 			} else {
 				utils.Info.Println("invalid prot number")
 				continue
 			}
+			if port.Host != "" {
+				i, err = strconv.Atoi(port.Host)
+				if err != nil {
+					utils.Info.Println(err)
+					continue
+				}
+				if i > 0 && i < 65536 {
+					temp.HostPort = int32(i)
+				} else {
+					utils.Info.Println("invalid prot number")
+					continue
+				}
 
+			}
+			ports = append(ports, temp)
 		}
-		ports = append(ports, temp)
+
+		var envVariables []v2.EnvVar
+		for key, envVariable := range container.EnvironmentVariables {
+			tempEnvVariable := v2.EnvVar{}
+			if strings.EqualFold(key, "ConfigMap") {
+				envVariableValue := strings.Split(envVariable.Value, ";")
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
+						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
+						Key:                  envVariableValue[1],
+					}}}
+
+			} else if strings.EqualFold(key, "Secret") {
+				envVariableValue := strings.Split(envVariable.Value, ";")
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
+						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
+						Key:                  envVariableValue[1],
+					}}}
+			} else {
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+			}
+			envVariables = append(envVariables, tempEnvVariable)
+		}
+
+		containerTemp.Ports = ports
+		containerTemp.Env = envVariables
+		containerTemp.VolumeMounts = volumeMounts
+
+		containers = append(containers, containerTemp)
+
 	}
 
-	var envVariables []v2.EnvVar
-	for key, envVariable := range service.ServiceAttributes.EnvironmentVariables {
-		tempEnvVariable := v2.EnvVar{}
-		if strings.EqualFold(key, "ConfigMap") {
-			envVariableValue := strings.Split(envVariable.Value, ";")
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
-				ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
-					LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
-					Key:                  envVariableValue[1],
-				}}}
+	return containers, volumeMountNames, nil
 
-		} else if strings.EqualFold(key, "Secret") {
-			envVariableValue := strings.Split(envVariable.Value, ";")
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
-				ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
-					LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
-					Key:                  envVariableValue[1],
-				}}}
-		} else {
-			tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+}
+
+func setAffinity(temp *v2.Affinity, affinity *pb.Affinity) error {
+	temp = new(v2.Affinity)
+	if affinity.NodeAffinity != nil {
+		err := setNodeAffinity(temp.NodeAffinity, affinity.NodeAffinity)
+		if err != nil {
+			return errors.New("error adding node affinity")
 		}
-		envVariables = append(envVariables, tempEnvVariable)
 	}
-	container.Ports = ports
-	container.Env = envVariables
+
+	if affinity.PodAffinity != nil {
+
+		err := setPodAffinity(temp.PodAffinity, affinity.PodAffinity)
+		if err != nil {
+			return errors.New("error adding node affinity")
+		}
+	}
+
+	if affinity.PodAntiAffinity != nil {
+		err := setAntiPodAffinity(temp.PodAntiAffinity, affinity.PodAntiAffinity)
+		if err != nil {
+			return errors.New("error adding node affinity")
+		}
+	}
+	return nil
+}
+
+func setNodeAffinity(temp *v2.NodeAffinity, nodeAffinity *pb.NodeAffinity) error {
+	temp = new(v2.NodeAffinity)
+	if nodeAffinity.ReqDuringSchedulingIgnDuringExec != nil {
+		error := setNodeSelector(temp.RequiredDuringSchedulingIgnoredDuringExecution, nodeAffinity.ReqDuringSchedulingIgnDuringExec)
+		if error != nil {
+			return errors.New("node affinity error")
+		}
+	}
+	var tempPrefSchedulingTerms []v2.PreferredSchedulingTerm
+	for _, prefSchedulingTerm := range nodeAffinity.PrefDuringIgnDuringExec {
+		tempPrefSchedulingTerm := v2.PreferredSchedulingTerm{}
+		if prefSchedulingTerm != nil {
+
+			tempPrefSchedulingTerm.Weight = prefSchedulingTerm.Weight
+			var tempMatchExpressions []v2.NodeSelectorRequirement
+			var tempMatchFields []v2.NodeSelectorRequirement
+
+			if prefSchedulingTerm.Preference != nil {
+				for _, matchExpression := range prefSchedulingTerm.Preference.MatchExpressions {
+					tempMatchExpression := v2.NodeSelectorRequirement{}
+					tempMatchExpression.Key = matchExpression.Key
+					tempMatchExpression.Values = matchExpression.Values
+					tempMatchExpression.Operator = v2.NodeSelectorOperator(matchExpression.Operator.String())
+					tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
+				}
+				for _, matchField := range prefSchedulingTerm.Preference.MatchFields {
+					tempMatchField := v2.NodeSelectorRequirement{}
+					tempMatchField.Key = matchField.Key
+					tempMatchField.Values = matchField.Values
+					tempMatchField.Operator = v2.NodeSelectorOperator(matchField.Operator.String())
+					tempMatchFields = append(tempMatchFields, tempMatchField)
+				}
+				tempPrefSchedulingTerm.Preference.MatchExpressions = tempMatchExpressions
+				tempPrefSchedulingTerm.Preference.MatchFields = tempMatchFields
+
+			}
+		}
+		tempPrefSchedulingTerms = append(tempPrefSchedulingTerms, tempPrefSchedulingTerm)
+
+	}
+	return nil
+}
+
+func setPodAffinity(temp *v2.PodAffinity, podAffinity *pb.PodAffinity) error {
+	temp = new(v2.PodAffinity)
+	var tempPodAffinityTerms []v2.PodAffinityTerm
+	for _, podAffinityTerm := range podAffinity.ReqDuringSchedulingIgnDuringExec {
+		tempPodAffinityTerm := v2.PodAffinityTerm{}
+		if podAffinityTerm != nil {
+			tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
+			tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
+			setLabelSelector(tempPodAffinityTerm.LabelSelector, podAffinityTerm.LabelSelector)
+		}
+		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
+
+	}
+	temp.RequiredDuringSchedulingIgnoredDuringExecution = tempPodAffinityTerms
+	var tempWeightedAffinityTerms []v2.WeightedPodAffinityTerm
+	for _, weighted := range podAffinity.PrefDuringIgnDuringExec {
+		tempWeightedAffinityTerm := v2.WeightedPodAffinityTerm{}
+		if weighted != nil {
+			tempWeightedAffinityTerm.Weight = weighted.Weight
+			if weighted.PodAffinityTerm != nil {
+				tempPodAffinityTerm := v2.PodAffinityTerm{}
+				tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
+				tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
+				setLabelSelector(tempPodAffinityTerm.LabelSelector, weighted.PodAffinityTerm.LabelSelector)
+				tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
+			}
+
+		}
+		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
+	}
+	temp.PreferredDuringSchedulingIgnoredDuringExecution = tempWeightedAffinityTerms
+	return nil
+}
+
+func setAntiPodAffinity(temp *v2.PodAntiAffinity, podAntiAffinity *pb.PodAntiAffinity) error {
+	temp = new(v2.PodAntiAffinity)
+	var tempPodAffinityTerms []v2.PodAffinityTerm
+	for _, podAffinityTerm := range podAntiAffinity.ReqDuringSchedulingIgnDuringExec {
+		tempPodAffinityTerm := v2.PodAffinityTerm{}
+		if podAffinityTerm != nil {
+			tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
+			tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
+			setLabelSelector(tempPodAffinityTerm.LabelSelector, podAffinityTerm.LabelSelector)
+		}
+		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
+
+	}
+	temp.RequiredDuringSchedulingIgnoredDuringExecution = tempPodAffinityTerms
+	var tempWeightedAffinityTerms []v2.WeightedPodAffinityTerm
+	for _, weighted := range podAntiAffinity.PrefDuringIgnDuringExec {
+		tempWeightedAffinityTerm := v2.WeightedPodAffinityTerm{}
+		if weighted != nil {
+			tempWeightedAffinityTerm.Weight = weighted.Weight
+			if weighted.PodAffinityTerm != nil {
+				tempPodAffinityTerm := v2.PodAffinityTerm{}
+				tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
+				tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
+				setLabelSelector(tempPodAffinityTerm.LabelSelector, weighted.PodAffinityTerm.LabelSelector)
+				tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
+			}
+
+		}
+		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
+	}
+	temp.PreferredDuringSchedulingIgnoredDuringExecution = tempWeightedAffinityTerms
+	return nil
+}
+
+func setLabelSelector(temp *metav1.LabelSelector, labelSelector *pb.LabelSelectorObj) {
+	temp = new(metav1.LabelSelector)
+	temp.MatchLabels = make(map[string]string)
+	temp.MatchLabels = labelSelector.MatchLabels
+	var tempLabelSelectorRequirements []metav1.LabelSelectorRequirement
+	for _, labelSelectorRequirement := range labelSelector.MatchExpressions {
+		tempLabelSelectorRequirement := metav1.LabelSelectorRequirement{}
+		tempLabelSelectorRequirement.Key = labelSelectorRequirement.Key
+		tempLabelSelectorRequirement.Values = labelSelectorRequirement.Values
+		tempLabelSelectorRequirement.Operator = metav1.LabelSelectorOperator(labelSelectorRequirement.Operator.String())
+		tempLabelSelectorRequirements = append(tempLabelSelectorRequirements, tempLabelSelectorRequirement)
+	}
+	temp.MatchExpressions = tempLabelSelectorRequirements
+
+}
+
+func setNodeSelector(temp *v2.NodeSelector, nodeSelector *pb.NodeSelector) error {
+	temp = new(v2.NodeSelector)
+	var nodeSelectorTerms []v2.NodeSelectorTerm
+	var tempMatchExpressions []v2.NodeSelectorRequirement
+	var tempMatchFields []v2.NodeSelectorRequirement
+	for _, nodeSelectorTerm := range nodeSelector.NodeSelectorTerms {
+		tempNodeSelectorTerm := v2.NodeSelectorTerm{}
+		if nodeSelectorTerm != nil {
+
+			for _, matchExpression := range nodeSelectorTerm.MatchExpressions {
+				tempMatchExpression := v2.NodeSelectorRequirement{}
+				tempMatchExpression.Key = matchExpression.Key
+				tempMatchExpression.Values = matchExpression.Values
+				tempMatchExpression.Operator = v2.NodeSelectorOperator(strings.Trim(matchExpression.Operator.String(), "NodeSelectorOp"))
+				tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
+			}
+			for _, matchField := range nodeSelectorTerm.MatchFields {
+				tempMatchField := v2.NodeSelectorRequirement{}
+				tempMatchField.Key = matchField.Key
+				tempMatchField.Values = matchField.Values
+				tempMatchField.Operator = v2.NodeSelectorOperator(strings.Trim(matchField.Operator.String(), "NodeSelectorOp"))
+				tempMatchFields = append(tempMatchFields, tempMatchField)
+			}
+		}
+		tempNodeSelectorTerm.MatchFields = tempMatchFields
+		tempNodeSelectorTerm.MatchExpressions = tempMatchExpressions
+		nodeSelectorTerms = append(nodeSelectorTerms, tempNodeSelectorTerm)
+	}
+	temp.NodeSelectorTerms = nodeSelectorTerms
+	return nil
+
+}
+
+func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string, error) {
+	var volumeMountNames []string
 	var containers []v2.Container
-	containers = append(containers, container)
-	return containers, secretsArray, configMapsArray, nil
+
+	for _, container := range service.ServiceAttributes.Containers {
+		var containerTemp v2.Container
+		containerTemp.Name = service.Name
+
+		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			return nil, volumeMountNames, err
+		}
+		err, isOk := checkRequestIsLessThanLimit(container)
+
+		if err != nil {
+			return nil, volumeMountNames, err
+		} else if isOk == false {
+			return nil, volumeMountNames, errors.New("Request Resource is greater limit resource")
+
+		}
+		if err := putLivenessProbe(&containerTemp, container.LivenessProbe); err != nil {
+			return nil, volumeMountNames, err
+		}
+		if err := putLimitResource(&containerTemp, container.LimitResources); err != nil {
+			return nil, volumeMountNames, err
+		}
+		if err := putRequestResource(&containerTemp, container.RequestResources); err != nil {
+			return nil, volumeMountNames, err
+		}
+		if container.SecurityContext != nil {
+			if securityContext, err := configureSecurityContext(container.SecurityContext); err != nil {
+				return nil, volumeMountNames, err
+			} else {
+				containerTemp.SecurityContext = securityContext
+			}
+		}
+
+		containerTemp.Image = container.ImagePrefix + container.ImageName
+		if container.Tag != "" {
+			containerTemp.Image += ":" + container.Tag
+		}
+
+		var ports []v2.ContainerPort
+		for _, port := range container.Ports {
+			temp := v2.ContainerPort{}
+			if port.Container == "" && port.Host == "" {
+				continue
+			}
+			if port.Container == "" && port.Host != "" {
+				port.Container = port.Host
+			}
+
+			i, err := strconv.Atoi(port.Container)
+			if err != nil {
+				utils.Info.Println(err)
+				continue
+			}
+			if i > 0 && i < 65536 {
+				temp.ContainerPort = int32(i)
+			} else {
+				utils.Info.Println("invalid prot number")
+				continue
+			}
+			if port.Host != "" {
+				i, err = strconv.Atoi(port.Host)
+				if err != nil {
+					utils.Info.Println(err)
+					continue
+				}
+				if i > 0 && i < 65536 {
+					temp.HostPort = int32(i)
+				} else {
+					utils.Info.Println("invalid prot number")
+					continue
+				}
+
+			}
+			ports = append(ports, temp)
+		}
+
+		var envVariables []v2.EnvVar
+		for key, envVariable := range container.EnvironmentVariables {
+			tempEnvVariable := v2.EnvVar{}
+			if strings.EqualFold(key, "ConfigMap") {
+				envVariableValue := strings.Split(envVariable.Value, ";")
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
+						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
+						Key:                  envVariableValue[1],
+					}}}
+
+			} else if strings.EqualFold(key, "Secret") {
+				envVariableValue := strings.Split(envVariable.Value, ";")
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
+						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
+						Key:                  envVariableValue[1],
+					}}}
+			} else {
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
+			}
+			envVariables = append(envVariables, tempEnvVariable)
+		}
+
+		containerTemp.Ports = ports
+		containerTemp.Env = envVariables
+
+		containers = append(containers, containerTemp)
+
+	}
+
+	return containers, volumeMountNames, nil
 
 }
 
@@ -601,7 +989,7 @@ func putCommandAndArguments(container *v2.Container, command, args []string) err
 	return nil
 }
 
-func checkRequestIsLessThanLimit(serviceAttr *pb.DeploymentServiceAttributes) (error, bool) {
+func checkRequestIsLessThanLimit(serviceAttr *pb.ContainerAttributes) (error, bool) {
 	for t, v := range serviceAttr.LimitResources {
 		r, found := serviceAttr.RequestResources[t]
 		if found {
