@@ -10,7 +10,6 @@ require (
 	dmitri.shuralyov.com/gpu/mtl v0.0.0-20191203043605-d42048ed14fd // indirect
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
-	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/astaxie/beego v1.12.0
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
@@ -42,6 +41,7 @@ require (
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/urfave/cli/v2 v2.0.0
 	go.opencensus.io v0.22.2
+	golang.org/x/build v0.0.0-20191220001908-17a7d8724fa7
 	golang.org/x/image v0.0.0-20191214001246-9130b4cfad52 // indirect
 	golang.org/x/mobile v0.0.0-20191210151939-1a1fef82734d // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
@@ -54,6 +54,7 @@ require (
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
 	google.golang.org/grpc v1.26.0
 	gopkg.in/resty.v1 v1.12.0
+	gopkg.in/yaml.v2 v2.2.7
 	istio.io/api v0.0.0-20191218031825-7bafbd24c11c
 	istio.io/client-go v0.0.0-20191218043923-5fad2566daf6
 	istio.io/istio v0.0.0-20191218042323-ae27ee6c4bf5
@@ -63,6 +64,7 @@ require (
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883 // indirect
+	sigs.k8s.io/yaml v1.1.0
 )
 
 replace (

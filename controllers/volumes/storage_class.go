@@ -1,12 +1,8 @@
 package volumes
 
-import (
-	"istio-service-mesh/types"
-	core "k8s.io/api/core/v1"
-	"k8s.io/api/storage/v1"
-	"strings"
-)
+import ()
 
+/*
 func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 	storageClass := v1.StorageClass{}
 
@@ -83,3 +79,4 @@ func provisionGCPClass(storageClass *v1.StorageClass, volume types.Volume) {
 		storageClass.Parameters["replication-type"] = volume.Params.ReplicationType
 	}
 }
+*/

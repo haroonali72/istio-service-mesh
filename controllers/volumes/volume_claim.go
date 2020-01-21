@@ -1,13 +1,8 @@
 package volumes
 
-import (
-	"istio-service-mesh/types"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"strconv"
-	"strings"
-)
+import ()
 
+/*
 func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim := v1.PersistentVolumeClaim{}
 
@@ -34,3 +29,4 @@ func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 func GetVolumeClaimName(volumeName string) string {
 	return strings.Replace(strings.ToLower(volumeName), " ", "-", -1) + "-claim"
 }
+*/

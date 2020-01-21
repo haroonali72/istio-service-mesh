@@ -337,8 +337,10 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 		return nil, err
 	}
 
-	if err := setAffinity(deployment.Spec.Template.Spec.Affinity, service.ServiceAttributes.Affinity); err != nil {
+	if aa, err := getAffinity(service.ServiceAttributes.Affinity); err != nil {
 		return nil, err
+	} else {
+		deployment.Spec.Template.Spec.Affinity = aa
 	}
 
 	//isExistSecret := make(map[string]bool)
@@ -489,13 +491,28 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
 			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.ReadOnly
 			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskURI
-			diskName := volume.VolumeSource.AzureDisk.Kind.String()
-			tempDiskName := v2.AzureDataDiskKind(diskName)
-			tempVolume.AzureDisk.Kind = &tempDiskName
-			cachingMode := volume.VolumeSource.AzureDisk.Kind.String()
-			cachingModeTemp := v2.AzureDataDiskCachingMode(cachingMode)
-			tempVolume.AzureDisk.CachingMode = &cachingModeTemp
 
+			if volume.VolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
+				temp := v2.AzureDataDiskCachingNone
+				tempVolume.AzureDisk.CachingMode = &temp
+			} else if volume.VolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadOnly.String() {
+				temp := v2.AzureDataDiskCachingReadOnly
+				tempVolume.AzureDisk.CachingMode = &temp
+			} else if volume.VolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadWrite.String() {
+				temp := v2.AzureDataDiskCachingReadWrite
+				tempVolume.AzureDisk.CachingMode = &temp
+			}
+
+			if volume.VolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Shared.String() {
+				temp := v2.AzureSharedBlobDisk
+				tempVolume.AzureDisk.Kind = &temp
+			} else if volume.VolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Dedicated.String() {
+				temp := v2.AzureDedicatedBlobDisk
+				tempVolume.AzureDisk.Kind = &temp
+			} else if volume.VolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Managed.String() {
+				temp := v2.AzureManagedDisk
+				tempVolume.AzureDisk.Kind = &temp
+			}
 		}
 
 		if volume.VolumeSource.AzureFile != nil {
@@ -674,40 +691,45 @@ func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, ma
 
 }
 
-func setAffinity(temp *v2.Affinity, affinity *pb.Affinity) error {
-	temp = new(v2.Affinity)
+func getAffinity(affinity *pb.Affinity) (*v2.Affinity, error) {
+	temp := new(v2.Affinity)
 	if affinity.NodeAffinity != nil {
-		err := setNodeAffinity(temp.NodeAffinity, affinity.NodeAffinity)
+		na, err := getNodeAffinity(affinity.NodeAffinity)
 		if err != nil {
-			return errors.New("error adding node affinity")
+			return nil, err
+		} else {
+			temp.NodeAffinity = na
 		}
 	}
 
 	if affinity.PodAffinity != nil {
-
-		err := setPodAffinity(temp.PodAffinity, affinity.PodAffinity)
-		if err != nil {
-			return errors.New("error adding node affinity")
+		if pa, err := getPodAffinity(affinity.PodAffinity); err != nil {
+			return nil, err
+		} else {
+			temp.PodAffinity = pa
 		}
 	}
 
 	if affinity.PodAntiAffinity != nil {
-		err := setAntiPodAffinity(temp.PodAntiAffinity, affinity.PodAntiAffinity)
-		if err != nil {
-			return errors.New("error adding node affinity")
+		if paa, err := getAntiPodAffinity(affinity.PodAntiAffinity); err != nil {
+			return nil, err
+		} else {
+			temp.PodAntiAffinity = paa
 		}
 	}
-	return nil
+	return temp, nil
 }
 
-func setNodeAffinity(temp *v2.NodeAffinity, nodeAffinity *pb.NodeAffinity) error {
-	temp = new(v2.NodeAffinity)
+func getNodeAffinity(nodeAffinity *pb.NodeAffinity) (*v2.NodeAffinity, error) {
+	temp := new(v2.NodeAffinity)
 	if nodeAffinity.ReqDuringSchedulingIgnDuringExec != nil {
-		error := setNodeSelector(temp.RequiredDuringSchedulingIgnoredDuringExecution, nodeAffinity.ReqDuringSchedulingIgnDuringExec)
-		if error != nil {
-			return errors.New("node affinity error")
+		if ns, err := getNodeSelector(nodeAffinity.ReqDuringSchedulingIgnDuringExec); err != nil {
+			return nil, err
+		} else {
+			temp.RequiredDuringSchedulingIgnoredDuringExecution = ns
 		}
 	}
+
 	var tempPrefSchedulingTerms []v2.PreferredSchedulingTerm
 	for _, prefSchedulingTerm := range nodeAffinity.PrefDuringIgnDuringExec {
 		tempPrefSchedulingTerm := v2.PreferredSchedulingTerm{}
@@ -722,14 +744,14 @@ func setNodeAffinity(temp *v2.NodeAffinity, nodeAffinity *pb.NodeAffinity) error
 					tempMatchExpression := v2.NodeSelectorRequirement{}
 					tempMatchExpression.Key = matchExpression.Key
 					tempMatchExpression.Values = matchExpression.Values
-					tempMatchExpression.Operator = v2.NodeSelectorOperator(matchExpression.Operator.String())
+					tempMatchExpression.Operator = v2.NodeSelectorOperator(strings.Trim(matchExpression.Operator.String(), "NodeSelectorOp"))
 					tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
 				}
 				for _, matchField := range prefSchedulingTerm.Preference.MatchFields {
 					tempMatchField := v2.NodeSelectorRequirement{}
 					tempMatchField.Key = matchField.Key
 					tempMatchField.Values = matchField.Values
-					tempMatchField.Operator = v2.NodeSelectorOperator(matchField.Operator.String())
+					tempMatchField.Operator = v2.NodeSelectorOperator(strings.Trim(matchField.Operator.String(), "NodeSelectorOp"))
 					tempMatchFields = append(tempMatchFields, tempMatchField)
 				}
 				tempPrefSchedulingTerm.Preference.MatchExpressions = tempMatchExpressions
@@ -740,18 +762,22 @@ func setNodeAffinity(temp *v2.NodeAffinity, nodeAffinity *pb.NodeAffinity) error
 		tempPrefSchedulingTerms = append(tempPrefSchedulingTerms, tempPrefSchedulingTerm)
 
 	}
-	return nil
+	return temp, nil
 }
 
-func setPodAffinity(temp *v2.PodAffinity, podAffinity *pb.PodAffinity) error {
-	temp = new(v2.PodAffinity)
+func getPodAffinity(podAffinity *pb.PodAffinity) (*v2.PodAffinity, error) {
+	temp := new(v2.PodAffinity)
 	var tempPodAffinityTerms []v2.PodAffinityTerm
 	for _, podAffinityTerm := range podAffinity.ReqDuringSchedulingIgnDuringExec {
 		tempPodAffinityTerm := v2.PodAffinityTerm{}
 		if podAffinityTerm != nil {
 			tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
 			tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
-			setLabelSelector(tempPodAffinityTerm.LabelSelector, podAffinityTerm.LabelSelector)
+			if ls, err := getLabelSelector(podAffinityTerm.LabelSelector); err != nil {
+				return nil, err
+			} else {
+				tempPodAffinityTerm.LabelSelector = ls
+			}
 		}
 		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
 
@@ -766,7 +792,12 @@ func setPodAffinity(temp *v2.PodAffinity, podAffinity *pb.PodAffinity) error {
 				tempPodAffinityTerm := v2.PodAffinityTerm{}
 				tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
 				tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
-				setLabelSelector(tempPodAffinityTerm.LabelSelector, weighted.PodAffinityTerm.LabelSelector)
+				if ls, err := getLabelSelector(weighted.PodAffinityTerm.LabelSelector); err != nil {
+					return nil, err
+				} else {
+					tempPodAffinityTerm.LabelSelector = ls
+				}
+
 				tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
 			}
 
@@ -774,18 +805,24 @@ func setPodAffinity(temp *v2.PodAffinity, podAffinity *pb.PodAffinity) error {
 		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
 	}
 	temp.PreferredDuringSchedulingIgnoredDuringExecution = tempWeightedAffinityTerms
-	return nil
+	return temp, nil
 }
 
-func setAntiPodAffinity(temp *v2.PodAntiAffinity, podAntiAffinity *pb.PodAntiAffinity) error {
-	temp = new(v2.PodAntiAffinity)
+func getAntiPodAffinity(podAntiAffinity *pb.PodAntiAffinity) (*v2.PodAntiAffinity, error) {
+	temp := new(v2.PodAntiAffinity)
 	var tempPodAffinityTerms []v2.PodAffinityTerm
 	for _, podAffinityTerm := range podAntiAffinity.ReqDuringSchedulingIgnDuringExec {
 		tempPodAffinityTerm := v2.PodAffinityTerm{}
 		if podAffinityTerm != nil {
 			tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
 			tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
-			setLabelSelector(tempPodAffinityTerm.LabelSelector, podAffinityTerm.LabelSelector)
+
+			if ls, err := getLabelSelector(podAffinityTerm.LabelSelector); err != nil {
+				return nil, err
+			} else {
+				tempPodAffinityTerm.LabelSelector = ls
+			}
+
 		}
 		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
 
@@ -800,7 +837,12 @@ func setAntiPodAffinity(temp *v2.PodAntiAffinity, podAntiAffinity *pb.PodAntiAff
 				tempPodAffinityTerm := v2.PodAffinityTerm{}
 				tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
 				tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
-				setLabelSelector(tempPodAffinityTerm.LabelSelector, weighted.PodAffinityTerm.LabelSelector)
+				if ls, err := getLabelSelector(weighted.PodAffinityTerm.LabelSelector); err != nil {
+					return nil, err
+				} else {
+					tempPodAffinityTerm.LabelSelector = ls
+				}
+
 				tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
 			}
 
@@ -808,55 +850,58 @@ func setAntiPodAffinity(temp *v2.PodAntiAffinity, podAntiAffinity *pb.PodAntiAff
 		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
 	}
 	temp.PreferredDuringSchedulingIgnoredDuringExecution = tempWeightedAffinityTerms
-	return nil
+	return temp, nil
 }
 
-func setLabelSelector(temp *metav1.LabelSelector, labelSelector *pb.LabelSelectorObj) {
-	temp = new(metav1.LabelSelector)
-	temp.MatchLabels = make(map[string]string)
-	temp.MatchLabels = labelSelector.MatchLabels
-	var tempLabelSelectorRequirements []metav1.LabelSelectorRequirement
-	for _, labelSelectorRequirement := range labelSelector.MatchExpressions {
-		tempLabelSelectorRequirement := metav1.LabelSelectorRequirement{}
-		tempLabelSelectorRequirement.Key = labelSelectorRequirement.Key
-		tempLabelSelectorRequirement.Values = labelSelectorRequirement.Values
-		tempLabelSelectorRequirement.Operator = metav1.LabelSelectorOperator(labelSelectorRequirement.Operator.String())
-		tempLabelSelectorRequirements = append(tempLabelSelectorRequirements, tempLabelSelectorRequirement)
-	}
-	temp.MatchExpressions = tempLabelSelectorRequirements
+//func setLabelSelector(temp *metav1.LabelSelector, labelSelector *pb.LabelSelectorObj) {
+//	temp = new(metav1.LabelSelector)
+//	temp.MatchLabels = make(map[string]string)
+//	temp.MatchLabels = labelSelector.MatchLabels
+//	var tempLabelSelectorRequirements []metav1.LabelSelectorRequirement
+//	for _, labelSelectorRequirement := range labelSelector.MatchExpressions {
+//		tempLabelSelectorRequirement := metav1.LabelSelectorRequirement{}
+//		tempLabelSelectorRequirement.Key = labelSelectorRequirement.Key
+//		tempLabelSelectorRequirement.Values = labelSelectorRequirement.Values
+//		tempLabelSelectorRequirement.Operator = metav1.LabelSelectorOperator(labelSelectorRequirement.Operator.String())
+//		tempLabelSelectorRequirements = append(tempLabelSelectorRequirements, tempLabelSelectorRequirement)
+//	}
+//	temp.MatchExpressions = tempLabelSelectorRequirements
+//
+//}
 
-}
+func getNodeSelector(nodeSelector *pb.NodeSelector) (*v2.NodeSelector, error) {
+	if nodeSelector != nil {
+		temp := new(v2.NodeSelector)
+		var nodeSelectorTerms []v2.NodeSelectorTerm
+		for _, nodeSelectorTerm := range nodeSelector.NodeSelectorTerms {
+			var tempMatchExpressions []v2.NodeSelectorRequirement
+			var tempMatchFields []v2.NodeSelectorRequirement
+			tempNodeSelectorTerm := v2.NodeSelectorTerm{}
+			if nodeSelectorTerm != nil {
 
-func setNodeSelector(temp *v2.NodeSelector, nodeSelector *pb.NodeSelector) error {
-	temp = new(v2.NodeSelector)
-	var nodeSelectorTerms []v2.NodeSelectorTerm
-	var tempMatchExpressions []v2.NodeSelectorRequirement
-	var tempMatchFields []v2.NodeSelectorRequirement
-	for _, nodeSelectorTerm := range nodeSelector.NodeSelectorTerms {
-		tempNodeSelectorTerm := v2.NodeSelectorTerm{}
-		if nodeSelectorTerm != nil {
-
-			for _, matchExpression := range nodeSelectorTerm.MatchExpressions {
-				tempMatchExpression := v2.NodeSelectorRequirement{}
-				tempMatchExpression.Key = matchExpression.Key
-				tempMatchExpression.Values = matchExpression.Values
-				tempMatchExpression.Operator = v2.NodeSelectorOperator(strings.Trim(matchExpression.Operator.String(), "NodeSelectorOp"))
-				tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
+				for _, matchExpression := range nodeSelectorTerm.MatchExpressions {
+					tempMatchExpression := v2.NodeSelectorRequirement{}
+					tempMatchExpression.Key = matchExpression.Key
+					tempMatchExpression.Values = matchExpression.Values
+					tempMatchExpression.Operator = v2.NodeSelectorOperator(strings.Trim(matchExpression.Operator.String(), "NodeSelectorOp"))
+					tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
+				}
+				for _, matchField := range nodeSelectorTerm.MatchFields {
+					tempMatchField := v2.NodeSelectorRequirement{}
+					tempMatchField.Key = matchField.Key
+					tempMatchField.Values = matchField.Values
+					tempMatchField.Operator = v2.NodeSelectorOperator(strings.Trim(matchField.Operator.String(), "NodeSelectorOp"))
+					tempMatchFields = append(tempMatchFields, tempMatchField)
+				}
 			}
-			for _, matchField := range nodeSelectorTerm.MatchFields {
-				tempMatchField := v2.NodeSelectorRequirement{}
-				tempMatchField.Key = matchField.Key
-				tempMatchField.Values = matchField.Values
-				tempMatchField.Operator = v2.NodeSelectorOperator(strings.Trim(matchField.Operator.String(), "NodeSelectorOp"))
-				tempMatchFields = append(tempMatchFields, tempMatchField)
-			}
+			tempNodeSelectorTerm.MatchFields = tempMatchFields
+			tempNodeSelectorTerm.MatchExpressions = tempMatchExpressions
+			nodeSelectorTerms = append(nodeSelectorTerms, tempNodeSelectorTerm)
 		}
-		tempNodeSelectorTerm.MatchFields = tempMatchFields
-		tempNodeSelectorTerm.MatchExpressions = tempMatchExpressions
-		nodeSelectorTerms = append(nodeSelectorTerms, tempNodeSelectorTerm)
+		temp.NodeSelectorTerms = nodeSelectorTerms
+		return temp, nil
 	}
-	temp.NodeSelectorTerms = nodeSelectorTerms
-	return nil
+	return nil, nil
 
 }
 
@@ -1193,46 +1238,6 @@ func configureSecurityContext(securityContext *pb.SecurityContextStruct) (*v2.Se
 	}
 	return &context, nil
 
-}
-
-func getLabels(data *pb.DeploymentService) (map[string]string, error) {
-
-	var serviceAttributes types.DockerServiceAttributes
-	if data, err := json.Marshal(data.ServiceAttributes); err == nil {
-
-		if err = json.Unmarshal(data, &serviceAttributes); err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-	} else {
-		return nil, err
-	}
-	labels := make(map[string]string)
-	for key, value := range serviceAttributes.Labels {
-		labels[key] = value
-	}
-	return labels, nil
-}
-
-func resolveValue(value string) (string, string) {
-	result := returnValuesArray(value)
-	var splittedResult []string
-	for _, every := range result {
-		if len(every) > 0 {
-			splittedResult = strings.Split(every, ";")
-			break
-		}
-	}
-	keyArray := strings.Split(splittedResult[1], ".")
-	return splittedResult[0], keyArray[len(keyArray)-1]
-}
-
-func returnValuesArray(value string) []string {
-	replacer := strings.NewReplacer(
-		"{{", "|-|",
-		"}}", "|-|")
-	result := replacer.Replace(value)
-	return strings.Split(result, "|-|")
 }
 
 func putRequestResource(container *v2.Container, requestResources map[string]string) error {

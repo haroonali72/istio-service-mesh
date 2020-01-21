@@ -230,7 +230,7 @@ enum LabelSelectorOperator {
     In = 0;
     NotIn = 1;
     Exists = 2;
-    DoesNotExists = 3;
+    DoesNotExist = 3;
 }
 
 enum ProcMountType {

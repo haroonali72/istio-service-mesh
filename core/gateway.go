@@ -12,56 +12,54 @@ import (
 	"strings"
 )
 
-type Server struct{
-
+type Server struct {
 }
-func (s *Server)CreateGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+
+func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
-		Id: req.ServiceId,
+		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
-		Name: req.Name,
+		Name:      req.Name,
 	}
-	ksdRequest ,err := getRequestObject(req)
-
+	ksdRequest, err := getRequestObject(req)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 
-	conn, err := grpc.DialContext(ctx,constants.K8sEngineGRPCURL,grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	defer conn.Close()
-
 
 	raw, err := json.Marshal(ksdRequest)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx,&pb.ServiceRequest{
-		ProjectId:req.ProjectId,
-		Service: raw,
-		CompanyId:req.CompanyId,
-		Token: req.Token,
+	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual ,"successful")
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
-	return serviceResp,nil
+	return serviceResp, nil
 
 	/*converToResp(serviceResp,req.ProjectId,statusCode,resp)
 
@@ -76,191 +74,190 @@ func (s *Server)CreateGateway(ctx context.Context,req *pb.GatewayService)(*pb.Se
 	converToResp(serviceResp,req.ProjectId,statusCode,resp)
 	return serviceResp,nil*/
 }
-func (s *Server)GetGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
-		Id: req.ServiceId,
+		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
-		Name: req.Name,
+		Name:      req.Name,
 	}
-	ksdRequest ,err := getRequestObject(req)
+	ksdRequest, err := getRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 
-	conn, err := grpc.DialContext(ctx,constants.K8sEngineGRPCURL,grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	defer conn.Close()
 
 	raw, err := json.Marshal(ksdRequest)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx,&pb.ServiceRequest{
-		ProjectId:req.ProjectId,
-		Service: raw,
-		CompanyId:req.CompanyId,
-		Token: req.Token,
+	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual ,"successful")
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
-	return serviceResp,nil
+	return serviceResp, nil
 }
-func (s *Server)DeleteGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
-		Id: req.ServiceId,
+		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
-		Name: req.Name,
+		Name:      req.Name,
 	}
-	ksdRequest ,err := getRequestObject(req)
+	ksdRequest, err := getRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 
-	conn, err := grpc.DialContext(ctx,constants.K8sEngineGRPCURL,grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	defer conn.Close()
 
 	raw, err := json.Marshal(ksdRequest)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx,&pb.ServiceRequest{
-		ProjectId:req.ProjectId,
-		Service: raw,
-		CompanyId:req.CompanyId,
-		Token: req.Token,
+	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual ,"successful")
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
-	return serviceResp,nil
+	return serviceResp, nil
 }
-func (s *Server)PatchGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
-		Id: req.ServiceId,
+		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
-		Name: req.Name,
+		Name:      req.Name,
 	}
-	ksdRequest ,err := getRequestObject(req)
+	ksdRequest, err := getRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 
-	conn, err := grpc.DialContext(ctx,constants.K8sEngineGRPCURL,grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	defer conn.Close()
 
 	raw, err := json.Marshal(ksdRequest)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx,&pb.ServiceRequest{
-		ProjectId:req.ProjectId,
-		Service: raw,
-		CompanyId:req.CompanyId,
-		Token: req.Token,
+	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual ,"successful")
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
-	return serviceResp,nil
+	return serviceResp, nil
 }
-func (s *Server)PutGateway(ctx context.Context,req *pb.GatewayService)(*pb.ServiceResponse,error){
+func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
-		Id: req.ServiceId,
+		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
-		Name: req.Name,
+		Name:      req.Name,
 	}
-	ksdRequest ,err := getRequestObject(req)
+	ksdRequest, err := getRequestObject(req)
 
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 
-	conn, err := grpc.DialContext(ctx,constants.K8sEngineGRPCURL,grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	defer conn.Close()
 
 	raw, err := json.Marshal(ksdRequest)
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx,&pb.ServiceRequest{
-		ProjectId:req.ProjectId,
-		Service: raw,
-		CompanyId:req.CompanyId,
-		Token: req.Token,
+	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
 	})
 	if err != nil {
 		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual ,"successful")
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
-	return serviceResp,nil
+	return serviceResp, nil
 }
-
 
 func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 	var istioServ = new(istioClient.Gateway)
@@ -276,12 +273,12 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 
 	gateway.Selector = input.ServiceAttributes.Selectors
 
-	for _, serverInput := range input.ServiceAttributes.Servers{
+	for _, serverInput := range input.ServiceAttributes.Servers {
 		server := new(v1alpha3.Server)
 		if serverInput.Port != nil {
 			server.Port = new(v1alpha3.Port)
 			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Nummber
+			server.Port.Number = serverInput.Port.Number
 			server.Port.Protocol = serverInput.Port.GetProtocol().String()
 		}
 		if serverInput.Tls != nil {
@@ -296,7 +293,7 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
 		}
 		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers,server )
+		gateway.Servers = append(gateway.Servers, server)
 	}
 	istioServ.Spec = gateway
 	return istioServ, nil
@@ -326,12 +323,12 @@ func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
 	return gateway, nil
 }
 
-func getRequestObject(req *pb.GatewayService)(*istioClient.Gateway, error){
+func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
 	gtwReq, err := getIstioGateway(req)
 	if err != nil {
 		utils.Error.Println(err)
 
-		return nil,err
+		return nil, err
 	}
-	return gtwReq,nil
+	return gtwReq, nil
 }
