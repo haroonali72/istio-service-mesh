@@ -1168,7 +1168,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
 	statefulset.Kind = "StatefulSet"
-	statefulset.APIVersion = "v1"
+	statefulset.APIVersion = "apps/v1"
 	// Label Selector
 	//keel labels
 	var err2 error
