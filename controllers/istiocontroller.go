@@ -2484,6 +2484,37 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 
 					}
 					return ret, res
+
+				} else {
+
+					for itr, _ := range res.Service.Nodes {
+						err = json.Unmarshal([]byte(res.Service.Nodes[itr].KubeData), &res.Service.Nodes[itr].Nodes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Deployments {
+						err = json.Unmarshal([]byte(res.Service.Deployments[itr].KubeData), &res.Service.Deployments[itr].Deployments)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Istio {
+						err = json.Unmarshal([]byte(res.Service.Istio[itr].KubeData), &res.Service.Istio[itr].Istio)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Kubernetes {
+						err = json.Unmarshal([]byte(res.Service.Kubernetes[itr].KubeData), &res.Service.Kubernetes[itr].Kubernetes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
 				}
 				return ret, res
 			}

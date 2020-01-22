@@ -457,20 +457,24 @@ type OutputServices struct {
 	Nodes                  []v1.Node                             `json:"nodes"`
 }
 type NooeWrapper struct {
-	Error string      `json:"error"`
-	Nodes v1.NodeList `json:"data"`
+	Error    string      `json:"error"`
+	Nodes    v1.NodeList `json:"data2"`
+	KubeData string      `json:"data"`
 }
 type DeploymentWrapper struct {
 	Error       string         `json:"error"`
-	Deployments v12.Deployment `json:"data"`
+	Deployments v12.Deployment `json:"data2"`
+	KubeData    string         `json:"data"`
 }
 type KubernetesWrapper struct {
 	Error      string     `json:"error"`
-	Kubernetes v1.Service `json:"data"`
+	Kubernetes v1.Service `json:"data2"`
+	KubeData   string     `json:"data"`
 }
 type IstioWrapper struct {
-	Error string      `json:"error"`
-	Istio IstioObject `json:"data"`
+	Error    string      `json:"error"`
+	Istio    IstioObject `json:"data2"`
+	KubeData string      `json:"data"`
 }
 
 type OutputResp struct {
