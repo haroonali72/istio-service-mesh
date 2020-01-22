@@ -253,52 +253,54 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	labels["version"] = strings.ToLower(input.Version)
 	vServ.Labels = labels
 	vServ.Kind = "VirtualService"
-	vServ.APIVersion = "networking.v.io/v1alpha3"
+	vServ.APIVersion = "networking.istio.io/v1alpha3"
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
 
 	vService := v1alpha3.VirtualService{}
+
 	vService.Hosts = input.ServiceAttributes.Hosts
 	vService.Gateways = input.ServiceAttributes.Gateways
 
 	for _, http := range input.ServiceAttributes.Http {
 		vSer := v1alpha3.HTTPRoute{}
 		vSer.Name = http.Name
+
 		for _, match := range http.HttpMatch {
 			m := &v1alpha3.HTTPMatchRequest{}
 			m.Name = match.Name
-			if match.Uri.Type == "prefix" {
+			if match.Uri.Type == "Prefix" {
 				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Uri.Value,
 					},
 				}
-			} else if match.Uri.Type == "exact" {
+			} else if match.Uri.Type == "Exact" {
 				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Uri.Value,
 					},
 				}
-			} else if match.Uri.Type == "regex" {
+			} else if match.Uri.Type == "Regex" {
 				m.Uri = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Uri.Value,
 					},
 				}
 			}
-			if match.Scheme.Type == "prefix" {
+			if match.Scheme.Type == "Prefix" {
 				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Scheme.Value,
 					},
 				}
-			} else if match.Scheme.Type == "exact" {
+			} else if match.Scheme.Type == "Exact" {
 				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Scheme.Value,
 					},
 				}
-			} else if match.Scheme.Type == "regex" {
+			} else if match.Scheme.Type == "Regex" {
 				m.Scheme = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Scheme.Value,
@@ -306,38 +308,38 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				}
 			}
 
-			if match.Method.Type == "prefix" {
+			if match.Method.Type == "Prefix" {
 				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Method.Value,
 					},
 				}
-			} else if match.Method.Type == "exact" {
+			} else if match.Method.Type == "Exact" {
 				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Method.Value,
 					},
 				}
-			} else if match.Method.Type == "regex" {
+			} else if match.Method.Type == "Regex" {
 				m.Method = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Method.Value,
 					},
 				}
 			}
-			if match.Authority.Type == "prefix" {
+			if match.Authority.Type == "Prefix" {
 				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Prefix{
 						Prefix: match.Authority.Value,
 					},
 				}
-			} else if match.Authority.Type == "exact" {
+			} else if match.Authority.Type == "Exact" {
 				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Exact{
 						Exact: match.Authority.Value,
 					},
 				}
-			} else if match.Authority.Type == "regex" {
+			} else if match.Authority.Type == "Regex" {
 				m.Authority = &v1alpha3.StringMatch{
 					MatchType: &v1alpha3.StringMatch_Regex{
 						Regex: match.Authority.Value,
@@ -346,8 +348,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			}
 			vSer.Match = append(vSer.Match, m)
 		}
-		//	vService.Http = append(vService.Http, &vSer)
-		//	}
+
 		for _, route := range http.HttpRoute {
 			r := &v1alpha3.HTTPRouteDestination{}
 			r.Destination = &v1alpha3.Destination{}
@@ -359,55 +360,60 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			vSer.Route = append(vSer.Route, r)
 		}
 
-		vSer.Redirect = &v1alpha3.HTTPRedirect{}
-		vSer.Redirect.Uri = http.HttpRedirect.Uri
-		vSer.Redirect.Authority = http.HttpRedirect.Authority
-		vSer.Redirect.RedirectCode = uint32(http.HttpRedirect.RedirectCode)
-
-		vSer.Rewrite = &v1alpha3.HTTPRewrite{}
-		vSer.Rewrite.Uri = http.HttpRewrite.Uri
-		vSer.Rewrite.Authority = http.HttpRewrite.Authority
+		if http.HttpRedirect != nil {
+			vSer.Redirect = &v1alpha3.HTTPRedirect{}
+			vSer.Redirect.Uri = http.HttpRedirect.Uri
+			vSer.Redirect.Authority = http.HttpRedirect.Authority
+			vSer.Redirect.RedirectCode = uint32(http.HttpRedirect.RedirectCode)
+		}
+		if http.HttpRewrite != nil {
+			vSer.Rewrite = &v1alpha3.HTTPRewrite{}
+			vSer.Rewrite.Uri = http.HttpRewrite.Uri
+			vSer.Rewrite.Authority = http.HttpRewrite.Authority
+		}
 
 		vSer.Timeout = &types.Duration{Nanos: http.Timeout}
 
-		vSer.Fault = &v1alpha3.HTTPFaultInjection{}
-		if http.FaultInjection.DelayType == "fixed_delay" {
-			vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
-				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
-					FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
-				},
+		if http.FaultInjection != nil {
+			vSer.Fault = &v1alpha3.HTTPFaultInjection{}
+			if http.FaultInjection.DelayType == "FixedDelay" {
+				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
+					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
+						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+					},
+				}
+			} else if http.FaultInjection.DelayType == "ExponentialDelay" {
+				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
+					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
+						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+					},
+					Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
+				}
 			}
-		} else if http.FaultInjection.DelayType == "exponential_delay" {
-			vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
-				HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
-					FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
-				},
-				Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
+			value, _ := strconv.ParseInt(http.FaultInjection.AbortPercentage, 10, 32)
+			if http.FaultInjection.AbortErrorValue == "HttpStatus" {
+				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
+				}
+			} else if http.FaultInjection.AbortErrorValue == "GrpcStatus" {
+				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortPercentage},
+				}
+			} else if http.FaultInjection.AbortErrorValue == "Http2Status" {
+				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
+					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortPercentage},
+				}
 			}
 		}
-		value, _ := strconv.ParseInt(http.FaultInjection.AbortPercentage, 10, 32)
-		if http.FaultInjection.AbortErrorValue == "http_status" {
-			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
-			}
-		} else if http.FaultInjection.AbortErrorValue == "grpc_status" {
-			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortPercentage},
-			}
-		} else if http.FaultInjection.AbortErrorValue == "http2_status" {
-			vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-				ErrorType: &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortPercentage},
-			}
+		if http.CorsPolicy != nil {
+			vSer.CorsPolicy = &v1alpha3.CorsPolicy{}
+			vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
+			vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllowMethod
+			vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
+			vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
+			vSer.CorsPolicy.MaxAge = &types.Duration{Nanos: http.CorsPolicy.MaxAge}
+			vSer.CorsPolicy.AllowCredentials = &types.BoolValue{Value: http.CorsPolicy.AllowCredentials}
 		}
-
-		vSer.CorsPolicy = &v1alpha3.CorsPolicy{}
-		vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
-		vSer.CorsPolicy.AllowMethods = http.CorsPolicy.AllowMethod
-		vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
-		vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
-		vSer.CorsPolicy.MaxAge = &types.Duration{Nanos: http.CorsPolicy.MaxAge}
-		vSer.CorsPolicy.AllowCredentials = &types.BoolValue{Value: http.CorsPolicy.AllowCredentials}
-
 		vService.Http = append(vService.Http, &vSer)
 	}
 
@@ -466,6 +472,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		}
 		vService.Tcp = append(vService.Tcp, &tcp)
 	}
+
 	vServ.Spec = vService
 	return vServ, nil
 }

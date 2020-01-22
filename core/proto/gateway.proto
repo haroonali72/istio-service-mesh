@@ -10,9 +10,7 @@ service Gateway {
     rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
     rpc PutGateway (GatewayService) returns (ServiceResponse) {}
 }
-message NameRequest {
-    string name = 1;
-}
+
 
 message GatewayService {
     string project_id = 1;
@@ -42,7 +40,7 @@ message Server {
 }
 message Port {
     string name = 1;
-    uint32 nummber = 2;
+    uint32 number = 2;
     Protocols protocol = 3;
 }
 message TlsConfig {
