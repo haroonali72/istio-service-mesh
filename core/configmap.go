@@ -19,6 +19,7 @@ func (s *Server) CreateConfigMapService(ctx context.Context, req *pb.ConfigMapSe
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
+	abc
 	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
