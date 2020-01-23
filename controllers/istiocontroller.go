@@ -2546,9 +2546,6 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	if cpContext.Exists("user") {
 		req.Header.Set("user", cpContext.GetString("user"))
 	}
-	if cpContext.Exists("token") {
-		req.Header.Set("token", cpContext.GetString("token"))
-	}
 	client := &http.Client{}
 	//issue here
 	resp, err := client.Do(req)
