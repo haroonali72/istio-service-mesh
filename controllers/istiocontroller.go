@@ -155,7 +155,6 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	var hosts []string
 	hosts = append(hosts, "*")
 	var servers []*v1alpha3.Server
-
 	var serv v1alpha3.Server
 	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
 	serv.Hosts = hosts
@@ -634,7 +633,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-
+	deployment.Kind = "Deployment"
+	deployment.APIVersion = "apps/v1"
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
@@ -1168,7 +1168,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
 	statefulset.Kind = "StatefulSet"
-	statefulset.APIVersion = "v1"
+	statefulset.APIVersion = "apps/v1"
 	// Label Selector
 	//keel labels
 	var err2 error
@@ -1290,6 +1290,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 	}
 
 	var configmap = v1.ConfigMap{}
+	configmap.Kind = "ConfigMap"
+	configmap.APIVersion = "v1"
 	// Label Selector
 	//keel labels
 	//deploymentLabels := make(map[string]string)
@@ -1334,7 +1336,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 func getServiceObject(input types.Service) (*v1.Service, error) {
 
 	service := v1.Service{}
-
+	service.Kind = "Service"
+	service.APIVersion = "v1"
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
 
@@ -2481,6 +2484,37 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 
 					}
 					return ret, res
+
+				} else {
+
+					for itr, _ := range res.Service.Nodes {
+						err = json.Unmarshal([]byte(res.Service.Nodes[itr].KubeData), &res.Service.Nodes[itr].Nodes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Deployments {
+						err = json.Unmarshal([]byte(res.Service.Deployments[itr].KubeData), &res.Service.Deployments[itr].Deployments)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Istio {
+						err = json.Unmarshal([]byte(res.Service.Istio[itr].KubeData), &res.Service.Istio[itr].Istio)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Kubernetes {
+						err = json.Unmarshal([]byte(res.Service.Kubernetes[itr].KubeData), &res.Service.Kubernetes[itr].Kubernetes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
 				}
 				return ret, res
 			}
@@ -2511,9 +2545,6 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	}
 	if cpContext.Exists("user") {
 		req.Header.Set("user", cpContext.GetString("user"))
-	}
-	if cpContext.Exists("token") {
-		req.Header.Set("token", cpContext.GetString("token"))
 	}
 	client := &http.Client{}
 	//issue here

@@ -1,0 +1,43 @@
+module IstioMesh
+
+go 1.12
+
+require (
+	github.com/astaxie/beego v0.0.0-20181130085749-8152ade1b616
+	github.com/gin-contrib/sse v0.1.0
+	github.com/gin-gonic/gin v0.0.0-20190710050240-502c898d755b
+	github.com/go-redis/redis v0.0.0-20181221093652-c7d2ae66a004
+	github.com/gogo/protobuf v0.0.0-20190415061611-67e450fba694
+	github.com/golang/protobuf v0.0.0-20190109072247-347cf4a86c1c
+	github.com/google/gofuzz v1.0.0
+	github.com/google/uuid v0.0.0-20190416172445-c2e93f3ae59f
+	github.com/gorilla/mux v1.7.1
+	github.com/iancoleman/strcase v0.0.0-20190422225806-e506e3ef7365
+	github.com/inconshreveable/mousetrap v1.0.0
+	github.com/json-iterator/go v1.1.7
+	github.com/mattn/go-isatty v0.0.0-20190708054338-da60ac76bf70
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v1.0.1
+	github.com/pkg/errors v0.0.0-20190109061628-ffb6e22f0193
+	github.com/spf13/cobra v0.0.0-20190109003409-7547e83b2d85
+	github.com/spf13/pflag v0.0.0-20181223182923-24fa6976df40
+	github.com/ugorji/go v0.0.0-20190705235043-02994ffebd8e
+	github.com/urfave/cli v0.0.0-20190203184040-693af58b4d51
+	golang.org/x/crypto v0.0.0-20190128193316-c7b33c32a30b
+	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
+	golang.org/x/text v0.0.0-20181227161524-e6919f6577db
+	golang.org/x/tools v0.0.0-20190128232029-0a99049195af
+	google.golang.org/genproto v0.0.0-20190128161407-8ac453e89fca
+	google.golang.org/grpc v0.0.0-20190125233501-6086f8d68f83
+	gopkg.in/go-playground/validator.v8 v8.18.2
+	gopkg.in/inf.v0 v0.9.1
+	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
+	gopkg.in/resty.v1 v1.12.0
+	istio.io/api v0.0.0-20190502022149-61ea6af9b6cb
+	istio.io/istio v0.0.0-20190502034350-fee68fbe8a91
+	k8s.io/api v0.0.0-20181221193117-173ce66c1e39
+	k8s.io/apimachinery v0.0.0-20190430211124-5bae42371a56
+	k8s.io/client-go v0.0.0-20190110193554-73dad31f020d
+	k8s.io/klog v0.3.0
+	sigs.k8s.io/yaml v0.0.0-20190608005507-a1a83904bd1b
+)
