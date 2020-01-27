@@ -217,6 +217,24 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		} else {
 			serviceResp.Service = byteData
 		}
+	case "Deployment":
+		networkproto := pb.DeploymentService{}
+		if err := json.Unmarshal(req.Service, &networkproto); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		result, err := getDeploymentRequestObject(&networkproto)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		} else {
+			serviceResp.Service = byteData
+		}
 	}
+
 	return serviceResp, nil
 }

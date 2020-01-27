@@ -16,9 +16,11 @@ import (
 	net "k8s.io/api/networking/v1"
 	"k8s.io/api/rbac/v1beta1"
 	storage "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
+	"strings"
 )
 
 func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceRequest) (*pb.YamlToCPServiceResponse, error) {
@@ -183,6 +185,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 	return serviceResp, nil
 
 }
+
 func convertToCPNetwokPolicy(np *net.NetworkPolicy) (*types.NetworkPolicyService, error) {
 	networkPolicy := new(types.NetworkPolicyService)
 	networkPolicy.Name = np.Name
@@ -259,6 +262,7 @@ func convertToCPNetwokPolicy(np *net.NetworkPolicy) (*types.NetworkPolicyService
 	return networkPolicy, nil
 
 }
+
 func getCPLabelSelector(selector *metav1.LabelSelector) *types.LabelSelectorObj {
 	if selector == nil {
 		return nil
@@ -282,9 +286,107 @@ func getCPLabelSelector(selector *metav1.LabelSelector) *types.LabelSelectorObj 
 
 func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error) {
 	byteData, _ := json.Marshal(deploy)
-	deployment := apps.Deployment{}
-	json.Unmarshal(byteData, &deployment)
-	return nil, nil
+	service := apps.Deployment{}
+	json.Unmarshal(byteData, &service)
+
+	deployment := new(types.DeploymentService)
+	deployment.ServiceAttributes = new(types.DeploymentServiceAttribute)
+
+	if service.Name == "" {
+		return nil, errors.New("Service name not found")
+	} else {
+		deployment.Name = service.Name
+	}
+
+	//if service.Namespace == "" {
+	//	deployment.Namespace = "default"
+	//} else {
+	//	deployment.Namespace = service.Namespace
+	//}
+
+	deployment.ServiceType = "k8s"
+	deployment.ServiceSubType = "Deployment"
+	deployment.Version = service.Labels["version"]
+
+	if service.Spec.Replicas != nil {
+		deployment.ServiceAttributes.Replicas.Replica = *service.Spec.Replicas
+	}
+
+	deployment.ServiceAttributes.Labels = make(map[string]string)
+	deployment.ServiceAttributes.Labels = service.Spec.Template.Labels
+	deployment.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
+	deployment.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+	//deployment.ServiceAttributes.LabelSelector.MatchLabels["version"] = service.Labels["version"]
+	//deployment.ServiceAttributes.LabelSelector.MatchLabels["name"] = service.Labels["name"]
+	deployment.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+
+	deployment.ServiceAttributes.Annotations = make(map[string]string)
+	deployment.ServiceAttributes.Annotations = service.Spec.Template.Annotations
+	deployment.ServiceAttributes.NodeSelector = make(map[string]string)
+	deployment.ServiceAttributes.NodeSelector = service.Spec.Template.Spec.NodeSelector
+
+	if service.Spec.Strategy.Type != "" {
+		if service.Spec.Strategy.Type == apps.RecreateDeploymentStrategyType {
+			deployment.ServiceAttributes.Strategy.Type = types.RecreateDeploymentStrategyType
+		} else if service.Spec.Strategy.Type == apps.RollingUpdateDeploymentStrategyType {
+			deployment.ServiceAttributes.Strategy.Type = types.RollingUpdateDeploymentStrategyType
+			if service.Spec.Strategy.RollingUpdate != nil {
+				deployment.ServiceAttributes.Strategy.RollingUpdate = new(types.RollingUpdateDeployment)
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge = new(intstr.IntOrString)
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+			}
+		}
+
+	} else {
+		return nil, errors.New("no deployment strategy found")
+	}
+
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			deployment.ServiceAttributes.Container = containers
+			volumeMountNames1 = vm
+		} else {
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		return nil, err
+	}
+
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			deployment.ServiceAttributes.InitContainer = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	if vols, err := getCPVolumes(service.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			deployment.ServiceAttributes.Volumes = vols
+		}
+
+	} else {
+		return nil, err
+	}
+
+	if service.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(service.Spec.Template.Spec.Affinity); err == nil {
+			deployment.ServiceAttributes.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+	return deployment, nil
 }
 
 func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*types.PersistentVolumeClaimService, error) {
@@ -549,6 +651,7 @@ func convertToCPVSStruct(gw *v1alpha3.VirtualService) (*types.VirtualService, er
 func convertToCPDRStruct(gw *v1alpha3.DestinationRule) (*types.DestinationRules, error) {
 	return nil, nil
 }
+
 func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*types.NodeSelector, error) {
 	var temp *types.NodeSelector
 	if nodeSelector != nil {
@@ -607,4 +710,572 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*types.NodeSelector, erro
 	}
 	return temp, nil
 
+}
+
+func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute, map[string]bool, error) {
+	volumeMountNames := make(map[string]bool)
+	containers := make(map[string]types.ContainerAttribute)
+
+	for _, container := range conts {
+		containerTemp := types.ContainerAttribute{}
+
+		if container.ReadinessProbe != nil {
+			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+				containerTemp.ReadinessProbe = rp
+			} else {
+				return nil, nil, err
+			}
+		}
+
+		if container.LivenessProbe != nil {
+			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+				containerTemp.LivenessProbe = lp
+			} else {
+				return nil, nil, err
+			}
+		}
+
+		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Limits); err != nil {
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Requests); err != nil {
+			return nil, nil, err
+		}
+
+		if container.SecurityContext != nil {
+			if context, err := getCPSecurityContext(container.SecurityContext); err == nil {
+				containerTemp.SecurityContext = context
+			} else {
+				return nil, nil, err
+			}
+		}
+		containerTemp.ImageName = container.Image
+
+		var volumeMounts []types.VolumeMount
+		for _, volumeMount := range container.VolumeMounts {
+			volumeMountNames[volumeMount.Name] = true
+			temp := types.VolumeMount{}
+			temp.Name = volumeMount.Name
+			temp.MountPath = volumeMount.MountPath
+			temp.SubPath = volumeMount.SubPath
+			temp.SubPathExpr = volumeMount.SubPathExpr
+			if volumeMount.MountPropagation != nil {
+				if *volumeMount.MountPropagation == v1.MountPropagationNone {
+					*temp.MountPropagation = types.MountPropagationNone
+				} else if *volumeMount.MountPropagation == v1.MountPropagationBidirectional {
+					*temp.MountPropagation = types.MountPropagationBidirectional
+				} else if *volumeMount.MountPropagation == v1.MountPropagationHostToContainer {
+					*temp.MountPropagation = types.MountPropagationHostToContainer
+				}
+
+			}
+			volumeMounts = append(volumeMounts, temp)
+
+		}
+
+		ports := make(map[string]types.ContainerPort)
+		for _, port := range container.Ports {
+			temp := types.ContainerPort{}
+			if port.ContainerPort == 0 && port.HostPort != 0 {
+				port.ContainerPort = port.HostPort
+			}
+
+			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
+				temp.ContainerPort = port.ContainerPort
+			} else {
+				utils.Info.Println("invalid port number")
+				continue
+			}
+			if port.HostPort != 0 {
+				if port.HostPort > 0 && port.HostPort < 65536 {
+					temp.HostPort = port.HostPort
+				} else {
+					utils.Info.Println("invalid port number")
+					continue
+				}
+
+			}
+			ports[port.Name] = temp
+		}
+
+		environmentVariables := make(map[string]types.EnvironmentVariable)
+		for _, envVariable := range container.Env {
+			tempEnvVariable := types.EnvironmentVariable{}
+			if envVariable.ValueFrom != nil {
+				if envVariable.ValueFrom.ConfigMapKeyRef != nil {
+					tempEnvVariable.Value = strings.Join([]string{envVariable.ValueFrom.ConfigMapKeyRef.Name, envVariable.ValueFrom.ConfigMapKeyRef.Key}, ";")
+					tempEnvVariable.Type = "ConfigMap"
+					tempEnvVariable.Dynamic = true
+				} else if envVariable.ValueFrom.SecretKeyRef != nil {
+					tempEnvVariable.Value = strings.Join([]string{envVariable.ValueFrom.SecretKeyRef.Name, envVariable.ValueFrom.SecretKeyRef.Key}, ";")
+					tempEnvVariable.Type = "Secret"
+					tempEnvVariable.Dynamic = true
+				}
+				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
+			} else {
+				tempEnvVariable.Key = envVariable.Name
+				tempEnvVariable.Value = envVariable.Value
+				environmentVariables[tempEnvVariable.Key] = tempEnvVariable
+			}
+
+		}
+
+		containerTemp.Ports = ports
+		containerTemp.EnvironmentVariables = environmentVariables
+		containerTemp.VolumeMounts = volumeMounts
+
+		containers[container.Name] = containerTemp
+	}
+	return containers, volumeMountNames, nil
+}
+
+func getCPProbe(prob *v1.Probe) (*types.Probe, error) {
+	CpProbe := new(types.Probe)
+
+	CpProbe.FailureThreshold = prob.FailureThreshold
+	CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
+	CpProbe.SuccessThreshold = prob.SuccessThreshold
+	CpProbe.PeriodSeconds = prob.PeriodSeconds
+	CpProbe.TimeoutSeconds = prob.TimeoutSeconds
+
+	if prob.Handler.Exec != nil {
+		CpProbe.Handler = new(types.Handler)
+		CpProbe.Handler.Type = "Exec"
+		CpProbe.Handler.Exec = new(types.ExecAction)
+		for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+			CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+		}
+	} else if prob.HTTPGet != nil {
+		CpProbe.Handler = new(types.Handler)
+		CpProbe.Handler.Type = "http_get"
+		CpProbe.Handler.HTTPGet = new(types.HTTPGetAction)
+		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
+			if prob.HTTPGet.Host == "" {
+				CpProbe.Handler.HTTPGet.Host = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
+			}
+			if prob.HTTPGet.Path == "" {
+				CpProbe.Handler.HTTPGet.Path = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+			}
+
+			if prob.HTTPGet.Scheme == v1.URISchemeHTTP && prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+					scheme := types.URISchemeHTTP
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+					scheme := types.URISchemeHTTPS
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				}
+			} else if prob.HTTPGet.Scheme == "" {
+				CpProbe.Handler.HTTPGet.Scheme = nil
+			} else {
+				return nil, errors.New("invalid URI scheme")
+			}
+
+			for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+				CpProbe.Handler.HTTPGet.HTTPHeaders[i].Name = &prob.HTTPGet.HTTPHeaders[i].Name
+				CpProbe.Handler.HTTPGet.HTTPHeaders[i].Value = &prob.HTTPGet.HTTPHeaders[i].Value
+			}
+			CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
+		} else {
+			return nil, errors.New("not a valid port number for http_get")
+		}
+
+	} else if prob.TCPSocket != nil {
+		CpProbe.Handler = new(types.Handler)
+		CpProbe.Handler.Type = "tcpSocket"
+		CpProbe.Handler.TCPSocket = new(types.TCPSocketAction)
+		if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
+			CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
+			CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
+		} else {
+			return nil, errors.New("not a valid port number for tcp socket")
+		}
+
+	} else {
+		return nil, errors.New("no handler found")
+	}
+	return CpProbe, nil
+
+}
+
+func putCPCommandAndArguments(container *types.ContainerAttribute, command, args []string) error {
+	if len(command) > 0 && command[0] != "" {
+		container.Command = command
+		if len(args) > 0 {
+			container.Args = args
+		} else {
+			container.Args = []string{}
+		}
+
+	} else if len(args) > 0 {
+		container.Args = args
+	}
+	return nil
+}
+
+func putCPResource(container *types.ContainerAttribute, limitResources map[v1.ResourceName]resource.Quantity) error {
+	temp := make(map[string]string)
+	for t, v := range limitResources {
+		key := t.String()
+		if key == types.ResourceTypeMemory || key == types.ResourceTypeCpu {
+			quantity := v.String()
+			temp[key] = quantity
+		} else {
+			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
+		}
+	}
+
+	container.LimitResources = temp
+	return nil
+}
+
+func getCPSecurityContext(securityContext *v1.SecurityContext) (*types.SecurityContextStruct, error) {
+	context := new(types.SecurityContextStruct)
+	if securityContext.Capabilities != nil {
+		context.Capabilities = new(types.Capabilities)
+		for i := 0; i < len(securityContext.Capabilities.Add); i++ {
+			context.Capabilities.Add[i] = types.Capability(securityContext.Capabilities.Add[i])
+		}
+		for i := 0; i < len(securityContext.Capabilities.Drop); i++ {
+			context.Capabilities.Add[i] = types.Capability(securityContext.Capabilities.Drop[i])
+		}
+	}
+	if securityContext.AllowPrivilegeEscalation != nil {
+		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
+	}
+	if securityContext.ReadOnlyRootFilesystem != nil {
+		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
+	}
+	if securityContext.Privileged != nil {
+		context.Privileged = *securityContext.Privileged
+	}
+	if securityContext.ReadOnlyRootFilesystem != nil {
+		context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
+	}
+
+	if securityContext.RunAsNonRoot != nil {
+
+	}
+	if securityContext.RunAsUser != nil {
+		context.RunAsUser = securityContext.RunAsUser
+
+	}
+
+	if *securityContext.ProcMount == v1.DefaultProcMount {
+		context.ProcMount = types.DefaultProcMount
+	} else if *securityContext.ProcMount == v1.UnmaskedProcMount {
+		context.ProcMount = types.UnmaskedProcMount
+	}
+
+	if securityContext.SELinuxOptions != nil {
+		context.SELinuxOptions = types.SELinuxOptionsStruct{
+			User:  securityContext.SELinuxOptions.User,
+			Role:  securityContext.SELinuxOptions.Role,
+			Type:  securityContext.SELinuxOptions.Type,
+			Level: securityContext.SELinuxOptions.Level,
+		}
+	}
+	return context, nil
+}
+
+func getCPAffinity(affinity *v1.Affinity) (*types.Affinity, error) {
+	temp := new(types.Affinity)
+	if affinity.NodeAffinity != nil {
+		na, err := getCPNodeAffinity(affinity.NodeAffinity)
+		if err != nil {
+			return nil, err
+		} else {
+			temp.NodeAffinity = na
+		}
+	}
+	if affinity.PodAffinity != nil {
+		pa, err := getCPPodAffinity(affinity.PodAffinity)
+		if err != nil {
+			return nil, err
+		} else {
+			temp.PodAffinity = pa
+		}
+	}
+	if affinity.PodAntiAffinity != nil {
+		paa, err := getCPAntiPodAffinity(affinity.PodAntiAffinity)
+		if err != nil {
+			return nil, err
+		} else {
+			temp.PodAntiAffinity = paa
+		}
+	}
+	return temp, nil
+}
+
+func getCPNodeAffinity(nodeAffinity *v1.NodeAffinity) (*types.NodeAffinity, error) {
+	temp := new(types.NodeAffinity)
+	if nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+		if ns, err := getCPNodeSelector(nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution); err != nil {
+			return nil, err
+		} else {
+			temp.ReqDuringSchedulingIgnDuringExec = ns
+		}
+	}
+
+	var tempPrefSchedulingTerms []types.PreferredSchedulingTerm
+	for _, prefSchedulingTerm := range nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		tempPrefSchedulingTerm := types.PreferredSchedulingTerm{}
+
+		tempPrefSchedulingTerm.Weight = prefSchedulingTerm.Weight
+		var tempMatchExpressions []types.NodeSelectorRequirement
+		var tempMatchFields []types.NodeSelectorRequirement
+
+		for _, matchExpression := range prefSchedulingTerm.Preference.MatchExpressions {
+			tempMatchExpression := types.NodeSelectorRequirement{}
+			tempMatchExpression.Key = matchExpression.Key
+			tempMatchExpression.Values = matchExpression.Values
+			switch matchExpression.Operator {
+			case v1.NodeSelectorOpIn:
+				tempMatchExpression.Operator = types.NodeSelectorOpIn
+			case v1.NodeSelectorOpNotIn:
+				tempMatchExpression.Operator = types.NodeSelectorOpNotIn
+			case v1.NodeSelectorOpExists:
+				tempMatchExpression.Operator = types.NodeSelectorOpExists
+			case v1.NodeSelectorOpDoesNotExist:
+				tempMatchExpression.Operator = types.NodeSelectorOpDoesNotExists
+			case v1.NodeSelectorOpLt:
+				tempMatchExpression.Operator = types.NodeSelectorOpLt
+			case v1.NodeSelectorOpGt:
+				tempMatchExpression.Operator = types.NodeSelectorOpGt
+			}
+			tempMatchExpressions = append(tempMatchExpressions, tempMatchExpression)
+		}
+		for _, matchField := range prefSchedulingTerm.Preference.MatchFields {
+			tempMatchField := types.NodeSelectorRequirement{}
+			tempMatchField.Key = matchField.Key
+			tempMatchField.Values = matchField.Values
+			switch matchField.Operator {
+			case v1.NodeSelectorOpIn:
+				tempMatchField.Operator = types.NodeSelectorOpIn
+			case v1.NodeSelectorOpNotIn:
+				tempMatchField.Operator = types.NodeSelectorOpNotIn
+			case v1.NodeSelectorOpExists:
+				tempMatchField.Operator = types.NodeSelectorOpExists
+			case v1.NodeSelectorOpDoesNotExist:
+				tempMatchField.Operator = types.NodeSelectorOpDoesNotExists
+			case v1.NodeSelectorOpLt:
+				tempMatchField.Operator = types.NodeSelectorOpLt
+			case v1.NodeSelectorOpGt:
+				tempMatchField.Operator = types.NodeSelectorOpGt
+			}
+
+			tempMatchFields = append(tempMatchFields, tempMatchField)
+		}
+		tempPrefSchedulingTerm.Preference.MatchExpressions = tempMatchExpressions
+		tempPrefSchedulingTerm.Preference.MatchFields = tempMatchFields
+
+		tempPrefSchedulingTerms = append(tempPrefSchedulingTerms, tempPrefSchedulingTerm)
+
+	}
+	return temp, nil
+}
+
+func getCPPodAffinity(podAffinity *v1.PodAffinity) (*types.PodAffinity, error) {
+	temp := new(types.PodAffinity)
+	var tempPodAffinityTerms []types.PodAffinityTerm
+	for _, podAffinityTerm := range podAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+		tempPodAffinityTerm := types.PodAffinityTerm{}
+
+		tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
+		tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
+		ls := getCPLabelSelector(podAffinityTerm.LabelSelector)
+		tempPodAffinityTerm.LabelSelector = ls
+
+		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
+
+	}
+	temp.ReqDuringSchedulingIgnDuringExec = tempPodAffinityTerms
+	var tempWeightedAffinityTerms []types.WeightedPodAffinityTerm
+	for _, weighted := range podAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		tempWeightedAffinityTerm := types.WeightedPodAffinityTerm{}
+
+		tempWeightedAffinityTerm.Weight = weighted.Weight
+
+		tempPodAffinityTerm := types.PodAffinityTerm{}
+		tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
+		tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
+		ls := getCPLabelSelector(weighted.PodAffinityTerm.LabelSelector)
+		tempPodAffinityTerm.LabelSelector = ls
+
+		tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
+
+		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
+	}
+	temp.PrefDuringIgnDuringExec = tempWeightedAffinityTerms
+	return temp, nil
+
+}
+
+func getCPAntiPodAffinity(podAntiAffinity *v1.PodAntiAffinity) (*types.PodAntiAffinity, error) {
+
+	temp := new(types.PodAntiAffinity)
+	var tempPodAffinityTerms []types.PodAffinityTerm
+	for _, podAffinityTerm := range podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution {
+		tempPodAffinityTerm := types.PodAffinityTerm{}
+
+		tempPodAffinityTerm.Namespaces = podAffinityTerm.Namespaces
+		tempPodAffinityTerm.TopologyKey = podAffinityTerm.TopologyKey
+		ls := getCPLabelSelector(podAffinityTerm.LabelSelector)
+		tempPodAffinityTerm.LabelSelector = ls
+		tempPodAffinityTerms = append(tempPodAffinityTerms, tempPodAffinityTerm)
+
+	}
+	temp.ReqDuringSchedulingIgnDuringExec = tempPodAffinityTerms
+	var tempWeightedAffinityTerms []types.WeightedPodAffinityTerm
+	for _, weighted := range podAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution {
+		tempWeightedAffinityTerm := types.WeightedPodAffinityTerm{}
+		tempWeightedAffinityTerm.Weight = weighted.Weight
+		tempPodAffinityTerm := types.PodAffinityTerm{}
+		tempPodAffinityTerm.Namespaces = weighted.PodAffinityTerm.Namespaces
+		tempPodAffinityTerm.TopologyKey = weighted.PodAffinityTerm.TopologyKey
+		ls := getCPLabelSelector(weighted.PodAffinityTerm.LabelSelector)
+		tempPodAffinityTerm.LabelSelector = ls
+		tempWeightedAffinityTerm.PodAffinityTerm = tempPodAffinityTerm
+
+		tempWeightedAffinityTerms = append(tempWeightedAffinityTerms, tempWeightedAffinityTerm)
+	}
+	temp.PrefDuringIgnDuringExec = tempWeightedAffinityTerms
+	return temp, nil
+}
+
+func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.Volume, error) {
+	var volumes []types.Volume
+	for _, volume := range vols {
+
+		if !volumeMountNames[volume.Name] {
+			continue
+		}
+		volumeMountNames[volume.Name] = false
+		tempVolume := types.Volume{}
+		tempVolume.Name = volume.Name
+
+		if volume.VolumeSource.Secret != nil {
+			tempVolume.Secret = new(types.SecretVolumeSource)
+			tempVolume.Secret.SecretName = volume.VolumeSource.Secret.SecretName
+			tempVolume.Secret.DefaultMode = volume.VolumeSource.Secret.DefaultMode
+			var secretItems []types.KeyToPath
+			for _, item := range volume.VolumeSource.Secret.Items {
+				secretItem := types.KeyToPath{
+					Key:  item.Key,
+					Path: item.Path,
+					Mode: item.Mode,
+				}
+				secretItems = append(secretItems, secretItem)
+			}
+			tempVolume.Secret.Items = secretItems
+		}
+		if volume.VolumeSource.ConfigMap != nil {
+			tempVolume.ConfigMap = new(types.ConfigMapVolumeSource)
+			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
+
+			tempVolume.ConfigMap.DefaultMode = volume.VolumeSource.ConfigMap.DefaultMode
+			var configMapItems []types.KeyToPath
+			for _, item := range volume.VolumeSource.ConfigMap.Items {
+				configMapItem := types.KeyToPath{
+					Key:  item.Key,
+					Path: item.Path,
+					Mode: item.Mode,
+				}
+				configMapItems = append(configMapItems, configMapItem)
+			}
+			tempVolume.ConfigMap.Items = configMapItems
+		}
+
+		if volume.VolumeSource.AWSElasticBlockStore != nil {
+			tempVolume.AWSElasticBlockStore = new(types.AWSElasticBlockStoreVolumeSource)
+			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AWSElasticBlockStore.ReadOnly
+			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AWSElasticBlockStore.Partition
+		}
+
+		if volume.VolumeSource.EmptyDir != nil {
+			tempVolume.EmptyDir = new(types.EmptyDirVolumeSource)
+			//quantity, _ := resource.ParseQuantity(volume.VolumeSource.EmptyDir.SizeLimit)
+			tempVolume.EmptyDir.SizeLimit = volume.VolumeSource.EmptyDir.SizeLimit
+			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumDefault {
+				tempVolume.EmptyDir.Medium = types.StorageMediumDefault
+
+			}
+			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumMemory {
+				tempVolume.EmptyDir.Medium = types.StorageMediumMemory
+			}
+
+			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumHugePages {
+				tempVolume.EmptyDir.Medium = types.StorageMediumHugePages
+			}
+
+		}
+
+		if volume.VolumeSource.GCEPersistentDisk != nil {
+			tempVolume.GCEPersistentDisk = new(types.GCEPersistentDiskVolumeSource)
+			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GCEPersistentDisk.Partition
+			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GCEPersistentDisk.ReadOnly
+			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GCEPersistentDisk.PDName
+		}
+
+		if volume.VolumeSource.AzureDisk != nil {
+			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.AzureDisk.ReadOnly = volume.VolumeSource.AzureDisk.ReadOnly
+			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskName
+
+			if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingNone {
+				temp := types.AzureDataDiskCachingNone
+				tempVolume.AzureDisk.CachingMode = &temp
+			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadWrite {
+				temp := types.AzureDataDiskCachingReadWrite
+				tempVolume.AzureDisk.CachingMode = &temp
+			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadOnly {
+				temp := types.AzureDataDiskCachingReadOnly
+				tempVolume.AzureDisk.CachingMode = &temp
+			}
+
+			if *volume.VolumeSource.AzureDisk.Kind == v1.AzureSharedBlobDisk {
+				temp := types.AzureSharedBlobDisk
+				tempVolume.AzureDisk.Kind = &temp
+			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureDedicatedBlobDisk {
+				temp := types.AzureDedicatedBlobDisk
+				tempVolume.AzureDisk.Kind = &temp
+			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureManagedDisk {
+				temp := types.AzureManagedDisk
+				tempVolume.AzureDisk.Kind = &temp
+			}
+		}
+
+		if volume.VolumeSource.AzureFile != nil {
+			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
+			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
+
+		}
+		if volume.VolumeSource.HostPath != nil {
+			tempVolume.HostPath = new(types.HostPathVolumeSource)
+			tempVolume.HostPath.Path = volume.VolumeSource.HostPath.Path
+			hostPathType := *volume.VolumeSource.HostPath.Type
+			hostPathTypeTemp := types.HostPathType(hostPathType)
+			tempVolume.HostPath.Type = &hostPathTypeTemp
+		}
+
+		volumes = append(volumes, tempVolume)
+
+	}
+	for key, _ := range volumeMountNames {
+		if volumeMountNames[key] == true {
+			return nil, errors.New("volume does not exist")
+		}
+	}
+	return volumes, nil
 }

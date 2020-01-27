@@ -259,6 +259,8 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	if service.Name == "" {
 		return &v1.Deployment{}, errors.New("Service name not found")
 	}
+	//
+
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
@@ -270,42 +272,51 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 	deployment.Labels = make(map[string]string)
 	deployment.Labels["keel.sh/policy"] = "force"
-	deployment.Labels["version"] = service.Version
-
 	deployment.Labels = service.ServiceAttributes.Labels
+
 	deployment.Annotations = make(map[string]string)
 	deployment.Annotations = service.ServiceAttributes.Annotations
+
 	deployment.Spec.Selector = new(metav1.LabelSelector)
 	deployment.Spec.Selector.MatchLabels = make(map[string]string)
-	deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
-
 	deployment.Spec.Selector.MatchLabels["app"] = service.Name
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
-
+	deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
 	deployment.Spec.Template.Labels = make(map[string]string)
 
 	deployment.Spec.Template.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["version"] = service.Version
+	deployment.Spec.Template.Labels = service.ServiceAttributes.Labels
 
 	deployment.Spec.Template.Annotations = make(map[string]string)
 	deployment.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
 	deployment.Spec.Template.Spec.NodeSelector = make(map[string]string)
 	deployment.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
-	deployment.Spec.Strategy.Type = v1.DeploymentStrategyType(service.ServiceAttributes.Strategy.Type.String())
-	if service.ServiceAttributes.Strategy.RollingUpdate != nil {
+	if service.ServiceAttributes.Replicas != nil {
+		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas.Replica
 
-		deployment.Spec.Strategy.RollingUpdate = &v1.RollingUpdateDeployment{
-			MaxUnavailable: &intstr.IntOrString{
-				IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal,
-				StrVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal,
-			},
-			MaxSurge: &intstr.IntOrString{
-				IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal,
-				StrVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal,
-			},
+	}
+
+	if service.ServiceAttributes.Strategy != nil {
+
+		deployment.Spec.Strategy.Type = v1.DeploymentStrategyType(service.ServiceAttributes.Strategy.Type.String())
+		if service.ServiceAttributes.Strategy.Type == pb.DeploymentStrategyType_Recreate {
+			deployment.Spec.Strategy.Type = v1.RecreateDeploymentStrategyType
+		} else if service.ServiceAttributes.Strategy.Type == pb.DeploymentStrategyType_RollingUpdate {
+			deployment.Spec.Strategy.Type = v1.RollingUpdateDeploymentStrategyType
+			if service.ServiceAttributes.Strategy.RollingUpdate != nil {
+				deployment.Spec.Strategy.RollingUpdate = &v1.RollingUpdateDeployment{
+					MaxUnavailable: &intstr.IntOrString{
+						IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable,
+					},
+					MaxSurge: &intstr.IntOrString{
+						IntVal: service.ServiceAttributes.Strategy.RollingUpdate.MaxSurge,
+					},
+				}
+			}
+
 		}
-
 	}
 
 	var volumeMountNames1 = make(map[string]bool)
@@ -322,9 +333,11 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	}
 
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
-		deployment.Spec.Template.Spec.InitContainers = containersList
-		for k, v := range volumeMounts {
-			volumeMountNames1[k] = v
+		if len(containersList) > 0 {
+			deployment.Spec.Template.Spec.InitContainers = containersList
+			for k, v := range volumeMounts {
+				volumeMountNames1[k] = v
+			}
 		}
 
 	} else {
@@ -332,83 +345,21 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	}
 
 	if volumes, err := getVolumes(service.ServiceAttributes.Volumes, volumeMountNames1); err == nil {
-		deployment.Spec.Template.Spec.Volumes = volumes
+		if len(volumes) > 0 {
+			deployment.Spec.Template.Spec.Volumes = volumes
+		}
+
 	} else {
 		return nil, err
 	}
 
-	if aa, err := getAffinity(service.ServiceAttributes.Affinity); err != nil {
-		return nil, err
-	} else {
-		deployment.Spec.Template.Spec.Affinity = aa
+	if service.ServiceAttributes.Affinity != nil {
+		if aa, err := getAffinity(service.ServiceAttributes.Affinity); err != nil {
+			return nil, err
+		} else {
+			deployment.Spec.Template.Spec.Affinity = aa
+		}
 	}
-
-	//isExistSecret := make(map[string]bool)
-	//isExistConfigMap := make(map[string]bool)
-
-	//for _, every := range secrets {
-	//	isExistSecret[every] = true
-	//	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-	//		Name: every,
-	//		VolumeSource: v2.VolumeSource{
-	//			Secret: &v2.SecretVolumeSource{
-	//				SecretName: every,
-	//			},
-	//		},
-	//	})
-	//}
-
-	//for _, every := range configMaps {
-	//	isExistConfigMap[every] = true
-	//	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-	//		Name: every,
-	//		VolumeSource: v2.VolumeSource{
-	//			ConfigMap: &v2.ConfigMapVolumeSource{
-	//				LocalObjectReference: v2.LocalObjectReference{
-	//					Name: every,
-	//				},
-	//			},
-	//		},
-	//	})
-	//}
-
-	//if service.ServiceAttributes.EnableInit {
-	//	deployment.Spec.Template.Spec.InitContainers, configMaps, err = getInitContainers(service)
-	//	if err != nil {
-	//		return &v1.Deployment{}, err
-	//	}
-	//
-	//	for _, every := range secrets {
-	//		if _, ok := isExistSecret[every]; !ok {
-	//			isExistSecret[every] = true
-	//			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-	//				Name: every,
-	//				VolumeSource: v2.VolumeSource{
-	//					Secret: &v2.SecretVolumeSource{
-	//						SecretName: every,
-	//					},
-	//				},
-	//			})
-	//		}
-	//	}
-	//
-	//	for _, every := range configMaps {
-	//		if _, ok := isExistConfigMap[every]; !ok {
-	//			isExistConfigMap[every] = true
-	//			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, v2.Volume{
-	//				Name: every,
-	//				VolumeSource: v2.VolumeSource{
-	//					ConfigMap: &v2.ConfigMapVolumeSource{
-	//						LocalObjectReference: v2.LocalObjectReference{
-	//							Name: every,
-	//						},
-	//					},
-	//				},
-	//			})
-	//		}
-	//	}
-	//}
-
 	return deployment, nil
 }
 
@@ -1091,8 +1042,6 @@ func putLivenessProbe(container *v2.Container, prob *pb.Probe) error {
 					if strings.EqualFold(prob.Handler.HttpGet.Scheme, types.URISchemeHTTP) || strings.EqualFold(prob.Handler.HttpGet.Scheme, types.URISchemeHTTPS) {
 
 						temp.HTTPGet.Scheme = v2.URIScheme(prob.Handler.HttpGet.Scheme)
-					} else {
-						return errors.New("invalid urischeme ")
 					}
 
 					if prob.Handler.HttpGet.HttpHeaders != nil {
@@ -1158,22 +1107,25 @@ func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 				if prob.Handler.HttpGet.Port > 0 && prob.Handler.HttpGet.Port < 65536 {
 					temp.HTTPGet.Host = prob.Handler.HttpGet.Host
 					temp.HTTPGet.Path = prob.Handler.HttpGet.Path
+					temp.HTTPGet.Port = intstr.FromInt(int(prob.Handler.HttpGet.Port))
 
-					if strings.EqualFold(prob.Handler.HttpGet.Scheme, types.URISchemeHTTP) || strings.EqualFold(prob.Handler.HttpGet.Scheme, types.URISchemeHTTPS) {
+					if prob.Handler.HttpGet.Scheme == types.URISchemeHTTP && prob.Handler.HttpGet.Scheme == types.URISchemeHTTPS {
+						if prob.Handler.HttpGet.Scheme == types.URISchemeHTTP {
 
-						temp.HTTPGet.Scheme = v2.URIScheme(prob.Handler.HttpGet.Scheme)
-					} else {
-						return errors.New("invalid urischeme ")
-					}
-
-					if prob.Handler.HttpGet.HttpHeaders != nil {
-						temp.HTTPGet.HTTPHeaders = []v2.HTTPHeader{}
-						for i := 0; i < len(prob.Handler.HttpGet.HttpHeaders); i++ {
-							tempheader := v2.HTTPHeader{prob.Handler.HttpGet.HttpHeaders[i].Name, prob.Handler.HttpGet.HttpHeaders[i].Value}
-							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempheader)
+							temp.HTTPGet.Scheme = v2.URISchemeHTTP
+						} else if prob.Handler.HttpGet.Scheme == types.URISchemeHTTPS {
+							temp.HTTPGet.Scheme = v2.URISchemeHTTPS
 						}
 					}
-					temp.HTTPGet.Port = intstr.FromInt(int(prob.Handler.HttpGet.Port))
+
+					temp.HTTPGet.HTTPHeaders = []v2.HTTPHeader{}
+					for i := 0; i < len(prob.Handler.HttpGet.HttpHeaders); i++ {
+						if prob.Handler.HttpGet.HttpHeaders[i] != nil {
+							tempHeader := v2.HTTPHeader{prob.Handler.HttpGet.HttpHeaders[i].Name, prob.Handler.HttpGet.HttpHeaders[i].Value}
+							temp.HTTPGet.HTTPHeaders = append(temp.HTTPGet.HTTPHeaders, tempHeader)
+						}
+					}
+
 				} else {
 					return errors.New("Invalid Port number for http Get")
 				}

@@ -1,6 +1,8 @@
 package types
 
-import "time"
+import (
+	"time"
+)
 
 type DeploymentService struct {
 	Id                interface{}                 `json:"_id,omitempty" bson:"_id" valid:"-"`
@@ -15,16 +17,21 @@ type DeploymentService struct {
 	ServiceAttributes *DeploymentServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type DeploymentServiceAttribute struct {
-	Container             []ContainerAttribute `json:"containers,omitempty"`
-	MeshConfig            *IstioConfig         `json:"istio_config,omitempty"`
-	LabelSelector         *LabelSelectorObj    `json:"label_selector,omitempty"`
-	NodeSelector          map[string]string    `json:"node_selector"`
-	Labels                map[string]string    `json:"labels,omitempty"`
-	Annotations           map[string]string    `json:"annotations,omitempty"`
-	IsRbac                bool                 `json:"is_rbac_enabled"`
-	RbacRoles             []K8sRbacAttribute   `json:"roles,omitempty"`
-	IstioRoles            []IstioRbacAttribute `json:"istio_roles,omitempty"`
-	IsInitContainerEnable bool                 `json:"enable_init,omitempty"`
-	Volumes               []Volume             `json:"volumes,omitempty"`
-	Affinity              *Affinity            `json:"affinity,omitempty"`
+	Container     map[string]ContainerAttribute `json:"containers,omitempty"`
+	MeshConfig    *IstioConfig                  `json:"istio_config,omitempty"`
+	NodeSelector  map[string]string             `json:"node_selector,omitempty"`
+	Labels        map[string]string             `json:"labels,omitempty"`
+	LabelSelector *LabelSelectorObj             `json:"label_selector,omitempty"`
+	Annotations   map[string]string             `json:"annotations,omitempty"`
+	RbacRoles     []K8sRbacAttribute            `json:"roles,omitempty"`
+	IstioRoles    []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	Volumes       []Volume                      `json:"volumes,omitempty"`
+	Affinity      *Affinity                     `json:"affinity,omitempty"`
+	Strategy      DeploymentStrategy            `json:"strategy,omitempty"`
+	InitContainer map[string]ContainerAttribute `json:"initContainers,omitempty"`
+	Replicas      Replica                       `json:"replicas,omitempty"`
+}
+
+type Replica struct {
+	Replica int32 `json:"replica,omitempty"`
 }

@@ -207,17 +207,12 @@ message IstioRbacAttribute {
 
 message DeploymentStrategy {
     DeploymentStrategyType type = 1;
-    RollingUpdateDeployment rolling_update = 2;
+    RollingUpdateDeployment rollingUpdate = 2;
 }
 
 message RollingUpdateDeployment {
-    IntOrString max_unavailable = 1;
-    IntOrString max_surge = 2;
-}
-
-message IntOrString {
-    int32 int_val = 1;
-    string str_val = 2;
+    int32 maxUnavailable = 1;
+    int32  maxSurge = 2;
 }
 
 
@@ -248,7 +243,7 @@ enum NodeSelectorOperator{
     NodeSelectorOpIn = 0;
     NodeSelectorOpNotIn = 1;
     NodeSelectorOpExists = 2;
-    NodeSelectorOpDoesNotExists = 3;
+    NodeSelectorOpDoesNotExist = 3;
     NodeSelectorOpGt = 4;
     NodeSelectorOpLt = 5;
 
