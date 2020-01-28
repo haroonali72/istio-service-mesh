@@ -529,6 +529,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 	}
 
 	hpa.Spec.Metrics = metricsArr
+	hpa.Status.Conditions[0].Status = v1.ConditionTrue
 	return hpa, nil
 }
 func ScaleUnit(unit string) resource.Scale {
