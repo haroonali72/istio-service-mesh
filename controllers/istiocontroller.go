@@ -2853,13 +2853,20 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
 	if profileId != "" {
 		var vault types.VaultCredentialsConfigurations
-		req, err := http.Get(constants.VaultURL + constants.VAULT_BACKEND + profileId)
+		url := constants.VaultURL + constants.VAULT_BACKEND + profileId
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return v1.Secret{}, false
+		}
+		req.Header.Set("token", cpContext.GetString("token"))
+		reqClient := http.Client{}
+		res, err := reqClient.Do(req)
 		if err == nil {
-			result, err := ioutil.ReadAll(req.Body)
+			result, err := ioutil.ReadAll(res.Body)
 			if err == nil {
 				err = json.Unmarshal(result, &vault)
 				typeArray := []string{"frontendLogging"}
-				cpContext.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password, constants.LOGGING_LEVEL_ERROR, typeArray)
+				cpContext.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password, constants.LOGGING_LEVEL_INFO, typeArray)
 
 				if err == nil {
 					if vault.Credentials.Username != "" && vault.Credentials.Password != "" {
