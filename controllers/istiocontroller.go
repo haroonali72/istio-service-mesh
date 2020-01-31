@@ -2924,13 +2924,13 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 	dockerConfMarshaled, _ := json.Marshal(dockerConf)
 
 	data := map[string][]byte{
-		".dockercfg": dockerConfMarshaled,
+		".dockerconfigjson": dockerConfMarshaled,
 	}
 
 	secret.TypeMeta = typeMeta
 	secret.ObjectMeta = objectMeta
 	secret.Data = data
-	secret.Type = v1.SecretTypeDockercfg
+	secret.Type = "kubernetes.io/dockerconfigjson"
 
 	return secret, true
 }
