@@ -2895,18 +2895,22 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 
 	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
 	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
-	email := "email@email.com"
+	email := "my-account-email@address.com"
 	server := serviceAttr.ImageName
 
 	tokens := strings.Split(server, "/")
 	registry := tokens[0]
-
-	dockerConf := map[string]map[string]string{
-		registry: {
-			"username": username,
-			"password": password,
-			"email":    email,
-			"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+	if strings.TrimSpace(registry) == "docker.io" {
+		registry = "https://index.docker.io/v1/"
+	}
+	dockerConf := map[string]map[string]map[string]string{
+		"auths": {
+			registry: {
+				"username": username,
+				"password": password,
+				"email":    email,
+				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			},
 		},
 	}
 
