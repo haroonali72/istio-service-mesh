@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strconv"
 	"strings"
 )
 
@@ -294,7 +293,7 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
 	if service.ServiceAttributes.Replicas != nil {
-		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas.Replica
+		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas.Value
 
 	}
 
@@ -571,32 +570,23 @@ func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, ma
 		var ports []v2.ContainerPort
 		for _, port := range container.Ports {
 			temp := v2.ContainerPort{}
-			if port.Container == "" && port.Host == "" {
+			if port.ContainerPort == 0 && port.HostPort == 0 {
 				continue
 			}
-			if port.Container == "" && port.Host != "" {
-				port.Container = port.Host
+			if port.ContainerPort == 0 && port.HostPort != 0 {
+				port.ContainerPort = port.HostPort
 			}
 
-			i, err := strconv.Atoi(port.Container)
-			if err != nil {
-				utils.Info.Println(err)
-				continue
-			}
-			if i > 0 && i < 65536 {
-				temp.ContainerPort = int32(i)
+			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
+				temp.ContainerPort = port.ContainerPort
 			} else {
 				utils.Info.Println("invalid prot number")
 				continue
 			}
-			if port.Host != "" {
-				i, err = strconv.Atoi(port.Host)
-				if err != nil {
-					utils.Info.Println(err)
-					continue
-				}
-				if i > 0 && i < 65536 {
-					temp.HostPort = int32(i)
+			if port.HostPort != 0 {
+
+				if port.HostPort > 0 && port.HostPort < 65536 {
+					temp.HostPort = port.HostPort
 				} else {
 					utils.Info.Println("invalid prot number")
 					continue
@@ -900,32 +890,23 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 		var ports []v2.ContainerPort
 		for _, port := range container.Ports {
 			temp := v2.ContainerPort{}
-			if port.Container == "" && port.Host == "" {
+			if port.ContainerPort == 0 && port.HostPort == 0 {
 				continue
 			}
-			if port.Container == "" && port.Host != "" {
-				port.Container = port.Host
+			if port.ContainerPort == 0 && port.HostPort != 0 {
+				port.ContainerPort = port.HostPort
 			}
 
-			i, err := strconv.Atoi(port.Container)
-			if err != nil {
-				utils.Info.Println(err)
-				continue
-			}
-			if i > 0 && i < 65536 {
-				temp.ContainerPort = int32(i)
+			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
+				temp.ContainerPort = port.ContainerPort
 			} else {
 				utils.Info.Println("invalid prot number")
 				continue
 			}
-			if port.Host != "" {
-				i, err = strconv.Atoi(port.Host)
-				if err != nil {
-					utils.Info.Println(err)
-					continue
-				}
-				if i > 0 && i < 65536 {
-					temp.HostPort = int32(i)
+			if port.HostPort != 0 {
+
+				if port.HostPort > 0 && port.HostPort < 65536 {
+					temp.HostPort = port.HostPort
 				} else {
 					utils.Info.Println("invalid prot number")
 					continue

@@ -27,11 +27,7 @@ type DeploymentServiceAttribute struct {
 	IstioRoles    []IstioRbacAttribute          `json:"istio_roles,omitempty"`
 	Volumes       []Volume                      `json:"volumes,omitempty"`
 	Affinity      *Affinity                     `json:"affinity,omitempty"`
-	Strategy      DeploymentStrategy            `json:"strategy,omitempty"`
+	Strategy      *DeploymentStrategy           `json:"strategy,omitempty"`
 	InitContainer map[string]ContainerAttribute `json:"initContainers,omitempty"`
-	Replicas      Replica                       `json:"replicas,omitempty"`
-}
-
-type Replica struct {
-	Replica int32 `json:"replica,omitempty"`
+	Replicas      *Replicas                     `json:"replicas,omitempty"`
 }

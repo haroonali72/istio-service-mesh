@@ -104,9 +104,11 @@ message BasicAuthCredentials {
 }
 
 message ContainerPort {
-    string host = 1;
-    string container = 2;
-    string name = 3;
+    string name = 1;
+    int32 hostPort = 2;
+    int32 containerPort = 3;
+    string protocol = 4;
+    string hostIP = 5;
 }
 
 message IstioConfig {
@@ -214,8 +216,42 @@ message RollingUpdateDeployment {
     int32 maxUnavailable = 1;
     int32  maxSurge = 2;
 }
+message DaemonSetUpdateStrategy {
+    DaemonSetUpdateStrategyType type = 1;
+    RollingUpdateDaemonSet rollingUpdate = 2;
+}
+message RollingUpdateDaemonSet{
+    oneof maxUnavailable{
+        int32 intVal = 1;
+        string strVal = 2;
+    }
+}
 
+message StateFulSetUpdateStrategy{
+    StatefulSetUpdateStrategyType type = 1;
+    RollingUpdateStatefulSetStrategy rollingUpdate = 2;
+}
 
+message RollingUpdateStatefulSetStrategy{
+    Partition partition = 1;
+}
+
+message Partition{
+    int32 Value = 1;
+}
+
+message Replicas{
+    int32 value = 1;
+}
+
+message RevisionHistoryLimit {
+    int32 value = 1;
+}
+
+enum DaemonSetUpdateStrategyType{
+    DaemonSetOnDelete = 0;
+    DaemonSetRollingUpdate = 1;
+}
 enum DeploymentStrategyType {
     Recreate = 0;
     RollingUpdate = 1;
@@ -247,5 +283,10 @@ enum NodeSelectorOperator{
     NodeSelectorOpGt = 4;
     NodeSelectorOpLt = 5;
 
+}
+
+enum StatefulSetUpdateStrategyType{
+    StatefulSetRollingUpdate = 0;
+    StatefulSetOnDelete = 1;
 }
 

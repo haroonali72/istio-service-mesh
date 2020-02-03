@@ -362,3 +362,7 @@ type PodAntiAffinity struct {
 	ReqDuringSchedulingIgnDuringExec []PodAffinityTerm         `json:"reqDuringSchedulingIgnDuringExec,omitempty"`
 	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"prefDuringIgnDuringExec,omitempty"`
 }
+
+type Replicas struct {
+	Value int32 `json:"value,omitempty"`
+}

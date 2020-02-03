@@ -40,8 +40,6 @@ message DeploymentServiceAttributes {
     repeated Volume volumes = 11;
     Affinity affinity = 12;
     map<string, ContainerAttributes> initContainers = 13;
-    replicas replicas=14;
+    Replicas replicas=14;
 }
 
-message replicas{
-    int32 replica = 1;}

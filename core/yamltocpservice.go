@@ -309,7 +309,8 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 	deployment.Version = service.Labels["version"]
 
 	if service.Spec.Replicas != nil {
-		deployment.ServiceAttributes.Replicas.Replica = *service.Spec.Replicas
+		deployment.ServiceAttributes.Replicas = new(types.Replicas)
+		deployment.ServiceAttributes.Replicas.Value = *service.Spec.Replicas
 	}
 
 	deployment.ServiceAttributes.Labels = make(map[string]string)
@@ -341,8 +342,6 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 			}
 		}
 
-	} else {
-		return nil, errors.New("no deployment strategy found")
 	}
 
 	var volumeMountNames1 = make(map[string]bool)
