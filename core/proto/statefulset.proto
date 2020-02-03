@@ -41,5 +41,6 @@ message StatefulSetServiceAttributes {
     repeated K8sRbacAttribute roles= 12;
     repeated IstioRbacAttribute istio_roles = 13;
     repeated Volume volumes = 14;
+    Affinity affinity = 15;
 
 }

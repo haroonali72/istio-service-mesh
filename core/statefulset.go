@@ -143,5 +143,13 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		return nil, err
 	}
 
+	if service.ServiceAttributes.Affinity != nil {
+		if aa, err := getAffinity(service.ServiceAttributes.Affinity); err != nil {
+			return nil, err
+		} else {
+			statefulSet.Spec.Template.Spec.Affinity = aa
+		}
+	}
+
 	return statefulSet, nil
 }
