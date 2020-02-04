@@ -34,7 +34,7 @@ message VSAttributes {
 message Http {
     string                      name 		        =1;
     repeated        HttpMatchRequest    http_match       =2;
-    repeated HttpRoute			        http_route               =3;
+    repeated        HttpRoute			        http_route               =3;
     HttpRedirect		        http_redirect       =4;
     HttpRewrite			        http_rewrite        =5;
     int32                      timeout			    =6;
@@ -55,7 +55,7 @@ message  HttpMatch {
     string                      value				=2;
 }
 message HttpRoute {
-    HttpRouteDestination        routes			    =1;
+    repeated HttpRouteDestination        routes			    =1;
     int32                       weight				=2;
 }
 message HttpRouteDestination {
@@ -82,7 +82,8 @@ message  HttpFaultInjection {
     int32                       delay_value			=2;
     float                       fault_percentage	=3;
     string                      abort_error_value	=4;
-    string                       abort_percentage    =5;
+    string                      abort_error_type	=5;
+    string                       abort_percentage    =6;
 }
 message HttpCorsPolicy{
     repeated          string    allow_origin        =1;
