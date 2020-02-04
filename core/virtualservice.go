@@ -269,81 +269,88 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		for _, match := range http.HttpMatch {
 			m := &v1alpha3.HTTPMatchRequest{}
 			m.Name = match.Name
-			if match.Uri.Type == "Prefix" {
-				m.Uri = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Prefix{
-						Prefix: match.Uri.Value,
-					},
-				}
-			} else if match.Uri.Type == "Exact" {
-				m.Uri = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Exact{
-						Exact: match.Uri.Value,
-					},
-				}
-			} else if match.Uri.Type == "Regex" {
-				m.Uri = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Regex{
-						Regex: match.Uri.Value,
-					},
-				}
-			}
-			if match.Scheme.Type == "Prefix" {
-				m.Scheme = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Prefix{
-						Prefix: match.Scheme.Value,
-					},
-				}
-			} else if match.Scheme.Type == "Exact" {
-				m.Scheme = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Exact{
-						Exact: match.Scheme.Value,
-					},
-				}
-			} else if match.Scheme.Type == "Regex" {
-				m.Scheme = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Regex{
-						Regex: match.Scheme.Value,
-					},
+			if match.Uri != nil {
+				if match.Uri.Type == "Prefix" {
+					m.Uri = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Prefix{
+							Prefix: match.Uri.Value,
+						},
+					}
+				} else if match.Uri.Type == "Exact" {
+					m.Uri = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Exact{
+							Exact: match.Uri.Value,
+						},
+					}
+				} else if match.Uri.Type == "Regex" {
+					m.Uri = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Regex{
+							Regex: match.Uri.Value,
+						},
+					}
 				}
 			}
-
-			if match.Method.Type == "Prefix" {
-				m.Method = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Prefix{
-						Prefix: match.Method.Value,
-					},
-				}
-			} else if match.Method.Type == "Exact" {
-				m.Method = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Exact{
-						Exact: match.Method.Value,
-					},
-				}
-			} else if match.Method.Type == "Regex" {
-				m.Method = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Regex{
-						Regex: match.Method.Value,
-					},
+			if match.Scheme != nil {
+				if match.Scheme.Type == "Prefix" {
+					m.Scheme = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Prefix{
+							Prefix: match.Scheme.Value,
+						},
+					}
+				} else if match.Scheme.Type == "Exact" {
+					m.Scheme = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Exact{
+							Exact: match.Scheme.Value,
+						},
+					}
+				} else if match.Scheme.Type == "Regex" {
+					m.Scheme = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Regex{
+							Regex: match.Scheme.Value,
+						},
+					}
 				}
 			}
-			if match.Authority.Type == "Prefix" {
-				m.Authority = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Prefix{
-						Prefix: match.Authority.Value,
-					},
+			if match.Method != nil {
+				if match.Method.Type == "Prefix" {
+					m.Method = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Prefix{
+							Prefix: match.Method.Value,
+						},
+					}
+				} else if match.Method.Type == "Exact" {
+					m.Method = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Exact{
+							Exact: match.Method.Value,
+						},
+					}
+				} else if match.Method.Type == "Regex" {
+					m.Method = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Regex{
+							Regex: match.Method.Value,
+						},
+					}
 				}
-			} else if match.Authority.Type == "Exact" {
-				m.Authority = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Exact{
-						Exact: match.Authority.Value,
-					},
-				}
-			} else if match.Authority.Type == "Regex" {
-				m.Authority = &v1alpha3.StringMatch{
-					MatchType: &v1alpha3.StringMatch_Regex{
-						Regex: match.Authority.Value,
-					},
+			}
+			if match.Authority != nil {
+				if match.Authority.Type == "Prefix" {
+					m.Authority = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Prefix{
+							Prefix: match.Authority.Value,
+						},
+					}
+				} else if match.Authority.Type == "Exact" {
+					m.Authority = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Exact{
+							Exact: match.Authority.Value,
+						},
+					}
+				} else if match.Authority.Type == "Regex" {
+					m.Authority = &v1alpha3.StringMatch{
+						MatchType: &v1alpha3.StringMatch_Regex{
+							Regex: match.Authority.Value,
+						},
+					}
 				}
 			}
 			vSer.Match = append(vSer.Match, m)
