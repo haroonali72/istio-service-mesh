@@ -15,6 +15,13 @@ import (
 	"reflect"
 )
 
+type GrpcConn struct {
+	Connection *grpc.ClientConn
+	ProjectId  string
+	CompanyId  string
+	token      string
+}
+
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
 	utils.Info.Println(reflect.TypeOf(ctx))
@@ -30,11 +37,18 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 	defer conn.Close()
 
-	response, err = pb.NewK8SResourceClient(conn).GetK8SResource(ctx, request)
-	if err != nil {
-		utils.Error.Println(err)
-		return &pb.K8SResourceResponse{}, err
+	grpcconn := &GrpcConn{
+		Connection: conn,
+		ProjectId:  request.ProjectId,
+		CompanyId:  request.CompanyId,
+		token:      request.Token,
 	}
+
+	//response, err = pb.NewK8SResourceClient(conn).GetK8SResource(ctx, request)
+	//if err != nil {
+	//	utils.Error.Println(err)
+	//	return &pb.K8SResourceResponse{}, err
+	//}
 
 	//if request.Name == "" {
 	//	var dep []*v1.Deployment
@@ -52,101 +66,58 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	//	}
 	//}
 
-	var dep []*v1.Deployment
-	err = json.Unmarshal(response.Resource, dep)
-	if err != nil {
-		utils.Error.Println(err)
-		return &pb.K8SResourceResponse{}, err
-	}
+	//var dep []*v1.Deployment
+	//err = json.Unmarshal(response.Resource, dep)
+	//if err != nil {
+	//	utils.Error.Println(err)
+	//	return &pb.K8SResourceResponse{}, err
+	//}
 
 	return response, err
 }
 
-func getClusterRoleDependentInfo(ctx context.Context, conn *grpc.ClientConn, req *pb.K8SResourceRequest, deployments []*v1.Deployment) {
-	projectId := req.ProjectId
-	companyId := req.CompanyId
-	token := req.Token
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, req *pb.K8SResourceRequest, deployments []*v1.Deployment) {
+
 	for _, dep := range deployments {
 
+		namespace := dep.Namespace
 		//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 		if dep.Spec.Template.Spec.ServiceAccountName != "" {
 
-			response, err := pb.NewK8SResourceClient(conn).GetK8SResource(ctx, &pb.K8SResourceRequest{
-				ProjectId: projectId,
-				CompanyId: companyId,
-				Token:     token,
-				Command:   "kubectl",
-				Args:      []string{"get", "sa", dep.Spec.Template.Spec.ServiceAccountName, "-n", dep.Namespace, "-o", "json"},
-			})
+			svcname := dep.Spec.Template.Spec.ServiceAccountName
+			svcaccount, err := conn.getsvcaccount(ctx, svcname, namespace)
 			if err != nil {
-				utils.Error.Println(err)
-			}
-
-			var svcAcc *api.ServiceAccount
-			err = json.Unmarshal(response.Resource, &svcAcc)
-			if err != nil {
-				utils.Error.Println(err)
+				return
 			}
 
 			//creating secrets for service account
-			for _, secret := range svcAcc.Secrets {
+			for _, secret := range svcaccount.Secrets {
 				if secret.Name != "" {
-					response, err = pb.NewK8SResourceClient(conn).GetK8SResource(ctx, &pb.K8SResourceRequest{
-						ProjectId: projectId,
-						CompanyId: companyId,
-						Token:     token,
-						Command:   "kubectl",
-						Args:      []string{"get", "secrets", secret.Name},
-					})
-					if err != nil {
-						utils.Error.Println(err)
-					}
 
-					var scrt []*v2.Secret
-					err = json.Unmarshal(response.Resource, &scrt)
+					secretname := secret.Name
+					if secret.Namespace != "" {
+						namespace = secret.Namespace
+					}
+					secretResp, err := conn.getsecret(ctx, secretname, namespace)
 					if err != nil {
-						utils.Error.Println(err)
+						return
 					}
 				}
 			}
 
-			response, err = pb.NewK8SResourceClient(conn).GetK8SResource(ctx, &pb.K8SResourceRequest{
-				ProjectId: projectId,
-				CompanyId: companyId,
-				Token:     token,
-				Command:   "kubectl",
-				Args:      []string{"get", "clusterrolebinding"},
-			})
+			clusterrolebindings, err := conn.getclusterroelbindings(ctx)
 			if err != nil {
-				utils.Error.Println(err)
-			}
-
-			var clusterrolebindings []*rbac.ClusterRoleBinding
-			err = json.Unmarshal(response.Resource, &clusterrolebindings)
-			if err != nil {
-				utils.Error.Println(err)
+				return
 			}
 
 			for _, clstrrolebind := range clusterrolebindings {
 				for _, sub := range clstrrolebind.Subjects {
-					if sub.Kind == "ServiceAccount" && sub.Name == dep.Spec.Template.Spec.ServiceAccountName {
+					if sub.Kind == "ServiceAccount" && sub.Name == svcname {
 						if clstrrolebind.RoleRef.Kind == "ClusterRole" {
 							clusterrolename := clstrrolebind.RoleRef.Name
-							response, err := pb.NewK8SResourceClient(conn).GetK8SResource(ctx, &pb.K8SResourceRequest{
-								ProjectId: projectId,
-								CompanyId: companyId,
-								Token:     token,
-								Command:   "kubectl",
-								Args:      []string{"get", "clusterrole", clusterrolename},
-							})
+							resp, err := conn.getclusterrole(ctx, clusterrolename)
 							if err != nil {
-								utils.Error.Println(err)
-							}
-
-							var clusterrole *rbac.ClusterRole
-							err = json.Unmarshal(response.Resource, &clusterrole)
-							if err != nil {
-								utils.Error.Println(err)
+								return
 							}
 						}
 						break
@@ -159,22 +130,10 @@ func getClusterRoleDependentInfo(ctx context.Context, conn *grpc.ClientConn, req
 			//discovering secret and config maps in deployment containers
 			for _, env := range container.Env {
 				if env.ValueFrom.SecretKeyRef.Name != "" {
-
-					response, err := pb.NewK8SResourceClient(conn).GetK8SResource(ctx, &pb.K8SResourceRequest{
-						ProjectId: projectId,
-						CompanyId: companyId,
-						Token:     token,
-						Command:   "kubectl",
-						Args:      []string{"get", "secrets", env.ValueFrom.SecretKeyRef.Name, "-o", "json"},
-					})
+					secretname := env.ValueFrom.SecretKeyRef.Name
+					resp, err := conn.getsecret(ctx, secretname, namespace)
 					if err != nil {
-						utils.Error.Println(err)
-					}
-
-					var secret *v2.Secret
-					err = json.Unmarshal(response.Resource, &secret)
-					if err != nil {
-						utils.Error.Println(err)
+						return
 					}
 
 				} else if env.ValueFrom.ConfigMapKeyRef.Name != "" {
@@ -198,4 +157,94 @@ func getClusterRoleDependentInfo(ctx context.Context, conn *grpc.ClientConn, req
 			}
 		}
 	}
+}
+
+func (conn *GrpcConn) getsvcaccount(ctx context.Context, svcname, namespace string) (*api.ServiceAccount, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "sa", svcname, "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var svcAcc *api.ServiceAccount
+	err = json.Unmarshal(response.Resource, &svcAcc)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return svcAcc, nil
+}
+
+func (conn *GrpcConn) getsecret(ctx context.Context, secretname, namespace string) (*v2.Secret, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "secrets", secretname, "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var scrt *v2.Secret
+	err = json.Unmarshal(response.Resource, &scrt)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	return scrt, nil
+}
+
+func (conn *GrpcConn) getclusterroelbindings(ctx context.Context) ([]*rbac.ClusterRoleBinding, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "clusterrolebindings"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var clusterrolebindings []*rbac.ClusterRoleBinding
+	err = json.Unmarshal(response.Resource, &clusterrolebindings)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return clusterrolebindings, nil
+}
+
+func (conn *GrpcConn) getclusterrole(ctx context.Context, clusterrolename string) (*rbac.ClusterRole, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "clusterrole", clusterrolename},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var clusterrole *rbac.ClusterRole
+	err = json.Unmarshal(response.Resource, &clusterrole)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	return clusterrole, nil
 }
