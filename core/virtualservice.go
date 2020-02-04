@@ -351,15 +351,18 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 
 		for _, route := range http.HttpRoute {
 			r := &v1alpha3.HTTPRouteDestination{}
-			r.Destination = &v1alpha3.Destination{}
-			r.Destination.Port = &v1alpha3.PortSelector{}
-			r.Destination.Port.Number = uint32(route.Routes.Port)
-			r.Destination.Host = route.Routes.Host
-			r.Destination.Subset = route.Routes.Subset
+			for _, rou := range route.Routes {
+
+				r.Destination = &v1alpha3.Destination{}
+				r.Destination.Port = &v1alpha3.PortSelector{}
+				r.Destination.Port.Number = uint32(rou.Port)
+				r.Destination.Host = rou.Host
+				r.Destination.Subset = rou.Subset
+
+			}
 			r.Weight = route.Weight
 			vSer.Route = append(vSer.Route, r)
 		}
-
 		if http.HttpRedirect != nil {
 			vSer.Redirect = &v1alpha3.HTTPRedirect{}
 			vSer.Redirect.Uri = http.HttpRedirect.Uri
@@ -391,15 +394,15 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				}
 			}
 			value, _ := strconv.ParseInt(http.FaultInjection.AbortPercentage, 10, 32)
-			if http.FaultInjection.AbortErrorValue == "HttpStatus" {
+			if http.FaultInjection.AbortErrorType == "HttpStatus" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
 					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
 				}
-			} else if http.FaultInjection.AbortErrorValue == "GrpcStatus" {
+			} else if http.FaultInjection.AbortErrorType == "GrpcStatus" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
 					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortPercentage},
 				}
-			} else if http.FaultInjection.AbortErrorValue == "Http2Status" {
+			} else if http.FaultInjection.AbortErrorType == "Http2Status" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
 					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortPercentage},
 				}
