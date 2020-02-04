@@ -23,7 +23,6 @@ message VirtualService {
     string                      token               =8;
     string                      company_id          =9;
     VSAttributes                service_attributes  =10;
-    string                      status              =11;
 }
 message VSAttributes {
     repeated        string      hosts	            =1;
@@ -34,11 +33,11 @@ message VSAttributes {
 }
 message Http {
     string                      name 		        =1;
-    repeated HttpMatchRequest   match_request       =2;
-    repeated HttpRoute			http_route          =3;
+    repeated        HttpMatchRequest    http_match       =2;
+    repeated HttpRoute			        http_route               =3;
     HttpRedirect		        http_redirect       =4;
     HttpRewrite			        http_rewrite        =5;
-    int64                       timeout			    =6;
+    int32                      timeout			    =6;
     HttpRetry				    retry               =7;
     HttpFaultInjection		    fault_injection     =8;
     HttpCorsPolicy 			    cors_policy         =9;
@@ -87,21 +86,21 @@ message  HttpFaultInjection {
 }
 message HttpCorsPolicy{
     repeated          string    allow_origin        =1;
-    repeated          string    all_method			=2;
+    repeated          string    allow_method			=2;
     repeated          string    allow_headers		=3;
     repeated          string    expose_headers		=4;
-    int64                       max_age				=5;
+    int32                       max_age				=5;
     bool                        allow_credentials	=6;
 }
 
 message Tls{
-    repeated    TlsMatchAttribute  match 				=1;
-    repeated    TlsRoute           routes				=2;
+    repeated    TlsMatchAttribute  tls_match 				=1;
+    repeated    TlsRoute           tls_route				=2;
 }
 message TlsMatchAttribute{
     repeated        string      sni_hosts			=1;
     repeated        string      destination_subnets	=2;
-    int32                      port				=3;
+    int32                       port				=3;
     string                      source_subnet		=4;
     repeated        string      gateways			=5;
 }
@@ -115,8 +114,8 @@ message RouteDestination{
     int32                       port				 =3;
 }
 message Tcp{
-    repeated       TcpMatchRequest match 			 =1;
-    repeated       TcpRoutes       routes			 =2;
+    repeated       TcpMatchRequest tcp_match 			 =1;
+    repeated       TcpRoutes       tcp_routes			 =2;
 }
 message TcpMatchRequest {
     repeated          string    destination_subnets	 =1;
