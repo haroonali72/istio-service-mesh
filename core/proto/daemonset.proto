@@ -42,5 +42,7 @@ message DaemonSetServiceAttributes {
     bool is_rbac_enabled = 19;
     repeated K8sRbacAttribute roles= 20;
     repeated IstioRbacAttribute istio_roles = 21;
+    TerminationGracePeriodSeconds terminationGracePeriodSeconds = 22;
+    ActiveDeadlineSeconds activeDeadlineSeconds = 23;
 }
 

@@ -41,5 +41,6 @@ message DeploymentServiceAttributes {
     Affinity affinity = 12;
     map<string, ContainerAttributes> initContainers = 13;
     Replicas replicas=14;
+    TerminationGracePeriodSeconds TerminationGracePeriodSeconds = 15;
 }
 

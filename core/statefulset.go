@@ -59,6 +59,194 @@ func (s *Server) CreateStatefulSet(ctx context.Context, req *pb.StatefulSetServi
 	return serviceResp, nil
 }
 
+func (s *Server) DeleteStatefulSet(ctx context.Context, req *pb.StatefulSetService) (*pb.ServiceResponse, error) {
+	utils.Info.Println(ctx)
+	serviceResp := new(pb.ServiceResponse)
+	serviceResp.Status = &pb.ServiceStatus{
+		Id:        req.ServiceId,
+		ServiceId: req.ServiceId,
+		Name:      req.Name,
+	}
+	ksdRequest, err := getStatefulSetRequestObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	defer conn.Close()
+
+	raw, err := json.Marshal(ksdRequest)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
+	})
+
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	utils.Info.Println(result.Service)
+	serviceResp.Status.Status = "successful"
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
+
+	return serviceResp, nil
+}
+
+func (s *Server) GetStatefulSet(ctx context.Context, req *pb.StatefulSetService) (*pb.ServiceResponse, error) {
+	utils.Info.Println(ctx)
+	serviceResp := new(pb.ServiceResponse)
+	serviceResp.Status = &pb.ServiceStatus{
+		Id:        req.ServiceId,
+		ServiceId: req.ServiceId,
+		Name:      req.Name,
+	}
+	ksdRequest, err := getStatefulSetRequestObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	defer conn.Close()
+
+	raw, err := json.Marshal(ksdRequest)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
+	})
+
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	utils.Info.Println(result.Service)
+	serviceResp.Status.Status = "successful"
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
+
+	return serviceResp, nil
+}
+
+func (s *Server) PutStatefulSet(ctx context.Context, req *pb.StatefulSetService) (*pb.ServiceResponse, error) {
+	utils.Info.Println(ctx)
+	serviceResp := new(pb.ServiceResponse)
+	serviceResp.Status = &pb.ServiceStatus{
+		Id:        req.ServiceId,
+		ServiceId: req.ServiceId,
+		Name:      req.Name,
+	}
+	ksdRequest, err := getStatefulSetRequestObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	defer conn.Close()
+
+	raw, err := json.Marshal(ksdRequest)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
+	})
+
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	utils.Info.Println(result.Service)
+	serviceResp.Status.Status = "successful"
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
+
+	return serviceResp, nil
+}
+
+func (s *Server) PatchStatefulSet(ctx context.Context, req *pb.StatefulSetService) (*pb.ServiceResponse, error) {
+	utils.Info.Println(ctx)
+	serviceResp := new(pb.ServiceResponse)
+	serviceResp.Status = &pb.ServiceStatus{
+		Id:        req.ServiceId,
+		ServiceId: req.ServiceId,
+		Name:      req.Name,
+	}
+	ksdRequest, err := getStatefulSetRequestObject(req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	defer conn.Close()
+
+	raw, err := json.Marshal(ksdRequest)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
+	})
+
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	utils.Info.Println(result.Service)
+	serviceResp.Status.Status = "successful"
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
+
+	return serviceResp, nil
+}
+
 func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSet, error) {
 	statefulSet := new(v1.StatefulSet)
 	if service.Name == "" {
@@ -90,6 +278,9 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	statefulSet.Spec.Template.Annotations = make(map[string]string)
 	statefulSet.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
 
+	if service.ServiceAttributes.Replicas != nil {
+		statefulSet.Spec.Replicas = &service.ServiceAttributes.Replicas.Value
+	}
 	if service.ServiceAttributes.RevisionHistoryLimit != nil {
 		statefulSet.Spec.RevisionHistoryLimit = &service.ServiceAttributes.RevisionHistoryLimit.Value
 	}
@@ -109,6 +300,8 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 			}
 		}
 	}
+
+	statefulSet.Spec.ServiceName = service.ServiceAttributes.ServiceName
 
 	volumeMountNames1 := make(map[string]bool)
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {

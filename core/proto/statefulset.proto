@@ -42,5 +42,7 @@ message StatefulSetServiceAttributes {
     repeated IstioRbacAttribute istio_roles = 13;
     repeated Volume volumes = 14;
     Affinity affinity = 15;
+    string serviceName = 16;
+
 
 }

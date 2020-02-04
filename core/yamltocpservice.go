@@ -298,11 +298,11 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		deployment.Name = service.Name
 	}
 
-	//if service.Namespace == "" {
-	//	deployment.Namespace = "default"
-	//} else {
-	//	deployment.Namespace = service.Namespace
-	//}
+	if service.Namespace == "" {
+		deployment.Namespace = "default"
+	} else {
+		deployment.Namespace = service.Namespace
+	}
 
 	deployment.ServiceType = "k8s"
 	deployment.ServiceSubType = "Deployment"
@@ -330,6 +330,7 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		if service.Spec.Strategy.Type == apps.RecreateDeploymentStrategyType {
 			deployment.ServiceAttributes.Strategy.Type = types.RecreateDeploymentStrategyType
 		} else if service.Spec.Strategy.Type == apps.RollingUpdateDeploymentStrategyType {
+			deployment.ServiceAttributes.Strategy = new(types.DeploymentStrategy)
 			deployment.ServiceAttributes.Strategy.Type = types.RollingUpdateDeploymentStrategyType
 			if service.Spec.Strategy.RollingUpdate != nil {
 				deployment.ServiceAttributes.Strategy.RollingUpdate = new(types.RollingUpdateDeployment)

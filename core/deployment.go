@@ -297,6 +297,10 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 	}
 
+	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
+		deployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
+	}
+
 	if service.ServiceAttributes.Strategy != nil {
 
 		deployment.Spec.Strategy.Type = v1.DeploymentStrategyType(service.ServiceAttributes.Strategy.Type.String())
@@ -568,8 +572,9 @@ func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, ma
 		}
 
 		var ports []v2.ContainerPort
-		for _, port := range container.Ports {
+		for key, port := range container.Ports {
 			temp := v2.ContainerPort{}
+			temp.Name = key
 			if port.ContainerPort == 0 && port.HostPort == 0 {
 				continue
 			}

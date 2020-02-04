@@ -247,6 +247,13 @@ message Replicas{
 message RevisionHistoryLimit {
     int32 value = 1;
 }
+message TerminationGracePeriodSeconds{
+    int64 value = 1;
+}
+
+message ActiveDeadlineSeconds{
+    int64 value = 1;
+}
 
 enum DaemonSetUpdateStrategyType{
     DaemonSetOnDelete = 0;
