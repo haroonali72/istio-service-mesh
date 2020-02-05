@@ -265,7 +265,7 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
-	deployment.Name = service.Name
+	deployment.Name = service.Name + "-" + service.Version
 	deployment.TypeMeta.Kind = "Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"
 
@@ -280,12 +280,14 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Selector.MatchLabels = make(map[string]string)
 	deployment.Spec.Selector.MatchLabels["app"] = service.Name
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
-	deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	if service.ServiceAttributes.LabelSelector != nil {
+		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	}
 	deployment.Spec.Template.Labels = make(map[string]string)
 
 	deployment.Spec.Template.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["version"] = service.Version
-	deployment.Spec.Template.Labels = service.ServiceAttributes.Labels
+	//deployment.Spec.Template.Labels = service.ServiceAttributes.Labels
 
 	deployment.Spec.Template.Annotations = make(map[string]string)
 	deployment.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
