@@ -93,6 +93,18 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
+	case "statefulSet":
+		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
+			return nil, err
+		}
+	case "job":
+		if err := ConvertJobToYaml(req, serviceResp); err != nil {
+			return nil, err
+		}
+	case "cronJob":
+		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
+			return nil, err
+		}
 	}
 
 	return serviceResp, nil
@@ -515,6 +527,70 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		return err
 	}
 	result, err := getKubernetesService(&svc)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if byteData, err := yaml.Marshal(result); err != nil {
+		utils.Error.Println(err)
+		return err
+	} else {
+		serviceResp.Service = byteData
+		serviceResp.Namespace = result.Namespace
+	}
+	return nil
+}
+
+// statefulset
+func ConvertStatefulToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+	ds := pb.StatefulSetService{}
+	if err := json.Unmarshal(req.Service, &ds); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getStatefulSetRequestObject(&ds)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if byteData, err := yaml.Marshal(result); err != nil {
+		utils.Error.Println(err)
+		return err
+	} else {
+		serviceResp.Service = byteData
+		serviceResp.Namespace = result.Namespace
+	}
+	return nil
+}
+
+func ConvertJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+	ds := pb.JobService{}
+	if err := json.Unmarshal(req.Service, &ds); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getJobRequestObject(&ds)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if byteData, err := yaml.Marshal(result); err != nil {
+		utils.Error.Println(err)
+		return err
+	} else {
+		serviceResp.Service = byteData
+		serviceResp.Namespace = result.Namespace
+	}
+	return nil
+}
+
+func ConvertCronJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+	ds := pb.CronJobService{}
+	if err := json.Unmarshal(req.Service, &ds); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getCronJobRequestObject(&ds)
 	if err != nil {
 		utils.Error.Println(err)
 		return err
