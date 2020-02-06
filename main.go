@@ -72,7 +72,8 @@ func main() {
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
 	pb.RegisterHpaServer(srv, svc)
-
+	pb.RegisterVirtualServer(srv, svc)
+	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterServiceEntryServer(srv, svc)
 	pb.RegisterDeploymentServer(srv, svc)
 	pb.RegisterStorageClassServer(srv, svc)

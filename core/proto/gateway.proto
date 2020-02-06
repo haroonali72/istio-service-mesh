@@ -10,9 +10,7 @@ service Gateway {
     rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
     rpc PutGateway (GatewayService) returns (ServiceResponse) {}
 }
-message NameRequest {
-    string name = 1;
-}
+
 
 message GatewayService {
     string project_id = 1;
@@ -54,6 +52,13 @@ message TlsConfig {
     repeated string subjectAltName = 6;
     ProtocolVersion minProtocolVersion = 7;
     ProtocolVersion maxProtocolVersion = 8;
+}
+enum Mode {
+    PASSTHROUGH = 0;
+    SIMPLE = 1;
+    MUTUAL = 2;
+    AUTO_PASSTHROUGH = 3;
+    ISTIO_MUTUAL = 4;
 }
 
 

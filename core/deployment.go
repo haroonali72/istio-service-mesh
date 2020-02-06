@@ -264,11 +264,11 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
+	deployment.Name = service.Name + "-" + service.Version
 
 	deployment.TypeMeta.Kind = "Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"
 
-	deployment.Name = service.Name
 	deployment.Labels = make(map[string]string)
 	deployment.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.ServiceAttributes.Labels {
@@ -282,6 +282,9 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Selector.MatchLabels = make(map[string]string)
 	deployment.Spec.Selector.MatchLabels["app"] = service.Name
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
+	if service.ServiceAttributes.LabelSelector != nil {
+		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	}
 	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
 		deployment.Spec.Selector.MatchLabels[key] = value
 	}

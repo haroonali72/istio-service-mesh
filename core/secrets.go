@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	kb "golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
@@ -11,14 +12,14 @@ import (
 	"strings"
 )
 
-func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateSecretService(ctx context.Context, req *pb.SecretService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestSecretObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -57,14 +58,14 @@ func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.Kubernetes
 	return serviceResp, nil
 
 }
-func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) GetSecretService(ctx context.Context, req *pb.SecretService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestSecretObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -102,14 +103,14 @@ func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesSer
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteSecretService(ctx context.Context, req *pb.SecretService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestSecretObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -147,14 +148,14 @@ func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.Kubernetes
 
 	return serviceResp, nil
 }
-func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchSecretService(ctx context.Context, req *pb.SecretService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestSecretObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -191,14 +192,14 @@ func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesS
 
 	return serviceResp, nil
 }
-func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) PutSecretService(ctx context.Context, req *pb.SecretService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestSecretObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -237,9 +238,10 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 	return serviceResp, nil
 }
 
-func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
-	var kube = new(kb.Service)
-	kube.Kind = "Service"
+func getSecret(input *pb.SecretService) (*kb.Secret, error) {
+
+	var kube = new(kb.Secret)
+	kube.Kind = "Secret"
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace
@@ -248,29 +250,45 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	kube.Labels = labels
-
-	for _, port := range input.KubeServiceAttributes.KubePorts {
-		spec := *new(kb.ServicePort)
-		spec.Name = port.Name
-		spec.Port = int(port.Port)
-		spec.Protocol = kb.Protocol(port.Protocol)
-		spec.NodePort = int(port.NodePort)
-		g := kb.IntOrString{IntVal: int(port.TargetPort), Kind: kb.IntstrKind(1)}
-		spec.TargetPort = g
-		kube.Spec.Ports = append(kube.Spec.Ports, spec)
+	switch input.SecretServiceAttributes.SecretType {
+	case "Opaque":
+		kube.Type = kb.SecretTypeOpaque
+	case "ServiceAccountToken":
+		kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
+	case "ServiceAccountNameKey":
+		kube.Type = kb.SecretType(kb.ServiceAccountNameKey)
+	case "ServiceAccountUIDKey":
+		kube.Type = kb.SecretType(kb.ServiceAccountUIDKey)
+	case "ServiceAccountTokenKey":
+		kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
+	case "ServiceAccountKubeconfigKey":
+		kube.Type = kb.SecretType(kb.ServiceAccountKubeconfigKey)
+	case "ServiceAccountRootCAKey":
+		kube.Type = kb.SecretType(kb.ServiceAccountRootCAKey)
+	case "SecretTypeDockercfg":
+		kube.Type = kb.SecretType(kb.SecretTypeDockercfg)
+	case "DockerConfigKey":
+		kube.Type = kb.SecretType(kb.DockerConfigKey)
+	default:
 	}
+	kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
 
-	kube.Spec.Selector = input.KubeServiceAttributes.Selector
-	kube.Spec.Type = kb.ServiceType(input.KubeServiceAttributes.Type)
-	kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+	map2 := make(map[string][]byte)
+	for key, value := range input.SecretServiceAttributes.SecretData {
+		s := []byte(value)
+		fmt.Println(s)
+		map2[key] = s
+	}
+	kube.Data = map2
+
 	return kube, nil
 }
-func getRequestKubeObject(req *pb.KubernetesService) (*kb.Service, error) {
-	gtwReq, err := getKubernetesService(req)
+func getRequestSecretObject(req *pb.SecretService) (*kb.Secret, error) {
+	scrReq, err := getSecret(req)
 	if err != nil {
 		utils.Error.Println(err)
 
 		return nil, err
 	}
-	return gtwReq, nil
+	return scrReq, nil
 }

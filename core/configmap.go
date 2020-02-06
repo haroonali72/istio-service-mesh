@@ -3,22 +3,24 @@ package core
 import (
 	"context"
 	"encoding/json"
-	kb "golang.org/x/build/kubernetes/api"
+	"fmt"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	kb "k8s.io/api/core/v1"
 	"strings"
 )
 
-func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) CreateConfigMapService(ctx context.Context, req *pb.ConfigMapService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+
+	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -57,14 +59,14 @@ func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.Kubernetes
 	return serviceResp, nil
 
 }
-func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) GetConfigMapService(ctx context.Context, req *pb.ConfigMapService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -102,14 +104,14 @@ func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesSer
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) DeleteConfigMapService(ctx context.Context, req *pb.ConfigMapService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -147,14 +149,14 @@ func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.Kubernetes
 
 	return serviceResp, nil
 }
-func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchConfigMapService(ctx context.Context, req *pb.ConfigMapService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -191,14 +193,14 @@ func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesS
 
 	return serviceResp, nil
 }
-func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesService) (*pb.ServiceResponse, error) {
+func (s *Server) PutConfigMapService(ctx context.Context, req *pb.ConfigMapService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getRequestConfigMapObject(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -237,40 +239,37 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 	return serviceResp, nil
 }
 
-func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
-	var kube = new(kb.Service)
-	kube.Kind = "Service"
-	kube.APIVersion = "v1"
-	kube.Name = input.Name
-	kube.Namespace = input.Namespace
-	kube.ResourceVersion = input.Version
+func getConfigMapService(input *pb.ConfigMapService) (*kb.ConfigMap, error) {
+
+	var config = new(kb.ConfigMap)
+	config.Kind = "ConfigMap"
+	config.APIVersion = "v1"
+	config.Name = input.Name
+	config.Namespace = input.Namespace
+	config.ResourceVersion = input.Version
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	kube.Labels = labels
+	config.Labels = labels
 
-	for _, port := range input.KubeServiceAttributes.KubePorts {
-		spec := *new(kb.ServicePort)
-		spec.Name = port.Name
-		spec.Port = int(port.Port)
-		spec.Protocol = kb.Protocol(port.Protocol)
-		spec.NodePort = int(port.NodePort)
-		g := kb.IntOrString{IntVal: int(port.TargetPort), Kind: kb.IntstrKind(1)}
-		spec.TargetPort = g
-		kube.Spec.Ports = append(kube.Spec.Ports, spec)
+	config.Data = input.ServiceAttribute.Data
+
+	map2 := make(map[string][]byte)
+	for key, value := range input.ServiceAttribute.BinaryData {
+		s := []byte(value)
+		fmt.Println(s)
+		map2[key] = s
 	}
+	config.BinaryData = map2
 
-	kube.Spec.Selector = input.KubeServiceAttributes.Selector
-	kube.Spec.Type = kb.ServiceType(input.KubeServiceAttributes.Type)
-	kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
-	return kube, nil
+	return config, nil
 }
-func getRequestKubeObject(req *pb.KubernetesService) (*kb.Service, error) {
-	gtwReq, err := getKubernetesService(req)
+func getRequestConfigMapObject(req *pb.ConfigMapService) (*kb.ConfigMap, error) {
+	configReq, err := getConfigMapService(req)
 	if err != nil {
 		utils.Error.Println(err)
 
 		return nil, err
 	}
-	return gtwReq, nil
+	return configReq, nil
 }
