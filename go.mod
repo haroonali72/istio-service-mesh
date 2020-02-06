@@ -15,7 +15,6 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/emicklei/go-restful v2.11.1+incompatible // indirect
-	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.6 // indirect
@@ -26,7 +25,7 @@ require (
 	github.com/google/pprof v0.0.0-20191218002539-d4f498aebedc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
-	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334
+	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/kr/pty v1.1.8 // indirect
@@ -57,7 +56,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.7
 	istio.io/api v0.0.0-20191218031825-7bafbd24c11c
 	istio.io/client-go v0.0.0-20191218043923-5fad2566daf6
-	istio.io/istio v0.0.0-20191218042323-ae27ee6c4bf5
+	istio.io/istio v0.0.0-20191218042323-ae27ee6c4bf5 // indirect
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.16.4
 	k8s.io/cli-runtime v0.16.4 // indirect
