@@ -258,20 +258,22 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	if service.Name == "" {
 		return &v1.Deployment{}, errors.New("Service name not found")
 	}
-	//
 
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
-	deployment.Name = service.Name
+
 	deployment.TypeMeta.Kind = "Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"
 
+	deployment.Name = service.Name
 	deployment.Labels = make(map[string]string)
 	deployment.Labels["keel.sh/policy"] = "force"
-	deployment.Labels = service.ServiceAttributes.Labels
+	for key, value := range service.ServiceAttributes.Labels {
+		deployment.Labels[key] = value
+	}
 
 	deployment.Annotations = make(map[string]string)
 	deployment.Annotations = service.ServiceAttributes.Annotations
@@ -280,12 +282,16 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Selector.MatchLabels = make(map[string]string)
 	deployment.Spec.Selector.MatchLabels["app"] = service.Name
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
-	deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
-	deployment.Spec.Template.Labels = make(map[string]string)
+	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+		deployment.Spec.Selector.MatchLabels[key] = value
+	}
 
+	deployment.Spec.Template.Labels = make(map[string]string)
 	deployment.Spec.Template.Labels["app"] = service.Name
 	deployment.Spec.Template.Labels["version"] = service.Version
-	deployment.Spec.Template.Labels = service.ServiceAttributes.Labels
+	for key, value := range service.ServiceAttributes.Labels {
+		deployment.Spec.Template.Labels[key] = value
+	}
 
 	deployment.Spec.Template.Annotations = make(map[string]string)
 	deployment.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
@@ -294,7 +300,6 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 	if service.ServiceAttributes.Replicas != nil {
 		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas.Value
-
 	}
 
 	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
@@ -302,8 +307,6 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	}
 
 	if service.ServiceAttributes.Strategy != nil {
-
-		deployment.Spec.Strategy.Type = v1.DeploymentStrategyType(service.ServiceAttributes.Strategy.Type.String())
 		if service.ServiceAttributes.Strategy.Type == pb.DeploymentStrategyType_Recreate {
 			deployment.Spec.Strategy.Type = v1.RecreateDeploymentStrategyType
 		} else if service.ServiceAttributes.Strategy.Type == pb.DeploymentStrategyType_RollingUpdate {

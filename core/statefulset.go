@@ -9,6 +9,7 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
+	v12 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -261,8 +262,12 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		statefulSet.ObjectMeta.Namespace = service.Namespace
 	}
 
+	statefulSet.Name = service.Name
 	statefulSet.Labels = make(map[string]string)
-	statefulSet.Labels = service.ServiceAttributes.Labels
+	statefulSet.Labels["keel.sh/policy"] = "force"
+	for key, value := range service.ServiceAttributes.Labels {
+		statefulSet.Labels[key] = value
+	}
 
 	statefulSet.Annotations = make(map[string]string)
 	statefulSet.Annotations = service.ServiceAttributes.Annotations
@@ -271,9 +276,15 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	statefulSet.Spec.Selector.MatchLabels = make(map[string]string)
 	statefulSet.Spec.Selector.MatchLabels["app"] = service.Name
 	statefulSet.Spec.Selector.MatchLabels["version"] = service.Version
-	statefulSet.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+		statefulSet.Spec.Selector.MatchLabels[key] = value
+	}
 	statefulSet.Spec.Template.Labels = make(map[string]string)
-	statefulSet.Spec.Template.Labels = service.ServiceAttributes.LabelSelector.MatchLabels
+	statefulSet.Spec.Template.Labels["app"] = service.Name
+	statefulSet.Spec.Template.Labels["version"] = service.Version
+	for key, value := range service.ServiceAttributes.Labels {
+		statefulSet.Spec.Template.Labels[key] = value
+	}
 
 	statefulSet.Spec.Template.Annotations = make(map[string]string)
 	statefulSet.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
@@ -283,6 +294,10 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	}
 	if service.ServiceAttributes.RevisionHistoryLimit != nil {
 		statefulSet.Spec.RevisionHistoryLimit = &service.ServiceAttributes.RevisionHistoryLimit.Value
+	}
+
+	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
+		statefulSet.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
 	}
 
 	if service.ServiceAttributes.UpdateStrategy != nil {
@@ -302,6 +317,22 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	}
 
 	statefulSet.Spec.ServiceName = service.ServiceAttributes.ServiceName
+	if service.ServiceAttributes.PodManagementPolicy == pb.PodManagementPolicyType_OrderedReady {
+		statefulSet.Spec.PodManagementPolicy = v1.OrderedReadyPodManagement
+	} else if service.ServiceAttributes.PodManagementPolicy == pb.PodManagementPolicyType_Parallel {
+		statefulSet.Spec.PodManagementPolicy = v1.ParallelPodManagement
+	}
+
+	var PVCS []v12.PersistentVolumeClaim
+	for _, persistentVolumeClaim := range service.ServiceAttributes.VolumeClaimTemplates {
+		if pvc, error := getPersistentVolumeClaim(persistentVolumeClaim); error != nil {
+			PVCS = append(PVCS, *pvc)
+		} else {
+			return nil, errors.New("error adding persistent volume claim")
+		}
+	}
+
+	statefulSet.Spec.VolumeClaimTemplates = PVCS
 
 	volumeMountNames1 := make(map[string]bool)
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {

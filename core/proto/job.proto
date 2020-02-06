@@ -30,7 +30,7 @@ message JobServiceAttribute {
     Parallelism parallelism = 1;
     Completions completions = 2;
     ActiveDeadlineSeconds activeDeadlineSeconds = 3;
-    BackoffLimit backofLimit = 4;
+    BackoffLimit backoffLimit = 4;
     LabelSelectorObj label_selector = 5;
     ManualSelector manualSelector = 6;
     IstioConfig istio_config = 7;
@@ -44,6 +44,7 @@ message JobServiceAttribute {
     repeated IstioRbacAttribute istio_roles = 21;
     map<string, ContainerAttributes> containers = 22;
     map<string, ContainerAttributes> initContainers = 23;
+    bool is_rbac_enabled = 24;
 }
 
 message Parallelism{

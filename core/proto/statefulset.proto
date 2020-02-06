@@ -4,13 +4,14 @@ package proto;
 import "general.proto";
 import "service.proto";
 import "volume.proto";
+import "persistentvolumeclaim.proto";
 
 service StatefulSet {
-    rpc CreateDaemonSet (StatefulSetService) returns (ServiceResponse) {}
-    rpc DeleteDaemonSet  (StatefulSetService) returns (ServiceResponse) {}
-    rpc GetDaemonSet (StatefulSetService) returns (ServiceResponse) {}
-    rpc PatchDaemonSet  (StatefulSetService) returns (ServiceResponse) {}
-    rpc PutDaemonSet (StatefulSetService) returns (ServiceResponse) {}
+    rpc CreateStatefulSet (StatefulSetService) returns (ServiceResponse) {}
+    rpc DeleteStatefulSet  (StatefulSetService) returns (ServiceResponse) {}
+    rpc GetStatefulSet (StatefulSetService) returns (ServiceResponse) {}
+    rpc PatchStatefulSet  (StatefulSetService) returns (ServiceResponse) {}
+    rpc PutStatefulSet (StatefulSetService) returns (ServiceResponse) {}
 }
 
 message StatefulSetService {
@@ -43,6 +44,14 @@ message StatefulSetServiceAttributes {
     repeated Volume volumes = 14;
     Affinity affinity = 15;
     string serviceName = 16;
+    TerminationGracePeriodSeconds terminationGracePeriodSeconds = 17;
+    repeated PersistentVolumeClaimService volumeClaimTemplates = 18;
+    PodManagementPolicyType podManagementPolicy = 19;
+}
 
+enum PodManagementPolicyType
+{
 
+    OrderedReady = 0;
+    Parallel = 1;
 }
