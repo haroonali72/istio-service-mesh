@@ -6,7 +6,7 @@ var (
 	KnativeEngineURL    string
 	ServicePort         string
 	KubernetesEngineURL string
-	K8sEngineGRPCURL string
+	K8sEngineGRPCURL    string
 	NotificationURL     string
 	VaultURL            string
 	RbacURL             string
@@ -19,7 +19,7 @@ const (
 	SERVICE_NAME = "istio-mesh-engine"
 
 	//KSD
-	KUBERNETES_SERVICES_DEPLOYMENT   = "/ksd/api/v1/solution"
+	KUBERNETES_SERVICES_DEPLOYMENT = "/ksd/api/v1/solution"
 	//Logging
 
 	LOGGING_LEVEL_INFO  = "info"
@@ -42,6 +42,7 @@ const (
 	Service     K8sKind = "service"
 	ConfigMap   K8sKind = "ConfigMap"
 	Secret      K8sKind = "Secret"
+	Daemonset   K8sKind = "daemonset"
 
 	////Istio Components
 	VirtualService  K8sKind = "VritualService"

@@ -51,7 +51,21 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	if err != nil {
 		return
 	}
-	fmt.Println(deploymentList)
+	//var deployList *v1.DeploymentList
+	//bytes, err := json.Marshal(deploymentList)
+	//if err != nil {
+	//	utils.Error.Println(err)
+	//	return &pb.K8SResourceResponse{}, err
+	//}
+	//
+	//err = json.Unmarshal(bytes, &deployList)
+	//if err != nil {
+	//	utils.Error.Println(err)
+	//	return &pb.K8SResourceResponse{}, err
+	//}
+
+	grpcConn.deploymentk8sToCp(ctx, deploymentList.Items)
+	fmt.Println("done")
 
 	//response, err = pb.NewK8SResourceClient(conn).GetK8SResource(ctx, request)
 	//if err != nil {
@@ -91,7 +105,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 //	}
 //}
 
-/*func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []*v1beta1.CronJob) {
+/*func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.CronJob) {
 	for _, cronjob := range cronjobs {
 		namespace := cronjob.Namespace
 		if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
@@ -248,7 +262,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 }
 
-func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []*v1.DaemonSet) {
+func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.DaemonSet) {
 	for _, daemonset := range daemonsets {
 		namespace := daemonset.Namespace
 		if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
@@ -405,7 +419,7 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []*v1.Dae
 	}
 }
 
-func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []*v1.StatefulSet) {
+func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1.StatefulSet) {
 
 	for _, statefulset := range statefulsets {
 		namespace := statefulset.Namespace
@@ -565,7 +579,7 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []*v
 
 }*/
 
-func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []*v1.Deployment) {
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) {
 
 	for _, dep := range deployments {
 
@@ -574,65 +588,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []*v1.D
 		if dep.Spec.Template.Spec.ServiceAccountName != "" {
 
 			svcname := dep.Spec.Template.Spec.ServiceAccountName
-			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
-			if err != nil {
-				return
-			}
-
-			//creating secrets for service account
-			for _, secret := range svcaccount.Secrets {
-				if secret.Name != "" {
-
-					secretname := secret.Name
-					if secret.Namespace != "" {
-						namespace = secret.Namespace
-					}
-					_, err := conn.getSecret(ctx, secretname, namespace)
-					if err != nil {
-						return
-					}
-				}
-			}
-
-			clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
-			if err != nil {
-				return
-			}
-
-			for _, clstrrolebind := range clusterrolebindings.Items {
-				for _, sub := range clstrrolebind.Subjects {
-					if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-						if clstrrolebind.RoleRef.Kind == "ClusterRole" {
-							clusterrolename := clstrrolebind.RoleRef.Name
-							_, err := conn.getClusterRole(ctx, clusterrolename)
-							if err != nil {
-								return
-							}
-						}
-						break
-					}
-				}
-			}
-
-			rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
-			if err != nil {
-				return
-			}
-
-			for _, rolebinding := range rolebindings.Items {
-				for _, sub := range rolebinding.Subjects {
-					if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-						if rolebinding.RoleRef.Kind == "Role" {
-							rolename := rolebinding.RoleRef.Name
-							_, err := conn.getRole(ctx, rolename, namespace)
-							if err != nil {
-								return
-							}
-						}
-						break
-					}
-				}
-			}
+			conn.getK8sRbacResources(ctx, svcname, namespace, constants.Deployment, dep)
 
 		}
 
@@ -667,14 +623,14 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []*v1.D
 		for _, container := range dep.Spec.Template.Spec.Containers {
 			//discovering secret and config maps in deployment containers
 			for _, env := range container.Env {
-				if env.ValueFrom.SecretKeyRef.Name != "" {
+				if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
 					secretname := env.ValueFrom.SecretKeyRef.Name
 					_, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
 						return
 					}
 
-				} else if env.ValueFrom.ConfigMapKeyRef.Name != "" {
+				} else if env.ValueFrom != nil && env.ValueFrom.ConfigMapKeyRef != nil {
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
 					_, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
@@ -686,19 +642,19 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []*v1.D
 
 		//volume dependency finding
 		for _, vol := range dep.Spec.Template.Spec.Volumes {
-			if vol.Secret.SecretName != "" {
+			if vol.Secret != nil {
 				secretname := vol.Secret.SecretName
 				_, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
 					return
 				}
-			} else if vol.ConfigMap.Name != "" {
+			} else if vol.ConfigMap != nil {
 				configmapname := vol.ConfigMap.Name
 				_, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
 					return
 				}
-			} else if vol.PersistentVolumeClaim.ClaimName != "" {
+			} else if vol.PersistentVolumeClaim != nil {
 				pvcname := vol.PersistentVolumeClaim.ClaimName
 				_, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
@@ -706,20 +662,85 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []*v1.D
 				}
 			} //else if vol.AWSElasticBlockStore.VolumeID
 
-			for _, source := range vol.Projected.Sources {
-				if source.ConfigMap.Name != "" {
-					configmapname := vol.ConfigMap.Name
-					_, err := conn.getConfigMap(ctx, configmapname, namespace)
-					if err != nil {
-						return
+			if vol.Projected != nil {
+				for _, source := range vol.Projected.Sources {
+					if source.ConfigMap != nil {
+						configmapname := vol.ConfigMap.Name
+						_, err := conn.getConfigMap(ctx, configmapname, namespace)
+						if err != nil {
+							return
+						}
+					} else if source.Secret != nil {
+						secretname := vol.Secret.SecretName
+						_, err := conn.getSecret(ctx, secretname, namespace)
+						if err != nil {
+							return
+						}
 					}
-				} else if source.Secret.Name != "" {
-					secretname := vol.Secret.SecretName
-					_, err := conn.getSecret(ctx, secretname, namespace)
+				}
+			}
+		}
+	}
+}
+
+func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcAccountName, namespace string, k8sObjectType constants.K8sKind, K8sObj interface{}) {
+
+	svcaccount, err := conn.getSvcAccount(ctx, svcAccountName, namespace)
+	if err != nil {
+		return
+	}
+
+	//creating secrets for service account
+	for _, secret := range svcaccount.Secrets {
+		if secret.Name != "" {
+
+			secretname := secret.Name
+			if secret.Namespace != "" {
+				namespace = secret.Namespace
+			}
+			_, err := conn.getSecret(ctx, secretname, namespace)
+			if err != nil {
+				return
+			}
+		}
+	}
+
+	clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
+	if err != nil {
+		return
+	}
+
+	for _, clstrrolebind := range clusterrolebindings.Items {
+		for _, sub := range clstrrolebind.Subjects {
+			if sub.Kind == "ServiceAccount" && sub.Name == svcAccountName {
+				if clstrrolebind.RoleRef.Kind == "ClusterRole" {
+					clusterrolename := clstrrolebind.RoleRef.Name
+					_, err := conn.getClusterRole(ctx, clusterrolename)
 					if err != nil {
 						return
 					}
 				}
+				break
+			}
+		}
+	}
+
+	rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
+	if err != nil {
+		return
+	}
+
+	for _, rolebinding := range rolebindings.Items {
+		for _, sub := range rolebinding.Subjects {
+			if sub.Kind == "ServiceAccount" && sub.Name == svcAccountName {
+				if rolebinding.RoleRef.Kind == "Role" {
+					rolename := rolebinding.RoleRef.Name
+					_, err := conn.getRole(ctx, rolename, namespace)
+					if err != nil {
+						return
+					}
+				}
+				break
 			}
 		}
 	}

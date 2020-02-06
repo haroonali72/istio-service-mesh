@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
@@ -81,6 +82,7 @@ func main() {
 	pb.RegisterVirtualServer(srv, svc)
 	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterK8SResourceServer(srv, svc)
+	go handleclient()
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {
@@ -91,4 +93,21 @@ func main() {
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
 	r.HandleFunc("/importservice", controllers.ImportServiceRequest)
 	log.Fatal(http.ListenAndServe(":"+constants.ServicePort, r))*/
+}
+
+func handleclient() {
+	conn, err := grpc.Dial("localhost:8654", grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+	}
+
+	_, err = pb.NewK8SResourceClient(conn).GetK8SResource(context.Background(), &pb.K8SResourceRequest{
+		ProjectId: "11",
+		CompanyId: "1111",
+		Token:     "dfsdfsdf",
+	})
+	if err != nil {
+		utils.Error.Println(err)
+	}
+
 }
