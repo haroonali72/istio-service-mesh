@@ -60,3 +60,10 @@ const (
 	Rbac_Token_Info = "/security/api/rbac/token/info"
 	Ksd_Get_Nobe    = "/all"
 )
+
+var ListOfNonKubernetesSupportedObjects = []string{
+	"Gateway",
+	"ServiceEntry",
+	"DestinationRule",
+	"VirtualService",
+}

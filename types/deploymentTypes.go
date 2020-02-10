@@ -1,6 +1,8 @@
 package types
 
-import "time"
+import (
+	"time"
+)
 
 type DeploymentService struct {
 	Id                interface{}                 `json:"_id,omitempty" bson:"_id" valid:"-"`
@@ -12,21 +14,20 @@ type DeploymentService struct {
 	Namespace         string                      `json:"namespace" bson:"namespace" binding:"required" valid:"alphanumspecial,required"`
 	CompanyId         string                      `json:"company_id,omitempty" bson:"company_id"`
 	CreationDate      time.Time                   `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
-	ServiceAttributes *DeploymentServiceAttribute `json:"service_attributes, omitempty"  bson:"company_id" binding:"required"`
+	ServiceAttributes *DeploymentServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type DeploymentServiceAttribute struct {
-	Containers                    map[string]ContainerAttribute  `json:"containers"`
-	InitContainers                map[string]ContainerAttribute  `json:"initContainers, omitempty"`
-	Volumes                       []Volume                       `json:"volumes,omitempty"`
-	MeshConfig                    *IstioConfig                   `json:"istio_config,omitempty"`
-	LabelSelector                 *LabelSelectorObj              `json:"label_selector,omitempty"`
-	NodeSelector                  map[string]string              `json:"node_selector,omitempty"`
-	Labels                        map[string]string              `json:"labels,omitempty"`
-	Annotations                   map[string]string              `json:"annotations,omitempty"`
-	RbacRoles                     []K8sRbacAttribute             `json:"roles,omitempty"`
-	IstioRoles                    []IstioRbacAttribute           `json:"istio_roles,omitempty"`
-	TerminationGracePeriodSeconds *TerminationGracePeriodSeconds `json:"terminationGracePeriodSeconds,omitempty"`
-	Affinity                      *Affinity                      `json:"affinity,omitempty"`
-	Strategy                      *DeploymentStrategy            `json:"strategy,omitempty"`
-	Replicas                      *Replicas                      `json:"replicas,omitempty"`
+	Container     map[string]ContainerAttribute `json:"containers,omitempty"`
+	MeshConfig    *IstioConfig                  `json:"istio_config,omitempty"`
+	NodeSelector  map[string]string             `json:"node_selector,omitempty"`
+	Labels        map[string]string             `json:"labels,omitempty"`
+	LabelSelector *LabelSelectorObj             `json:"label_selector,omitempty"`
+	Annotations   map[string]string             `json:"annotations,omitempty"`
+	RbacRoles     []K8sRbacAttribute            `json:"roles,omitempty"`
+	IstioRoles    []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	Volumes       []Volume                      `json:"volumes,omitempty"`
+	Affinity      *Affinity                     `json:"affinity,omitempty"`
+	Strategy      *DeploymentStrategy           `json:"strategy,omitempty"`
+	InitContainer map[string]ContainerAttribute `json:"initContainers,omitempty"`
+	Replicas      *Replicas                     `json:"replicas,omitempty"`
 }

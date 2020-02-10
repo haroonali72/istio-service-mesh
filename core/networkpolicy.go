@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/gogo/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -11,6 +13,7 @@ import (
 	net "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"strings"
 )
 
 func (s *Server) CreateNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
@@ -285,9 +288,11 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 				if err != nil {
 					return nil, err
 				}
-				temp2.IPBlock = new(net.IPBlock)
-				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
-				temp2.IPBlock.Except = each2.IpBlock.Except
+				if each2.IpBlock != nil {
+					temp2.IPBlock = new(net.IPBlock)
+					temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+					temp2.IPBlock.Except = each2.IpBlock.Except
+				}
 				temp.From = append(temp.From, temp2)
 			}
 			for _, each2 := range each.Ports {
@@ -296,7 +301,7 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 					port := intstr.FromString(each2.Port.PortName)
 					temp2.Port = &port
 				} else {
-					port := intstr.FromString(each2.Port.PortName)
+					port := intstr.FromInt(int(each2.Port.PortNumber))
 					temp2.Port = &port
 				}
 				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
@@ -330,9 +335,11 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 				if err != nil {
 					return nil, err
 				}
-				temp2.IPBlock = new(net.IPBlock)
-				temp2.IPBlock.CIDR = each2.IpBlock.Cidr
-				temp2.IPBlock.Except = each2.IpBlock.Except
+				if each2.IpBlock != nil {
+					temp2.IPBlock = new(net.IPBlock)
+					temp2.IPBlock.CIDR = each2.IpBlock.Cidr
+					temp2.IPBlock.Except = each2.IpBlock.Except
+				}
 				temp.To = append(temp.To, temp2)
 			}
 			for _, each2 := range each.Ports {
@@ -341,7 +348,7 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 					port := intstr.FromString(each2.Port.PortName)
 					temp2.Port = &port
 				} else {
-					port := intstr.FromString(each2.Port.PortName)
+					port := intstr.FromInt(int(each2.Port.PortNumber))
 					temp2.Port = &port
 				}
 				if each2.Protocol.String() == pb.Protocol_SCTP.String() {
@@ -365,32 +372,49 @@ func getNetworkPolicy(input *pb.NetworkPolicyService) (*net.NetworkPolicy, error
 }
 
 func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, error) {
-	lenl := len(service.MatchLabel)
-	lene := len(service.MatchExpression)
+	if service == nil {
+		return nil, nil
+	}
+	lenl := len(service.MatchLabels)
+	lene := len(service.MatchExpressions)
 	if lene == 0 && lenl == 0 {
 		return nil, nil
 	}
 	ls := new(metav1.LabelSelector)
-
-	for k, v := range service.MatchLabel {
+	if lenl > 0 {
+		ls.MatchLabels = make(map[string]string)
+	}
+	for k, v := range service.MatchLabels {
 		ls.MatchLabels[k] = v
 	}
-	for i := 0; i < len(service.MatchExpression); i++ {
-		if len(service.MatchExpression[i].Key) > 0 && (service.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
-			service.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
-			byteData, err := json.Marshal(service.MatchExpression[i])
-			if err != nil {
-				return nil, err
-			}
-			var temp metav1.LabelSelectorRequirement
+	for i := 0; i < len(service.MatchExpressions); i++ {
+		if len(service.MatchExpressions[i].Key) > 0 {
+			var temp = new(metav1.LabelSelectorRequirement)
+			//if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_DoesNotExist.String() {
+			//	temp.Operator = metav1.LabelSelectorOpDoesNotExist
+			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_Exists.String() {
+			//	temp.Operator = metav1.LabelSelectorOpExists
+			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_In.String() {
+			//	temp.Operator = metav1.LabelSelectorOpIn
+			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_NotIn.String() {
+			//	temp.Operator = metav1.LabelSelectorOpNotIn
+			//} else {
+			//	return nil, errors.New("Invalid operator in label selector")
+			//}
 
-			err = json.Unmarshal(byteData, &temp)
+			m := jsonpb.Marshaler{}
+			tJson, err := m.MarshalToString(service.MatchExpressions[i])
 			if err != nil {
 				return nil, err
 			}
-			ls.MatchExpressions = append(ls.MatchExpressions, temp)
+			um := jsonpb.Unmarshaler{}
+			err = um.Unmarshal(strings.NewReader(tJson), temp)
+			if err != nil {
+				return nil, err
+			}
+			ls.MatchExpressions = append(ls.MatchExpressions, *temp)
+		} else {
+			return nil, errors.New("key required in label selector match expression object")
 		}
 	}
 	return ls, nil

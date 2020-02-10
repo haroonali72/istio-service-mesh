@@ -1,10 +1,8 @@
 package volumes
 
-import (
-	"istio-service-mesh/types"
-	"k8s.io/api/core/v1"
-)
+import ()
 
+/*
 func GenerateVolumeMounts(volumes []types.Volume) []v1.VolumeMount {
 	volumeMounts := []v1.VolumeMount{}
 	for _, volume := range volumes {
@@ -31,3 +29,4 @@ func GeneratePodVolumes(volumes []types.Volume) []v1.Volume {
 	}
 	return podVolumes
 }
+*/

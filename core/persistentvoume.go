@@ -262,10 +262,14 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	pv.TypeMeta.Kind = "PersistentVolume"
 	pv.TypeMeta.APIVersion = "v1"
 	if len(input.ServiceAttributes.Labels) > 0 {
+		pv.Labels = make(map[string]string)
 		pv.Labels = input.ServiceAttributes.Labels
 	}
 	if reclaimPoilcy := input.ServiceAttributes.ReclaimPolicy.String(); reclaimPoilcy == pb.ReclaimPolicy_Delete.String() {
 		rcp := core.PersistentVolumeReclaimDelete
+		pv.Spec.PersistentVolumeReclaimPolicy = rcp
+	} else if reclaimPoilcy == pb.ReclaimPolicy_Retain.String() {
+		rcp := core.PersistentVolumeReclaimRetain
 		pv.Spec.PersistentVolumeReclaimPolicy = rcp
 	}
 	for _, each := range input.ServiceAttributes.AccessMode {
@@ -277,6 +281,29 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 			pv.Spec.AccessModes = append(pv.Spec.AccessModes, core.ReadWriteOnce)
 		}
 	}
+	if input.ServiceAttributes.StorageClassName != "" {
+		pv.Spec.StorageClassName = input.ServiceAttributes.StorageClassName
+	}
+	for _, each := range input.ServiceAttributes.MountOptions {
+		pv.Spec.MountOptions = append(pv.Spec.MountOptions, each)
+	}
+	if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Filesystem.String() {
+		pvm := core.PersistentVolumeFilesystem
+		pv.Spec.VolumeMode = &pvm
+	} else if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Block.String() {
+		pvm := core.PersistentVolumeBlock
+		pv.Spec.VolumeMode = &pvm
+	}
+	if input.ServiceAttributes.NodeAffinity != nil {
+		if ns, err := getNodeSelector(input.ServiceAttributes.NodeAffinity.Required); err != nil {
+			return nil, err
+		} else {
+			pv.Spec.NodeAffinity = new(core.VolumeNodeAffinity)
+			pv.Spec.NodeAffinity.Required = ns
+		}
+
+	}
+
 	quantity, err := resource.ParseQuantity(input.ServiceAttributes.Capcity)
 	if err != nil {
 		return nil, errors.New("invalid storage capacity ")
@@ -295,15 +322,25 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 		pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
 		pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName
 		pv.Spec.AzureDisk.DataDiskURI = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI
-		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "None" {
+		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
 			temp := core.AzureDataDiskCachingNone
 			pv.Spec.AzureDisk.CachingMode = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "ReadOnly" {
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadOnly.String() {
 			temp := core.AzureDataDiskCachingReadOnly
 			pv.Spec.AzureDisk.CachingMode = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode == "ReadWrite" {
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadWrite.String() {
 			temp := core.AzureDataDiskCachingReadWrite
 			pv.Spec.AzureDisk.CachingMode = &temp
+		}
+		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Shared.String() {
+			temp := core.AzureSharedBlobDisk
+			pv.Spec.AzureDisk.Kind = &temp
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Dedicated.String() {
+			temp := core.AzureDedicatedBlobDisk
+			pv.Spec.AzureDisk.Kind = &temp
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Managed.String() {
+			temp := core.AzureManagedDisk
+			pv.Spec.AzureDisk.Kind = &temp
 		}
 		pv.Spec.AzureDisk.ReadOnly = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly
 	} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile != nil {
@@ -311,6 +348,9 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 		pv.Spec.AzureFile.SecretName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName
 		pv.Spec.AzureFile.ShareName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName
 		pv.Spec.AzureFile.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly
+		if input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace != "" {
+			pv.Spec.AzureFile.SecretNamespace = &input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace
+		}
 	}
 	return pv, nil
 }

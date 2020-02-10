@@ -18,7 +18,7 @@ func TestGetDeploymentObject(t *testing.T) {
 
 	ls := types.LabelSelectorObj{ls_ml, ls_me}
 	commands := []string{"/bin/bash", "-c"}
-	var rs_cpu = types.RecourceTypeCpu
+	var rs_cpu = types.RecourseTypeCpu
 	rs_mem := types.RecourceType("memory")
 	var lm_rcs = make(map[types.RecourceType]string)
 	lm_rcs[rs_cpu] = "2"
@@ -68,7 +68,7 @@ func TestGetDaemonSetObject(t *testing.T) {
 
 	ls := types.LabelSelectorObj{ls_ml, ls_me}
 	commands := []string{"/bin/bash", "-c"}
-	var rs_cpu = types.RecourceTypeCpu
+	var rs_cpu = types.RecourseTypeCpu
 	rs_mem := types.RecourceType("memory")
 	var lm_rcs = make(map[types.RecourceType]string)
 	lm_rcs[rs_cpu] = "2"
@@ -118,7 +118,7 @@ func TestGetCronJobObject(t *testing.T) {
 
 	ls := types.LabelSelectorObj{ls_ml, ls_me}
 	commands := []string{"/bin/bash", "-c"}
-	var rs_cpu = types.RecourceTypeCpu
+	var rs_cpu = types.RecourseTypeCpu
 	rs_mem := types.RecourceType("memory")
 	var lm_rcs = make(map[types.RecourceType]string)
 	lm_rcs[rs_cpu] = "2"
@@ -169,7 +169,7 @@ func TestGetJobObject(t *testing.T) {
 
 	ls := types.LabelSelectorObj{ls_ml, ls_me}
 	commands := []string{"/bin/bash", "-c"}
-	var rs_cpu = types.RecourceTypeCpu
+	var rs_cpu = types.RecourseTypeCpu
 	rs_mem := types.RecourceType("memory")
 	var lm_rcs = make(map[types.RecourceType]string)
 	lm_rcs[rs_cpu] = "2"
@@ -219,7 +219,7 @@ func TestGetStatefulSetObject(t *testing.T) {
 
 	ls := types.LabelSelectorObj{ls_ml, ls_me}
 	commands := []string{"/bin/bash", "-c"}
-	var rs_cpu = types.RecourceTypeCpu
+	var rs_cpu = types.RecourseTypeCpu
 	rs_mem := types.RecourceType("memory")
 	var lm_rcs = make(map[types.RecourceType]string)
 	lm_rcs[rs_cpu] = "2"

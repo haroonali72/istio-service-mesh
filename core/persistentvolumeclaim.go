@@ -10,7 +10,6 @@ import (
 	"istio-service-mesh/utils"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (s *Server) CreatePersistentVolumeClaim(ctx context.Context, req *pb.PersistentVolumeClaimService) (*pb.ServiceResponse, error) {
@@ -263,44 +262,41 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 	pvc.Name = input.Name
 	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
 	pvc.TypeMeta.APIVersion = "v1"
-	pvc.Namespace = input.Namespace
+	if input.Namespace == "" {
+		pvc.Namespace = "default"
+	} else {
+		pvc.Namespace = input.Namespace
+	}
 	if input.ServiceAttributes.StorageClassName != "" {
 		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
 	} else if input.ServiceAttributes.VolumeName != "" {
 		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
-		//label selector applied
-		lenl := len(input.ServiceAttributes.LabelSelector.MatchLabel)
-		lene := len(input.ServiceAttributes.LabelSelector.MatchExpression)
 
-		if (!(lenl > 0)) && lene > 0 {
-
-			pvc.Spec.Selector = &metav1.LabelSelector{nil, nil}
-		} else if lene > 0 || lenl > 0 {
-			pvc.Spec.Selector = &metav1.LabelSelector{MatchLabels: make(map[string]string)}
-
+	}
+	//label selector applied
+	if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
+		if ls != nil {
+			pvc.Spec.Selector = ls
 		}
 
-		for k, v := range input.ServiceAttributes.LabelSelector.MatchLabel {
-			pvc.Spec.Selector.MatchLabels[k] = v
-		}
-		for i := 0; i < len(input.ServiceAttributes.LabelSelector.MatchExpression); i++ {
-			if len(input.ServiceAttributes.LabelSelector.MatchExpression[i].Key) > 0 && (input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_DoesNotExist ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_Exists ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_In ||
-				input.ServiceAttributes.LabelSelector.MatchExpression[i].Operator == pb.LabelSelectorOperator_NotIn) {
-				byteData, err := json.Marshal(input.ServiceAttributes.LabelSelector.MatchExpression[i])
-				if err != nil {
-					return nil, err
-				}
-				var temp metav1.LabelSelectorRequirement
+	} else {
+		return nil, err
+	}
+	if input.ServiceAttributes.DataSource != nil {
+		pvc.Spec.DataSource = new(core.TypedLocalObjectReference)
+		pvc.Spec.DataSource.Kind = input.ServiceAttributes.DataSource.Kind
+		pvc.Spec.DataSource.Name = input.ServiceAttributes.DataSource.Name
+		if input.ServiceAttributes.DataSource.ApiGroup != "" {
+			pvc.Spec.DataSource.APIGroup = &input.ServiceAttributes.DataSource.ApiGroup
 
-				err = json.Unmarshal(byteData, &temp)
-				if err != nil {
-					return nil, err
-				}
-				pvc.Spec.Selector.MatchExpressions = append(pvc.Spec.Selector.MatchExpressions, temp)
-			}
 		}
+	}
+	if input.ServiceAttributes.String() == pb.PersistentVolumeMode_Filesystem.String() {
+		pvm := core.PersistentVolumeFilesystem
+		pvc.Spec.VolumeMode = &pvm
+	} else if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Block.String() {
+		pvm := core.PersistentVolumeBlock
+		pvc.Spec.VolumeMode = &pvm
 	}
 	for _, each := range input.ServiceAttributes.AccessMode {
 		if each == pb.AccessMode_ReadOnlyMany {

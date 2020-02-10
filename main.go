@@ -71,10 +71,6 @@ func main() {
 	}
 	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	svc := &core.Server{}
-	pb.RegisterKubernetesServer(srv, svc)
-	pb.RegisterRoleServer(srv, svc)
-	pb.RegisterRoleBindingServer(srv, svc)
-	pb.RegisterServiceAccountServer(srv, svc)
 	pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
@@ -83,6 +79,11 @@ func main() {
 	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterK8SResourceServer(srv, svc)
 	go handleclient()
+	pb.RegisterServiceEntryServer(srv, svc)
+	pb.RegisterDeploymentServer(srv, svc)
+	pb.RegisterStorageClassServer(srv, svc)
+	pb.RegisterYamlServiceServer(srv, svc)
+	pb.RegisterYamlToCPServiceServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {
