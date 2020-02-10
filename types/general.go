@@ -366,3 +366,50 @@ type PodAntiAffinity struct {
 type Replicas struct {
 	Value int32 `json:"value,omitempty"`
 }
+
+type DaemonSetUpdateStrategy struct {
+	Type          DaemonSetUpdateStrategyType `json:"type,omitempty"`
+	RollingUpdate *RollingUpdateDaemonSet     `json:"rollingUpdate,omitempty"`
+}
+
+type RollingUpdateDaemonSet struct {
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
+}
+
+type DaemonSetUpdateStrategyType string
+
+const (
+	RollingUpdateDaemonSetStrategyType DaemonSetUpdateStrategyType = "RollingUpdate"
+	OnDeleteDaemonSetStrategyType      DaemonSetUpdateStrategyType = "OnDelete"
+)
+
+type StateFulSetUpdateStrategy struct {
+	Type          StatefulSetUpdateStrategyType     `json:"type,omitempty"`
+	RollingUpdate *RollingUpdateStatefulSetStrategy `json:"rollingUpdate,omitempty"`
+}
+
+type StatefulSetUpdateStrategyType string
+
+const (
+	RollingUpdateStatefulSetStrategyType StatefulSetUpdateStrategyType = "RollingUpdate"
+	OnDeleteStatefulSetStrategyType      StatefulSetUpdateStrategyType = "OnDelete"
+)
+
+type RollingUpdateStatefulSetStrategy struct {
+	Partition *int32 `json:"partition,omitempty" protobuf:"varint,1,opt,name=partition"`
+}
+
+type PodManagementPolicyType string
+
+const (
+	OrderedReadyPodManagement PodManagementPolicyType = "OrderedReady"
+	ParallelPodManagement     PodManagementPolicyType = "Parallel"
+)
+
+type TerminationGracePeriodSeconds struct {
+	Value int32 `json:"value,omitempty"`
+}
+
+type ActiveDeadlineSeconds struct {
+	Value int64 `json:"value,omitempty"`
+}

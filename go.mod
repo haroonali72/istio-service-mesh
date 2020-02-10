@@ -10,7 +10,8 @@ require (
 	dmitri.shuralyov.com/gpu/mtl v0.0.0-20191203043605-d42048ed14fd // indirect
 	github.com/Azure/go-autorest/autorest v0.9.3 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
-	github.com/astaxie/beego v1.12.0
+	github.com/astaxie/beego v1.12.1
+	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20191011121108-aa519ddbe484 // indirect
@@ -18,10 +19,11 @@ require (
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.6 // indirect
-	github.com/go-redis/redis v6.15.6+incompatible
+	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.3.3
+	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20191218002539-d4f498aebedc // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
@@ -33,37 +35,39 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.0.0-20191202183732-d1d2010b5bee // indirect
 	github.com/rogpeppe/go-charset v0.0.0-20190617161244-0dc95cdf6f31 // indirect
 	github.com/rogpeppe/go-internal v1.5.0 // indirect
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
-	github.com/urfave/cli/v2 v2.0.0
-	go.opencensus.io v0.22.2
-	golang.org/x/build v0.0.0-20191220001908-17a7d8724fa7
+	github.com/urfave/cli/v2 v2.1.1
+	go.opencensus.io v0.22.3
+	golang.org/x/build v0.0.0-20200207163221-ab7b028cb90c
+	golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340 // indirect
 	golang.org/x/image v0.0.0-20191214001246-9130b4cfad52 // indirect
 	golang.org/x/mobile v0.0.0-20191210151939-1a1fef82734d // indirect
-	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
-	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
+	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191218040434-6f9e13bbec44 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
 	google.golang.org/api v0.15.0 // indirect
-	google.golang.org/genproto v0.0.0-20200128133413-58ce757ed39b // indirect
-	google.golang.org/grpc v1.27.0
+	google.golang.org/genproto v0.0.0-20200210034751-acff78025515 // indirect
+	google.golang.org/grpc v1.27.1
 	gopkg.in/resty.v1 v1.12.0
-	gopkg.in/yaml.v2 v2.2.7
-	istio.io/api v0.0.0-20191218031825-7bafbd24c11c
-	istio.io/client-go v0.0.0-20191218043923-5fad2566daf6
+	gopkg.in/yaml.v2 v2.2.8
+	istio.io/api v0.0.0-20200208020912-9564cdd03c96
+	istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
+	istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
 	istio.io/istio v0.0.0-20191218042323-ae27ee6c4bf5 // indirect
-	k8s.io/api v0.17.0
-	k8s.io/apimachinery v0.16.4
+	k8s.io/api v0.17.2
+	k8s.io/apimachinery v0.17.2
 	k8s.io/cli-runtime v0.16.4 // indirect
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/gengo v0.0.0-20191120174120-e74f70b9b27e // indirect
+	k8s.io/klog v1.0.0 // indirect
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883 // indirect
-	sigs.k8s.io/yaml v1.1.0
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
