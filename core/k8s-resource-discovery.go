@@ -9,13 +9,17 @@ import (
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
+	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
 	"k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
+	"math/rand"
 	"reflect"
+	"sigs.k8s.io/yaml"
+	"strconv"
 )
 
 type GrpcConn struct {
@@ -24,6 +28,8 @@ type GrpcConn struct {
 	CompanyId  string
 	token      string
 }
+
+var services []*string
 
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
@@ -425,6 +431,8 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) {
 
+	var serviceTemplates []types.ServiceTemplate
+
 	for _, dep := range deployments {
 
 		namespace := dep.Namespace
@@ -433,6 +441,73 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 
 			svcname := dep.Spec.Template.Spec.ServiceAccountName
 			conn.getK8sRbacResources(ctx, svcname, namespace, constants.Deployment, dep)
+			//svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			//if err != nil {
+			//	return
+			//}
+			//
+			////creating secrets for service account
+			//for _, secret := range svcaccount.Secrets {
+			//	if secret.Name != "" {
+			//
+			//		secretname := secret.Name
+			//		if secret.Namespace != "" {
+			//			namespace = secret.Namespace
+			//		}
+			//		_, err := conn.getSecret(ctx, secretname, namespace)
+			//		if err != nil {
+			//			return
+			//		}
+			//	}
+			//}
+			//
+			//clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
+			//if err != nil {
+			//	return
+			//}
+			//
+			//for _, clstrrolebind := range clusterrolebindings.Items {
+			//	for _, sub := range clstrrolebind.Subjects {
+			//		if sub.Kind == "ServiceAccount" && sub.Name == svcname {
+			//			if clstrrolebind.RoleRef.Kind == "ClusterRole" {
+			//				clusterrolename := clstrrolebind.RoleRef.Name
+			//				_, err := conn.getClusterRole(ctx, clusterrolename)
+			//				if err != nil {
+			//					return
+			//				}
+			//
+			//				//for mainting uniqueness of services
+			//				svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
+			//				services = append(services, &svc)
+			//			}
+			//			break
+			//		}
+			//	}
+			//}
+			//
+			//rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
+			//if err != nil {
+			//	return
+			//}
+			//
+			//for _, rolebinding := range rolebindings.Items {
+			//	for _, sub := range rolebinding.Subjects {
+			//		if sub.Kind == "ServiceAccount" && sub.Name == svcname {
+			//			if rolebinding.RoleRef.Kind == "Role" {
+			//				rolename := rolebinding.RoleRef.Name
+			//				_, err := conn.getRole(ctx, rolename, namespace)
+			//				if err != nil {
+			//					return
+			//				}
+			//
+			//				//for mainting uniqueness of services
+			//				svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
+			//				services = append(services, &svc)
+			//			}
+			//			break
+			//		}
+			//	}
+			//}
 
 		}
 
@@ -458,6 +533,10 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 
 			if len(resp.Items) > 0 {
 				for _, kubeSvc := range resp.Items {
+					//for mainting uniqueness of services
+					svc := kubeSvc.Namespace + "-" + kubeSvc.Kind + "-" + kubeSvc.Name
+					services = append(services, &svc)
+
 					fmt.Println(kubeSvc)
 				}
 			}
@@ -524,15 +603,51 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 				}
 			}
 		}
+
+		cpDeployment, err := convertToCPDeployment(dep)
+		if err != nil {
+			utils.Error.Println(err.Error())
+			return
+		}
+
+		bytes, err := json.Marshal(cpDeployment)
+		if err != nil {
+			utils.Error.Println(err.Error())
+			return
+		}
+
+		var svctemplate types.ServiceTemplate
+		err = json.Unmarshal(bytes, &svctemplate)
+		if err != nil {
+			utils.Error.Println(err.Error())
+			return
+		}
+
+		serviceTemplates = append(serviceTemplates, svctemplate)
 	}
 }
 
-func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcAccountName, namespace string, k8sObjectType constants.K8sKind, K8sObj interface{}) {
+func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcname, namespace string, k8sObjectType constants.K8sKind, K8sObj interface{}) ([]types.ServiceTemplate, error) {
 
-	svcaccount, err := conn.getSvcAccount(ctx, svcAccountName, namespace)
+	var serviceTemplates []types.ServiceTemplate
+	svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 	if err != nil {
-		return
+		return []types.ServiceTemplate{}, err
 	}
+
+	var svcAccTemp types.ServiceTemplate
+	bytes, err := json.Marshal(svcaccount)
+	if err != nil {
+		utils.Error.Println(err)
+		return []types.ServiceTemplate{}, err
+	}
+	err = json.Unmarshal(bytes, &svcAccTemp)
+	if err != nil {
+		utils.Error.Println(err)
+		return []types.ServiceTemplate{}, err
+	}
+	id := strconv.Itoa(rand.Int())
+	svcAccTemp.ServiceId = &id
 
 	//creating secrets for service account
 	for _, secret := range svcaccount.Secrets {
@@ -544,25 +659,31 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcAccountName, n
 			}
 			_, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
-				return
+				utils.Error.Println(err)
+				return []types.ServiceTemplate{}, err
 			}
 		}
 	}
 
 	clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
 	if err != nil {
-		return
+		utils.Error.Println(err)
+		return []types.ServiceTemplate{}, err
 	}
 
 	for _, clstrrolebind := range clusterrolebindings.Items {
 		for _, sub := range clstrrolebind.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == svcAccountName {
+			if sub.Kind == "ServiceAccount" && sub.Name == svcname {
 				if clstrrolebind.RoleRef.Kind == "ClusterRole" {
 					clusterrolename := clstrrolebind.RoleRef.Name
 					_, err := conn.getClusterRole(ctx, clusterrolename)
 					if err != nil {
 						return
 					}
+
+					//for mainting uniqueness of services
+					svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
+					services = append(services, &svc)
 				}
 				break
 			}
@@ -576,13 +697,17 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcAccountName, n
 
 	for _, rolebinding := range rolebindings.Items {
 		for _, sub := range rolebinding.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == svcAccountName {
+			if sub.Kind == "ServiceAccount" && sub.Name == svcname {
 				if rolebinding.RoleRef.Kind == "Role" {
 					rolename := rolebinding.RoleRef.Name
 					_, err := conn.getRole(ctx, rolename, namespace)
 					if err != nil {
 						return
 					}
+
+					//for mainting uniqueness of services
+					svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
+					services = append(services, &svc)
 				}
 				break
 			}
@@ -665,7 +790,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "deployments", "-n", namespace, "-o", "json"},
+		Args:      []string{"get", "deployments", "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -673,7 +798,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 	}
 
 	var deploymentList *v1.DeploymentList
-	err = json.Unmarshal(response.Resource, &deploymentList)
+	err = yaml.Unmarshal(response.Resource, &deploymentList)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
@@ -735,7 +860,7 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "roles", rolename, "-n", namespace, "-o", "json"},
+		Args:      []string{"get", "roles", rolename, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -743,11 +868,14 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 	}
 
 	var role *rbac.Role
-	err = json.Unmarshal(response.Resource, &role)
+	err = yaml.Unmarshal(response.Resource, &role)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
+
+	svc := role.Namespace + "-" + role.Kind + "-" + role.Name
+	services = append(services, &svc)
 
 	return role, nil
 }
@@ -781,7 +909,7 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "pvc", pvcname, "-n", namespace, "-o", "json"},
+		Args:      []string{"get", "pvc", pvcname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -789,11 +917,14 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 	}
 
 	var pvc *v2.PersistentVolumeClaim
-	err = json.Unmarshal(response.Resource, &pvc)
+	err = yaml.Unmarshal(response.Resource, &pvc)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
+
+	svc := pvc.Namespace + "-" + pvc.Kind + "-" + pvc.Name
+	services = append(services, &svc)
 
 	return pvc, nil
 }
@@ -827,7 +958,7 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "sa", svcname, "-n", namespace, "-o", "json"},
+		Args:      []string{"get", "sa", svcname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -835,10 +966,15 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 	}
 
 	var svcAcc *api.ServiceAccount
-	err = json.Unmarshal(response.Resource, &svcAcc)
+	err = yaml.Unmarshal(response.Resource, &svcAcc)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
+	}
+
+	if !isAlreadyExist(svcAcc.Namespace, svcAcc.Kind, svcAcc.Name) {
+		svc := svcAcc.Namespace + "-" + svcAcc.Kind + "-" + svcAcc.Name
+		services = append(services, &svc)
 	}
 
 	return svcAcc, nil
@@ -850,7 +986,7 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "secrets", secretname, "-n", namespace, "-o", "json"},
+		Args:      []string{"get", "secrets", secretname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -858,11 +994,17 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 	}
 
 	var scrt *v2.Secret
-	err = json.Unmarshal(response.Resource, &scrt)
+	err = yaml.Unmarshal(response.Resource, &scrt)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
+
+	if !isAlreadyExist(scrt.Namespace, scrt.Kind, scrt.Name) {
+		svc := scrt.Namespace + "-" + scrt.Kind + "-" + scrt.Name
+		services = append(services, &svc)
+	}
+
 	return scrt, nil
 }
 
@@ -895,7 +1037,7 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "clusterrole", clusterrolename},
+		Args:      []string{"get", "clusterrole", clusterrolename, "-o", "yaml"},
 	})
 	if err != nil {
 		utils.Error.Println(err)
@@ -903,10 +1045,23 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 	}
 
 	var clusterrole *rbac.ClusterRole
-	err = json.Unmarshal(response.Resource, &clusterrole)
+	err = yaml.Unmarshal(response.Resource, &clusterrole)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
+
+	svc := clusterrole.Namespace + "-" + clusterrole.Kind + "-" + clusterrole.Name
+	services = append(services, &svc)
+
 	return clusterrole, nil
+}
+
+func isAlreadyExist(namespace, kind, name string) bool {
+	for _, val := range services {
+		if *val == namespace+"-"+kind+"-"+name {
+			return true
+		}
+	}
+	return false
 }

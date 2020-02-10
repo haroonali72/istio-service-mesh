@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"io/ioutil"
 	"istio-service-mesh/constants"
-	"istio-service-mesh/controllers"
 	"istio-service-mesh/core"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
@@ -62,7 +61,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_ = controllers.Notifier.Init_notifier()
 
 	port := fmt.Sprintf(":%s", constants.ServicePort)
 	lis, err := net.Listen("tcp", port)

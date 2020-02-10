@@ -228,11 +228,6 @@ const (
 	MountPropagationBidirectional   MountPropagationMode = "Bidirectional"
 )
 
-type DeploymentStrategy struct {
-	Type          DeploymentStrategyType   `json:"type,omitempty"`
-	RollingUpdate *RollingUpdateDeployment `json:"rollingUpdate,omitempty"`
-}
-
 type DeploymentStrategyType string
 
 const (
@@ -242,12 +237,6 @@ const (
 	// Replace the old ReplicaSets by new one using rolling update i.e gradually scale down the old ReplicaSets and scale up the new one.
 	RollingUpdateDeploymentStrategyType DeploymentStrategyType = "RollingUpdate"
 )
-
-// Spec to control the desired behavior of rolling update.
-type RollingUpdateDeployment struct {
-	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
-	MaxSurge       *intstr.IntOrString `json:"maxSurge,omitempty"`
-}
 
 // ContainerPort represents a network port in a single container.
 type ContainerPort struct {
@@ -367,16 +356,6 @@ type DeploymentStrategy struct {
 	Type          DeploymentStrategyType   `json:"type,omitempty"`
 	RollingUpdate *RollingUpdateDeployment `json:"rollingUpdate,omitempty"`
 }
-
-type DeploymentStrategyType string
-
-const (
-	// Kill all existing pods before creating new ones.
-	RecreateDeploymentStrategyType DeploymentStrategyType = "Recreate"
-
-	// Replace the old ReplicaSets by new one using rolling update i.e gradually scale down the old ReplicaSets and scale up the new one.
-	RollingUpdateDeploymentStrategyType DeploymentStrategyType = "RollingUpdate"
-)
 
 type RollingUpdateDeployment struct {
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
