@@ -633,86 +633,195 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcname, namespac
 	svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 	if err != nil {
 		return []types.ServiceTemplate{}, err
-	}
-
-	var svcAccTemp types.ServiceTemplate
-	bytes, err := json.Marshal(svcaccount)
-	if err != nil {
-		utils.Error.Println(err)
-		return []types.ServiceTemplate{}, err
-	}
-	err = json.Unmarshal(bytes, &svcAccTemp)
-	if err != nil {
-		utils.Error.Println(err)
-		return []types.ServiceTemplate{}, err
-	}
-	id := strconv.Itoa(rand.Int())
-	svcAccTemp.ServiceId = &id
-
-	//creating secrets for service account
-	for _, secret := range svcaccount.Secrets {
-		if secret.Name != "" {
-
-			secretname := secret.Name
-			if secret.Namespace != "" {
-				namespace = secret.Namespace
-			}
-			_, err := conn.getSecret(ctx, secretname, namespace)
-			if err != nil {
-				utils.Error.Println(err)
-				return []types.ServiceTemplate{}, err
-			}
+	} else if err == nil && svcaccount != nil {
+		var svcAccTemp types.ServiceTemplate
+		bytes, err := json.Marshal(svcaccount)
+		if err != nil {
+			utils.Error.Println(err)
+			return []types.ServiceTemplate{}, err
 		}
-	}
 
-	clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
-	if err != nil {
-		utils.Error.Println(err)
-		return []types.ServiceTemplate{}, err
-	}
+		//TODO: needs to be unmarshall in cp schemea first
+		err = json.Unmarshal(bytes, &svcAccTemp)
+		if err != nil {
+			utils.Error.Println(err)
+			return []types.ServiceTemplate{}, err
+		}
+		id := strconv.Itoa(rand.Int())
+		svcAccTemp.ServiceId = &id
 
-	for _, clstrrolebind := range clusterrolebindings.Items {
-		for _, sub := range clstrrolebind.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-				if clstrrolebind.RoleRef.Kind == "ClusterRole" {
-					clusterrolename := clstrrolebind.RoleRef.Name
-					_, err := conn.getClusterRole(ctx, clusterrolename)
+		//creating secrets for service account
+		for _, secret := range svcaccount.Secrets {
+			if secret.Name != "" {
+				secretname := secret.Name
+				if secret.Namespace != "" {
+					namespace = secret.Namespace
+				}
+				scrt, err := conn.getSecret(ctx, secretname, namespace)
+				if err != nil {
+					return []types.ServiceTemplate{}, err
+				} else if err == nil && scrt != nil {
+					var secretTemp types.ServiceTemplate
+					bytes, err := json.Marshal(scrt)
 					if err != nil {
-						return
+						utils.Error.Println(err)
+						return []types.ServiceTemplate{}, err
 					}
 
-					//for mainting uniqueness of services
-					svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
-					services = append(services, &svc)
-				}
-				break
-			}
-		}
-	}
-
-	rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
-	if err != nil {
-		return
-	}
-
-	for _, rolebinding := range rolebindings.Items {
-		for _, sub := range rolebinding.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-				if rolebinding.RoleRef.Kind == "Role" {
-					rolename := rolebinding.RoleRef.Name
-					_, err := conn.getRole(ctx, rolename, namespace)
+					//TODO: needs to be unmarshall in cp schemea first
+					err = json.Unmarshal(bytes, &secretTemp)
 					if err != nil {
-						return
+						utils.Error.Println(err)
+						return []types.ServiceTemplate{}, err
 					}
+					id := strconv.Itoa(rand.Int())
+					secretTemp.ServiceId = &id
+					secretTemp.BeforeServices = append(secretTemp.BeforeServices, svcAccTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
 
-					//for mainting uniqueness of services
-					svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
-					services = append(services, &svc)
+					svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, secretTemp.ServiceId)
 				}
-				break
 			}
 		}
+
+		clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
+		if err != nil {
+			return []types.ServiceTemplate{}, err
+		}
+
+		for _, clstrrolebind := range clusterrolebindings.Items {
+			for _, sub := range clstrrolebind.Subjects {
+				if sub.Kind == "ServiceAccount" && sub.Name == svcname {
+					if clstrrolebind.RoleRef.Kind == "ClusterRole" {
+						clusterrolename := clstrrolebind.RoleRef.Name
+						clstrrole, err := conn.getClusterRole(ctx, clusterrolename)
+						if err != nil {
+							return []types.ServiceTemplate{}, err
+						} else if err == nil && clstrrole != nil {
+							var clstrroleTemp types.ServiceTemplate
+							bytes, err := json.Marshal(clstrrole)
+							if err != nil {
+								utils.Error.Println(err)
+								return []types.ServiceTemplate{}, err
+							}
+
+							//TODO: needs to be unmarshall in cp schemea first
+							err = json.Unmarshal(bytes, &clstrroleTemp)
+							if err != nil {
+								utils.Error.Println(err)
+								return []types.ServiceTemplate{}, err
+							}
+							id := strconv.Itoa(rand.Int())
+							clstrroleTemp.ServiceId = &id
+
+							if !isAlreadyExist(clstrrolebind.Namespace, clstrrolebind.Kind, clstrrolebind.Name) {
+								svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
+								services = append(services, &svc)
+
+								var clstrrolebindTemp types.ServiceTemplate
+								bytes, err := json.Marshal(clstrrolebind)
+								if err != nil {
+									utils.Error.Println(err)
+									return []types.ServiceTemplate{}, err
+								}
+
+								//TODO: needs to be unmarshall in cp schemea first
+								err = json.Unmarshal(bytes, &clstrrolebindTemp)
+								if err != nil {
+									utils.Error.Println(err)
+									return []types.ServiceTemplate{}, err
+								}
+								id := strconv.Itoa(rand.Int())
+								clstrrolebindTemp.ServiceId = &id
+
+								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, clstrroleTemp.ServiceId)
+								clstrroleTemp.AfterServices = append(clstrroleTemp.AfterServices, clstrrolebindTemp.ServiceId)
+
+								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, svcAccTemp.ServiceId)
+								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, clstrrolebindTemp.ServiceId)
+
+								serviceTemplates = append(serviceTemplates, clstrrolebindTemp)
+							}
+
+							serviceTemplates = append(serviceTemplates, clstrroleTemp)
+
+						}
+					}
+					break
+				}
+			}
+		}
+
+		rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
+		if err != nil {
+			return []types.ServiceTemplate{}, err
+		}
+
+		for _, rolebinding := range rolebindings.Items {
+			for _, sub := range rolebinding.Subjects {
+				if sub.Kind == "ServiceAccount" && sub.Name == svcname {
+					if rolebinding.RoleRef.Kind == "Role" {
+						rolename := rolebinding.RoleRef.Name
+						role, err := conn.getRole(ctx, rolename, namespace)
+						if err != nil {
+							return []types.ServiceTemplate{}, err
+						} else if err == nil && role != nil {
+							var roleTemp types.ServiceTemplate
+							bytes, err := json.Marshal(role)
+							if err != nil {
+								utils.Error.Println(err)
+								return []types.ServiceTemplate{}, err
+							}
+
+							//TODO: needs to be unmarshall in cp schemea first
+							err = json.Unmarshal(bytes, &roleTemp)
+							if err != nil {
+								utils.Error.Println(err)
+								return []types.ServiceTemplate{}, err
+							}
+							id := strconv.Itoa(rand.Int())
+							roleTemp.ServiceId = &id
+
+							if !isAlreadyExist(rolebinding.Namespace, rolebinding.Kind, rolebinding.Name) {
+								svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
+								services = append(services, &svc)
+
+								var rolebindTemp types.ServiceTemplate
+								bytes, err := json.Marshal(rolebinding)
+								if err != nil {
+									utils.Error.Println(err)
+									return []types.ServiceTemplate{}, err
+								}
+
+								//TODO: needs to be unmarshall in cp schemea first
+								err = json.Unmarshal(bytes, &rolebindTemp)
+								if err != nil {
+									utils.Error.Println(err)
+									return []types.ServiceTemplate{}, err
+								}
+								id := strconv.Itoa(rand.Int())
+								rolebindTemp.ServiceId = &id
+
+								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, roleTemp.ServiceId)
+								roleTemp.AfterServices = append(roleTemp.AfterServices, rolebindTemp.ServiceId)
+
+								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, svcAccTemp.ServiceId)
+								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, rolebindTemp.ServiceId)
+
+								serviceTemplates = append(serviceTemplates, rolebindTemp)
+							}
+
+							serviceTemplates = append(serviceTemplates, roleTemp)
+						}
+					}
+					break
+				}
+			}
+		}
+
+		serviceTemplates = append(serviceTemplates, svcAccTemp)
 	}
+	return serviceTemplates, nil
 }
 
 func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1beta1.CronJobList, error) {
@@ -874,10 +983,14 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 		return nil, err
 	}
 
-	svc := role.Namespace + "-" + role.Kind + "-" + role.Name
-	services = append(services, &svc)
+	if !isAlreadyExist(role.Namespace, role.Kind, role.Name) {
+		svc := role.Namespace + "-" + role.Kind + "-" + role.Name
+		services = append(services, &svc)
 
-	return role, nil
+		return role, nil
+	}
+
+	return nil, nil
 }
 
 func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) (*rbac.RoleBindingList, error) {
@@ -975,9 +1088,10 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 	if !isAlreadyExist(svcAcc.Namespace, svcAcc.Kind, svcAcc.Name) {
 		svc := svcAcc.Namespace + "-" + svcAcc.Kind + "-" + svcAcc.Name
 		services = append(services, &svc)
+		return svcAcc, nil
 	}
 
-	return svcAcc, nil
+	return nil, nil
 }
 
 func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace string) (*v2.Secret, error) {
@@ -1003,9 +1117,10 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 	if !isAlreadyExist(scrt.Namespace, scrt.Kind, scrt.Name) {
 		svc := scrt.Namespace + "-" + scrt.Kind + "-" + scrt.Name
 		services = append(services, &svc)
+		return scrt, nil
 	}
 
-	return scrt, nil
+	return nil, nil
 }
 
 func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.ClusterRoleBindingList, error) {
@@ -1051,10 +1166,13 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 		return nil, err
 	}
 
-	svc := clusterrole.Namespace + "-" + clusterrole.Kind + "-" + clusterrole.Name
-	services = append(services, &svc)
+	if !isAlreadyExist(clusterrole.Namespace, clusterrole.Kind, clusterrole.Name) {
+		svc := clusterrole.Namespace + "-" + clusterrole.Kind + "-" + clusterrole.Name
+		services = append(services, &svc)
+		return clusterrole, nil
+	}
 
-	return clusterrole, nil
+	return nil, nil
 }
 
 func isAlreadyExist(namespace, kind, name string) bool {
