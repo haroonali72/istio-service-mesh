@@ -485,7 +485,11 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 		return autoscaling.HorizontalPodAutoscaler{}, err
 	}
 
-	hpa.Spec.MinReplicas = &serviceAttr.MixReplicas
+	if serviceAttr.MinReplicas == 0 {
+		serviceAttr.MinReplicas = 1
+	}
+
+	hpa.Spec.MinReplicas = &serviceAttr.MinReplicas
 	hpa.Spec.MaxReplicas = serviceAttr.MaxReplicas
 	crossObj := autoscaling.CrossVersionObjectReference{
 		Kind:       serviceAttr.CrossObjectVersion.Type,
