@@ -1321,8 +1321,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 		//Failed
 		return &v1.ConfigMap{}, errors.New("Service name not found")
 	}
-	configmap.GenerateName = service.ID
-	configmap.Name = service.ID
+	configmap.GenerateName = service.Name + "-" + service.ID
+	configmap.Name = service.Name + "-" + service.ID
 
 	//configmap.ObjectMeta.Name = service.Name
 	configmap.ObjectMeta.Labels = labels
@@ -1334,7 +1334,6 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 		configmap.Namespace = service.Namespace
 		configmap.ObjectMeta.Namespace = service.Namespace
 	}
-	configmap.ObjectMeta.Name = service.ID
 	//configmap.ObjectMeta.GenerateName = service.ID
 	configmap.Data = make(map[string]string)
 	if serviceAttr.Data != nil {
@@ -2955,7 +2954,7 @@ func CreateOpaqueSecret(service types.Service) (*v1.Secret, bool) {
 		APIVersion: v1.SchemeGroupVersion.String(),
 	}
 	objectMeta := metav1.ObjectMeta{
-		Name:      service.ID,
+		Name:      service.Name + "-" + service.ID,
 		Namespace: service.Namespace,
 	}
 
@@ -2997,7 +2996,7 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 		APIVersion: v1.SchemeGroupVersion.String(),
 	}
 	objectMeta := metav1.ObjectMeta{
-		Name:      service.ID,
+		Name:      service.Name + "-" + service.ID,
 		Namespace: service.Namespace,
 	}
 
@@ -3005,6 +3004,15 @@ func CreateTLSSecret(service types.Service) (*v1.Secret, bool) {
 	secret.ObjectMeta = objectMeta
 	secret.Data = make(map[string][]byte)
 	if serviceAttr.Data != nil {
+		_, ok := serviceAttr.Data[v1.TLSCertKey]
+		if !ok {
+			serviceAttr.Data[v1.TLSCertKey] = ""
+		}
+
+		_, ok = serviceAttr.Data[v1.TLSPrivateKeyKey]
+		if !ok {
+			serviceAttr.Data[v1.TLSPrivateKeyKey] = ""
+		}
 		for key, value := range serviceAttr.Data {
 			if decoded_value, err := base64.StdEncoding.DecodeString(value); err != nil {
 				utils.Error.Println(err)
