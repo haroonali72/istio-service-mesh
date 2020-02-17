@@ -17,17 +17,24 @@ type DeploymentService struct {
 	ServiceAttributes *DeploymentServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type DeploymentServiceAttribute struct {
-	Container     map[string]ContainerAttribute `json:"containers,omitempty"`
-	MeshConfig    *IstioConfig                  `json:"istio_config,omitempty"`
-	NodeSelector  map[string]string             `json:"node_selector,omitempty"`
-	Labels        map[string]string             `json:"labels,omitempty"`
-	LabelSelector *LabelSelectorObj             `json:"label_selector,omitempty"`
-	Annotations   map[string]string             `json:"annotations,omitempty"`
-	RbacRoles     []K8sRbacAttribute            `json:"roles,omitempty"`
-	IstioRoles    []IstioRbacAttribute          `json:"istio_roles,omitempty"`
-	Volumes       []Volume                      `json:"volumes,omitempty"`
-	Affinity      *Affinity                     `json:"affinity,omitempty"`
-	Strategy      *DeploymentStrategy           `json:"strategy,omitempty"`
-	InitContainer map[string]ContainerAttribute `json:"initContainers,omitempty"`
-	Replicas      *Replicas                     `json:"replicas,omitempty"`
+	Container                    map[string]ContainerAttribute `json:"containers,omitempty"`
+	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty"`
+	NodeSelector                 map[string]string             `json:"node_selector,omitempty"`
+	Labels                       map[string]string             `json:"labels,omitempty"`
+	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty"`
+	Annotations                  map[string]string             `json:"annotations,omitempty"`
+	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty"`
+	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	Volumes                      []Volume                      `json:"volumes,omitempty"`
+	Affinity                     *Affinity                     `json:"affinity,omitempty"`
+	Strategy                     *DeploymentStrategy           `json:"strategy,omitempty"`
+	InitContainer                map[string]ContainerAttribute `json:"initContainers,omitempty"`
+	Replicas                     *Replicas                     `json:"replicas,omitempty"`
+	ImagePullSecrets             []LocalObjectReference        `json:"imagePullSecrets,omitempty"`
+	ServiceAccountName           string                        `json:"serviceAccountName,omitempty"`
+	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automountServiceAccountToken,omitempty"`
+}
+
+type AutomountServiceAccountToken struct {
+	Value bool `json:"value,omitempty"`
 }

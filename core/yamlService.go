@@ -68,7 +68,7 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertDeploymentToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "daemonSet":
+	case "DaemonSet":
 		if err := ConvertDaemonSeToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
@@ -93,15 +93,15 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "statefulSet":
+	case "StatefulSet":
 		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "job":
+	case "Job":
 		if err := ConvertJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "cronJob":
+	case "CronJob":
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}

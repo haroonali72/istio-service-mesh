@@ -441,7 +441,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				m.Gateways = append(m.Gateways, g)
 			}
 			m.Port = uint32(match.Port)
-			m.SourceSubnet = match.SourceSubnet
+			//m.SourceSubnet = match.SourceSubnet
 			tls.Match = append(tls.Match, m)
 		}
 

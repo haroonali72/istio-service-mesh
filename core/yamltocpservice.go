@@ -402,6 +402,11 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 
 	}
 
+	for _, imageSecrets := range service.Spec.Template.Spec.ImagePullSecrets {
+		tempImageSecrets := types.LocalObjectReference{Name: imageSecrets.Name}
+		deployment.ServiceAttributes.ImagePullSecrets = append(deployment.ServiceAttributes.ImagePullSecrets, tempImageSecrets)
+	}
+
 	var volumeMountNames1 = make(map[string]bool)
 	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
 		if len(containers) > 0 {
@@ -455,9 +460,7 @@ func convertToCPDaemonSet(ds interface{}) (*types.DaemonSetService, error) {
 	if service.Name == "" {
 		return nil, errors.New("Service name not found")
 	} else {
-		svcInfo := strings.Split(service.Name, "-")
-		daemonSet.Name = svcInfo[0]
-		daemonSet.Version = svcInfo[1]
+		daemonSet.Name = service.Name
 	}
 
 	if service.Namespace == "" {
@@ -468,7 +471,7 @@ func convertToCPDaemonSet(ds interface{}) (*types.DaemonSetService, error) {
 
 	daemonSet.ServiceType = "k8s"
 	daemonSet.ServiceSubType = "DaemonSet"
-
+	daemonSet.ServiceAttributes = new(types.DaemonSetServiceAttribute)
 	daemonSet.ServiceAttributes.Labels = make(map[string]string)
 	daemonSet.ServiceAttributes.Labels = service.Spec.Template.Labels
 	daemonSet.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
@@ -545,17 +548,15 @@ func convertToCPDaemonSet(ds interface{}) (*types.DaemonSetService, error) {
 }
 
 func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error) {
+
 	byteData, _ := json.Marshal(sset)
 	service := apps.StatefulSet{}
 	json.Unmarshal(byteData, &service)
 	statefulSet := new(types.StatefulSetService)
 
-	svcInfo := strings.Split(service.Name, " - ")
-
-	statefulSet.Name = svcInfo[0]
-	statefulSet.Version = svcInfo[1]
+	statefulSet.Name = service.Name
 	statefulSet.ServiceType = "k8s"
-	statefulSet.ServiceSubType = "statefulSet"
+	statefulSet.ServiceSubType = "StatefulSet"
 
 	if service.Namespace == "" {
 		statefulSet.Namespace = "default"
@@ -578,6 +579,10 @@ func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error)
 	//replicas
 	if service.Spec.Replicas != nil {
 		statefulSet.ServiceAttributes.Replicas = &types.Replicas{Value: *service.Spec.Replicas}
+	}
+
+	if service.Spec.ServiceName != "" {
+		statefulSet.ServiceAttributes.ServiceName = service.Spec.ServiceName
 	}
 	//update strategy
 	if service.Spec.UpdateStrategy.Type != "" {
@@ -627,6 +632,16 @@ func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error)
 
 	} else {
 		return nil, err
+	}
+
+	//volumeClaimTemplates
+	for _, vc := range service.Spec.VolumeClaimTemplates {
+		//tempVC := new(types.PersistentVolumeClaimService)
+		if tempVC, error := convertToCPPersistentVolumeClaim(&vc); error == nil {
+			statefulSet.ServiceAttributes.VolumeClaimTemplates = append(statefulSet.ServiceAttributes.VolumeClaimTemplates, *tempVC)
+		} else {
+			return nil, error
+		}
 	}
 
 	//affinity
@@ -1627,9 +1642,9 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 		tempVolume.Name = volume.Name
 
 		if volume.VolumeSource.Secret != nil {
-			tempVolume.Secret = new(types.SecretVolumeSource)
-			tempVolume.Secret.SecretName = volume.VolumeSource.Secret.SecretName
-			tempVolume.Secret.DefaultMode = volume.VolumeSource.Secret.DefaultMode
+			tempVolume.VolumeSource.Secret = new(types.SecretVolumeSource)
+			tempVolume.VolumeSource.Secret.SecretName = volume.VolumeSource.Secret.SecretName
+			tempVolume.VolumeSource.Secret.DefaultMode = volume.VolumeSource.Secret.DefaultMode
 			var secretItems []types.KeyToPath
 			for _, item := range volume.VolumeSource.Secret.Items {
 				secretItem := types.KeyToPath{
@@ -1639,13 +1654,13 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 				}
 				secretItems = append(secretItems, secretItem)
 			}
-			tempVolume.Secret.Items = secretItems
+			tempVolume.VolumeSource.Secret.Items = secretItems
 		}
 		if volume.VolumeSource.ConfigMap != nil {
-			tempVolume.ConfigMap = new(types.ConfigMapVolumeSource)
-			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
+			tempVolume.VolumeSource.ConfigMap = new(types.ConfigMapVolumeSource)
+			tempVolume.VolumeSource.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
 
-			tempVolume.ConfigMap.DefaultMode = volume.VolumeSource.ConfigMap.DefaultMode
+			tempVolume.VolumeSource.ConfigMap.DefaultMode = volume.VolumeSource.ConfigMap.DefaultMode
 			var configMapItems []types.KeyToPath
 			for _, item := range volume.VolumeSource.ConfigMap.Items {
 				configMapItem := types.KeyToPath{
@@ -1655,90 +1670,90 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 				}
 				configMapItems = append(configMapItems, configMapItem)
 			}
-			tempVolume.ConfigMap.Items = configMapItems
+			tempVolume.VolumeSource.ConfigMap.Items = configMapItems
 		}
 
 		if volume.VolumeSource.AWSElasticBlockStore != nil {
-			tempVolume.AWSElasticBlockStore = new(types.AWSElasticBlockStoreVolumeSource)
-			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AWSElasticBlockStore.ReadOnly
-			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AWSElasticBlockStore.Partition
+			tempVolume.VolumeSource.AWSElasticBlockStore = new(types.AWSElasticBlockStoreVolumeSource)
+			tempVolume.VolumeSource.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AWSElasticBlockStore.ReadOnly
+			tempVolume.VolumeSource.AWSElasticBlockStore.Partition = volume.VolumeSource.AWSElasticBlockStore.Partition
 		}
 
 		if volume.VolumeSource.EmptyDir != nil {
-			tempVolume.EmptyDir = new(types.EmptyDirVolumeSource)
+			tempVolume.VolumeSource.EmptyDir = new(types.EmptyDirVolumeSource)
 			//quantity, _ := resource.ParseQuantity(volume.VolumeSource.EmptyDir.SizeLimit)
-			tempVolume.EmptyDir.SizeLimit = volume.VolumeSource.EmptyDir.SizeLimit
+			tempVolume.VolumeSource.EmptyDir.SizeLimit = volume.VolumeSource.EmptyDir.SizeLimit
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumDefault {
-				tempVolume.EmptyDir.Medium = types.StorageMediumDefault
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumDefault
 
 			}
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumMemory {
-				tempVolume.EmptyDir.Medium = types.StorageMediumMemory
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumMemory
 			}
 
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumHugePages {
-				tempVolume.EmptyDir.Medium = types.StorageMediumHugePages
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumHugePages
 			}
 
 		}
 
 		if volume.VolumeSource.GCEPersistentDisk != nil {
-			tempVolume.GCEPersistentDisk = new(types.GCEPersistentDiskVolumeSource)
-			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GCEPersistentDisk.Partition
-			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GCEPersistentDisk.ReadOnly
-			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GCEPersistentDisk.PDName
+			tempVolume.VolumeSource.GCEPersistentDisk = new(types.GCEPersistentDiskVolumeSource)
+			tempVolume.VolumeSource.GCEPersistentDisk.Partition = volume.VolumeSource.GCEPersistentDisk.Partition
+			tempVolume.VolumeSource.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GCEPersistentDisk.ReadOnly
+			tempVolume.VolumeSource.GCEPersistentDisk.PDName = volume.VolumeSource.GCEPersistentDisk.PDName
 		}
 
 		if volume.VolumeSource.AzureDisk != nil {
-			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
-			tempVolume.AzureDisk.ReadOnly = volume.VolumeSource.AzureDisk.ReadOnly
-			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskName
+			tempVolume.VolumeSource.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.VolumeSource.AzureDisk.ReadOnly = volume.VolumeSource.AzureDisk.ReadOnly
+			tempVolume.VolumeSource.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskName
 
 			if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingNone {
 				temp := types.AzureDataDiskCachingNone
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadWrite {
 				temp := types.AzureDataDiskCachingReadWrite
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadOnly {
 				temp := types.AzureDataDiskCachingReadOnly
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			}
 
 			if *volume.VolumeSource.AzureDisk.Kind == v1.AzureSharedBlobDisk {
 				temp := types.AzureSharedBlobDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureDedicatedBlobDisk {
 				temp := types.AzureDedicatedBlobDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureManagedDisk {
 				temp := types.AzureManagedDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			}
 		}
 
 		if volume.VolumeSource.AzureFile != nil {
-			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
-			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
-			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
-			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
+			tempVolume.VolumeSource.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.VolumeSource.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.VolumeSource.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
+			tempVolume.VolumeSource.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
 
 		}
 		if volume.VolumeSource.HostPath != nil {
-			tempVolume.HostPath = new(types.HostPathVolumeSource)
-			tempVolume.HostPath.Path = volume.VolumeSource.HostPath.Path
-			hostPathType := *volume.VolumeSource.HostPath.Type
-			hostPathTypeTemp := types.HostPathType(hostPathType)
-			tempVolume.HostPath.Type = &hostPathTypeTemp
+			tempVolume.VolumeSource.HostPath = new(types.HostPathVolumeSource)
+			tempVolume.VolumeSource.HostPath.Path = volume.VolumeSource.HostPath.Path
+			if volume.VolumeSource.HostPath.Type != nil {
+				if *volume.VolumeSource.HostPath.Type == v1.HostPathUnset {
+					hostPathType := types.HostPathUnset
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				}
+			}
+
 		}
 
 		volumes = append(volumes, tempVolume)
 
 	}
-	for key, _ := range volumeMountNames {
-		if volumeMountNames[key] == true {
-			return nil, errors.New("volume does not exist")
-		}
-	}
+
 	return volumes, nil
 }

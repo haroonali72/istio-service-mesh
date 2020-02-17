@@ -256,7 +256,7 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 	var deployment = new(v1.Deployment)
 	if service.Name == "" {
-		return &v1.Deployment{}, errors.New("Service name not found")
+		return nil, errors.New("Service name not found")
 	}
 
 	if service.Namespace == "" {
@@ -307,6 +307,21 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
 		deployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
+	}
+
+	for _, g := range service.ServiceAttributes.ImagePullSecrets {
+		if g != nil {
+			pullImageSecret := v2.LocalObjectReference{Name: g.Name}
+			deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, pullImageSecret)
+		}
+	}
+
+	if service.ServiceAttributes.ServiceAccountName != "" {
+		deployment.Spec.Template.Spec.ServiceAccountName = service.ServiceAttributes.ServiceAccountName
+	}
+
+	if service.ServiceAttributes.AutomountServiceAccountToken != nil {
+		deployment.Spec.Template.Spec.AutomountServiceAccountToken = &service.ServiceAttributes.AutomountServiceAccountToken.Value
 	}
 
 	if service.ServiceAttributes.Strategy != nil {
