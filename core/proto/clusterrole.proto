@@ -36,5 +36,6 @@ message Rules {
    repeated string resource_name = 1;
    repeated string verbs = 2;
    repeated string api_group = 3;
+   repeated string resources =4;
 }
 

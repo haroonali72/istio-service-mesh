@@ -253,7 +253,6 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 }
 
 func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, error) {
-
 	var deployment = new(v1.Deployment)
 	if service.Name == "" {
 		return &v1.Deployment{}, errors.New("Service name not found")

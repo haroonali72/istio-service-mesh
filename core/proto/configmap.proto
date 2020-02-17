@@ -28,6 +28,4 @@ message ConfigMapService {
 
 message ConfigMapServiceAttributes {
     map<string,string> data =1;
-    map<string,string> binary_data=2;
-
 }

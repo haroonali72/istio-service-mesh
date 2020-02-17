@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "service.proto";
+import "general.proto";
 import "persistentvolumeclaim.proto";
 package proto;
 service NetworkPolicy {

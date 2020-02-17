@@ -11,10 +11,11 @@ import (
 	"istio-service-mesh/utils"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
+	autoScalar "k8s.io/api/autoscaling/v1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	net "k8s.io/api/networking/v1"
-	"k8s.io/api/rbac/v1beta1"
+	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -174,10 +175,94 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	case *v1beta1.Role:
-	case *v1beta1.RoleBinding:
-	case *v1beta1.ClusterRole:
-	case *v1beta1.ClusterRoleBinding:
+	case *v1.Service:
+		pvc, err := convertToCPKubernetesService(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *v1.ConfigMap:
+		pvc, err := ConvertToCPConfigMap(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *v1.Secret:
+		pvc, err := ConvertToCPSecret(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *autoScalar.HorizontalPodAutoscaler:
+		pvc, err := ConvertToCPHPA(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.Role:
+		pvc, err := ConvertToCPRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.RoleBinding:
+		pvc, err := ConvertToCPRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRole:
+		pvc, err := ConvertToCPClusterRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRoleBinding:
+		pvc, err := ConvertToCPClusterRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *v1.ServiceAccount:
 	default:
 		return nil, errors.New("object is not in our scope")
@@ -637,6 +722,198 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassServi
 	}
 
 	return storageClass, nil
+}
+
+func ConvertToCPSecret(cm *v1.Secret) (*types.Secret, error) {
+	var secret = new(types.Secret)
+	secret.Name = cm.Name
+	secret.Namespace = cm.Namespace
+	if vr := cm.Labels["version"]; vr != "" {
+		secret.Version = vr
+	}
+	secret.ServiceType = "k8s"
+	secret.ServiceSubType = "secret"
+	secret.ServiceAttributes = new(types.SecretServiceAttribute)
+	if len(cm.Data) > 0 {
+		secret.ServiceAttributes.SecretData = make(map[string]string)
+	}
+	for key, value := range cm.Data {
+		secret.ServiceAttributes.SecretData[key] = string(value)
+	}
+	secret.ServiceAttributes.SecretType = string(cm.Type)
+	return secret, nil
+}
+
+func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error) {
+	var horizntalPodAutoscalar = new(types.HPA)
+	horizntalPodAutoscalar.Name = hpa.Name
+	horizntalPodAutoscalar.Namespace = hpa.Namespace
+	horizntalPodAutoscalar.ServiceType = "k8s"
+	horizntalPodAutoscalar.ServiceSubType = "hpa"
+	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
+	if hpa.Spec.MinReplicas != nil {
+		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
+	}
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
+	return horizntalPodAutoscalar, nil
+}
+
+func ConvertToCPRole(k8ROle *rbac.Role) (*types.Role, error) {
+	var role = new(types.Role)
+	role.Name = k8ROle.Name
+	role.Namespace = k8ROle.Namespace
+	role.ServiceType = "k8s"
+	role.ServiceSubType = "role"
+	for _, each := range k8ROle.Rules {
+		rolePolicy := types.Rule{}
+		for _, apigroup := range each.APIGroups {
+			rolePolicy.Api_group = append(rolePolicy.Api_group, apigroup)
+		}
+
+		for _, verb := range each.Verbs {
+			rolePolicy.Verbs = append(rolePolicy.Verbs, verb)
+		}
+
+		for _, resource := range each.Resources {
+			rolePolicy.Resources = append(rolePolicy.Resources, resource)
+		}
+		for _, resource := range each.ResourceNames {
+			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		}
+		role.ServiceAttributes.Rules = append(role.ServiceAttributes.Rules, rolePolicy)
+	}
+	return role, nil
+}
+
+func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*types.RoleBinding, error) {
+	var rb = new(types.RoleBinding)
+	rb.Name = k8sRoleBinding.Name
+	rb.ServiceType = "k8s"
+	rb.ServiceSubType = "cluster_role_binding"
+	for _, each := range k8sRoleBinding.Subjects {
+		var subject = types.Subject{}
+		subject.Name = each.Name
+		if each.Kind == "User" || each.Kind == "Group" {
+			subject.Kind = each.Kind
+		} else if each.Kind == "ServiceAccount" {
+			subject.Kind = each.Kind
+			subject.Namespace = each.Namespace
+		} else {
+			return nil, errors.New("invalid subject kind" + each.Name + each.Kind)
+		}
+		rb.ServiceAttributes.Subjects = append(rb.ServiceAttributes.Subjects, subject)
+	}
+	rb.ServiceAttributes.RoleRef.Kind = k8sRoleBinding.RoleRef.Kind
+	rb.ServiceAttributes.RoleRef.Name = k8sRoleBinding.RoleRef.Name
+	return rb, nil
+}
+
+func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBinding) (*types.ClusterRoleBinding, error) {
+	var crb = new(types.ClusterRoleBinding)
+	crb.Name = k8sClusterRoleBinding.Name
+	crb.ServiceType = "k8s"
+	crb.ServiceSubType = "cluster_role_binding"
+	crb.ServiceAttributes.NameClusterRoleRef = k8sClusterRoleBinding.RoleRef.Name
+	for _, each := range k8sClusterRoleBinding.Subjects {
+		var subject = types.Subject{}
+		subject.Name = each.Name
+		if each.Kind == "User" || each.Kind == "Group" {
+			subject.Kind = each.Kind
+		} else if each.Kind == "ServiceAccount" {
+			subject.Kind = each.Kind
+			subject.Namespace = each.Namespace
+		} else {
+			return nil, errors.New("invalid subject kind" + each.Name + each.Kind)
+		}
+		crb.ServiceAttributes.Subjects = append(crb.ServiceAttributes.Subjects, subject)
+	}
+	return crb, nil
+}
+
+func ConvertToCPClusterRole(k8ROle *rbac.ClusterRole) (*types.ClusterRole, error) {
+	var role = new(types.ClusterRole)
+	role.Name = k8ROle.Name
+	role.ServiceType = "k8s"
+	role.ServiceSubType = "cluster_role"
+	for _, each := range k8ROle.Rules {
+		rolePolicy := types.Rules{}
+		for _, apigroup := range each.APIGroups {
+			rolePolicy.ApiGroup = append(rolePolicy.ApiGroup, apigroup)
+		}
+
+		for _, verb := range each.Verbs {
+			rolePolicy.Verbs = append(rolePolicy.Verbs, verb)
+		}
+
+		for _, resource := range each.Resources {
+			rolePolicy.Resources = append(rolePolicy.Resources, resource)
+		}
+		for _, resource := range each.ResourceNames {
+			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		}
+		role.ServiceAttributes.Rules = append(role.ServiceAttributes.Rules, rolePolicy)
+	}
+	return role, nil
+}
+
+func ConvertToCPConfigMap(cm *v1.ConfigMap) (*types.ConfigMap, error) {
+	var configMap = new(types.ConfigMap)
+	configMap.Name = cm.Name
+	configMap.Namespace = cm.Namespace
+	if vr := cm.Labels["version"]; vr != "" {
+		configMap.Version = vr
+	}
+	configMap.ServiceType = "k8s"
+	configMap.ServiceSubType = "configmap"
+	configMap.ServiceAttributes = new(types.ConfigMapServiceAttribute)
+	if len(cm.Data) > 0 {
+		configMap.ServiceAttributes.Data = make(map[string]string)
+	}
+	for key, value := range cm.Data {
+		configMap.ServiceAttributes.Data[key] = value
+	}
+	return configMap, nil
+}
+
+func convertToCPKubernetesService(svc *v1.Service) (*types.Service, error) {
+	var service = new(types.Service)
+	service.Name = svc.Name
+	service.Namespace = svc.Namespace
+	if vr := svc.Labels["version"]; vr != "" {
+		service.Version = vr
+	}
+	service.ServiceType = "k8s"
+	service.ServiceSubType = "kubernetesservice"
+	service.ServiceAttributes.Type = string(svc.Spec.Type)
+	if len(svc.Spec.Selector) > 0 {
+		service.ServiceAttributes.Selector = make(map[string]string)
+	}
+	for key, value := range svc.Spec.Selector {
+		service.ServiceAttributes.Selector[key] = value
+	}
+	service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
+	for _, each := range svc.Spec.Ports {
+		cpPort := types.KubePort{}
+		cpPort.Name = each.Name
+		cpPort.Port = each.Port
+		if !(svc.Spec.ClusterIP == "None" || svc.Spec.ClusterIP == "") {
+			if each.TargetPort.Type == intstr.String {
+				cpPort.TargetPort.PortName = each.TargetPort.StrVal
+			} else if each.TargetPort.Type == intstr.Int {
+				cpPort.TargetPort.PortNumber = each.TargetPort.IntVal
+			}
+		} else {
+			service.ServiceAttributes.ClusterIP = "None"
+		}
+		cpPort.Protocol = string(each.Protocol)
+		cpPort.NodePort = each.NodePort
+
+		service.ServiceAttributes.Ports = append(service.ServiceAttributes.Ports, cpPort)
+	}
+
+	return service, nil
 }
 
 func convertToCPGateWayStruct(gw *v1alpha3.Gateway) (*types.GatewayService, error) {

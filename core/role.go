@@ -263,6 +263,9 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 		for _, resource := range rule.Resources {
 			policyRule.Resources = append(policyRule.Resources, resource)
 		}
+		for _, resource := range rule.ResourceNames {
+			policyRule.ResourceNames = append(policyRule.ResourceNames, resource)
+		}
 
 		role.Rules = append(role.Rules, policyRule)
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	kb "golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	kb "k8s.io/api/core/v1"
 	"strings"
 )
 
