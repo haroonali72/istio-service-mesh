@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	"regexp"
 	"sigs.k8s.io/yaml"
 )
 
@@ -492,6 +493,8 @@ func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yaml
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}
@@ -514,6 +517,8 @@ func ConvertPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}
@@ -535,6 +540,11 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
+		re = regexp.MustCompile("(?m)[\r\n]+^.*loadBalancer: {}*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
+		//res := re.ReplaceAllString(strbyteData, "")
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}

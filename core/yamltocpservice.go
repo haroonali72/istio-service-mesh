@@ -11,12 +11,13 @@ import (
 	"istio-service-mesh/utils"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
+	autoScalar "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	net "k8s.io/api/networking/v1"
-	"k8s.io/api/rbac/v1beta1"
+	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -176,10 +177,94 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	case *v1beta1.Role:
-	case *v1beta1.RoleBinding:
-	case *v1beta1.ClusterRole:
-	case *v1beta1.ClusterRoleBinding:
+	case *v1.Service:
+		pvc, err := convertToCPKubernetesService(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *v1.ConfigMap:
+		pvc, err := ConvertToCPConfigMap(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *v1.Secret:
+		pvc, err := ConvertToCPSecret(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *autoScalar.HorizontalPodAutoscaler:
+		pvc, err := ConvertToCPHPA(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.Role:
+		pvc, err := ConvertToCPRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.RoleBinding:
+		pvc, err := ConvertToCPRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRole:
+		pvc, err := ConvertToCPClusterRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRoleBinding:
+		pvc, err := ConvertToCPClusterRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *v1.ServiceAccount:
 	case *apps.DaemonSet:
 		ds, err := convertToCPDaemonSet(o)

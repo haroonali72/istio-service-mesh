@@ -28,17 +28,16 @@ message RoleBindingService{
 message RoleBServiceAttributee {
     repeated RoleBSubject subjects=1;
     RoleBReference reference=2;
-    repeated string host_name=3;
 }
 
 message RoleBSubject{
     string kind = 1;
     string name = 2;
-    string api_group=3;
+    string namespace=3;
 }
 
 message RoleBReference {
     string kind = 1;
     string name = 2;
-    string api_group=3;
+
 }

@@ -30,18 +30,12 @@ message ClusterRoleBinding {
 
 message ClusterRoleBindingSvcAttr {
    repeated Subject subjects = 1;
-   RoleReference role_reference = 2;
+   string name_cluster_role_ref = 2;
 }
 
 message Subject {
    string kind = 1;
    string name = 2;
    string namespace = 3;
-}
-
-message RoleReference {
-   string api_group = 1;
-   string kind = 2;
-   string name = 3;
 }
 
