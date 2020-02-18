@@ -8,7 +8,7 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/autoscaling/v1"
-	"k8s.io/api/autoscaling/v2beta1"
+	_ "k8s.io/api/autoscaling/v2beta1"
 	"strings"
 )
 

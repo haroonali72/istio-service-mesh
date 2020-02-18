@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -273,13 +272,17 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 	}
 	kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
 
-	map2 := make(map[string][]byte)
-	for key, value := range input.SecretServiceAttributes.SecretData {
-		s := []byte(value)
-		fmt.Println(s)
-		map2[key] = s
+	//map2 := make(map[string][]byte)
+	//for key, value := range input.SecretServiceAttributes.SecretData {
+	//	s := []byte(value)
+	//	fmt.Println(s)
+	//	map2[key] = s
+	//}
+	//kube.Data = map2
+	kube.Data = make(map[string][]byte)
+	for key, value := range input.SecretServiceAttributes.Data {
+		kube.Data[key] = value
 	}
-	kube.Data = map2
 
 	return kube, nil
 }
