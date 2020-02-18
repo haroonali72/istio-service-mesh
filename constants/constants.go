@@ -42,6 +42,7 @@ const (
 	Service     K8sKind = "service"
 	ConfigMap   K8sKind = "ConfigMap"
 	Secret      K8sKind = "Secret"
+	Daemonset   K8sKind = "daemonset"
 
 	////Istio Components
 	VirtualService  K8sKind = "VritualService"
