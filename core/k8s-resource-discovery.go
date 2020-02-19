@@ -29,7 +29,8 @@ type GrpcConn struct {
 	token      string
 }
 
-var services []*string
+var servicesUniquenes map[string]*types.ServiceTemplate
+var serviceTemplates []*types.ServiceTemplate
 
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
@@ -115,8 +116,8 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 	for _, cronjob := range cronjobs {
 		namespace := cronjob.Namespace
 		if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
-			svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
-			conn.getK8sRbacResources(ctx, svcname, namespace, constants.CronJob, cronjob)
+			//svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
+			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.CronJob, cronjob)
 
 		}
 
@@ -221,8 +222,8 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 	for _, daemonset := range daemonsets {
 		namespace := daemonset.Namespace
 		if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
-			svcname := daemonset.Spec.Template.Spec.ServiceAccountName
-			conn.getK8sRbacResources(ctx, svcname, namespace, constants.Daemonset, daemonset)
+			//svcname := daemonset.Spec.Template.Spec.ServiceAccountName
+			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.Daemonset, daemonset)
 
 		}
 
@@ -328,8 +329,8 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 	for _, statefulset := range statefulsets {
 		namespace := statefulset.Namespace
 		if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
-			svcname := statefulset.Spec.Template.Spec.ServiceAccountName
-			conn.getK8sRbacResources(ctx, svcname, namespace, constants.StatefulSet, statefulset)
+			//svcname := statefulset.Spec.Template.Spec.ServiceAccountName
+			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.StatefulSet, statefulset)
 		}
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
@@ -429,97 +430,70 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 }
 
-func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) {
-
-	var serviceTemplates []types.ServiceTemplate
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) ([]*types.ServiceTemplate, error) {
 
 	for _, dep := range deployments {
+		depTemp, err := getCpConvertedTemplate(dep, dep.Kind)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 
 		namespace := dep.Namespace
 		//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 		if dep.Spec.Template.Spec.ServiceAccountName != "" {
-
 			svcname := dep.Spec.Template.Spec.ServiceAccountName
-			conn.getK8sRbacResources(ctx, svcname, namespace, constants.Deployment, dep)
-			//svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
-			//if err != nil {
-			//	return
-			//}
-			//
-			////creating secrets for service account
-			//for _, secret := range svcaccount.Secrets {
-			//	if secret.Name != "" {
-			//
-			//		secretname := secret.Name
-			//		if secret.Namespace != "" {
-			//			namespace = secret.Namespace
-			//		}
-			//		_, err := conn.getSecret(ctx, secretname, namespace)
-			//		if err != nil {
-			//			return
-			//		}
-			//	}
-			//}
-			//
-			//clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
-			//if err != nil {
-			//	return
-			//}
-			//
-			//for _, clstrrolebind := range clusterrolebindings.Items {
-			//	for _, sub := range clstrrolebind.Subjects {
-			//		if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-			//			if clstrrolebind.RoleRef.Kind == "ClusterRole" {
-			//				clusterrolename := clstrrolebind.RoleRef.Name
-			//				_, err := conn.getClusterRole(ctx, clusterrolename)
-			//				if err != nil {
-			//					return
-			//				}
-			//
-			//				//for mainting uniqueness of services
-			//				svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
-			//				services = append(services, &svc)
-			//			}
-			//			break
-			//		}
-			//	}
-			//}
-			//
-			//rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
-			//if err != nil {
-			//	return
-			//}
-			//
-			//for _, rolebinding := range rolebindings.Items {
-			//	for _, sub := range rolebinding.Subjects {
-			//		if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-			//			if rolebinding.RoleRef.Kind == "Role" {
-			//				rolename := rolebinding.RoleRef.Name
-			//				_, err := conn.getRole(ctx, rolename, namespace)
-			//				if err != nil {
-			//					return
-			//				}
-			//
-			//				//for mainting uniqueness of services
-			//				svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
-			//				services = append(services, &svc)
-			//			}
-			//			break
-			//		}
-			//	}
-			//}
+			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			if err != nil {
+				return nil, err
+			}
+			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
+			if err != nil {
+				utils.Error.Println(err)
+				return nil, err
+			}
+			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
+				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+
+				var strpointer = new(string)
+				*strpointer = "service_account"
+				for _, rbacTemp := range rbacDependencies {
+					if *rbacTemp.ServiceSubType == *strpointer {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, rbacTemp.ServiceId)
+						rbacTemp.AfterServices = append(rbacTemp.AfterServices, depTemp.ServiceId)
+					}
+					serviceTemplates = append(serviceTemplates, rbacTemp)
+				}
+			} else {
+				for _, service := range serviceTemplates {
+					if *service.NameSpace == *svcAccTemp.NameSpace && *service.ServiceSubType == *svcAccTemp.ServiceSubType && *service.Name == *svcAccTemp.Name {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, service.ServiceId)
+						service.AfterServices = append(service.AfterServices, depTemp.ServiceId)
+					}
+				}
+			}
 
 		}
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return
+			return nil, err
 		}
-
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
 				if hpa.Spec.ScaleTargetRef.APIVersion == dep.APIVersion && hpa.Spec.ScaleTargetRef.Kind == dep.Kind && hpa.Spec.ScaleTargetRef.Name == dep.Name {
-
+					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, depTemp.ServiceId)
+					depTemp.AfterServices = append(depTemp.AfterServices, hpaTemplate.ServiceId)
+					serviceTemplates = append(serviceTemplates, hpaTemplate)
 				}
 			}
 		}
@@ -528,16 +502,29 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 		for key, value := range dep.Spec.Template.Labels {
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return
+				utils.Error.Println(err)
+				return nil, err
 			}
 
 			if len(resp.Items) > 0 {
 				for _, kubeSvc := range resp.Items {
-					//for mainting uniqueness of services
-					svc := kubeSvc.Namespace + "-" + kubeSvc.Kind + "-" + kubeSvc.Name
-					services = append(services, &svc)
-
-					fmt.Println(kubeSvc)
+					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, depTemp.ServiceId)
+						depTemp.AfterServices = append(depTemp.AfterServices, k8serviceTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, k8serviceTemp)
+					} else {
+						for _, service := range serviceTemplates {
+							if *service.NameSpace == *k8serviceTemp.NameSpace && *service.ServiceSubType == *k8serviceTemp.ServiceSubType && *service.Name == *k8serviceTemp.Name {
+								service.BeforeServices = append(service.BeforeServices, depTemp.ServiceId)
+								depTemp.AfterServices = append(depTemp.AfterServices, service.ServiceId)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -548,16 +535,63 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 			for _, env := range container.Env {
 				if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
 					secretname := env.ValueFrom.SecretKeyRef.Name
-					_, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						utils.Error.Println(err)
+						return nil, err
 					}
-
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameDeployment := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *depTemp.ServiceId {
+								isSameDeployment = true
+								break
+							}
+						}
+						if !isSameDeployment {
+							depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				} else if env.ValueFrom != nil && env.ValueFrom.ConfigMapKeyRef != nil {
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
-					_, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						utils.Error.Println(err)
+						return nil, err
+					}
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameDeployment := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *depTemp.ServiceId {
+								isSameDeployment = true
+								break
+							}
+						}
+						if !isSameDeployment {
+							depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
 					}
 				}
 			}
@@ -567,173 +601,225 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 		for _, vol := range dep.Spec.Template.Spec.Volumes {
 			if vol.Secret != nil {
 				secretname := vol.Secret.SecretName
-				_, err := conn.getSecret(ctx, secretname, namespace)
+				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return
+					utils.Error.Println(err)
+					return nil, err
+				}
+				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+					depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+					secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
+				} else {
+					isSameDeployment := false
+					for _, serviceId := range secretTemp.AfterServices {
+						if *serviceId == *depTemp.ServiceId {
+							isSameDeployment = true
+							break
+						}
+					}
+					if !isSameDeployment {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					}
 				}
 			} else if vol.ConfigMap != nil {
 				configmapname := vol.ConfigMap.Name
-				_, err := conn.getConfigMap(ctx, configmapname, namespace)
+				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return
+					utils.Error.Println(err)
+					return nil, err
+				}
+				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+					depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+					configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, configmapTemp)
+				} else {
+					isSameDeployment := false
+					for _, serviceId := range configmapTemp.AfterServices {
+						if *serviceId == *depTemp.ServiceId {
+							isSameDeployment = true
+							break
+						}
+					}
+					if !isSameDeployment {
+						depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					}
 				}
 			} else if vol.PersistentVolumeClaim != nil {
 				pvcname := vol.PersistentVolumeClaim.ClaimName
-				_, err := conn.getPvc(ctx, pvcname, namespace)
+				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return
+					utils.Error.Println(err)
+					return nil, err
 				}
-			} //else if vol.AWSElasticBlockStore.VolumeID
+				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
+					depTemp.BeforeServices = append(depTemp.BeforeServices, pvcTemp.ServiceId)
+					pvcTemp.AfterServices = append(pvcTemp.AfterServices, depTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, pvcTemp)
+				} else {
+					for _, service := range serviceTemplates {
+						if *service.NameSpace == *pvcTemp.NameSpace && *service.ServiceSubType == *pvcTemp.ServiceSubType && *service.Name == *pvcTemp.Name {
+							depTemp.BeforeServices = append(depTemp.BeforeServices, service.ServiceId)
+							service.AfterServices = append(service.AfterServices, depTemp.ServiceId)
+						}
+					}
+				}
+			}
 
 			if vol.Projected != nil {
 				for _, source := range vol.Projected.Sources {
 					if source.ConfigMap != nil {
 						configmapname := vol.ConfigMap.Name
-						_, err := conn.getConfigMap(ctx, configmapname, namespace)
+						configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 						if err != nil {
-							return
+							utils.Error.Println(err)
+							return nil, err
+						}
+						configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+						if err != nil {
+							utils.Error.Println(err)
+							return nil, err
+						}
+						if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+							depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						} else {
+							isSameDeployment := false
+							for _, serviceId := range configmapTemp.AfterServices {
+								if *serviceId == *depTemp.ServiceId {
+									isSameDeployment = true
+									break
+								}
+							}
+							if !isSameDeployment {
+								depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
+								configmapTemp.AfterServices = append(configmapTemp.AfterServices, depTemp.ServiceId)
+								serviceTemplates = append(serviceTemplates, configmapTemp)
+							}
 						}
 					} else if source.Secret != nil {
 						secretname := vol.Secret.SecretName
-						_, err := conn.getSecret(ctx, secretname, namespace)
+						secret, err := conn.getSecret(ctx, secretname, namespace)
 						if err != nil {
-							return
+							utils.Error.Println(err)
+							return nil, err
+						}
+						secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+						if err != nil {
+							utils.Error.Println(err)
+							return nil, err
+						}
+						if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+							depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						} else {
+							isSameDeployment := false
+							for _, serviceId := range secretTemp.AfterServices {
+								if *serviceId == *depTemp.ServiceId {
+									isSameDeployment = true
+									break
+								}
+							}
+							if !isSameDeployment {
+								depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
+								secretTemp.AfterServices = append(secretTemp.AfterServices, depTemp.ServiceId)
+								serviceTemplates = append(serviceTemplates, secretTemp)
+							}
 						}
 					}
 				}
 			}
 		}
 
-		cpDeployment, err := convertToCPDeployment(dep)
-		if err != nil {
-			utils.Error.Println(err.Error())
-			return
-		}
-
-		bytes, err := json.Marshal(cpDeployment)
-		if err != nil {
-			utils.Error.Println(err.Error())
-			return
-		}
-
-		var svctemplate types.ServiceTemplate
-		err = json.Unmarshal(bytes, &svctemplate)
-		if err != nil {
-			utils.Error.Println(err.Error())
-			return
-		}
-
-		serviceTemplates = append(serviceTemplates, svctemplate)
+		serviceTemplates = append(serviceTemplates, depTemp)
 	}
+	return serviceTemplates, nil
 }
 
-func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcname, namespace string, k8sObjectType constants.K8sKind, K8sObj interface{}) ([]types.ServiceTemplate, error) {
-
-	var serviceTemplates []types.ServiceTemplate
-	svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
-	if err != nil {
-		return []types.ServiceTemplate{}, err
-	} else if err == nil && svcaccount != nil {
-		var svcAccTemp types.ServiceTemplate
-		bytes, err := json.Marshal(svcaccount)
-		if err != nil {
-			utils.Error.Println(err)
-			return []types.ServiceTemplate{}, err
+func GetExistingService(namespace, svcsubtype, name *string) *types.ServiceTemplate {
+	for _, service := range serviceTemplates {
+		if *service.NameSpace == *namespace && *service.ServiceSubType == *svcsubtype && *service.Name == *name {
+			return service
 		}
+	}
+	return nil
+}
 
-		//TODO: needs to be unmarshall in cp schemea first
-		err = json.Unmarshal(bytes, &svcAccTemp)
-		if err != nil {
-			utils.Error.Println(err)
-			return []types.ServiceTemplate{}, err
-		}
-		id := strconv.Itoa(rand.Int())
-		svcAccTemp.ServiceId = &id
+func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string, k8svcAcc *api.ServiceAccount, svcAccTemp *types.ServiceTemplate) ([]*types.ServiceTemplate, error) {
 
-		//creating secrets for service account
-		for _, secret := range svcaccount.Secrets {
-			if secret.Name != "" {
-				secretname := secret.Name
-				if secret.Namespace != "" {
-					namespace = secret.Namespace
-				}
-				scrt, err := conn.getSecret(ctx, secretname, namespace)
+	var serviceTemplates []*types.ServiceTemplate
+	//creating secrets for service account
+	for _, secret := range k8svcAcc.Secrets {
+		if secret.Name != "" {
+			secretname := secret.Name
+			if secret.Namespace != "" {
+				namespace = secret.Namespace
+			}
+			scrt, err := conn.getSecret(ctx, secretname, namespace)
+			if err != nil {
+				return nil, err
+			} else {
+				secretTemp, err := getCpConvertedTemplate(scrt, scrt.Kind)
 				if err != nil {
-					return []types.ServiceTemplate{}, err
-				} else if err == nil && scrt != nil {
-					var secretTemp types.ServiceTemplate
-					bytes, err := json.Marshal(scrt)
-					if err != nil {
-						utils.Error.Println(err)
-						return []types.ServiceTemplate{}, err
-					}
-
-					//TODO: needs to be unmarshall in cp schemea first
-					err = json.Unmarshal(bytes, &secretTemp)
-					if err != nil {
-						utils.Error.Println(err)
-						return []types.ServiceTemplate{}, err
-					}
-					id := strconv.Itoa(rand.Int())
-					secretTemp.ServiceId = &id
-					secretTemp.BeforeServices = append(secretTemp.BeforeServices, svcAccTemp.ServiceId)
-					serviceTemplates = append(serviceTemplates, secretTemp)
-
-					svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, secretTemp.ServiceId)
+					utils.Error.Println(err)
+					return nil, err
 				}
+				//this is doubtful
+				secretTemp.BeforeServices = append(secretTemp.BeforeServices, svcAccTemp.ServiceId)
+				serviceTemplates = append(serviceTemplates, secretTemp)
+				svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, secretTemp.ServiceId)
+				//this is doubtful
 			}
 		}
+	}
 
-		clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
-		if err != nil {
-			return []types.ServiceTemplate{}, err
-		}
+	clusterrolebindings, err := conn.getAllClusterRoleBindings(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-		for _, clstrrolebind := range clusterrolebindings.Items {
-			for _, sub := range clstrrolebind.Subjects {
-				if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-					if clstrrolebind.RoleRef.Kind == "ClusterRole" {
-						clusterrolename := clstrrolebind.RoleRef.Name
-						clstrrole, err := conn.getClusterRole(ctx, clusterrolename)
+	for _, clstrrolebind := range clusterrolebindings.Items {
+		for _, sub := range clstrrolebind.Subjects {
+			if sub.Kind == "ServiceAccount" && sub.Name == k8svcAcc.Name {
+				if clstrrolebind.RoleRef.Kind == "ClusterRole" {
+					clusterrolename := clstrrolebind.RoleRef.Name
+					clstrrole, err := conn.getClusterRole(ctx, clusterrolename)
+					if err != nil {
+						return nil, err
+					} else {
+						clstrroleTemp, err := getCpConvertedTemplate(clstrrole, clstrrole.Kind)
 						if err != nil {
-							return []types.ServiceTemplate{}, err
-						} else if err == nil && clstrrole != nil {
-							var clstrroleTemp types.ServiceTemplate
-							bytes, err := json.Marshal(clstrrole)
+							utils.Error.Println(err)
+							return nil, err
+						} else {
+
+							clstrrolebindTemp, err := getCpConvertedTemplate(clstrrolebind, clstrrolebind.Kind)
 							if err != nil {
 								utils.Error.Println(err)
-								return []types.ServiceTemplate{}, err
+								return nil, err
 							}
-
-							//TODO: needs to be unmarshall in cp schemea first
-							err = json.Unmarshal(bytes, &clstrroleTemp)
-							if err != nil {
-								utils.Error.Println(err)
-								return []types.ServiceTemplate{}, err
-							}
-							id := strconv.Itoa(rand.Int())
-							clstrroleTemp.ServiceId = &id
-
-							if !isAlreadyExist(clstrrolebind.Namespace, clstrrolebind.Kind, clstrrolebind.Name) {
-								svc := clstrrolebind.Namespace + "-" + clstrrolebind.Kind + "-" + clstrrolebind.Name
-								services = append(services, &svc)
-
-								var clstrrolebindTemp types.ServiceTemplate
-								bytes, err := json.Marshal(clstrrolebind)
-								if err != nil {
-									utils.Error.Println(err)
-									return []types.ServiceTemplate{}, err
-								}
-
-								//TODO: needs to be unmarshall in cp schemea first
-								err = json.Unmarshal(bytes, &clstrrolebindTemp)
-								if err != nil {
-									utils.Error.Println(err)
-									return []types.ServiceTemplate{}, err
-								}
-								id := strconv.Itoa(rand.Int())
-								clstrrolebindTemp.ServiceId = &id
-
+							if !isAlreadyExist(clstrrolebindTemp.NameSpace, clstrrolebindTemp.ServiceSubType, clstrrolebindTemp.Name) {
 								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, clstrroleTemp.ServiceId)
 								clstrroleTemp.AfterServices = append(clstrroleTemp.AfterServices, clstrrolebindTemp.ServiceId)
 
@@ -741,67 +827,44 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcname, namespac
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, clstrrolebindTemp.ServiceId)
 
 								serviceTemplates = append(serviceTemplates, clstrrolebindTemp)
+								serviceTemplates = append(serviceTemplates, clstrroleTemp)
+							} else {
+								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, svcAccTemp.ServiceId)
+								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, clstrrolebindTemp.ServiceId)
 							}
-
-							serviceTemplates = append(serviceTemplates, clstrroleTemp)
-
 						}
 					}
-					break
 				}
+				break
 			}
 		}
+	}
 
-		rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
-		if err != nil {
-			return []types.ServiceTemplate{}, err
-		}
+	rolebindings, err := conn.getAllRoleBindings(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
 
-		for _, rolebinding := range rolebindings.Items {
-			for _, sub := range rolebinding.Subjects {
-				if sub.Kind == "ServiceAccount" && sub.Name == svcname {
-					if rolebinding.RoleRef.Kind == "Role" {
-						rolename := rolebinding.RoleRef.Name
-						role, err := conn.getRole(ctx, rolename, namespace)
+	for _, rolebinding := range rolebindings.Items {
+		for _, sub := range rolebinding.Subjects {
+			if sub.Kind == "ServiceAccount" && sub.Name == k8svcAcc.Name {
+				if rolebinding.RoleRef.Kind == "Role" {
+					rolename := rolebinding.RoleRef.Name
+					role, err := conn.getRole(ctx, rolename, namespace)
+					if err != nil {
+						return nil, err
+					} else {
+						roleTemp, err := getCpConvertedTemplate(role, role.Kind)
 						if err != nil {
-							return []types.ServiceTemplate{}, err
-						} else if err == nil && role != nil {
-							var roleTemp types.ServiceTemplate
-							bytes, err := json.Marshal(role)
+							utils.Error.Println(err)
+							return nil, err
+						} else {
+							rolebindTemp, err := getCpConvertedTemplate(rolebinding, rolebinding.Kind)
 							if err != nil {
 								utils.Error.Println(err)
-								return []types.ServiceTemplate{}, err
+								return nil, err
 							}
-
-							//TODO: needs to be unmarshall in cp schemea first
-							err = json.Unmarshal(bytes, &roleTemp)
-							if err != nil {
-								utils.Error.Println(err)
-								return []types.ServiceTemplate{}, err
-							}
-							id := strconv.Itoa(rand.Int())
-							roleTemp.ServiceId = &id
-
-							if !isAlreadyExist(rolebinding.Namespace, rolebinding.Kind, rolebinding.Name) {
-								svc := rolebinding.Namespace + "-" + rolebinding.Kind + "-" + rolebinding.Name
-								services = append(services, &svc)
-
-								var rolebindTemp types.ServiceTemplate
-								bytes, err := json.Marshal(rolebinding)
-								if err != nil {
-									utils.Error.Println(err)
-									return []types.ServiceTemplate{}, err
-								}
-
-								//TODO: needs to be unmarshall in cp schemea first
-								err = json.Unmarshal(bytes, &rolebindTemp)
-								if err != nil {
-									utils.Error.Println(err)
-									return []types.ServiceTemplate{}, err
-								}
-								id := strconv.Itoa(rand.Int())
-								rolebindTemp.ServiceId = &id
-
+							if !isAlreadyExist(rolebindTemp.NameSpace, rolebindTemp.ServiceSubType, rolebindTemp.Name) {
 								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, roleTemp.ServiceId)
 								roleTemp.AfterServices = append(roleTemp.AfterServices, rolebindTemp.ServiceId)
 
@@ -809,18 +872,20 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, svcname, namespac
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, rolebindTemp.ServiceId)
 
 								serviceTemplates = append(serviceTemplates, rolebindTemp)
+								serviceTemplates = append(serviceTemplates, roleTemp)
+							} else {
+								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, svcAccTemp.ServiceId)
+								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, rolebindTemp.ServiceId)
 							}
-
-							serviceTemplates = append(serviceTemplates, roleTemp)
 						}
 					}
-					break
 				}
+				break
 			}
 		}
-
-		serviceTemplates = append(serviceTemplates, svcAccTemp)
 	}
+
+	serviceTemplates = append(serviceTemplates, svcAccTemp)
 	return serviceTemplates, nil
 }
 
@@ -983,14 +1048,7 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 		return nil, err
 	}
 
-	if !isAlreadyExist(role.Namespace, role.Kind, role.Name) {
-		svc := role.Namespace + "-" + role.Kind + "-" + role.Name
-		services = append(services, &svc)
-
-		return role, nil
-	}
-
-	return nil, nil
+	return role, nil
 }
 
 func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) (*rbac.RoleBindingList, error) {
@@ -1035,9 +1093,6 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 		utils.Error.Println(err)
 		return nil, err
 	}
-
-	svc := pvc.Namespace + "-" + pvc.Kind + "-" + pvc.Name
-	services = append(services, &svc)
 
 	return pvc, nil
 }
@@ -1085,13 +1140,7 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 		return nil, err
 	}
 
-	if !isAlreadyExist(svcAcc.Namespace, svcAcc.Kind, svcAcc.Name) {
-		svc := svcAcc.Namespace + "-" + svcAcc.Kind + "-" + svcAcc.Name
-		services = append(services, &svc)
-		return svcAcc, nil
-	}
-
-	return nil, nil
+	return svcAcc, nil
 }
 
 func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace string) (*v2.Secret, error) {
@@ -1114,13 +1163,7 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 		return nil, err
 	}
 
-	if !isAlreadyExist(scrt.Namespace, scrt.Kind, scrt.Name) {
-		svc := scrt.Namespace + "-" + scrt.Kind + "-" + scrt.Name
-		services = append(services, &svc)
-		return scrt, nil
-	}
-
-	return nil, nil
+	return scrt, nil
 }
 
 func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.ClusterRoleBindingList, error) {
@@ -1166,20 +1209,279 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 		return nil, err
 	}
 
-	if !isAlreadyExist(clusterrole.Namespace, clusterrole.Kind, clusterrole.Name) {
-		svc := clusterrole.Namespace + "-" + clusterrole.Kind + "-" + clusterrole.Name
-		services = append(services, &svc)
-		return clusterrole, nil
-	}
-
-	return nil, nil
+	return clusterrole, nil
 }
 
-func isAlreadyExist(namespace, kind, name string) bool {
-	for _, val := range services {
-		if *val == namespace+"-"+kind+"-"+name {
+func isAlreadyExist(namespace, svcsubtype, name *string) bool {
+	for _, val := range serviceTemplates {
+		if val.NameSpace == namespace && val.ServiceSubType == svcsubtype && val.Name == name {
 			return true
 		}
 	}
 	return false
+}
+
+func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTemplate, error) {
+
+	var template *types.ServiceTemplate
+	switch kind {
+	case "Deployment":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "CronJob":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "DaemonSet":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "StatefulSet":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "Service":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "HorizontalPodAutoscaler":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "ConfigMap":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+	case "Secret":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+	case "ServiceAccount":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "Role":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "RoleBinding":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+	case "ClusterRole":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "ClusterRoleBinding":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+	case "PersistentVolume":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "PersistentVolumeClaim":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "StorageClass":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	default:
+		utils.Info.Println("Kind does not exist in defined switch cases")
+		return nil, errors.New("type does not exit")
+	}
+
+	return template, nil
+
 }
