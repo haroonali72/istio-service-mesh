@@ -11,11 +11,11 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/api/apps/v1"
-	autoscale "k8s.io/api/autoscaling/v1"
-	batchv1 "k8s.io/api/batch/v1"
+	autoscale "k8s.io/api/autoscaling/v2beta2"
+	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"math/rand"
@@ -108,7 +108,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	return response, err
 }
 
-func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batchv1.Job) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*types.ServiceTemplate, error) {
 	for _, job := range jobs {
 		jobTemp, err := getCpConvertedTemplate(job, job.Kind)
 		if err != nil {
@@ -1416,6 +1416,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 
 		//kubernetes service depecndency findings
 		for key, value := range dep.Spec.Template.Labels {
+
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
 				utils.Error.Println(err)
@@ -1441,6 +1442,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 							}
 						}
 					}
+
 				}
 			}
 		}
@@ -2142,13 +2144,17 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 	var template *types.ServiceTemplate
 	switch kind {
 	case "Deployment":
-		bytes, err := json.Marshal(data)
+		CpDeployment, err := convertToCPDeployment(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err := json.Marshal(CpDeployment)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
 
-		//TODO needs to convert cp schema first
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2162,8 +2168,23 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
+		var cronjob batchv1.CronJob
+		err = json.Unmarshal(bytes, &cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpCronJob, err := convertToCPCronJob(&cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 
-		//TODO needs to convert cp schema first
+		bytes, err = json.Marshal(CpCronJob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2177,8 +2198,22 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var job batch.Job
+		err = json.Unmarshal(bytes, &job)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpJob, err := convertToCPJob(&job)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpJob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2187,13 +2222,16 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
 	case "DaemonSet":
-		bytes, err := json.Marshal(data)
+		CpDaemonset, err := convertToCPDaemonSet(data)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		bytes, err := json.Marshal(CpDaemonset)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2202,13 +2240,16 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
 	case "StatefulSet":
-		bytes, err := json.Marshal(data)
+		CpStatefuleSet, err := convertToCPStatefulSet(data)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		bytes, err := json.Marshal(CpStatefuleSet)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2222,8 +2263,17 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var k8Service v2.Service
+		CpKubeService, err := convertToCPKubernetesService(&k8Service)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpKubeService)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2237,8 +2287,22 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var hpa autoscale.HorizontalPodAutoscaler
+		err = json.Unmarshal(bytes, &hpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpHpa, err := ConvertToCPHPA(&hpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpHpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2252,8 +2316,22 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var configmap v2.ConfigMap
+		err = json.Unmarshal(bytes, &configmap)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpConfigMap, err := ConvertToCPConfigMap(&configmap)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpConfigMap)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2270,8 +2348,22 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var secret v2.Secret
+		err = json.Unmarshal(bytes, &secret)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpSecret, err := ConvertToCPSecret(&secret)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpSecret)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2288,38 +2380,22 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
-		err = json.Unmarshal(bytes, &template)
+		var serviceaccount v2.ServiceAccount
+		err = json.Unmarshal(bytes, &serviceaccount)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
-	case "Role":
-		bytes, err := json.Marshal(data)
+		CpServiceAccount, err := convertToCPServiceAccount(&serviceaccount)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
-		err = json.Unmarshal(bytes, &template)
+		bytes, err = json.Marshal(CpServiceAccount)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
-	case "RoleBinding":
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-
-		//TODO needs to convert cp schema first
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2330,14 +2406,95 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
 		}
+	case "Role":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var role rbac.Role
+		err = json.Unmarshal(bytes, &role)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpRole, err := ConvertToCPRole(&role)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpRole)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+	case "RoleBinding":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var roleBinding rbac.RoleBinding
+		err = json.Unmarshal(bytes, &roleBinding)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpRoleBinding, err := ConvertToCPRoleBinding(&roleBinding)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpRoleBinding)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
 	case "ClusterRole":
 		bytes, err := json.Marshal(data)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var clusterRole rbac.ClusterRole
+		err = json.Unmarshal(bytes, &clusterRole)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpClusterRole, err := ConvertToCPClusterRole(&clusterRole)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpClusterRole)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2345,14 +2502,26 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
 	case "ClusterRoleBinding":
 		bytes, err := json.Marshal(data)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
-
-		//TODO needs to convert cp schema first
+		var clusterRoleBinding rbac.ClusterRoleBinding
+		err = json.Unmarshal(bytes, &clusterRoleBinding)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(clusterRoleBinding)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
@@ -2360,6 +2529,9 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
+		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
+		}
 		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
 		}
@@ -2370,7 +2542,6 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 			return nil, err
 		}
 
-		//TODO needs to convert cp schema first
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
 			utils.Error.Println(err)
