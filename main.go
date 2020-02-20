@@ -76,7 +76,7 @@ func main() {
 	pb.RegisterVirtualServer(srv, svc)
 	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterK8SResourceServer(srv, svc)
-	//go handleclient()
+	go handleclient()
 	pb.RegisterServiceEntryServer(srv, svc)
 	pb.RegisterDeploymentServer(srv, svc)
 	pb.RegisterStorageClassServer(srv, svc)
@@ -101,9 +101,9 @@ func handleclient() {
 	}
 
 	_, err = pb.NewK8SResourceClient(conn).GetK8SResource(context.Background(), &pb.K8SResourceRequest{
-		ProjectId: "11",
-		CompanyId: "1111",
-		Token:     "dfsdfsdf",
+		ProjectId: "application-cronjobhpa",
+		CompanyId: "5d945edc2dcc2f00089d8476",
+		Token:     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.CnsKICAidGVhbXNfcm9sZXMiOnt9LAogICJpc3MiOiJjbG91ZHBsZXgiLAogICJleHAiOiIxNTgyMjY5MzA4NDA1IiwKICAidXNlcm5hbWUiOiJhc21hLnNhcmRhckBjbG91ZHBsZXguaW8iLAogICJjb21wYW55SWQiOiI1ZDk0NWVkYzJkY2MyZjAwMDg5ZDg0NzYiLAogICJpc0FkbWluIjoiZmFsc2UiLAogICJ0b2tlbl90eXBlIjoiMCIsCiAgIm15cm9sZXMiOlsiU3VwZXItVXNlciIsIlRlYW0gTWVtYmVyIiwiVGVhbSBNZW1iZXIiXQp9CiAgICAgIA.-nuUYUUBi9olNbH62wCUoh9_lydHXhyCVPx--uWXsus",
 	})
 	if err != nil {
 		utils.Error.Println(err)
