@@ -13,6 +13,7 @@ import (
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -106,30 +107,380 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	return response, err
 }
 
-//func (conn *GrpcConn) hpaK8sToCp(ctx context.Context, hpas []*autoscale.HorizontalPodAutoscaler) {
-//	for _, hpa := range hpas {
-//
-//	}
-//}
+func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batchv1.Job) ([]*types.ServiceTemplate, error) {
+	for _, job := range jobs {
+		jobTemp, err := getCpConvertedTemplate(job, job.Kind)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		namespace := job.Namespace
+		if job.Spec.Template.Spec.ServiceAccountName != "" {
+			svcname := job.Spec.Template.Spec.ServiceAccountName
+			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			if err != nil {
+				return nil, err
+			}
+			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
+			if err != nil {
+				utils.Error.Println(err)
+				return nil, err
+			}
+			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
+				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
 
-func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.CronJob) {
+				var strpointer = new(string)
+				*strpointer = "service_account"
+				for _, rbacTemp := range rbacDependencies {
+					if *rbacTemp.ServiceSubType == *strpointer {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, rbacTemp.ServiceId)
+						rbacTemp.AfterServices = append(rbacTemp.AfterServices, jobTemp.ServiceId)
+					}
+					serviceTemplates = append(serviceTemplates, rbacTemp)
+				}
+			} else {
+				for _, service := range serviceTemplates {
+					if *service.NameSpace == *svcAccTemp.NameSpace && *service.ServiceSubType == *svcAccTemp.ServiceSubType && *service.Name == *svcAccTemp.Name {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, service.ServiceId)
+						service.AfterServices = append(service.AfterServices, jobTemp.ServiceId)
+					}
+				}
+			}
+		}
+
+		//hpa finding
+		hpaList, err := conn.getAllHpas(ctx, namespace)
+		if err != nil {
+			return nil, err
+		}
+		if len(hpaList.Items) > 0 {
+			for _, hpa := range hpaList.Items {
+				if hpa.Spec.ScaleTargetRef.APIVersion == job.APIVersion && hpa.Spec.ScaleTargetRef.Kind == job.Kind && hpa.Spec.ScaleTargetRef.Name == job.Name {
+					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, jobTemp.ServiceId)
+					jobTemp.AfterServices = append(jobTemp.AfterServices, hpaTemplate.ServiceId)
+					serviceTemplates = append(serviceTemplates, hpaTemplate)
+				}
+			}
+		}
+
+		//kubernetes service depecndency findings
+		for key, value := range job.Spec.Template.Labels {
+			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(resp.Items) > 0 {
+				for _, kubeSvc := range resp.Items {
+					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, jobTemp.ServiceId)
+						jobTemp.AfterServices = append(jobTemp.AfterServices, k8serviceTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, k8serviceTemp)
+					} else {
+						for _, service := range serviceTemplates {
+							if *service.NameSpace == *k8serviceTemp.NameSpace && *service.ServiceSubType == *k8serviceTemp.ServiceSubType && *service.Name == *k8serviceTemp.Name {
+								service.BeforeServices = append(service.BeforeServices, jobTemp.ServiceId)
+								jobTemp.AfterServices = append(jobTemp.AfterServices, service.ServiceId)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		//container dependency finding
+		for _, container := range job.Spec.Template.Spec.Containers {
+			//discovering secret and config maps in deployment containers
+			for _, env := range container.Env {
+				if env.ValueFrom.SecretKeyRef != nil {
+					secretname := env.ValueFrom.SecretKeyRef.Name
+					secret, err := conn.getSecret(ctx, secretname, namespace)
+					if err != nil {
+						return nil, err
+					}
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameJob := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *jobTemp.ServiceId {
+								isSameJob = true
+								break
+							}
+						}
+						if !isSameJob {
+							jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
+				} else if env.ValueFrom.ConfigMapKeyRef != nil {
+					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
+					if err != nil {
+						return nil, err
+					}
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameJob := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *jobTemp.ServiceId {
+								isSameJob = true
+								break
+							}
+						}
+						if !isSameJob {
+							jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
+				}
+			}
+		}
+
+		//volume dependency finding
+		for _, vol := range job.Spec.Template.Spec.Volumes {
+			if vol.Secret != nil {
+				secretname := vol.Secret.SecretName
+				secret, err := conn.getSecret(ctx, secretname, namespace)
+				if err != nil {
+					return nil, err
+				}
+				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+					jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+					secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
+				} else {
+					isSameJob := false
+					for _, serviceId := range secretTemp.AfterServices {
+						if *serviceId == *jobTemp.ServiceId {
+							isSameJob = true
+							break
+						}
+					}
+					if !isSameJob {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					}
+				}
+			} else if vol.ConfigMap != nil {
+				configmapname := vol.ConfigMap.Name
+				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
+				if err != nil {
+					return nil, err
+				}
+				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+					jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+					configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, configmapTemp)
+				} else {
+					isSameJob := false
+					for _, serviceId := range configmapTemp.AfterServices {
+						if *serviceId == *jobTemp.ServiceId {
+							isSameJob = true
+							break
+						}
+					}
+					if !isSameJob {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					}
+				}
+			} else if vol.PersistentVolumeClaim != nil {
+				pvcname := vol.PersistentVolumeClaim.ClaimName
+				pvc, err := conn.getPvc(ctx, pvcname, namespace)
+				if err != nil {
+					return nil, err
+				}
+				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
+					jobTemp.BeforeServices = append(jobTemp.BeforeServices, pvcTemp.ServiceId)
+					pvcTemp.AfterServices = append(pvcTemp.AfterServices, jobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, pvcTemp)
+				} else {
+					for _, service := range serviceTemplates {
+						if *service.NameSpace == *pvcTemp.NameSpace && *service.ServiceSubType == *pvcTemp.ServiceSubType && *service.Name == *pvcTemp.Name {
+							jobTemp.BeforeServices = append(jobTemp.BeforeServices, service.ServiceId)
+							service.AfterServices = append(service.AfterServices, jobTemp.ServiceId)
+						}
+					}
+				}
+			}
+			for _, source := range vol.Projected.Sources {
+				if source.ConfigMap != nil {
+					configmapname := vol.ConfigMap.Name
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
+					if err != nil {
+						return nil, err
+					}
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameJob := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *jobTemp.ServiceId {
+								isSameJob = true
+								break
+							}
+						}
+						if !isSameJob {
+							jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, jobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
+				} else if source.Secret != nil {
+					secretname := vol.Secret.SecretName
+					secret, err := conn.getSecret(ctx, secretname, namespace)
+					if err != nil {
+						return nil, err
+					}
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameJob := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *jobTemp.ServiceId {
+								isSameJob = true
+								break
+							}
+						}
+						if !isSameJob {
+							jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, jobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
+				}
+			}
+		}
+
+		serviceTemplates = append(serviceTemplates, jobTemp)
+
+	}
+	return serviceTemplates, nil
+}
+
+func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.CronJob) ([]*types.ServiceTemplate, error) {
 	for _, cronjob := range cronjobs {
+		cronjobTemp, err := getCpConvertedTemplate(cronjob, cronjob.Kind)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		namespace := cronjob.Namespace
 		if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
-			//svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
-			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.CronJob, cronjob)
+			svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
+			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			if err != nil {
+				return nil, err
+			}
+			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
+			if err != nil {
+				utils.Error.Println(err)
+				return nil, err
+			}
+			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
+				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
 
+				var strpointer = new(string)
+				*strpointer = "service_account"
+				for _, rbacTemp := range rbacDependencies {
+					if *rbacTemp.ServiceSubType == *strpointer {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, rbacTemp.ServiceId)
+						rbacTemp.AfterServices = append(rbacTemp.AfterServices, cronjobTemp.ServiceId)
+					}
+					serviceTemplates = append(serviceTemplates, rbacTemp)
+				}
+			} else {
+				for _, service := range serviceTemplates {
+					if *service.NameSpace == *svcAccTemp.NameSpace && *service.ServiceSubType == *svcAccTemp.ServiceSubType && *service.Name == *svcAccTemp.Name {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, service.ServiceId)
+						service.AfterServices = append(service.AfterServices, cronjobTemp.ServiceId)
+					}
+				}
+			}
 		}
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return
+			return nil, err
 		}
-
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
 				if hpa.Spec.ScaleTargetRef.APIVersion == cronjob.APIVersion && hpa.Spec.ScaleTargetRef.Kind == cronjob.Kind && hpa.Spec.ScaleTargetRef.Name == cronjob.Name {
-
+					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, cronjobTemp.ServiceId)
+					cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, hpaTemplate.ServiceId)
+					serviceTemplates = append(serviceTemplates, hpaTemplate)
 				}
 			}
 		}
@@ -138,12 +489,28 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 		for key, value := range cronjob.Spec.JobTemplate.Spec.Template.Labels {
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return
+				return nil, err
 			}
 
 			if len(resp.Items) > 0 {
 				for _, kubeSvc := range resp.Items {
-					fmt.Println(kubeSvc)
+					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, cronjobTemp.ServiceId)
+						cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, k8serviceTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, k8serviceTemp)
+					} else {
+						for _, service := range serviceTemplates {
+							if *service.NameSpace == *k8serviceTemp.NameSpace && *service.ServiceSubType == *k8serviceTemp.ServiceSubType && *service.Name == *k8serviceTemp.Name {
+								service.BeforeServices = append(service.BeforeServices, cronjobTemp.ServiceId)
+								cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, service.ServiceId)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -154,19 +521,62 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 			for _, env := range container.Env {
 				if env.ValueFrom.SecretKeyRef != nil {
 					secretname := env.ValueFrom.SecretKeyRef.Name
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
-
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameCronJob := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *cronjobTemp.ServiceId {
+								isSameCronJob = true
+								break
+							}
+						}
+						if !isSameCronJob {
+							cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				} else if env.ValueFrom.ConfigMapKeyRef != nil {
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameCronJob := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *cronjobTemp.ServiceId {
+								isSameCronJob = true
+								break
+							}
+						}
+						if !isSameCronJob {
+							cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				}
 			}
 		}
@@ -175,67 +585,195 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 		for _, vol := range cronjob.Spec.JobTemplate.Spec.Template.Spec.Volumes {
 			if vol.Secret != nil {
 				secretname := vol.Secret.SecretName
-				resp, err := conn.getSecret(ctx, secretname, namespace)
+				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+					secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
+				} else {
+					isSameCronJob := false
+					for _, serviceId := range secretTemp.AfterServices {
+						if *serviceId == *cronjobTemp.ServiceId {
+							isSameCronJob = true
+							break
+						}
+					}
+					if !isSameCronJob {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					}
+				}
 			} else if vol.ConfigMap != nil {
 				configmapname := vol.ConfigMap.Name
-				resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+					configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, configmapTemp)
+				} else {
+					isSameCronJob := false
+					for _, serviceId := range configmapTemp.AfterServices {
+						if *serviceId == *cronjobTemp.ServiceId {
+							isSameCronJob = true
+							break
+						}
+					}
+					if !isSameCronJob {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					}
+				}
 			} else if vol.PersistentVolumeClaim != nil {
 				pvcname := vol.PersistentVolumeClaim.ClaimName
-				resp, err := conn.getPvc(ctx, pvcname, namespace)
+				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
-			} //else if vol.AWSElasticBlockStore.VolumeID
-
+				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
+					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, pvcTemp.ServiceId)
+					pvcTemp.AfterServices = append(pvcTemp.AfterServices, cronjobTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, pvcTemp)
+				} else {
+					for _, service := range serviceTemplates {
+						if *service.NameSpace == *pvcTemp.NameSpace && *service.ServiceSubType == *pvcTemp.ServiceSubType && *service.Name == *pvcTemp.Name {
+							cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, service.ServiceId)
+							service.AfterServices = append(service.AfterServices, cronjobTemp.ServiceId)
+						}
+					}
+				}
+			}
 			for _, source := range vol.Projected.Sources {
 				if source.ConfigMap != nil {
 					configmapname := vol.ConfigMap.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameCronJob := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *cronjobTemp.ServiceId {
+								isSameCronJob = true
+								break
+							}
+						}
+						if !isSameCronJob {
+							cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, cronjobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				} else if source.Secret != nil {
 					secretname := vol.Secret.SecretName
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameCronJob := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *cronjobTemp.ServiceId {
+								isSameCronJob = true
+								break
+							}
+						}
+						if !isSameCronJob {
+							cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, cronjobTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				}
 			}
 		}
 
+		serviceTemplates = append(serviceTemplates, cronjobTemp)
 	}
+	return serviceTemplates, nil
 }
 
-func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.DaemonSet) {
+func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.DaemonSet) ([]*types.ServiceTemplate, error) {
 	for _, daemonset := range daemonsets {
+		daemonsetTemp, err := getCpConvertedTemplate(daemonset, daemonset.Kind)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		namespace := daemonset.Namespace
 		if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
-			//svcname := daemonset.Spec.Template.Spec.ServiceAccountName
-			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.Daemonset, daemonset)
+			svcname := daemonset.Spec.Template.Spec.ServiceAccountName
+			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			if err != nil {
+				return nil, err
+			}
+			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
+			if err != nil {
+				utils.Error.Println(err)
+				return nil, err
+			}
+			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
+				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
 
-		}
-
-		hpaList, err := conn.getAllHpas(ctx, namespace)
-		if err != nil {
-			return
-		}
-
-		if len(hpaList.Items) > 0 {
-			for _, hpa := range hpaList.Items {
-				if hpa.Spec.ScaleTargetRef.APIVersion == daemonset.APIVersion && hpa.Spec.ScaleTargetRef.Kind == daemonset.Kind && hpa.Spec.ScaleTargetRef.Name == daemonset.Name {
-
+				var strpointer = new(string)
+				*strpointer = "service_account"
+				for _, rbacTemp := range rbacDependencies {
+					if *rbacTemp.ServiceSubType == *strpointer {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, rbacTemp.ServiceId)
+						rbacTemp.AfterServices = append(rbacTemp.AfterServices, daemonsetTemp.ServiceId)
+					}
+					serviceTemplates = append(serviceTemplates, rbacTemp)
+				}
+			} else {
+				for _, service := range serviceTemplates {
+					if *service.NameSpace == *svcAccTemp.NameSpace && *service.ServiceSubType == *svcAccTemp.ServiceSubType && *service.Name == *svcAccTemp.Name {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, service.ServiceId)
+						service.AfterServices = append(service.AfterServices, daemonsetTemp.ServiceId)
+					}
 				}
 			}
 		}
@@ -244,12 +782,28 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 		for key, value := range daemonset.Spec.Template.Labels {
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return
+				return nil, err
 			}
 
 			if len(resp.Items) > 0 {
 				for _, kubeSvc := range resp.Items {
-					fmt.Println(kubeSvc)
+					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, daemonsetTemp.ServiceId)
+						daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, k8serviceTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, k8serviceTemp)
+					} else {
+						for _, service := range serviceTemplates {
+							if *service.NameSpace == *k8serviceTemp.NameSpace && *service.ServiceSubType == *k8serviceTemp.ServiceSubType && *service.Name == *k8serviceTemp.Name {
+								service.BeforeServices = append(service.BeforeServices, daemonsetTemp.ServiceId)
+								daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, service.ServiceId)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -260,19 +814,62 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 			for _, env := range container.Env {
 				if env.ValueFrom.SecretKeyRef != nil {
 					secretname := env.ValueFrom.SecretKeyRef.Name
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
-
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameDaemonSet := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *daemonsetTemp.ServiceId {
+								isSameDaemonSet = true
+								break
+							}
+						}
+						if !isSameDaemonSet {
+							daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				} else if env.ValueFrom.ConfigMapKeyRef != nil {
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameDaemonSet := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *daemonsetTemp.ServiceId {
+								isSameDaemonSet = true
+								break
+							}
+						}
+						if !isSameDaemonSet {
+							daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				}
 			}
 		}
@@ -281,67 +878,218 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 		for _, vol := range daemonset.Spec.Template.Spec.Volumes {
 			if vol.Secret != nil {
 				secretname := vol.Secret.SecretName
-				resp, err := conn.getSecret(ctx, secretname, namespace)
+				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+					secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
+				} else {
+					isSameDaemonSet := false
+					for _, serviceId := range secretTemp.AfterServices {
+						if *serviceId == *daemonsetTemp.ServiceId {
+							isSameDaemonSet = true
+							break
+						}
+					}
+					if !isSameDaemonSet {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					}
+				}
 			} else if vol.ConfigMap != nil {
 				configmapname := vol.ConfigMap.Name
-				resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+					configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, configmapTemp)
+				} else {
+					isSameDaemonSet := false
+					for _, serviceId := range configmapTemp.AfterServices {
+						if *serviceId == *daemonsetTemp.ServiceId {
+							isSameDaemonSet = true
+							break
+						}
+					}
+					if !isSameDaemonSet {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					}
+				}
 			} else if vol.PersistentVolumeClaim != nil {
 				pvcname := vol.PersistentVolumeClaim.ClaimName
-				resp, err := conn.getPvc(ctx, pvcname, namespace)
+				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
-			} //else if vol.AWSElasticBlockStore.VolumeID
+				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
+					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, pvcTemp.ServiceId)
+					pvcTemp.AfterServices = append(pvcTemp.AfterServices, daemonsetTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, pvcTemp)
+				} else {
+					for _, service := range serviceTemplates {
+						if *service.NameSpace == *pvcTemp.NameSpace && *service.ServiceSubType == *pvcTemp.ServiceSubType && *service.Name == *pvcTemp.Name {
+							daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, service.ServiceId)
+							service.AfterServices = append(service.AfterServices, daemonsetTemp.ServiceId)
+						}
+					}
+				}
+			}
 
 			for _, source := range vol.Projected.Sources {
 				if source.ConfigMap != nil {
 					configmapname := vol.ConfigMap.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameDaemonSet := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *daemonsetTemp.ServiceId {
+								isSameDaemonSet = true
+								break
+							}
+						}
+						if !isSameDaemonSet {
+							daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, daemonsetTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				} else if source.Secret != nil {
 					secretname := vol.Secret.SecretName
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameDaemonSet := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *daemonsetTemp.ServiceId {
+								isSameDaemonSet = true
+								break
+							}
+						}
+						if !isSameDaemonSet {
+							daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, daemonsetTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				}
 			}
 		}
 
+		serviceTemplates = append(serviceTemplates, daemonsetTemp)
 	}
+
+	return serviceTemplates, nil
 }
 
-func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1.StatefulSet) {
+func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1.StatefulSet) ([]*types.ServiceTemplate, error) {
 
 	for _, statefulset := range statefulsets {
+		stsTemp, err := getCpConvertedTemplate(statefulset, statefulset.Kind)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
 		namespace := statefulset.Namespace
 		if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
-			//svcname := statefulset.Spec.Template.Spec.ServiceAccountName
-			//conn.getK8sRbacResources(ctx, svcname, namespace, constants.StatefulSet, statefulset)
+			svcname := statefulset.Spec.Template.Spec.ServiceAccountName
+			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
+			if err != nil {
+				return nil, err
+			}
+			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
+			if err != nil {
+				utils.Error.Println(err)
+				return nil, err
+			}
+			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
+				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+
+				var strpointer = new(string)
+				*strpointer = "service_account"
+				for _, rbacTemp := range rbacDependencies {
+					if *rbacTemp.ServiceSubType == *strpointer {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, rbacTemp.ServiceId)
+						rbacTemp.AfterServices = append(rbacTemp.AfterServices, stsTemp.ServiceId)
+					}
+					serviceTemplates = append(serviceTemplates, rbacTemp)
+				}
+			} else {
+				for _, service := range serviceTemplates {
+					if *service.NameSpace == *svcAccTemp.NameSpace && *service.ServiceSubType == *svcAccTemp.ServiceSubType && *service.Name == *svcAccTemp.Name {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, service.ServiceId)
+						service.AfterServices = append(service.AfterServices, stsTemp.ServiceId)
+					}
+				}
+			}
 		}
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return
+			return nil, err
 		}
 
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
 				if hpa.Spec.ScaleTargetRef.APIVersion == statefulset.APIVersion && hpa.Spec.ScaleTargetRef.Kind == statefulset.Kind && hpa.Spec.ScaleTargetRef.Name == statefulset.Name {
-
+					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, stsTemp.ServiceId)
+					stsTemp.AfterServices = append(stsTemp.AfterServices, hpaTemplate.ServiceId)
+					serviceTemplates = append(serviceTemplates, hpaTemplate)
 				}
 			}
 		}
@@ -350,11 +1098,28 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 		for key, value := range statefulset.Spec.Template.Labels {
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return
+				return nil, err
 			}
 
 			if len(resp.Items) > 0 {
 				for _, kubeSvc := range resp.Items {
+					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, stsTemp.ServiceId)
+						stsTemp.AfterServices = append(stsTemp.AfterServices, k8serviceTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, k8serviceTemp)
+					} else {
+						for _, service := range serviceTemplates {
+							if *service.NameSpace == *k8serviceTemp.NameSpace && *service.ServiceSubType == *k8serviceTemp.ServiceSubType && *service.Name == *k8serviceTemp.Name {
+								service.BeforeServices = append(service.BeforeServices, stsTemp.ServiceId)
+								stsTemp.AfterServices = append(stsTemp.AfterServices, service.ServiceId)
+							}
+						}
+					}
 					fmt.Println(kubeSvc)
 				}
 			}
@@ -366,18 +1131,62 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 			for _, env := range container.Env {
 				if env.ValueFrom.SecretKeyRef != nil {
 					secretname := env.ValueFrom.SecretKeyRef.Name
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameStatefulSet := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *stsTemp.ServiceId {
+								isSameStatefulSet = true
+								break
+							}
+						}
+						if !isSameStatefulSet {
+							stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				} else if env.ValueFrom.ConfigMapKeyRef != nil {
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameStatefulSet := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *stsTemp.ServiceId {
+								isSameStatefulSet = true
+								break
+							}
+						}
+						if !isSameStatefulSet {
+							stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				}
 			}
 		}
@@ -386,47 +1195,153 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 		for _, vol := range statefulset.Spec.Template.Spec.Volumes {
 			if vol.Secret != nil {
 				secretname := vol.Secret.SecretName
-				resp, err := conn.getSecret(ctx, secretname, namespace)
+				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+					stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+					secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, secretTemp)
+				} else {
+					isSameStatefulSet := false
+					for _, serviceId := range secretTemp.AfterServices {
+						if *serviceId == *stsTemp.ServiceId {
+							isSameStatefulSet = true
+							break
+						}
+					}
+					if !isSameStatefulSet {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					}
+				}
 			} else if vol.ConfigMap != nil {
 				configmapname := vol.ConfigMap.Name
-				resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
+				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+					stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+					configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, configmapTemp)
+				} else {
+					isSameStatefulSet := false
+					for _, serviceId := range configmapTemp.AfterServices {
+						if *serviceId == *stsTemp.ServiceId {
+							isSameStatefulSet = true
+							break
+						}
+					}
+					if !isSameStatefulSet {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					}
+				}
 			} else if vol.PersistentVolumeClaim != nil {
 				pvcname := vol.PersistentVolumeClaim.ClaimName
-				resp, err := conn.getPvc(ctx, pvcname, namespace)
+				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return
+					return nil, err
 				}
-				fmt.Println(resp)
-			} //else if vol.AWSElasticBlockStore.VolumeID
+				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
+				if err != nil {
+					utils.Error.Println(err)
+					return nil, err
+				}
+				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
+					stsTemp.BeforeServices = append(stsTemp.BeforeServices, pvcTemp.ServiceId)
+					pvcTemp.AfterServices = append(pvcTemp.AfterServices, stsTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, pvcTemp)
+				} else {
+					for _, service := range serviceTemplates {
+						if *service.NameSpace == *pvcTemp.NameSpace && *service.ServiceSubType == *pvcTemp.ServiceSubType && *service.Name == *pvcTemp.Name {
+							stsTemp.BeforeServices = append(stsTemp.BeforeServices, service.ServiceId)
+							service.AfterServices = append(service.AfterServices, stsTemp.ServiceId)
+						}
+					}
+				}
+			}
 
 			for _, source := range vol.Projected.Sources {
 				if source.ConfigMap != nil {
 					configmapname := vol.ConfigMap.Name
-					resp, err := conn.getConfigMap(ctx, configmapname, namespace)
+					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+						configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, configmapTemp)
+					} else {
+						isSameStatefulSet := false
+						for _, serviceId := range configmapTemp.AfterServices {
+							if *serviceId == *stsTemp.ServiceId {
+								isSameStatefulSet = true
+								break
+							}
+						}
+						if !isSameStatefulSet {
+							stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
+							configmapTemp.AfterServices = append(configmapTemp.AfterServices, stsTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, configmapTemp)
+						}
+					}
 				} else if source.Secret != nil {
 					secretname := vol.Secret.SecretName
-					resp, err := conn.getSecret(ctx, secretname, namespace)
+					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return
+						return nil, err
 					}
-					fmt.Println(resp)
+					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
+					if err != nil {
+						utils.Error.Println(err)
+						return nil, err
+					}
+					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
+						stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+						secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+						serviceTemplates = append(serviceTemplates, secretTemp)
+					} else {
+						isSameStatefulSet := false
+						for _, serviceId := range secretTemp.AfterServices {
+							if *serviceId == *stsTemp.ServiceId {
+								isSameStatefulSet = true
+								break
+							}
+						}
+						if !isSameStatefulSet {
+							stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
+							secretTemp.AfterServices = append(secretTemp.AfterServices, stsTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, secretTemp)
+						}
+					}
 				}
 			}
 		}
 
+		serviceTemplates = append(serviceTemplates, stsTemp)
 	}
+	return serviceTemplates, nil
 
 }
 
@@ -1241,6 +2156,21 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
 	case "CronJob":
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		//TODO needs to convert cp schema first
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = &id
+	case "Job":
 		bytes, err := json.Marshal(data)
 		if err != nil {
 			utils.Error.Println(err)
