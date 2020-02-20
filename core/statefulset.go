@@ -262,7 +262,7 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		statefulSet.ObjectMeta.Namespace = service.Namespace
 	}
 
-	statefulSet.Name = service.Name
+	statefulSet.Name = service.Name + "-" + service.Version
 	statefulSet.Labels = make(map[string]string)
 	statefulSet.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.ServiceAttributes.Labels {
@@ -323,17 +323,6 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		statefulSet.Spec.PodManagementPolicy = v1.ParallelPodManagement
 	}
 
-	var PVCS []v12.PersistentVolumeClaim
-	for _, persistentVolumeClaim := range service.ServiceAttributes.VolumeClaimTemplates {
-		if pvc, error := getPersistentVolumeClaim(persistentVolumeClaim); error != nil {
-			PVCS = append(PVCS, *pvc)
-		} else {
-			return nil, errors.New("error adding persistent volume claim")
-		}
-	}
-
-	statefulSet.Spec.VolumeClaimTemplates = PVCS
-
 	volumeMountNames1 := make(map[string]bool)
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
 		if len(containersList) > 0 {
@@ -358,6 +347,29 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	} else {
 		return nil, err
 	}
+
+	for _, persistentVolumeClaim := range service.ServiceAttributes.VolumeClaimTemplates {
+		if pvc, error := getPersistentVolumeClaim(persistentVolumeClaim); error == nil {
+
+			if !volumeMountNames1[pvc.Name] {
+				continue
+			}
+			statefulSet.Spec.VolumeClaimTemplates = append(statefulSet.Spec.VolumeClaimTemplates, v12.PersistentVolumeClaim{
+				Spec:       pvc.Spec,
+				ObjectMeta: metav1.ObjectMeta{Name: pvc.Name},
+			})
+			volumeMountNames1[pvc.Name] = false
+		} else {
+			return nil, errors.New("error adding persistent volume claim")
+		}
+	}
+
+	for key, _ := range volumeMountNames1 {
+		if volumeMountNames1[key] == true {
+			return nil, errors.New("volume does not exist")
+		}
+	}
+
 	if volumes, err := getVolumes(service.ServiceAttributes.Volumes, volumeMountNames1); err == nil {
 		if len(volumes) > 0 {
 			statefulSet.Spec.Template.Spec.Volumes = volumes

@@ -11,15 +11,20 @@ import (
 	"istio-service-mesh/utils"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
+	autoScalar "k8s.io/api/autoscaling/v2beta2"
+	batch "k8s.io/api/batch/v1"
+	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	net "k8s.io/api/networking/v1"
-	"k8s.io/api/rbac/v1beta1"
+	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -172,13 +177,165 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		if err != nil {
 			return nil, err
 		}
+		strData := string(bytesData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strData, "")
+		serviceResp.Service = []byte(res)
+		return serviceResp, nil
+	case *v1.Service:
+		pvc, err := convertToCPKubernetesService(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	case *v1beta1.Role:
-	case *v1beta1.RoleBinding:
-	case *v1beta1.ClusterRole:
-	case *v1beta1.ClusterRoleBinding:
+	case *v1.ConfigMap:
+		pvc, err := ConvertToCPConfigMap(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *v1.Secret:
+		pvc, err := ConvertToCPSecret(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *autoScalar.HorizontalPodAutoscaler:
+		pvc, err := ConvertToCPHPA(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.Role:
+		pvc, err := ConvertToCPRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.RoleBinding:
+		pvc, err := ConvertToCPRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRole:
+		pvc, err := ConvertToCPClusterRole(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *rbac.ClusterRoleBinding:
+		pvc, err := ConvertToCPClusterRoleBinding(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *v1.ServiceAccount:
+		pvc, err := convertToCPServiceAccount(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *apps.DaemonSet:
+		ds, err := convertToCPDaemonSet(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *extensions.DaemonSet:
+		ds, err := convertToCPDaemonSet(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *apps.StatefulSet:
+		ds, err := convertToCPStatefulSet(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *batch.Job:
+		ds, err := convertToCPJob(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+	case *batchv1.CronJob:
+		ds, err := convertToCPCronJob(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	default:
 		return nil, errors.New("object is not in our scope")
 	}
@@ -345,6 +502,11 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 
 	}
 
+	for _, imageSecrets := range service.Spec.Template.Spec.ImagePullSecrets {
+		tempImageSecrets := types.LocalObjectReference{Name: imageSecrets.Name}
+		deployment.ServiceAttributes.ImagePullSecrets = append(deployment.ServiceAttributes.ImagePullSecrets, tempImageSecrets)
+	}
+
 	var volumeMountNames1 = make(map[string]bool)
 	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
 		if len(containers) > 0 {
@@ -387,6 +549,422 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		}
 	}
 	return deployment, nil
+}
+
+func convertToCPDaemonSet(ds interface{}) (*types.DaemonSetService, error) {
+	byteData, _ := json.Marshal(ds)
+	service := apps.DaemonSet{}
+	json.Unmarshal(byteData, &service)
+	daemonSet := new(types.DaemonSetService)
+
+	if service.Name == "" {
+		return nil, errors.New("Service name not found")
+	} else {
+		daemonSet.Name = service.Name
+	}
+
+	if service.Namespace == "" {
+		daemonSet.Namespace = "default"
+	} else {
+		daemonSet.Namespace = service.Namespace
+	}
+
+	daemonSet.ServiceType = "k8s"
+	daemonSet.ServiceSubType = "DaemonSet"
+	daemonSet.ServiceAttributes = new(types.DaemonSetServiceAttribute)
+	daemonSet.ServiceAttributes.Labels = make(map[string]string)
+	daemonSet.ServiceAttributes.Labels = service.Spec.Template.Labels
+	daemonSet.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
+	daemonSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+	daemonSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+
+	daemonSet.ServiceAttributes.Annotations = make(map[string]string)
+	daemonSet.ServiceAttributes.Annotations = service.Spec.Template.Annotations
+	daemonSet.ServiceAttributes.NodeSelector = make(map[string]string)
+	daemonSet.ServiceAttributes.NodeSelector = service.Spec.Template.Spec.NodeSelector
+
+	//daemonSetUpdateStrategy
+	if service.Spec.UpdateStrategy.Type != "" {
+		daemonSet.ServiceAttributes.UpdateStrategy = new(types.DaemonSetUpdateStrategy)
+		if service.Spec.UpdateStrategy.Type == apps.OnDeleteDaemonSetStrategyType {
+			daemonSet.ServiceAttributes.UpdateStrategy.Type = types.OnDeleteDaemonSetStrategyType
+		} else if service.Spec.UpdateStrategy.Type == apps.RollingUpdateDaemonSetStrategyType {
+			daemonSet.ServiceAttributes.UpdateStrategy.Type = types.RollingUpdateDaemonSetStrategyType
+			if service.Spec.UpdateStrategy.RollingUpdate != nil {
+				daemonSet.ServiceAttributes.UpdateStrategy.RollingUpdate = new(types.RollingUpdateDaemonSet)
+				daemonSet.ServiceAttributes.UpdateStrategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
+				daemonSet.ServiceAttributes.UpdateStrategy.RollingUpdate.MaxUnavailable = service.Spec.UpdateStrategy.RollingUpdate.MaxUnavailable
+			}
+		}
+	}
+
+	//containers
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			daemonSet.ServiceAttributes.Containers = containers
+			volumeMountNames1 = vm
+		} else {
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//init containers
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			daemonSet.ServiceAttributes.InitContainers = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//volumes
+	if vols, err := getCPVolumes(service.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			daemonSet.ServiceAttributes.Volumes = vols
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//affinity
+	if service.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(service.Spec.Template.Spec.Affinity); err == nil {
+			daemonSet.ServiceAttributes.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+
+	return daemonSet, nil
+}
+
+func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error) {
+
+	byteData, _ := json.Marshal(sset)
+	service := apps.StatefulSet{}
+	json.Unmarshal(byteData, &service)
+	statefulSet := new(types.StatefulSetService)
+
+	statefulSet.Name = service.Name
+	statefulSet.ServiceType = "k8s"
+	statefulSet.ServiceSubType = "StatefulSet"
+
+	if service.Namespace == "" {
+		statefulSet.Namespace = "default"
+	} else {
+		statefulSet.Namespace = service.Namespace
+	}
+
+	statefulSet.ServiceAttributes = new(types.StatefulSetServiceAttribute)
+	statefulSet.ServiceAttributes.Labels = make(map[string]string)
+	statefulSet.ServiceAttributes.Labels = service.Spec.Template.Labels
+
+	statefulSet.ServiceAttributes.Annotations = make(map[string]string)
+	statefulSet.ServiceAttributes.Annotations = service.Spec.Template.Annotations
+	statefulSet.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
+	statefulSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+	statefulSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	statefulSet.ServiceAttributes.NodeSelector = make(map[string]string)
+	statefulSet.ServiceAttributes.NodeSelector = service.Spec.Template.Spec.NodeSelector
+
+	//replicas
+	if service.Spec.Replicas != nil {
+		statefulSet.ServiceAttributes.Replicas = &types.Replicas{Value: *service.Spec.Replicas}
+	}
+
+	if service.Spec.ServiceName != "" {
+		statefulSet.ServiceAttributes.ServiceName = service.Spec.ServiceName
+	}
+	//update strategy
+	if service.Spec.UpdateStrategy.Type != "" {
+		statefulSet.ServiceAttributes.UpdateStrategy = new(types.StateFulSetUpdateStrategy)
+		if service.Spec.UpdateStrategy.Type == apps.OnDeleteStatefulSetStrategyType {
+			statefulSet.ServiceAttributes.UpdateStrategy.Type = types.OnDeleteStatefulSetStrategyType
+		} else if service.Spec.UpdateStrategy.Type == apps.RollingUpdateStatefulSetStrategyType {
+			statefulSet.ServiceAttributes.UpdateStrategy.Type = types.RollingUpdateStatefulSetStrategyType
+			if service.Spec.UpdateStrategy.RollingUpdate != nil {
+				statefulSet.ServiceAttributes.UpdateStrategy.RollingUpdate = new(types.RollingUpdateStatefulSetStrategy)
+				statefulSet.ServiceAttributes.UpdateStrategy.RollingUpdate.Partition = service.Spec.UpdateStrategy.RollingUpdate.Partition
+			}
+		}
+	}
+	//containers
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			statefulSet.ServiceAttributes.Containers = containers
+			volumeMountNames1 = vm
+		} else {
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//init containers
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			statefulSet.ServiceAttributes.InitContainers = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//volumes
+	if vols, err := getCPVolumes(service.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			statefulSet.ServiceAttributes.Volumes = vols
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//volumeClaimTemplates
+	for _, vc := range service.Spec.VolumeClaimTemplates {
+		//tempVC := new(types.PersistentVolumeClaimService)
+		if tempVC, error := convertToCPPersistentVolumeClaim(&vc); error == nil {
+			statefulSet.ServiceAttributes.VolumeClaimTemplates = append(statefulSet.ServiceAttributes.VolumeClaimTemplates, *tempVC)
+		} else {
+			return nil, error
+		}
+	}
+
+	//affinity
+	if service.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(service.Spec.Template.Spec.Affinity); err == nil {
+			statefulSet.ServiceAttributes.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+
+	return statefulSet, nil
+
+}
+
+func convertToCPJob(job *batch.Job) (*types.JobService, error) {
+	cpJob := new(types.JobService)
+	cpJob.Name = job.Name
+	cpJob.ServiceType = "k8s"
+	cpJob.ServiceSubType = "job"
+	if job.Namespace == "" {
+		cpJob.Namespace = "default"
+	} else {
+		cpJob.Namespace = job.Namespace
+	}
+
+	cpJob.ServiceAttributes.Labels = make(map[string]string)
+	cpJob.ServiceAttributes.Labels = job.Spec.Template.Labels
+
+	cpJob.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
+	cpJob.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+	cpJob.ServiceAttributes.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	cpJob.ServiceAttributes.Annotations = make(map[string]string)
+	cpJob.ServiceAttributes.Annotations = job.Spec.Template.Annotations
+
+	cpJob.ServiceAttributes.NodeSelector = make(map[string]string)
+	cpJob.ServiceAttributes.NodeSelector = job.Spec.Template.Spec.NodeSelector
+
+	if job.Spec.Parallelism != nil {
+		cpJob.ServiceAttributes.Parallelism.Value = *job.Spec.Parallelism
+	}
+	if job.Spec.Completions != nil {
+		cpJob.ServiceAttributes.Completions.Value = *job.Spec.Completions
+	}
+	if job.Spec.ActiveDeadlineSeconds != nil {
+		cpJob.ServiceAttributes.ActiveDeadlineSeconds.Value = *job.Spec.ActiveDeadlineSeconds
+	}
+	if job.Spec.BackoffLimit != nil {
+		cpJob.ServiceAttributes.BackoffLimit.Value = *job.Spec.BackoffLimit
+	}
+	if job.Spec.ManualSelector != nil {
+		cpJob.ServiceAttributes.ManualSelector.Value = *job.Spec.ManualSelector
+	}
+
+	//containers
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			cpJob.ServiceAttributes.Containers = containers
+			volumeMountNames1 = vm
+		} else {
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//init containers
+	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			cpJob.ServiceAttributes.InitContainers = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//volumes
+	if vols, err := getCPVolumes(job.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			cpJob.ServiceAttributes.Volumes = vols
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//affinity
+	if job.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(job.Spec.Template.Spec.Affinity); err == nil {
+			cpJob.ServiceAttributes.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+	return cpJob, nil
+}
+
+func convertToCPCronJob(job *batchv1.CronJob) (*types.CronJobService, error) {
+	cpJob := new(types.CronJobService)
+	cpJob.Name = job.Labels["app"]
+	cpJob.Version = job.Labels["version"]
+	cpJob.ServiceType = "k8s"
+	cpJob.ServiceSubType = "job"
+
+	if job.Namespace == "" {
+		cpJob.Namespace = "default"
+	} else {
+		cpJob.Namespace = job.Namespace
+	}
+
+	cpJob.ServiceAttributes = new(types.CronJobServiceAttribute)
+
+	cpJob.ServiceAttributes.Labels = make(map[string]string)
+	cpJob.ServiceAttributes.Labels = job.Labels
+	cpJob.ServiceAttributes.Annotations = make(map[string]string)
+	cpJob.ServiceAttributes.Annotations = job.Annotations
+
+	if jobTemplate, err := getCPJobTemplateSpec(job.Spec.JobTemplate); err != nil {
+		if jobTemplate != nil {
+			cpJob.ServiceAttributes.JobServiceAttribute = jobTemplate
+		}
+	} else {
+		return nil, err
+	}
+
+	if job.Spec.Schedule != "" {
+		cpJob.ServiceAttributes.CronJobScheduleString = job.Spec.Schedule
+	}
+	if job.Spec.StartingDeadlineSeconds != nil {
+		cpJob.ServiceAttributes.StartingDeadLineSeconds = &types.StartingDeadlineSeconds{
+			Value: *job.Spec.StartingDeadlineSeconds,
+		}
+	}
+
+	if job.Spec.FailedJobsHistoryLimit != nil {
+		cpJob.ServiceAttributes.FailedJobsHistoryLimit = &types.FailedJobsHistoryLimit{Value: *job.Spec.FailedJobsHistoryLimit}
+	}
+	if job.Spec.SuccessfulJobsHistoryLimit != nil {
+		cpJob.ServiceAttributes.SuccessfulJobsHistoryLimit = &types.SuccessfulJobsHistoryLimit{Value: *job.Spec.SuccessfulJobsHistoryLimit}
+	}
+	if job.Spec.Suspend != nil {
+		cpJob.ServiceAttributes.Suspend = &types.Suspend{Value: *job.Spec.Suspend}
+	}
+	if job.Spec.ConcurrencyPolicy != "" {
+		cpJob.ServiceAttributes.ConcurrencyPolicy = new(types.ConcurrencyPolicy)
+		if job.Spec.ConcurrencyPolicy == batchv1.AllowConcurrent {
+			value := types.ConcurrencyPolicyAllow
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		} else if job.Spec.ConcurrencyPolicy == batchv1.ForbidConcurrent {
+			value := types.ConcurrencyPolicyForbid
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		} else {
+			value := types.ConcurrencyPolicyReplace
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		}
+	}
+
+	return cpJob, nil
+
+}
+
+func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*types.JobServiceAttribute, error) {
+	jobTemplate := new(types.JobServiceAttribute)
+	jobTemplate.Labels = make(map[string]string)
+	jobTemplate.Labels = job.Labels
+
+	jobTemplate.Annotations = make(map[string]string)
+	jobTemplate.Annotations = job.Spec.Template.Annotations
+	jobTemplate.LabelSelector = new(types.LabelSelectorObj)
+	jobTemplate.LabelSelector.MatchLabels = make(map[string]string)
+	jobTemplate.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	jobTemplate.NodeSelector = make(map[string]string)
+	jobTemplate.NodeSelector = job.Spec.Template.Spec.NodeSelector
+
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			jobTemplate.Containers = containers
+			volumeMountNames1 = vm
+		} else {
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		return nil, err
+	}
+
+	//init containers
+	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			jobTemplate.InitContainers = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		return nil, err
+	}
+
+	if job.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(job.Spec.Template.Spec.Affinity); err == nil {
+			jobTemplate.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+
+	//volumes
+	if vols, err := getCPVolumes(job.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			jobTemplate.Volumes = vols
+		}
+
+	} else {
+		return nil, err
+	}
+	return jobTemplate, nil
 }
 
 func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*types.PersistentVolumeClaimService, error) {
@@ -640,6 +1218,239 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassServi
 	return storageClass, nil
 }
 
+func ConvertToCPSecret(cm *v1.Secret) (*types.Secret, error) {
+	var secret = new(types.Secret)
+	secret.Name = cm.Name
+	secret.Namespace = cm.Namespace
+	if vr := cm.Labels["version"]; vr != "" {
+		secret.Version = vr
+	}
+	secret.ServiceType = "k8s"
+	secret.ServiceSubType = "secret"
+	secret.ServiceAttributes = new(types.SecretServiceAttribute)
+	if len(cm.Data) > 0 {
+		secret.ServiceAttributes.Data = make(map[string][]byte)
+		for key, value := range cm.Data {
+			secret.ServiceAttributes.Data[key] = value
+		}
+	}
+
+	if len(cm.StringData) > 0 {
+		secret.ServiceAttributes.StringData = make(map[string]string)
+		for key, value := range cm.StringData {
+			secret.ServiceAttributes.StringData[key] = value
+		}
+	}
+
+	secret.ServiceAttributes.SecretType = string(cm.Type)
+	return secret, nil
+}
+
+func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error) {
+	var horizntalPodAutoscalar = new(types.HPA)
+	horizntalPodAutoscalar.Name = hpa.Name
+	horizntalPodAutoscalar.Namespace = hpa.Namespace
+	horizntalPodAutoscalar.ServiceType = "k8s"
+	horizntalPodAutoscalar.ServiceSubType = "hpa"
+	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
+	if hpa.Spec.MinReplicas != nil {
+		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
+	}
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
+
+	var metrics []types.MetricValue
+	for _, metric := range hpa.Spec.Metrics {
+		cpMetric := types.MetricValue{}
+		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
+		if metric.Resource != nil {
+			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.Value.String()
+			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
+				if metric.Resource.Target.AverageUtilization != nil {
+					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
+				}
+			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
+			}
+
+			if metric.Resource.Name == v1.ResourceCPU {
+				cpMetric.ResourceKind = string(v1.ResourceCPU)
+			} else if metric.Resource.Name == v1.ResourceMemory {
+				cpMetric.ResourceKind = string(v1.ResourceMemory)
+			} else if metric.Resource.Name == v1.ResourceStorage {
+				cpMetric.ResourceKind = string(v1.ResourceStorage)
+			}
+		}
+
+		metrics = append(metrics, cpMetric)
+
+	}
+	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics
+
+	return horizntalPodAutoscalar, nil
+}
+
+func ConvertToCPRole(k8ROle *rbac.Role) (*types.Role, error) {
+	var role = new(types.Role)
+	role.Name = k8ROle.Name
+	role.Namespace = k8ROle.Namespace
+	role.ServiceType = "k8s"
+	role.ServiceSubType = "role"
+	for _, each := range k8ROle.Rules {
+		rolePolicy := types.Rule{}
+		for _, apigroup := range each.APIGroups {
+			rolePolicy.Api_group = append(rolePolicy.Api_group, apigroup)
+		}
+
+		for _, verb := range each.Verbs {
+			rolePolicy.Verbs = append(rolePolicy.Verbs, verb)
+		}
+
+		for _, resource := range each.Resources {
+			rolePolicy.Resources = append(rolePolicy.Resources, resource)
+		}
+		for _, resource := range each.ResourceNames {
+			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		}
+		role.ServiceAttributes.Rules = append(role.ServiceAttributes.Rules, rolePolicy)
+	}
+	return role, nil
+}
+
+func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*types.RoleBinding, error) {
+	var rb = new(types.RoleBinding)
+	rb.Name = k8sRoleBinding.Name
+	rb.ServiceType = "k8s"
+	rb.ServiceSubType = "cluster_role_binding"
+	for _, each := range k8sRoleBinding.Subjects {
+		var subject = types.Subject{}
+		subject.Name = each.Name
+		if each.Kind == "User" || each.Kind == "Group" {
+			subject.Kind = each.Kind
+		} else if each.Kind == "ServiceAccount" {
+			subject.Kind = each.Kind
+			subject.Namespace = each.Namespace
+		} else {
+			return nil, errors.New("invalid subject kind" + each.Name + each.Kind)
+		}
+		rb.ServiceAttributes.Subjects = append(rb.ServiceAttributes.Subjects, subject)
+	}
+	rb.ServiceAttributes.RoleRef.Kind = k8sRoleBinding.RoleRef.Kind
+	rb.ServiceAttributes.RoleRef.Name = k8sRoleBinding.RoleRef.Name
+	return rb, nil
+}
+
+func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBinding) (*types.ClusterRoleBinding, error) {
+	var crb = new(types.ClusterRoleBinding)
+	crb.Name = k8sClusterRoleBinding.Name
+	crb.ServiceType = "k8s"
+	crb.ServiceSubType = "cluster_role_binding"
+	crb.ServiceAttributes.NameClusterRoleRef = k8sClusterRoleBinding.RoleRef.Name
+	for _, each := range k8sClusterRoleBinding.Subjects {
+		var subject = types.Subject{}
+		subject.Name = each.Name
+		if each.Kind == "User" || each.Kind == "Group" {
+			subject.Kind = each.Kind
+		} else if each.Kind == "ServiceAccount" {
+			subject.Kind = each.Kind
+			subject.Namespace = each.Namespace
+		} else {
+			return nil, errors.New("invalid subject kind" + each.Name + each.Kind)
+		}
+		crb.ServiceAttributes.Subjects = append(crb.ServiceAttributes.Subjects, subject)
+	}
+	return crb, nil
+}
+
+func ConvertToCPClusterRole(k8ROle *rbac.ClusterRole) (*types.ClusterRole, error) {
+	var role = new(types.ClusterRole)
+	role.Name = k8ROle.Name
+	role.ServiceType = "k8s"
+	role.ServiceSubType = "cluster_role"
+	for _, each := range k8ROle.Rules {
+		rolePolicy := types.Rules{}
+		for _, apigroup := range each.APIGroups {
+			rolePolicy.ApiGroup = append(rolePolicy.ApiGroup, apigroup)
+		}
+
+		for _, verb := range each.Verbs {
+			rolePolicy.Verbs = append(rolePolicy.Verbs, verb)
+		}
+
+		for _, resource := range each.Resources {
+			rolePolicy.Resources = append(rolePolicy.Resources, resource)
+		}
+		for _, resource := range each.ResourceNames {
+			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		}
+		role.ServiceAttributes.Rules = append(role.ServiceAttributes.Rules, rolePolicy)
+	}
+	return role, nil
+}
+
+func ConvertToCPConfigMap(cm *v1.ConfigMap) (*types.ConfigMap, error) {
+	var configMap = new(types.ConfigMap)
+	configMap.Name = cm.Name
+	configMap.Namespace = cm.Namespace
+	if vr := cm.Labels["version"]; vr != "" {
+		configMap.Version = vr
+	}
+	configMap.ServiceType = "k8s"
+	configMap.ServiceSubType = "configmap"
+	configMap.ServiceAttributes = new(types.ConfigMapServiceAttribute)
+	if len(cm.Data) > 0 {
+		configMap.ServiceAttributes.Data = make(map[string]string)
+	}
+	for key, value := range cm.Data {
+		configMap.ServiceAttributes.Data[key] = value
+	}
+	return configMap, nil
+}
+
+func convertToCPKubernetesService(svc *v1.Service) (*types.Service, error) {
+	var service = new(types.Service)
+	service.Name = svc.Name
+	service.Namespace = svc.Namespace
+	if vr := svc.Labels["version"]; vr != "" {
+		service.Version = vr
+	}
+	service.ServiceType = "k8s"
+	service.ServiceSubType = "kubernetesservice"
+	service.ServiceAttributes.Type = string(svc.Spec.Type)
+	if len(svc.Spec.Selector) > 0 {
+		service.ServiceAttributes.Selector = make(map[string]string)
+	}
+	for key, value := range svc.Spec.Selector {
+		service.ServiceAttributes.Selector[key] = value
+	}
+	service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
+	for _, each := range svc.Spec.Ports {
+		cpPort := types.KubePort{}
+		cpPort.Name = each.Name
+		cpPort.Port = each.Port
+		if !(svc.Spec.ClusterIP == "None" || svc.Spec.ClusterIP == "") {
+			if each.TargetPort.Type == intstr.String {
+				cpPort.TargetPort.PortName = each.TargetPort.StrVal
+			} else if each.TargetPort.Type == intstr.Int {
+				cpPort.TargetPort.PortNumber = each.TargetPort.IntVal
+			}
+		} else {
+			service.ServiceAttributes.ClusterIP = "None"
+		}
+		cpPort.Protocol = string(each.Protocol)
+		cpPort.NodePort = each.NodePort
+
+		service.ServiceAttributes.Ports = append(service.ServiceAttributes.Ports, cpPort)
+	}
+
+	return service, nil
+}
+
 func convertToCPGateWayStruct(gw *v1alpha3.Gateway) (*types.GatewayService, error) {
 	return nil, nil
 }
@@ -650,6 +1461,21 @@ func convertToCPVSStruct(gw *v1alpha3.VirtualService) (*types.VirtualService, er
 
 func convertToCPDRStruct(gw *v1alpha3.DestinationRule) (*types.DestinationRules, error) {
 	return nil, nil
+}
+func convertToCPServiceAccount(sa *v1.ServiceAccount) (*types.ServiceAccount, error) {
+	var kube = new(types.ServiceAccount)
+	kube.ServiceSubType = "serviceaccount"
+	kube.ServiceType = "k8s"
+	kube.Name = sa.Name
+	kube.Namespace = sa.Namespace
+	for _, value := range sa.Secrets {
+		kube.ServiceAttributes.Secrets = append(kube.ServiceAttributes.Secrets, value.Name)
+	}
+	for _, value := range sa.ImagePullSecrets {
+		kube.ServiceAttributes.ImagePullSecretsName = append(kube.ServiceAttributes.ImagePullSecretsName, value.Name)
+	}
+	return kube, nil
+
 }
 
 func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*types.NodeSelector, error) {
@@ -1164,9 +1990,9 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 		tempVolume.Name = volume.Name
 
 		if volume.VolumeSource.Secret != nil {
-			tempVolume.Secret = new(types.SecretVolumeSource)
-			tempVolume.Secret.SecretName = volume.VolumeSource.Secret.SecretName
-			tempVolume.Secret.DefaultMode = volume.VolumeSource.Secret.DefaultMode
+			tempVolume.VolumeSource.Secret = new(types.SecretVolumeSource)
+			tempVolume.VolumeSource.Secret.SecretName = volume.VolumeSource.Secret.SecretName
+			tempVolume.VolumeSource.Secret.DefaultMode = volume.VolumeSource.Secret.DefaultMode
 			var secretItems []types.KeyToPath
 			for _, item := range volume.VolumeSource.Secret.Items {
 				secretItem := types.KeyToPath{
@@ -1176,13 +2002,13 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 				}
 				secretItems = append(secretItems, secretItem)
 			}
-			tempVolume.Secret.Items = secretItems
+			tempVolume.VolumeSource.Secret.Items = secretItems
 		}
 		if volume.VolumeSource.ConfigMap != nil {
-			tempVolume.ConfigMap = new(types.ConfigMapVolumeSource)
-			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
+			tempVolume.VolumeSource.ConfigMap = new(types.ConfigMapVolumeSource)
+			tempVolume.VolumeSource.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
 
-			tempVolume.ConfigMap.DefaultMode = volume.VolumeSource.ConfigMap.DefaultMode
+			tempVolume.VolumeSource.ConfigMap.DefaultMode = volume.VolumeSource.ConfigMap.DefaultMode
 			var configMapItems []types.KeyToPath
 			for _, item := range volume.VolumeSource.ConfigMap.Items {
 				configMapItem := types.KeyToPath{
@@ -1192,90 +2018,90 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 				}
 				configMapItems = append(configMapItems, configMapItem)
 			}
-			tempVolume.ConfigMap.Items = configMapItems
+			tempVolume.VolumeSource.ConfigMap.Items = configMapItems
 		}
 
 		if volume.VolumeSource.AWSElasticBlockStore != nil {
-			tempVolume.AWSElasticBlockStore = new(types.AWSElasticBlockStoreVolumeSource)
-			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AWSElasticBlockStore.ReadOnly
-			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AWSElasticBlockStore.Partition
+			tempVolume.VolumeSource.AWSElasticBlockStore = new(types.AWSElasticBlockStoreVolumeSource)
+			tempVolume.VolumeSource.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AWSElasticBlockStore.ReadOnly
+			tempVolume.VolumeSource.AWSElasticBlockStore.Partition = volume.VolumeSource.AWSElasticBlockStore.Partition
 		}
 
 		if volume.VolumeSource.EmptyDir != nil {
-			tempVolume.EmptyDir = new(types.EmptyDirVolumeSource)
+			tempVolume.VolumeSource.EmptyDir = new(types.EmptyDirVolumeSource)
 			//quantity, _ := resource.ParseQuantity(volume.VolumeSource.EmptyDir.SizeLimit)
-			tempVolume.EmptyDir.SizeLimit = volume.VolumeSource.EmptyDir.SizeLimit
+			tempVolume.VolumeSource.EmptyDir.SizeLimit = volume.VolumeSource.EmptyDir.SizeLimit
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumDefault {
-				tempVolume.EmptyDir.Medium = types.StorageMediumDefault
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumDefault
 
 			}
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumMemory {
-				tempVolume.EmptyDir.Medium = types.StorageMediumMemory
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumMemory
 			}
 
 			if volume.VolumeSource.EmptyDir.Medium == v1.StorageMediumHugePages {
-				tempVolume.EmptyDir.Medium = types.StorageMediumHugePages
+				tempVolume.VolumeSource.EmptyDir.Medium = types.StorageMediumHugePages
 			}
 
 		}
 
 		if volume.VolumeSource.GCEPersistentDisk != nil {
-			tempVolume.GCEPersistentDisk = new(types.GCEPersistentDiskVolumeSource)
-			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GCEPersistentDisk.Partition
-			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GCEPersistentDisk.ReadOnly
-			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GCEPersistentDisk.PDName
+			tempVolume.VolumeSource.GCEPersistentDisk = new(types.GCEPersistentDiskVolumeSource)
+			tempVolume.VolumeSource.GCEPersistentDisk.Partition = volume.VolumeSource.GCEPersistentDisk.Partition
+			tempVolume.VolumeSource.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GCEPersistentDisk.ReadOnly
+			tempVolume.VolumeSource.GCEPersistentDisk.PDName = volume.VolumeSource.GCEPersistentDisk.PDName
 		}
 
 		if volume.VolumeSource.AzureDisk != nil {
-			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
-			tempVolume.AzureDisk.ReadOnly = volume.VolumeSource.AzureDisk.ReadOnly
-			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskName
+			tempVolume.VolumeSource.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.VolumeSource.AzureDisk.ReadOnly = volume.VolumeSource.AzureDisk.ReadOnly
+			tempVolume.VolumeSource.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskName
 
 			if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingNone {
 				temp := types.AzureDataDiskCachingNone
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadWrite {
 				temp := types.AzureDataDiskCachingReadWrite
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			} else if *volume.VolumeSource.AzureDisk.CachingMode == v1.AzureDataDiskCachingReadOnly {
 				temp := types.AzureDataDiskCachingReadOnly
-				tempVolume.AzureDisk.CachingMode = &temp
+				tempVolume.VolumeSource.AzureDisk.CachingMode = &temp
 			}
 
 			if *volume.VolumeSource.AzureDisk.Kind == v1.AzureSharedBlobDisk {
 				temp := types.AzureSharedBlobDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureDedicatedBlobDisk {
 				temp := types.AzureDedicatedBlobDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			} else if *volume.VolumeSource.AzureDisk.Kind == v1.AzureManagedDisk {
 				temp := types.AzureManagedDisk
-				tempVolume.AzureDisk.Kind = &temp
+				tempVolume.VolumeSource.AzureDisk.Kind = &temp
 			}
 		}
 
 		if volume.VolumeSource.AzureFile != nil {
-			tempVolume.AzureFile = new(types.AzureFileVolumeSource)
-			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
-			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
-			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
+			tempVolume.VolumeSource.AzureFile = new(types.AzureFileVolumeSource)
+			tempVolume.VolumeSource.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.VolumeSource.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
+			tempVolume.VolumeSource.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
 
 		}
 		if volume.VolumeSource.HostPath != nil {
-			tempVolume.HostPath = new(types.HostPathVolumeSource)
-			tempVolume.HostPath.Path = volume.VolumeSource.HostPath.Path
-			hostPathType := *volume.VolumeSource.HostPath.Type
-			hostPathTypeTemp := types.HostPathType(hostPathType)
-			tempVolume.HostPath.Type = &hostPathTypeTemp
+			tempVolume.VolumeSource.HostPath = new(types.HostPathVolumeSource)
+			tempVolume.VolumeSource.HostPath.Path = volume.VolumeSource.HostPath.Path
+			if volume.VolumeSource.HostPath.Type != nil {
+				if *volume.VolumeSource.HostPath.Type == v1.HostPathUnset {
+					hostPathType := types.HostPathUnset
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				}
+			}
+
 		}
 
 		volumes = append(volumes, tempVolume)
 
 	}
-	for key, _ := range volumeMountNames {
-		if volumeMountNames[key] == true {
-			return nil, errors.New("volume does not exist")
-		}
-	}
+
 	return volumes, nil
 }

@@ -54,7 +54,6 @@ message Completions{
     int32 value = 1;
 }
 
-
 message BackoffLimit{
     int32 value = 1;
 }

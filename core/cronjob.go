@@ -8,6 +8,7 @@ import (
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	_ "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -248,6 +249,7 @@ func (s *Server) PatchCronJob(ctx context.Context, req *pb.CronJobService) (*pb.
 }
 
 func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
+
 	cjob := new(v1.CronJob)
 	if service.Name == "" {
 		return nil, errors.New("service name not found")

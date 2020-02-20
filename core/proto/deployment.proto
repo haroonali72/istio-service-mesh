@@ -42,5 +42,12 @@ message DeploymentServiceAttributes {
     map<string, ContainerAttributes> initContainers = 13;
     Replicas replicas=14;
     TerminationGracePeriodSeconds TerminationGracePeriodSeconds = 15;
+    repeated LocalObjectReference imagePullSecrets = 16;
+    string serviceAccountName = 17;
+    AutomountServiceAccountToken automountServiceAccountToken = 18;
+}
+
+message AutomountServiceAccountToken{
+    bool value = 1;
 }
 

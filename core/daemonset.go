@@ -263,7 +263,7 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 		daemonSet.ObjectMeta.Namespace = service.Namespace
 	}
 
-	daemonSet.Name = service.Name
+	daemonSet.Name = service.Name + "-" + service.Version
 	daemonSet.Labels = make(map[string]string)
 	daemonSet.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.ServiceAttributes.Labels {
@@ -276,13 +276,19 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 	daemonSet.Spec.Selector = new(metav1.LabelSelector)
 	daemonSet.Spec.Selector.MatchLabels = make(map[string]string)
 	daemonSet.Spec.Selector.MatchLabels["app"] = service.Name
-	daemonSet.Spec.Selector.MatchLabels["version"] = service.Version
+	if service.Version != "" {
+		daemonSet.Spec.Selector.MatchLabels["version"] = service.Version
+	}
+
 	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
 		daemonSet.Spec.Selector.MatchLabels[key] = value
 	}
-
+	daemonSet.Spec.Template.Labels = make(map[string]string)
 	daemonSet.Spec.Template.Labels["app"] = service.Name
-	daemonSet.Spec.Template.Labels["version"] = service.Version
+	if service.Version != "" {
+		daemonSet.Spec.Template.Labels["version"] = service.Version
+	}
+
 	for key, value := range service.ServiceAttributes.Labels {
 		daemonSet.Spec.Template.Labels[key] = value
 	}
@@ -292,7 +298,9 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 	daemonSet.Spec.Template.Spec.NodeSelector = make(map[string]string)
 	daemonSet.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
-	daemonSet.Spec.MinReadySeconds = service.ServiceAttributes.MinReadySeconds
+	if service.ServiceAttributes.MinReadySeconds != 0 {
+		daemonSet.Spec.MinReadySeconds = service.ServiceAttributes.MinReadySeconds
+	}
 
 	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
 		daemonSet.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value

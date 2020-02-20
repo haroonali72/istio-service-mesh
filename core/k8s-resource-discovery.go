@@ -11,6 +11,7 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
 	batchv1 "k8s.io/api/batch/v1"

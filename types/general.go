@@ -228,6 +228,11 @@ const (
 	MountPropagationBidirectional   MountPropagationMode = "Bidirectional"
 )
 
+type DeploymentStrategy struct {
+	Type          DeploymentStrategyType   `json:"type,omitempty"`
+	RollingUpdate *RollingUpdateDeployment `json:"rollingUpdate,omitempty"`
+}
+
 type DeploymentStrategyType string
 
 const (
@@ -237,6 +242,12 @@ const (
 	// Replace the old ReplicaSets by new one using rolling update i.e gradually scale down the old ReplicaSets and scale up the new one.
 	RollingUpdateDeploymentStrategyType DeploymentStrategyType = "RollingUpdate"
 )
+
+// Spec to control the desired behavior of rolling update.
+type RollingUpdateDeployment struct {
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
+	MaxSurge       *intstr.IntOrString `json:"maxSurge,omitempty"`
+}
 
 // ContainerPort represents a network port in a single container.
 type ContainerPort struct {
@@ -352,19 +363,17 @@ type PodAntiAffinity struct {
 	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"prefDuringIgnDuringExec,omitempty"`
 }
 
-type DeploymentStrategy struct {
-	Type          DeploymentStrategyType   `json:"type,omitempty"`
-	RollingUpdate *RollingUpdateDeployment `json:"rollingUpdate,omitempty"`
-}
-
-type RollingUpdateDeployment struct {
-	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
-	MaxSurge       *intstr.IntOrString `json:"maxSurge,omitempty"`
+type Replicas struct {
+	Value int32 `json:"value,omitempty"`
 }
 
 type DaemonSetUpdateStrategy struct {
 	Type          DaemonSetUpdateStrategyType `json:"type,omitempty"`
 	RollingUpdate *RollingUpdateDaemonSet     `json:"rollingUpdate,omitempty"`
+}
+
+type RollingUpdateDaemonSet struct {
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
 }
 
 type DaemonSetUpdateStrategyType string
@@ -373,10 +382,6 @@ const (
 	RollingUpdateDaemonSetStrategyType DaemonSetUpdateStrategyType = "RollingUpdate"
 	OnDeleteDaemonSetStrategyType      DaemonSetUpdateStrategyType = "OnDelete"
 )
-
-type RollingUpdateDaemonSet struct {
-	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
-}
 
 type StateFulSetUpdateStrategy struct {
 	Type          StatefulSetUpdateStrategyType     `json:"type,omitempty"`
@@ -401,26 +406,10 @@ const (
 	ParallelPodManagement     PodManagementPolicyType = "Parallel"
 )
 
-type Replicas struct {
-	Value int32 `json:"value,omitempty"`
-}
-
 type TerminationGracePeriodSeconds struct {
-	Value int64 `json:"value, omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 type ActiveDeadlineSeconds struct {
-	Value int64 `json:"value, omitempty"`
+	Value int64 `json:"value,omitempty"`
 }
-
-type RevisionHistoryLimit struct {
-	Value int32 `json:"value,omitempty"`
-}
-
-type RestartPolicy string
-
-const (
-	RestartPolicyAlways    RestartPolicy = "Always"
-	RestartPolicyOnFailure RestartPolicy = "OnFailure"
-	RestartPolicyNever     RestartPolicy = "Never"
-)

@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -252,16 +251,10 @@ func getConfigMapService(input *pb.ConfigMapService) (*kb.ConfigMap, error) {
 	labels["version"] = strings.ToLower(input.Version)
 	config.Labels = labels
 
-	config.Data = input.ServiceAttribute.Data
-
-	map2 := make(map[string][]byte)
-	for key, value := range input.ServiceAttribute.BinaryData {
-		s := []byte(value)
-		fmt.Println(s)
-		map2[key] = s
+	config.Data = make(map[string]string)
+	for key, value := range input.ServiceAttribute.Data {
+		config.Data[key] = value
 	}
-	config.BinaryData = map2
-
 	return config, nil
 }
 func getRequestConfigMapObject(req *pb.ConfigMapService) (*kb.ConfigMap, error) {

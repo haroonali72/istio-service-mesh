@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	"regexp"
 	"sigs.k8s.io/yaml"
 )
 
@@ -68,7 +69,7 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertDeploymentToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "daemonSet":
+	case "DaemonSet":
 		if err := ConvertDaemonSeToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
@@ -93,15 +94,15 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "statefulSet":
+	case "StatefulSet":
 		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "job":
+	case "Job":
 		if err := ConvertJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "cronJob":
+	case "CronJob":
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
@@ -492,6 +493,8 @@ func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yaml
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}
@@ -514,6 +517,8 @@ func ConvertPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}
@@ -535,6 +540,11 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		utils.Error.Println(err)
 		return err
 	} else {
+		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
+		re = regexp.MustCompile("(?m)[\r\n]+^.*loadBalancer: {}*$")
+		byteData = re.ReplaceAll(byteData, []byte{})
+		//res := re.ReplaceAllString(strbyteData, "")
 		serviceResp.Service = byteData
 		serviceResp.Namespace = result.Namespace
 	}
