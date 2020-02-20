@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -269,19 +270,26 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 	case "DockerConfigKey":
 		kube.Type = kb.SecretType(kb.DockerConfigKey)
 	default:
+		kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
 	}
-	kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
 
-	//map2 := make(map[string][]byte)
-	//for key, value := range input.SecretServiceAttributes.SecretData {
-	//	s := []byte(value)
-	//	fmt.Println(s)
-	//	map2[key] = s
-	//}
-	//kube.Data = map2
-	kube.Data = make(map[string][]byte)
-	for key, value := range input.SecretServiceAttributes.Data {
-		kube.Data[key] = value
+	if len(input.SecretServiceAttributes.Data) > 0 {
+		map2 := make(map[string][]byte)
+		for key, value := range input.SecretServiceAttributes.Data {
+			s := []byte(value)
+			fmt.Println(s)
+			map2[key] = s
+		}
+
+		kube.Data = make(map[string][]byte)
+		kube.Data = map2
+	}
+
+	if len(input.SecretServiceAttributes.StringData) > 0 {
+		kube.StringData = make(map[string]string)
+		for key, value := range input.SecretServiceAttributes.StringData {
+			kube.StringData[key] = value
+		}
 	}
 
 	return kube, nil

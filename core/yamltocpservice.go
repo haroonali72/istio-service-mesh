@@ -11,7 +11,7 @@ import (
 	"istio-service-mesh/utils"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
-	autoScalar "k8s.io/api/autoscaling/v1"
+	autoScalar "k8s.io/api/autoscaling/v2beta2"
 	batch "k8s.io/api/batch/v1"
 	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -175,7 +177,10 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		if err != nil {
 			return nil, err
 		}
-		serviceResp.Service = bytesData
+		strData := string(bytesData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strData, "")
+		serviceResp.Service = []byte(res)
 		return serviceResp, nil
 	case *v1.Service:
 		pvc, err := convertToCPKubernetesService(o)
@@ -266,6 +271,16 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		serviceResp.Service = bytesData
 		return serviceResp, nil
 	case *v1.ServiceAccount:
+		pvc, err := convertToCPServiceAccount(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *apps.DaemonSet:
 		ds, err := convertToCPDaemonSet(o)
 		if err != nil {
@@ -1214,11 +1229,19 @@ func ConvertToCPSecret(cm *v1.Secret) (*types.Secret, error) {
 	secret.ServiceSubType = "secret"
 	secret.ServiceAttributes = new(types.SecretServiceAttribute)
 	if len(cm.Data) > 0 {
-		secret.ServiceAttributes.SecretData = make(map[string]string)
+		secret.ServiceAttributes.Data = make(map[string][]byte)
+		for key, value := range cm.Data {
+			secret.ServiceAttributes.Data[key] = value
+		}
 	}
-	for key, value := range cm.Data {
-		secret.ServiceAttributes.SecretData[key] = string(value)
+
+	if len(cm.StringData) > 0 {
+		secret.ServiceAttributes.StringData = make(map[string]string)
+		for key, value := range cm.StringData {
+			secret.ServiceAttributes.StringData[key] = value
+		}
 	}
+
 	secret.ServiceAttributes.SecretType = string(cm.Type)
 	return secret, nil
 }
@@ -1236,6 +1259,39 @@ func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error)
 	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
 	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
 	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
+
+	var metrics []types.MetricValue
+	for _, metric := range hpa.Spec.Metrics {
+		cpMetric := types.MetricValue{}
+		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
+		if metric.Resource != nil {
+			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.Value.String()
+			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
+				if metric.Resource.Target.AverageUtilization != nil {
+					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
+				}
+			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
+			}
+
+			if metric.Resource.Name == v1.ResourceCPU {
+				cpMetric.ResourceKind = string(v1.ResourceCPU)
+			} else if metric.Resource.Name == v1.ResourceMemory {
+				cpMetric.ResourceKind = string(v1.ResourceMemory)
+			} else if metric.Resource.Name == v1.ResourceStorage {
+				cpMetric.ResourceKind = string(v1.ResourceStorage)
+			}
+		}
+
+		metrics = append(metrics, cpMetric)
+
+	}
+	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics
+
 	return horizntalPodAutoscalar, nil
 }
 
@@ -1405,6 +1461,21 @@ func convertToCPVSStruct(gw *v1alpha3.VirtualService) (*types.VirtualService, er
 
 func convertToCPDRStruct(gw *v1alpha3.DestinationRule) (*types.DestinationRules, error) {
 	return nil, nil
+}
+func convertToCPServiceAccount(sa *v1.ServiceAccount) (*types.ServiceAccount, error) {
+	var kube = new(types.ServiceAccount)
+	kube.ServiceSubType = "serviceaccount"
+	kube.ServiceType = "k8s"
+	kube.Name = sa.Name
+	kube.Namespace = sa.Namespace
+	for _, value := range sa.Secrets {
+		kube.ServiceAttributes.Secrets = append(kube.ServiceAttributes.Secrets, value.Name)
+	}
+	for _, value := range sa.ImagePullSecrets {
+		kube.ServiceAttributes.ImagePullSecretsName = append(kube.ServiceAttributes.ImagePullSecretsName, value.Name)
+	}
+	return kube, nil
+
 }
 
 func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*types.NodeSelector, error) {

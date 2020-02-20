@@ -11,6 +11,7 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
 	"k8s.io/api/batch/v1beta1"
@@ -524,7 +525,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 			}
 		}
 
-		//kubernetes service depecndency findings
+		//kubernetes service dependency findings
 		for key, value := range dep.Spec.Template.Labels {
 			resp, err := conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
@@ -538,6 +539,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					services = append(services, &svc)
 
 					fmt.Println(kubeSvc)
+
 				}
 			}
 		}
@@ -1182,4 +1184,8 @@ func isAlreadyExist(namespace, kind, name string) bool {
 		}
 	}
 	return false
+}
+
+func GetVirtualService(service *types.Service) (*istioClient.VirtualService, error) {
+	return nil, nil
 }

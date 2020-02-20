@@ -134,8 +134,7 @@ type HPAAttributes struct {
 }
 type Metrics struct {
 	TargetValueKind string `json:"target_value_kind"`
-	TargetValue     int64  `json:"target_value"`
-	TargetValueUnit string `json:"target_value_unit"`
+	TargetValue     string `json:"target_value"`
 	ResourceKind    string `json:"resource_kind"`
 }
 type ScaleTargetRef struct {
