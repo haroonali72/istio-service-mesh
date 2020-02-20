@@ -1186,6 +1186,21 @@ func isAlreadyExist(namespace, kind, name string) bool {
 	return false
 }
 
-func GetVirtualService(service *types.Service) (*istioClient.VirtualService, error) {
-	return nil, nil
+func (conn *GrpcConn) CreateIstioComponents(ctx context.Context, service *v2.Service) (*istioClient.VirtualService, *istioClient.DestinationRule, error) {
+	istioDestRule := new(istioClient.DestinationRule)
+	deploymentList, err := conn.getAllDeployments(ctx, service.Namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	istioDestRule.Kind = "DestinationRule"
+	if len(deploymentList.Items) > 0 {
+		for _, deploy := range deploymentList.Items {
+			if deploy.Labels["app"] == service.Spec.Selector["app"] {
+
+			}
+
+		}
+	}
+
+	return nil, nil, nil
 }
