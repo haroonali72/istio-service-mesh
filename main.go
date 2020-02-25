@@ -76,7 +76,7 @@ func main() {
 	pb.RegisterVirtualServer(srv, svc)
 	pb.RegisterDestinationrulesServer(srv, svc)
 	pb.RegisterK8SResourceServer(srv, svc)
-	go handleclient()
+	//go handleclient()
 	pb.RegisterServiceEntryServer(srv, svc)
 	pb.RegisterDeploymentServer(srv, svc)
 	pb.RegisterStorageClassServer(srv, svc)

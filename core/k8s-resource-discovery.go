@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
@@ -56,43 +55,98 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 		token:      request.Token,
 	}
 
-	deploymentList, err := grpcConn.getAllDeployments(ctx, "default")
+	namespaces := request.Namespaces
+
+	for _, namespace := range namespaces {
+		//deployments
+		deploymentList, err := grpcConn.getAllDeployments(ctx, namespace)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		err = grpcConn.deploymentk8sToCp(ctx, deploymentList.Items)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		//deployments
+
+		//statefulsets
+		statefulSetList, err := grpcConn.getAllStatefulsets(ctx, namespace)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		err = grpcConn.statefulsetsK8sToCp(ctx, statefulSetList.Items)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		//statefulsets
+
+		//daemonsets
+		daemonSetList, err := grpcConn.getAllDaemonsets(ctx, namespace)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		err = grpcConn.daemonsetK8sToCp(ctx, daemonSetList.Items)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		//daemonsets
+
+		//cronjobs
+		cronJobList, err := grpcConn.getAllCronjobs(ctx, namespace)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		err = grpcConn.cronjobK8sToCp(ctx, cronJobList.Items)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		//cronjobs
+
+		//jobs
+		JobList, err := grpcConn.getAllJobs(ctx, namespace)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		err = grpcConn.jobK8sToCp(ctx, JobList.Items)
+		if err != nil {
+			return &pb.K8SResourceResponse{}, err
+		}
+		//jobs
+	}
+
+	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
-		return
+		return &pb.K8SResourceResponse{}, err
 	}
 
-	grpcConn.deploymentk8sToCp(ctx, deploymentList.Items)
-	for _, svctemp := range serviceTemplates {
-		fmt.Println(*svctemp)
-	}
-
+	response.Resource = bytes
 	return response, err
 }
 
-func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) error {
 	for _, job := range jobs {
 		jobTemp, err := getCpConvertedTemplate(job, job.Kind)
 		if err != nil {
 			utils.Error.Println(err)
-			return nil, err
+			return err
 		}
 		namespace := job.Namespace
 		if job.Spec.Template.Spec.ServiceAccountName != "" {
 			svcname := job.Spec.Template.Spec.ServiceAccountName
 			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
 				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 
 				var strpointer = new(string)
@@ -119,12 +173,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 			secretname := objRef.Name
 			secret, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 				jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
@@ -148,7 +202,7 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 		//hpa finding
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
@@ -156,7 +210,7 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, jobTemp.ServiceId)
 					jobTemp.AfterServices = append(jobTemp.AfterServices, hpaTemplate.ServiceId)
@@ -170,7 +224,7 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 		for key, value := range job.Spec.Template.Labels {
 			kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -183,7 +237,7 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, jobTemp.ServiceId)
@@ -211,12 +265,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					secretname := env.ValueFrom.SecretKeyRef.Name
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
@@ -239,12 +293,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -273,12 +327,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 				secretname := vol.Secret.SecretName
 				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 					jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
@@ -301,12 +355,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 				configmapname := vol.ConfigMap.Name
 				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 					jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -329,12 +383,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 				pvcname := vol.PersistentVolumeClaim.ClaimName
 				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 					jobTemp.BeforeServices = append(jobTemp.BeforeServices, pvcTemp.ServiceId)
@@ -353,12 +407,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					storageClass, err := conn.getStorageClass(ctx, storageClassName, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					storageClassTemp, err := getCpConvertedTemplate(storageClass, storageClass.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(storageClassTemp.NameSpace, storageClassTemp.ServiceSubType, storageClassTemp.Name) {
 						pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, storageClassTemp.ServiceId)
@@ -384,12 +438,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					configmapname := vol.ConfigMap.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						jobTemp.BeforeServices = append(jobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -412,12 +466,12 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 					secretname := vol.Secret.SecretName
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						jobTemp.BeforeServices = append(jobTemp.BeforeServices, secretTemp.ServiceId)
@@ -443,33 +497,33 @@ func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job) ([]*type
 		serviceTemplates = append(serviceTemplates, jobTemp)
 
 	}
-	return serviceTemplates, nil
+	return nil
 }
 
-func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.CronJob) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.CronJob) error {
 	for _, cronjob := range cronjobs {
 		cronjobTemp, err := getCpConvertedTemplate(cronjob, cronjob.Kind)
 		if err != nil {
 			utils.Error.Println(err)
-			return nil, err
+			return err
 		}
 		namespace := cronjob.Namespace
 		if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
 			svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
 			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
 				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 
 				var strpointer = new(string)
@@ -496,12 +550,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 			secretname := objRef.Name
 			secret, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 				cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
@@ -524,7 +578,7 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
@@ -532,7 +586,7 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, cronjobTemp.ServiceId)
 					cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, hpaTemplate.ServiceId)
@@ -546,7 +600,7 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 		for key, value := range cronjob.Spec.JobTemplate.Spec.Template.Labels {
 			kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -559,7 +613,7 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, cronjobTemp.ServiceId)
@@ -587,12 +641,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					secretname := env.ValueFrom.SecretKeyRef.Name
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
@@ -615,12 +669,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -649,12 +703,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 				secretname := vol.Secret.SecretName
 				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
@@ -677,12 +731,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 				configmapname := vol.ConfigMap.Name
 				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -705,12 +759,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 				pvcname := vol.PersistentVolumeClaim.ClaimName
 				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, pvcTemp.ServiceId)
@@ -729,12 +783,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					storageClass, err := conn.getStorageClass(ctx, storageClassName, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					storageClassTemp, err := getCpConvertedTemplate(storageClass, storageClass.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(storageClassTemp.NameSpace, storageClassTemp.ServiceSubType, storageClassTemp.Name) {
 						pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, storageClassTemp.ServiceId)
@@ -760,12 +814,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					configmapname := vol.ConfigMap.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, configmapTemp.ServiceId)
@@ -788,12 +842,12 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 					secretname := vol.Secret.SecretName
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, secretTemp.ServiceId)
@@ -818,33 +872,33 @@ func (conn *GrpcConn) cronjobK8sToCp(ctx context.Context, cronjobs []v1beta1.Cro
 
 		serviceTemplates = append(serviceTemplates, cronjobTemp)
 	}
-	return serviceTemplates, nil
+	return nil
 }
 
-func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.DaemonSet) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.DaemonSet) error {
 	for _, daemonset := range daemonsets {
 		daemonsetTemp, err := getCpConvertedTemplate(daemonset, daemonset.Kind)
 		if err != nil {
 			utils.Error.Println(err)
-			return nil, err
+			return err
 		}
 		namespace := daemonset.Namespace
 		if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
 			svcname := daemonset.Spec.Template.Spec.ServiceAccountName
 			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
 				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 
 				var strpointer = new(string)
@@ -871,12 +925,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 			secretname := objRef.Name
 			secret, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 				daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
@@ -902,7 +956,7 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 		for key, value := range daemonset.Spec.Template.Labels {
 			kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -915,7 +969,7 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, daemonsetTemp.ServiceId)
@@ -943,12 +997,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					secretname := env.ValueFrom.SecretKeyRef.Name
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
@@ -971,12 +1025,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1005,12 +1059,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 				secretname := vol.Secret.SecretName
 				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
@@ -1033,12 +1087,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 				configmapname := vol.ConfigMap.Name
 				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1061,12 +1115,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 				pvcname := vol.PersistentVolumeClaim.ClaimName
 				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, pvcTemp.ServiceId)
@@ -1085,12 +1139,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					storageClass, err := conn.getStorageClass(ctx, storageClassName, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					storageClassTemp, err := getCpConvertedTemplate(storageClass, storageClass.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(storageClassTemp.NameSpace, storageClassTemp.ServiceSubType, storageClassTemp.Name) {
 						pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, storageClassTemp.ServiceId)
@@ -1117,12 +1171,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					configmapname := vol.ConfigMap.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1145,12 +1199,12 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 					secretname := vol.Secret.SecretName
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, secretTemp.ServiceId)
@@ -1176,34 +1230,34 @@ func (conn *GrpcConn) daemonsetK8sToCp(ctx context.Context, daemonsets []v1.Daem
 		serviceTemplates = append(serviceTemplates, daemonsetTemp)
 	}
 
-	return serviceTemplates, nil
+	return nil
 }
 
-func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1.StatefulSet) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1.StatefulSet) error {
 
 	for _, statefulset := range statefulsets {
 		stsTemp, err := getCpConvertedTemplate(statefulset, statefulset.Kind)
 		if err != nil {
 			utils.Error.Println(err)
-			return nil, err
+			return err
 		}
 		namespace := statefulset.Namespace
 		if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
 			svcname := statefulset.Spec.Template.Spec.ServiceAccountName
 			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
 				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 
 				var strpointer = new(string)
@@ -1230,12 +1284,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 			secretname := objRef.Name
 			secret, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 				stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
@@ -1258,7 +1312,7 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(hpaList.Items) > 0 {
@@ -1267,7 +1321,7 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, stsTemp.ServiceId)
 					stsTemp.AfterServices = append(stsTemp.AfterServices, hpaTemplate.ServiceId)
@@ -1281,7 +1335,7 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 		for key, value := range statefulset.Spec.Template.Labels {
 			kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -1294,7 +1348,7 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, stsTemp.ServiceId)
@@ -1322,12 +1376,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					secretname := env.ValueFrom.SecretKeyRef.Name
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
@@ -1350,12 +1404,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					configmapname := env.ValueFrom.ConfigMapKeyRef.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1384,12 +1438,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 				secretname := vol.Secret.SecretName
 				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 					stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
@@ -1412,12 +1466,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 				configmapname := vol.ConfigMap.Name
 				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 					stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1440,12 +1494,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 				pvcname := vol.PersistentVolumeClaim.ClaimName
 				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
-					return nil, err
+					return err
 				}
 				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 					stsTemp.BeforeServices = append(stsTemp.BeforeServices, pvcTemp.ServiceId)
@@ -1464,12 +1518,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					storageClass, err := conn.getStorageClass(ctx, storageClassName, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					storageClassTemp, err := getCpConvertedTemplate(storageClass, storageClass.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(storageClassTemp.NameSpace, storageClassTemp.ServiceSubType, storageClassTemp.Name) {
 						pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, storageClassTemp.ServiceId)
@@ -1496,12 +1550,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					configmapname := vol.ConfigMap.Name
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						stsTemp.BeforeServices = append(stsTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1524,12 +1578,12 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 					secretname := vol.Secret.SecretName
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						stsTemp.BeforeServices = append(stsTemp.BeforeServices, secretTemp.ServiceId)
@@ -1554,17 +1608,18 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 		serviceTemplates = append(serviceTemplates, stsTemp)
 	}
-	return serviceTemplates, nil
+	return nil
 
 }
 
-func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) ([]*types.ServiceTemplate, error) {
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment) error {
 
 	for _, dep := range deployments {
+		utils.Info.Printf("Resolving dependencies of deployment :%v within namespace : %v", dep.Name, dep.Namespace)
 		depTemp, err := getCpConvertedTemplate(dep, dep.Kind)
 		if err != nil {
 			utils.Error.Println(err)
-			return nil, err
+			return err
 		}
 
 		namespace := dep.Namespace
@@ -1573,18 +1628,18 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 			svcname := dep.Spec.Template.Spec.ServiceAccountName
 			svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			svcAccTemp, err := getCpConvertedTemplate(svcaccount, svcaccount.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(svcAccTemp.NameSpace, svcAccTemp.ServiceSubType, svcAccTemp.Name) {
 				rbacDependencies, err := conn.getK8sRbacResources(ctx, namespace, svcaccount, svcAccTemp)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 
 				var strpointer = new(string)
@@ -1613,12 +1668,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 			secret, err := conn.getSecret(ctx, secretname, namespace)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 			if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 				depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
@@ -1641,7 +1696,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 
 		hpaList, err := conn.getAllHpas(ctx, namespace)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if len(hpaList.Items) > 0 {
 			for _, hpa := range hpaList.Items {
@@ -1649,7 +1704,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, depTemp.ServiceId)
 					depTemp.AfterServices = append(depTemp.AfterServices, hpaTemplate.ServiceId)
@@ -1664,7 +1719,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 			kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
 			if err != nil {
 				utils.Error.Println(err)
-				return nil, err
+				return err
 			}
 		}
 
@@ -1677,7 +1732,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, depTemp.ServiceId)
@@ -1706,12 +1761,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					secret, err := conn.getSecret(ctx, secretname, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 						depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
@@ -1735,12 +1790,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 						depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1770,12 +1825,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 				secret, err := conn.getSecret(ctx, secretname, namespace)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 					depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
@@ -1799,12 +1854,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 				configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 					depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1828,12 +1883,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 				pvc, err := conn.getPvc(ctx, pvcname, namespace)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				pvcTemp, err := getCpConvertedTemplate(pvc, pvc.Kind)
 				if err != nil {
 					utils.Error.Println(err)
-					return nil, err
+					return err
 				}
 				if !isAlreadyExist(pvcTemp.NameSpace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 					depTemp.BeforeServices = append(depTemp.BeforeServices, pvcTemp.ServiceId)
@@ -1852,12 +1907,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 					storageClass, err := conn.getStorageClass(ctx, storageClassName, namespace)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					storageClassTemp, err := getCpConvertedTemplate(storageClass, storageClass.Kind)
 					if err != nil {
 						utils.Error.Println(err)
-						return nil, err
+						return err
 					}
 					if !isAlreadyExist(storageClassTemp.NameSpace, storageClassTemp.ServiceSubType, storageClassTemp.Name) {
 						pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, storageClassTemp.ServiceId)
@@ -1886,12 +1941,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 						configmap, err := conn.getConfigMap(ctx, configmapname, namespace)
 						if err != nil {
 							utils.Error.Println(err)
-							return nil, err
+							return err
 						}
 						configmapTemp, err := getCpConvertedTemplate(configmap, configmap.Kind)
 						if err != nil {
 							utils.Error.Println(err)
-							return nil, err
+							return err
 						}
 						if !isAlreadyExist(configmapTemp.NameSpace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 							depTemp.BeforeServices = append(depTemp.BeforeServices, configmapTemp.ServiceId)
@@ -1915,12 +1970,12 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 						secret, err := conn.getSecret(ctx, secretname, namespace)
 						if err != nil {
 							utils.Error.Println(err)
-							return nil, err
+							return err
 						}
 						secretTemp, err := getCpConvertedTemplate(secret, secret.Kind)
 						if err != nil {
 							utils.Error.Println(err)
-							return nil, err
+							return err
 						}
 						if !isAlreadyExist(secretTemp.NameSpace, secretTemp.ServiceSubType, secretTemp.Name) {
 							depTemp.BeforeServices = append(depTemp.BeforeServices, secretTemp.ServiceId)
@@ -1946,7 +2001,7 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 
 		serviceTemplates = append(serviceTemplates, depTemp)
 	}
-	return serviceTemplates, nil
+	return nil
 }
 
 func GetExistingService(namespace, svcsubtype, name *string) *types.ServiceTemplate {

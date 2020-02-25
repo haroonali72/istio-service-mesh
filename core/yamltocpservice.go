@@ -1778,8 +1778,8 @@ func getCPSecurityContext(securityContext *v1.SecurityContext) (*types.SecurityC
 	if securityContext.AllowPrivilegeEscalation != nil {
 		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
 	}
-	if securityContext.ReadOnlyRootFilesystem != nil {
-		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
+	if *securityContext.ReadOnlyRootFilesystem {
+		context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
 	}
 	if securityContext.Privileged != nil {
 		context.Privileged = *securityContext.Privileged
@@ -1796,9 +1796,9 @@ func getCPSecurityContext(securityContext *v1.SecurityContext) (*types.SecurityC
 
 	}
 
-	if *securityContext.ProcMount == v1.DefaultProcMount {
+	if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.DefaultProcMount {
 		context.ProcMount = types.DefaultProcMount
-	} else if *securityContext.ProcMount == v1.UnmaskedProcMount {
+	} else if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.UnmaskedProcMount {
 		context.ProcMount = types.UnmaskedProcMount
 	}
 
