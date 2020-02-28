@@ -485,7 +485,9 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 
 	if service.Spec.Strategy.Type != "" {
 		if service.Spec.Strategy.Type == apps.RecreateDeploymentStrategyType {
-			deployment.ServiceAttributes.Strategy.Type = types.RecreateDeploymentStrategyType
+			var CpDepStrategy = new(types.DeploymentStrategy)
+			CpDepStrategy.Type = types.RecreateDeploymentStrategyType
+			deployment.ServiceAttributes.Strategy = CpDepStrategy
 		} else if service.Spec.Strategy.Type == apps.RollingUpdateDeploymentStrategyType {
 			deployment.ServiceAttributes.Strategy = new(types.DeploymentStrategy)
 			deployment.ServiceAttributes.Strategy.Type = types.RollingUpdateDeploymentStrategyType
@@ -513,10 +515,12 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 			deployment.ServiceAttributes.Container = containers
 			volumeMountNames1 = vm
 		} else {
+			utils.Error.Println("no containers exist")
 			return nil, errors.New("no containers exist")
 		}
 
 	} else {
+		utils.Error.Println(err)
 		return nil, err
 	}
 
@@ -529,6 +533,7 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		}
 
 	} else {
+		utils.Error.Println(err)
 		return nil, err
 	}
 
@@ -538,6 +543,7 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		}
 
 	} else {
+		utils.Error.Println(err)
 		return nil, err
 	}
 
@@ -545,6 +551,7 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 		if affinity, err := getCPAffinity(service.Spec.Template.Spec.Affinity); err == nil {
 			deployment.ServiceAttributes.Affinity = affinity
 		} else {
+			utils.Error.Println(err)
 			return nil, err
 		}
 	}
@@ -768,39 +775,50 @@ func convertToCPJob(job *batch.Job) (*types.JobService, error) {
 		cpJob.Namespace = job.Namespace
 	}
 
-	cpJob.ServiceAttributes.Labels = make(map[string]string)
-	cpJob.ServiceAttributes.Labels = job.Spec.Template.Labels
+	var CpJobAttr = new(types.JobServiceAttribute)
+	CpJobAttr.Labels = make(map[string]string)
+	CpJobAttr.Labels = job.Spec.Template.Labels
 
-	cpJob.ServiceAttributes.LabelSelector = new(types.LabelSelectorObj)
-	cpJob.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
-	cpJob.ServiceAttributes.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
-	cpJob.ServiceAttributes.Annotations = make(map[string]string)
-	cpJob.ServiceAttributes.Annotations = job.Spec.Template.Annotations
+	CpJobAttr.LabelSelector = new(types.LabelSelectorObj)
+	CpJobAttr.LabelSelector.MatchLabels = make(map[string]string)
+	CpJobAttr.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	CpJobAttr.Annotations = make(map[string]string)
+	CpJobAttr.Annotations = job.Spec.Template.Annotations
 
-	cpJob.ServiceAttributes.NodeSelector = make(map[string]string)
-	cpJob.ServiceAttributes.NodeSelector = job.Spec.Template.Spec.NodeSelector
+	CpJobAttr.NodeSelector = make(map[string]string)
+	CpJobAttr.NodeSelector = job.Spec.Template.Spec.NodeSelector
 
 	if job.Spec.Parallelism != nil {
-		cpJob.ServiceAttributes.Parallelism.Value = *job.Spec.Parallelism
+		var CpJobParallelism = new(types.Parallelism)
+		CpJobParallelism.Value = *job.Spec.Parallelism
+		CpJobAttr.Parallelism = CpJobParallelism
 	}
 	if job.Spec.Completions != nil {
-		cpJob.ServiceAttributes.Completions.Value = *job.Spec.Completions
+		var CpJobCompletions = new(types.Completions)
+		CpJobCompletions.Value = *job.Spec.Completions
+		CpJobAttr.Completions = CpJobCompletions
 	}
 	if job.Spec.ActiveDeadlineSeconds != nil {
-		cpJob.ServiceAttributes.ActiveDeadlineSeconds.Value = *job.Spec.ActiveDeadlineSeconds
+		var CpJobActiveDeadlineSeconds = new(types.ActiveDeadlineSeconds)
+		CpJobActiveDeadlineSeconds.Value = *job.Spec.ActiveDeadlineSeconds
+		CpJobAttr.ActiveDeadlineSeconds = CpJobActiveDeadlineSeconds
 	}
 	if job.Spec.BackoffLimit != nil {
-		cpJob.ServiceAttributes.BackoffLimit.Value = *job.Spec.BackoffLimit
+		var CpJobBackOffLimit = new(types.BackoffLimit)
+		CpJobBackOffLimit.Value = *job.Spec.BackoffLimit
+		CpJobAttr.BackoffLimit = CpJobBackOffLimit
 	}
 	if job.Spec.ManualSelector != nil {
-		cpJob.ServiceAttributes.ManualSelector.Value = *job.Spec.ManualSelector
+		var CpJobManualSelector = new(types.ManualSelector)
+		CpJobManualSelector.Value = *job.Spec.ManualSelector
+		CpJobAttr.ManualSelector = CpJobManualSelector
 	}
 
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
 	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
 		if len(containers) > 0 {
-			cpJob.ServiceAttributes.Containers = containers
+			CpJobAttr.Containers = containers
 			volumeMountNames1 = vm
 		} else {
 			return nil, errors.New("no containers exist")
@@ -813,7 +831,7 @@ func convertToCPJob(job *batch.Job) (*types.JobService, error) {
 	//init containers
 	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
 		if len(containersList) > 0 {
-			cpJob.ServiceAttributes.InitContainers = containersList
+			CpJobAttr.InitContainers = containersList
 		}
 		for k, v := range volumeMounts {
 			volumeMountNames1[k] = v
@@ -826,7 +844,7 @@ func convertToCPJob(job *batch.Job) (*types.JobService, error) {
 	//volumes
 	if vols, err := getCPVolumes(job.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
 		if len(vols) > 0 {
-			cpJob.ServiceAttributes.Volumes = vols
+			CpJobAttr.Volumes = vols
 		}
 
 	} else {
@@ -836,11 +854,13 @@ func convertToCPJob(job *batch.Job) (*types.JobService, error) {
 	//affinity
 	if job.Spec.Template.Spec.Affinity != nil {
 		if affinity, err := getCPAffinity(job.Spec.Template.Spec.Affinity); err == nil {
-			cpJob.ServiceAttributes.Affinity = affinity
+			CpJobAttr.Affinity = affinity
 		} else {
 			return nil, err
 		}
 	}
+
+	cpJob.ServiceAttributes = CpJobAttr
 	return cpJob, nil
 }
 
@@ -865,11 +885,11 @@ func convertToCPCronJob(job *batchv1.CronJob) (*types.CronJobService, error) {
 	cpJob.ServiceAttributes.Annotations = job.Annotations
 
 	if jobTemplate, err := getCPJobTemplateSpec(job.Spec.JobTemplate); err != nil {
+		return nil, err
+	} else {
 		if jobTemplate != nil {
 			cpJob.ServiceAttributes.JobServiceAttribute = jobTemplate
 		}
-	} else {
-		return nil, err
 	}
 
 	if job.Spec.Schedule != "" {
@@ -917,7 +937,9 @@ func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*types.JobServiceAttribu
 	jobTemplate.Annotations = job.Spec.Template.Annotations
 	jobTemplate.LabelSelector = new(types.LabelSelectorObj)
 	jobTemplate.LabelSelector.MatchLabels = make(map[string]string)
-	jobTemplate.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	if job.Spec.Selector != nil {
+		jobTemplate.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	}
 	jobTemplate.NodeSelector = make(map[string]string)
 	jobTemplate.NodeSelector = job.Spec.Template.Spec.NodeSelector
 
@@ -1468,12 +1490,14 @@ func convertToCPServiceAccount(sa *v1.ServiceAccount) (*types.ServiceAccount, er
 	kube.ServiceType = "k8s"
 	kube.Name = sa.Name
 	kube.Namespace = sa.Namespace
+	var CpSaAttr = new(types.ServiceAccountAttribute)
 	for _, value := range sa.Secrets {
-		kube.ServiceAttributes.Secrets = append(kube.ServiceAttributes.Secrets, value.Name)
+		CpSaAttr.Secrets = append(CpSaAttr.Secrets, value.Name)
 	}
 	for _, value := range sa.ImagePullSecrets {
-		kube.ServiceAttributes.ImagePullSecretsName = append(kube.ServiceAttributes.ImagePullSecretsName, value.Name)
+		CpSaAttr.ImagePullSecretsName = append(CpSaAttr.ImagePullSecretsName, value.Name)
 	}
+	kube.ServiceAttributes = CpSaAttr
 	return kube, nil
 
 }
@@ -1549,6 +1573,7 @@ func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute,
 			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
 				containerTemp.ReadinessProbe = rp
 			} else {
+				utils.Info.Println(err)
 				return nil, nil, err
 			}
 		}
@@ -1557,19 +1582,23 @@ func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute,
 			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
 				containerTemp.LivenessProbe = lp
 			} else {
+				utils.Info.Println(err)
 				return nil, nil, err
 			}
 		}
 
 		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			utils.Info.Println(err)
 			return nil, nil, err
 		}
 
 		if err := putCPResource(&containerTemp, container.Resources.Limits); err != nil {
+			utils.Info.Println(err)
 			return nil, nil, err
 		}
 
 		if err := putCPResource(&containerTemp, container.Resources.Requests); err != nil {
+			utils.Info.Println(err)
 			return nil, nil, err
 		}
 
@@ -1577,6 +1606,7 @@ func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute,
 			if context, err := getCPSecurityContext(container.SecurityContext); err == nil {
 				containerTemp.SecurityContext = context
 			} else {
+				utils.Info.Println(err)
 				return nil, nil, err
 			}
 		}
@@ -1692,7 +1722,7 @@ func getCPProbe(prob *v1.Probe) (*types.Probe, error) {
 				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
 			}
 
-			if prob.HTTPGet.Scheme == v1.URISchemeHTTP && prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+			if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
 				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
 					scheme := types.URISchemeHTTP
 					CpProbe.Handler.HTTPGet.Scheme = &scheme
@@ -1768,17 +1798,22 @@ func getCPSecurityContext(securityContext *v1.SecurityContext) (*types.SecurityC
 	context := new(types.SecurityContextStruct)
 	if securityContext.Capabilities != nil {
 		context.Capabilities = new(types.Capabilities)
-		for i := 0; i < len(securityContext.Capabilities.Add); i++ {
-			context.Capabilities.Add[i] = types.Capability(securityContext.Capabilities.Add[i])
+		CpAdd := make([]types.Capability, len(securityContext.Capabilities.Add))
+		for index, kubeAdd := range securityContext.Capabilities.Add {
+			CpAdd[index] = types.Capability(kubeAdd)
 		}
-		for i := 0; i < len(securityContext.Capabilities.Drop); i++ {
-			context.Capabilities.Add[i] = types.Capability(securityContext.Capabilities.Drop[i])
+		context.Capabilities.Add = CpAdd
+
+		CpDrop := make([]types.Capability, len(securityContext.Capabilities.Drop))
+		for index, kubeDrop := range securityContext.Capabilities.Drop {
+			CpDrop[index] = types.Capability(kubeDrop)
 		}
+		context.Capabilities.Drop = CpDrop
 	}
 	if securityContext.AllowPrivilegeEscalation != nil {
 		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
 	}
-	if *securityContext.ReadOnlyRootFilesystem {
+	if securityContext.ReadOnlyRootFilesystem != nil && *securityContext.ReadOnlyRootFilesystem {
 		context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
 	}
 	if securityContext.Privileged != nil {
