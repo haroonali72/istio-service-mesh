@@ -16,7 +16,7 @@ type DestinationRules struct {
 type DRServiceAttribute struct {
 	Host          string         `json:"host" bson:"host"`
 	TrafficPolicy *TrafficPolicy `json:"traffic_policy" bson:"traffic_policy"`
-	Subsets       *Subset        `json:"subsets" bson:"subsets"`
+	Subsets       []*Subset      `json:"subsets" bson:"subsets"`
 }
 type TrafficPolicy struct {
 	LoadBalancer      *LoadBalancer       `json:"load_balancer" bson:"load_balancer"`
@@ -56,12 +56,12 @@ type ConnectionPool struct {
 }
 type DrTcp struct {
 	MaxConnections int32          `json:"max_connections" bson:"max_connections"`
-	ConnectTimeout *time.Duration `json:"connect_timeout" bson:"connect_timeout"` //time
+	ConnectTimeout *time.Duration `json:"connect_timeout" bson:"connect_timeout"`
 	TcpKeepalive   *TcpKeepalive  `json:"tcp_keep_alive" bson:"tcp_keep_alive"`
 }
 type TcpKeepalive struct {
-	Time     *time.Duration `json:"time" bson:"time"`         //time
-	Interval *time.Duration `json:"interval" bson:"interval"` //time
+	Time     *time.Duration `json:"time" bson:"time"`
+	Interval *time.Duration `json:"interval" bson:"interval"`
 	Probes   uint32         `json:"probes" bson:"probes"`
 }
 type DrHttp struct {
@@ -72,53 +72,27 @@ type DrHttp struct {
 	IdleTimeout                                       int32 `json:"idle_timeout" bson:"idle_timeout"` //time
 	ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy int32 `json:"connection_pool_settings_http_settings_h2_upgrade_policy" bson:"connection_pool_settings_http_settings_h2_upgrade_policy"`
 }
+
 type OutlierDetection struct {
 	ConsecutiveErrors  int32          `json:"consecutive_errors" bson:"consecutive_errors"`
-	Interval           *time.Duration `json:"interval" bson:"interval"`                     //time
-	BaseEjectionTime   *time.Duration `json:"base_ejection_time" bson:"base_ejection_time"` //time
+	Interval           *time.Duration `json:"interval" bson:"interval"`
+	BaseEjectionTime   *time.Duration `json:"base_ejection_time" bson:"base_ejection_time"`
 	MaxEjectionPercent int32          `json:"max_ejection_percent" bson:"max_ejection_percent"`
 	MinHealthPercent   int32          `json:"min_health_percent" bson:"min_health_percent"`
 }
 type Subset struct {
-	Name          []string           `json:"name" bson:"name"`
-	Labels        *map[string]string `json:"labels" bson:"labels"` //map
+	Name          string             `json:"name" bson:"name"`
+	Labels        *map[string]string `json:"labels" bson:"labels"`
 	TrafficPolicy *TrafficPolicy     `json:"traffic_policy" bson:"traffic_policy" `
 }
 type Label struct {
 	Version string `json:"version" bson:"version"`
 }
 type DrTls struct {
-	Mode              string   `json:"mode" bson:"mode"` //mode
+	Mode              string   `json:"mode" bson:"mode" valid:"in(ISTIO_MUTUAL|MUTUAL|DISABLE|SIMPLE)"`
 	ClientCertificate string   `json:"client_certificate" bson:"client_certificate"`
 	PrivateKey        string   `json:"private_key" bson:"private_key"`
-	CaCertificates    string   `json:"ca_certificates" bson:"ca_certificates"`
+	CaCertificate     string   `json:"ca_certificate" bson:"ca_certificate"`
 	SubjectAltNames   string   `json:"subject_alt_names" bson:"subject_alt_names"`
 	Name              []string `json:"name" bson:"name"`
 }
-
-/*
-const (
-	MODE_DISABLE Mode= "DISABLE";
-	MODE_SIMPLE  Mode= "SIMPLE";
-	MODE_MUTUAL  Mode= "MUTUAL";
-	MODE_ISTIO_MUTUAL Mode= "ISTIO_MUTUAL";
-)
-*/
-/*
-type Simple string
-
-const (
-	SIMPLE_ROUND_ROBIN Simple = "ROUND_ROBIN"
-	SIMPLE_LEAST_CONN  Simple = "LEAST_CONN"
-	SIMPLE_RANDOM      Simple = "RANDOM"
-	SIMPLE_PASSTHROUGH Simple = "PASSTHROUGH"
-)
-
-
-H2UpgradePolicy
-const(
-ConnectionPoolSettings_HTTPSettings_DEFAULT =0
-ConnectionPoolSettings_HTTPSettings_DO_NOT_UPGRADE =1
-ConnectionPoolSettings_HTTPSettings_UPGRADE =2
-)
-*/

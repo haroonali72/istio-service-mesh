@@ -9,6 +9,7 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
 	autoScalar "k8s.io/api/autoscaling/v2beta2"
@@ -24,8 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"regexp"
+	yaml2 "sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceRequest) (*pb.YamlToCPServiceResponse, error) {
@@ -38,13 +41,13 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		err := yaml.Unmarshal(req.Service, &yamlService)
 		if err == nil {
 			if yamlService.Kind == "Gateway" {
-				gateway := new(v1alpha3.Gateway)
-				err = yaml.Unmarshal(req.Service, gateway)
+				gateway := v1alpha3.Gateway{}
+				err = yaml2.Unmarshal(req.Service, &gateway)
 				if err != nil {
 					utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 					return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 				}
-				np, err := convertToCPGateWayStruct(gateway)
+				np, err := convertToCPGateway(&gateway)
 				if err != nil {
 					return nil, err
 				}
@@ -55,30 +58,30 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 				serviceResp.Service = bytesData
 				return serviceResp, nil
 			} else if yamlService.Kind == "ServiceEntry" {
-				se := new(v1alpha3.ServiceEntry)
-				err = yaml.Unmarshal(req.Service, &se)
+				se := v1alpha3.ServiceEntry{}
+				err = yaml2.Unmarshal(req.Service, &se)
 				if err != nil {
 					utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 					return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 				}
-				/*	np,err := convertToCPGateWayStruct(o)
-					if err!=nil{
-						return nil,err
-					}
-					bytesData, err:= json.Marshal(np)
-					if err!=nil{
-						return nil,err
-					}
-					serviceResp.Service=bytesData
-					return serviceResp,nil*/
+				np, err := convertToCPServiceEntry(&se)
+				if err != nil {
+					return nil, err
+				}
+				bytesData, err := json.Marshal(np)
+				if err != nil {
+					return nil, err
+				}
+				serviceResp.Service = bytesData
+				return serviceResp, nil
 			} else if yamlService.Kind == "DestinationRule" {
-				dr := new(v1alpha3.DestinationRule)
-				err = yaml.Unmarshal(req.Service, dr)
+				dr := v1alpha3.DestinationRule{}
+				err = yaml2.Unmarshal(req.Service, &dr)
 				if err != nil {
 					utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 					return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 				}
-				np, err := convertToCPDRStruct(dr)
+				np, err := convertToCPDestinationRule(&dr)
 				if err != nil {
 					return nil, err
 				}
@@ -89,13 +92,14 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 				serviceResp.Service = bytesData
 				return serviceResp, nil
 			} else if yamlService.Kind == "VirtualService" {
-				vs := new(v1alpha3.VirtualService)
-				err = yaml.Unmarshal(req.Service, vs)
-				if err != nil {
-					utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
-					return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
+				vs := v1alpha3.VirtualService{}
+				err2 := yaml2.Unmarshal(req.Service, &vs)
+				//err2:= yaml.Unmarshal(bytes,&vs)
+				if err2 != nil {
+					utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err2))
+					return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err2))
 				}
-				np, err := convertToCPVSStruct(vs)
+				np, err := convertToCPVirtualService(&vs)
 				if err != nil {
 					return nil, err
 				}
@@ -336,6 +340,18 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
+	case *v1alpha3.VirtualService:
+		vs, err := convertToCPVirtualService(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(vs)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
+
 	default:
 		return nil, errors.New("object is not in our scope")
 	}
@@ -1462,6 +1478,7 @@ func convertToCPVSStruct(gw *v1alpha3.VirtualService) (*types.VirtualService, er
 func convertToCPDRStruct(gw *v1alpha3.DestinationRule) (*types.DestinationRules, error) {
 	return nil, nil
 }
+
 func convertToCPServiceAccount(sa *v1.ServiceAccount) (*types.ServiceAccount, error) {
 	var kube = new(types.ServiceAccount)
 	kube.ServiceSubType = "serviceaccount"
@@ -2104,4 +2121,716 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]types.V
 	}
 
 	return volumes, nil
+}
+
+func convertToCPVirtualService(input *v1alpha3.VirtualService) (*types.VirtualService, error) {
+	var vServ = new(types.VirtualService)
+	if input.Labels["version"] != "" {
+		vServ.Version = input.Labels["version"]
+	} else {
+		vServ.Version = ""
+	}
+	vServ.ServiceType = "mesh"
+	vServ.ServiceSubType = "virtual_service"
+	vServ.Name = input.Name
+	vServ.Namespace = input.Namespace
+	vServ.ServiceAttributes = new(types.VSServiceAttribute)
+	vServ.ServiceAttributes.Hosts = input.Spec.Hosts
+	vServ.ServiceAttributes.Gateways = input.Spec.Gateways
+
+	for _, http := range input.Spec.Http {
+		vSer := new(types.Http)
+
+		for _, match := range http.Match {
+			m := new(types.HttpMatchRequest)
+			m.Name = match.Name
+			if match.Uri != nil {
+				m.Uri = new(types.HttpMatch)
+				matchArray := strings.Split(match.Uri.String(), ":")
+				if matchArray[0] == "prefix" {
+					m.Uri.Type = "prefix"
+					m.Uri.Value = matchArray[1]
+				} else if matchArray[0] == "exact" {
+					m.Uri.Type = "exact"
+					m.Uri.Value = matchArray[1]
+				} else if matchArray[0] == "regex" {
+					m.Uri.Type = "regex"
+					m.Uri.Value = matchArray[1]
+				}
+			}
+			if match.Scheme != nil {
+				m.Scheme = new(types.HttpMatch)
+				matchArray := strings.Split(match.Scheme.String(), ":")
+				if matchArray[0] == "prefix" {
+					m.Scheme.Type = "prefix"
+					m.Scheme.Value = matchArray[1]
+				} else if matchArray[0] == "exact" {
+					m.Scheme.Type = "exact"
+					m.Scheme.Value = matchArray[1]
+				} else if matchArray[0] == "regex" {
+					m.Scheme.Type = "regex"
+					m.Scheme.Value = matchArray[1]
+				}
+			}
+			if match.Method != nil {
+				m.Method = new(types.HttpMatch)
+				matchArray := strings.Split(match.Method.String(), ":")
+				if matchArray[0] == "prefix" {
+					m.Method.Type = "prefix"
+					m.Method.Value = matchArray[1]
+				} else if matchArray[0] == "exact" {
+					m.Method.Type = "exact"
+					m.Method.Value = matchArray[1]
+				} else if matchArray[0] == "regex" {
+					m.Method.Type = "regex"
+					m.Method.Value = matchArray[1]
+				}
+			}
+			if match.Authority != nil {
+				m.Authority = new(types.HttpMatch)
+				matchArray := strings.Split(match.Authority.String(), ":")
+				if matchArray[0] == "prefix" {
+					m.Authority.Type = "prefix"
+					m.Authority.Value = matchArray[1]
+				} else if matchArray[0] == "exact" {
+					m.Authority.Type = "exact"
+					m.Authority.Value = matchArray[1]
+				} else if matchArray[0] == "regex" {
+					m.Authority.Type = "regex"
+					m.Authority.Value = matchArray[1]
+				}
+			}
+			vSer.HttpMatch = append(vSer.HttpMatch, m)
+		}
+
+		for _, route := range http.Route {
+			r := new(types.HttpRoute)
+
+			if route.Destination != nil {
+				destRoute := new(types.RouteDestination)
+				destRoute.Host = route.Destination.Host
+				destRoute.Subnet = route.Destination.Subset
+				if route.Destination.Port != nil {
+					destRoute.Port = int32(route.Destination.Port.Number)
+				}
+				r.Routes = append(r.Routes, destRoute)
+
+			}
+			r.Weight = route.Weight
+			vSer.HttpRoute = append(vSer.HttpRoute, r)
+		}
+		if http.Redirect != nil {
+			vSer.HttpRedirect = new(types.HttpRedirect)
+			vSer.HttpRedirect.Uri = http.Redirect.Uri
+			vSer.HttpRedirect.Authority = http.Redirect.Authority
+			vSer.HttpRedirect.RedirectCode = int32(http.Redirect.RedirectCode)
+		}
+		if http.Rewrite != nil {
+			vSer.HttpRewrite = new(types.HttpRewrite)
+			vSer.HttpRewrite.Uri = http.Rewrite.Uri
+			vSer.HttpRewrite.Authority = http.Rewrite.Authority
+		}
+		if http.Timeout != nil {
+			vSer.Timeout = time.Duration(http.Timeout.Seconds)
+		}
+
+		if http.Fault != nil {
+			vSer.FaultInjection = new(types.HttpFaultInjection)
+			if http.Fault.GetDelay() != nil {
+				if http.Fault.GetDelay().String() == "FixedDelay" {
+					vSer.FaultInjection.DelayType = "FixedDelay"
+					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetFixedDelay().Seconds)
+				} else if http.Fault.GetDelay().String() == "ExponentialDelay" {
+					vSer.FaultInjection.DelayType = "ExponentialDelay"
+					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetExponentialDelay().Seconds)
+					vSer.FaultInjection.FaultPercentage = float32(http.Fault.Delay.GetPercentage().Value)
+				}
+			}
+			if http.Fault.Abort != nil {
+				if http.Fault.Abort.String() == "HttpStatus" {
+					vSer.FaultInjection.AbortErrorValue = strconv.Itoa(int(http.Fault.Abort.GetHttpStatus()))
+					vSer.FaultInjection.AbortErrorType = "HttpStatus"
+				} else if http.Fault.Abort.String() == "GrpcStatus" {
+					vSer.FaultInjection.AbortErrorType = "GrpcStatus"
+					vSer.FaultInjection.AbortErrorValue = http.Fault.Abort.GetGrpcStatus()
+				} else if http.Fault.Abort.String() == "Http2Status" {
+					vSer.FaultInjection.AbortErrorType = "Http2Status"
+					vSer.FaultInjection.AbortErrorValue = http.Fault.Abort.GetHttp2Error()
+				}
+
+			}
+
+		}
+
+		if http.CorsPolicy != nil {
+			vSer.CorsPolicy = new(types.HttpCorsPolicy)
+			vSer.CorsPolicy.AllowOrigin = http.CorsPolicy.AllowOrigin
+			vSer.CorsPolicy.AllowMethod = http.CorsPolicy.AllowMethods
+			vSer.CorsPolicy.AllowHeaders = http.CorsPolicy.AllowHeaders
+			vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
+			vSer.CorsPolicy.MaxAge = time.Duration(http.CorsPolicy.MaxAge.Seconds)
+			vSer.CorsPolicy.AllowCredentials = http.CorsPolicy.AllowCredentials.Value
+		}
+
+		vServ.ServiceAttributes.Http = append(vServ.ServiceAttributes.Http, vSer)
+	}
+
+	for _, serv := range input.Spec.Tls {
+		tls := new(types.Tls)
+		for _, match := range serv.Match {
+			m := new(types.TlsMatchAttribute)
+			for _, s := range match.SniHosts {
+				m.SniHosts = append(m.SniHosts, s)
+			}
+			for _, d := range match.DestinationSubnets {
+				m.DestinationSubnets = append(m.DestinationSubnets, d)
+			}
+			for _, g := range match.Gateways {
+				m.Gateways = append(m.Gateways, g)
+			}
+			m.Port = int32(match.Port)
+			//m.SourceSubnet = match.SourceSubnet
+			tls.Match = append(tls.Match, m)
+		}
+
+		for _, route := range serv.Route {
+			r := new(types.TlsRoute)
+			if route.Destination != nil {
+				r.RouteDestination = new(types.RouteDestination)
+				r.Weight = route.Weight
+				if route.Destination.Port != nil {
+					r.RouteDestination.Port = int32(route.Destination.Port.Number)
+				}
+				r.RouteDestination.Subnet = route.Destination.Subset
+				r.RouteDestination.Host = route.Destination.Host
+				tls.Route = append(tls.Route, r)
+			}
+
+		}
+		vServ.ServiceAttributes.Tls = append(vServ.ServiceAttributes.Tls, tls)
+	}
+
+	for _, serv := range input.Spec.Tcp {
+		tcp := new(types.Tcp)
+		for _, match := range serv.Match {
+			m := new(types.TcpMatchRequest)
+			maps := make(map[string]string)
+			if len(match.SourceLabels) > 0 {
+				m.SourceLabels = new(map[string]string)
+				m.SourceLabels = &maps
+			}
+			m.DestinationSubnets = match.DestinationSubnets
+			m.Gateways = match.Gateways
+			m.Port = int32(match.Port)
+			m.SourceSubnet = match.SourceSubnet
+			tcp.Match = append(tcp.Match, m)
+		}
+
+		for _, route := range serv.Route {
+			d := new(types.TcpRoutes)
+			if route.Destination != nil {
+				d.Destination = new(types.RouteDestination)
+				if route.Destination.Port != nil {
+					d.Destination.Port = int32(route.Destination.Port.Number)
+				}
+				d.Destination.Subnet = route.Destination.Subset
+				d.Destination.Host = route.Destination.Host
+			}
+			d.Weight = route.Weight
+			tcp.Routes = append(tcp.Routes, d)
+		}
+		vServ.ServiceAttributes.Tcp = append(vServ.ServiceAttributes.Tcp, tcp)
+	}
+	return vServ, nil
+}
+
+func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*types.DestinationRules, error) {
+	vServ := new(types.DestinationRules)
+	vServ.ServiceType = "mesh"
+	vServ.ServiceSubType = "DestinationRule"
+	vServ.Name = input.Name
+	vServ.Namespace = input.Namespace
+
+	vServ.ServiceAttributes.Host = input.Spec.Host
+	if input.Spec.TrafficPolicy != nil {
+		vServ.ServiceAttributes.TrafficPolicy = new(types.TrafficPolicy)
+
+		if input.Spec.TrafficPolicy.LoadBalancer != nil {
+			vServ.ServiceAttributes.TrafficPolicy.LoadBalancer = new(types.LoadBalancer)
+			loadBalType := strings.Split(input.Spec.TrafficPolicy.LoadBalancer.String(), ":")
+
+			if loadBalType[0] == "simple" {
+				vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.Simple = input.Spec.TrafficPolicy.LoadBalancer.GetSimple().String()
+			} else if loadBalType[0] == "consistent_hash" {
+				vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash = new(types.ConsistentHash)
+				if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie = new(types.HttpCookie)
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Name = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Path = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+
+				} else if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp() == true {
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HTTPHeaderName = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
+				} else if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName() != "" {
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.UseSourceIP = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp()
+				}
+			}
+		}
+		if input.Spec.TrafficPolicy.ConnectionPool != nil {
+			vServ.ServiceAttributes.TrafficPolicy.ConnectionPool = new(types.ConnectionPool)
+			if input.Spec.TrafficPolicy.ConnectionPool.Tcp != nil {
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp = new(types.DrTcp)
+				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout != nil {
+					timeout := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &timeout
+				}
+
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.MaxConnections = input.Spec.TrafficPolicy.ConnectionPool.Tcp.MaxConnections
+				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(types.TcpKeepalive)
+					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
+						keepAlive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &keepAlive
+					}
+
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes
+					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
+						timealive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &timealive
+					}
+
+				}
+			}
+			if input.Spec.TrafficPolicy.ConnectionPool.Http != nil {
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http = new(types.DrHttp)
+				if input.Spec.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy == v1alpha32.ConnectionPoolSettings_HTTPSettings_DEFAULT {
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(v1alpha32.ConnectionPoolSettings_HTTPSettings_DEFAULT)
+				} else if input.Spec.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy == v1alpha32.ConnectionPoolSettings_HTTPSettings_DO_NOT_UPGRADE {
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(v1alpha32.ConnectionPoolSettings_HTTPSettings_DO_NOT_UPGRADE)
+
+				} else {
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(v1alpha32.ConnectionPoolSettings_HTTPSettings_UPGRADE)
+				}
+
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.HTTP1MaxPendingRequests = input.Spec.TrafficPolicy.ConnectionPool.Http.Http1MaxPendingRequests
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.HTTP2MaxRequests = input.Spec.TrafficPolicy.ConnectionPool.Http.Http2MaxRequests
+				if input.Spec.TrafficPolicy.ConnectionPool.Http.IdleTimeout != nil {
+					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.IdleTimeout = input.Spec.TrafficPolicy.ConnectionPool.Http.IdleTimeout.Nanos
+				}
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection = input.Spec.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection
+				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Http.MaxRetries = input.Spec.TrafficPolicy.ConnectionPool.Http.MaxRetries
+			}
+
+		}
+		if input.Spec.TrafficPolicy.OutlierDetection != nil {
+			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection = new(types.OutlierDetection)
+			if input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime != nil {
+				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.Nanos)
+				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.BaseEjectionTime = &injecTime
+			}
+
+			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.Spec.TrafficPolicy.OutlierDetection.ConsecutiveErrors
+			if input.Spec.TrafficPolicy.OutlierDetection.Interval != nil {
+				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.Nanos)
+				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.Interval = &interval
+			}
+
+			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.MaxEjectionPercent = input.Spec.TrafficPolicy.OutlierDetection.MaxEjectionPercent
+			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.MinHealthPercent = input.Spec.TrafficPolicy.OutlierDetection.MinHealthPercent
+		}
+
+		for _, port := range input.Spec.TrafficPolicy.PortLevelSettings {
+
+			setting := new(types.PortLevelSetting)
+
+			if port.Port != nil {
+				setting.Port = new(types.DrPort)
+				setting.Port.Number = int32(port.Port.Number)
+			}
+
+			if port.ConnectionPool != nil {
+				setting.ConnectionPool = new(types.ConnectionPool)
+				if setting.ConnectionPool.Tcp != nil {
+					setting.ConnectionPool.Tcp = new(types.DrTcp)
+					if port.ConnectionPool.Tcp.ConnectTimeout != nil {
+						timeout := time.Duration(port.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+						setting.ConnectionPool.Tcp.ConnectTimeout = &timeout
+					}
+					setting.ConnectionPool.Tcp.MaxConnections = port.ConnectionPool.Tcp.MaxConnections
+					if port.ConnectionPool.Tcp.TcpKeepalive != nil {
+						setting.ConnectionPool.Tcp.TcpKeepalive = new(types.TcpKeepalive)
+						if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
+							t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
+						}
+						if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
+							interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+							setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
+						}
+
+						setting.ConnectionPool.Tcp.TcpKeepalive.Probes = port.ConnectionPool.Tcp.TcpKeepalive.Probes
+
+					}
+
+				}
+				if port.ConnectionPool.Http != nil {
+					setting.ConnectionPool.Http = new(types.DrHttp)
+					setting.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(port.ConnectionPool.Http.H2UpgradePolicy)
+					setting.ConnectionPool.Http.HTTP2MaxRequests = port.ConnectionPool.Http.Http2MaxRequests
+					setting.ConnectionPool.Http.HTTP1MaxPendingRequests = port.ConnectionPool.Http.Http1MaxPendingRequests
+					if port.ConnectionPool.Http.IdleTimeout != nil {
+						setting.ConnectionPool.Http.IdleTimeout = port.ConnectionPool.Http.IdleTimeout.Nanos
+					}
+					setting.ConnectionPool.Http.MaxRequestsPerConnection = port.ConnectionPool.Http.MaxRequestsPerConnection
+					setting.ConnectionPool.Http.MaxRetries = port.ConnectionPool.Http.MaxRetries
+
+				}
+
+			}
+			if port.LoadBalancer != nil {
+				setting.LoadBalancer = new(types.LoadBalancer)
+				if port.LoadBalancer.GetSimple().String() != "" {
+					setting.LoadBalancer.Simple = port.LoadBalancer.GetSimple().String()
+				} else if port.LoadBalancer.GetConsistentHash() != nil {
+					setting.LoadBalancer.ConsistentHash = new(types.ConsistentHash)
+					if port.LoadBalancer.GetConsistentHash().GetHttpHeaderName() != "" {
+						setting.LoadBalancer.ConsistentHash.HTTPHeaderName = port.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
+					} else if port.LoadBalancer.GetConsistentHash().GetUseSourceIp() != false {
+						setting.LoadBalancer.ConsistentHash.UseSourceIP = port.LoadBalancer.GetConsistentHash().GetUseSourceIp()
+					} else if port.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
+						setting.LoadBalancer.ConsistentHash.HttpCookie = new(types.HttpCookie)
+						setting.LoadBalancer.ConsistentHash.HttpCookie.Name = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
+						setting.LoadBalancer.ConsistentHash.HttpCookie.Path = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
+
+						setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+
+					}
+
+					setting.LoadBalancer.ConsistentHash.MinimumRingSize = strconv.Itoa(int(port.LoadBalancer.GetConsistentHash().GetMinimumRingSize()))
+
+				}
+			}
+			if port.OutlierDetection != nil {
+				setting.OutlierDetection = new(types.OutlierDetection)
+				if port.OutlierDetection.Interval != nil {
+					interval := time.Duration(port.OutlierDetection.Interval.Nanos)
+					setting.OutlierDetection.Interval = &interval
+				}
+				if port.OutlierDetection.BaseEjectionTime != nil {
+					ejec := time.Duration(port.OutlierDetection.BaseEjectionTime.Nanos)
+					setting.OutlierDetection.BaseEjectionTime = &ejec
+				}
+				setting.OutlierDetection.ConsecutiveErrors = port.OutlierDetection.ConsecutiveErrors
+				setting.OutlierDetection.MaxEjectionPercent = port.OutlierDetection.MaxEjectionPercent
+				setting.OutlierDetection.MinHealthPercent = port.OutlierDetection.MinHealthPercent
+
+			}
+
+			vServ.ServiceAttributes.TrafficPolicy.PortLevelSettings = append(vServ.ServiceAttributes.TrafficPolicy.PortLevelSettings, setting)
+		}
+		if input.Spec.TrafficPolicy.Tls != nil {
+			vServ.ServiceAttributes.TrafficPolicy.DrTls = new(types.DrTls)
+			vServ.ServiceAttributes.TrafficPolicy.DrTls.Mode = input.Spec.TrafficPolicy.Tls.GetMode().String()
+			vServ.ServiceAttributes.TrafficPolicy.DrTls.ClientCertificate = input.Spec.TrafficPolicy.Tls.ClientCertificate
+			vServ.ServiceAttributes.TrafficPolicy.DrTls.PrivateKey = input.Spec.TrafficPolicy.Tls.PrivateKey
+			vServ.ServiceAttributes.TrafficPolicy.DrTls.CaCertificate = input.Spec.TrafficPolicy.Tls.CaCertificates
+			vServ.ServiceAttributes.TrafficPolicy.DrTls.SubjectAltNames = input.Spec.TrafficPolicy.Tls.SubjectAltNames[0]
+		}
+
+	}
+	for _, subset := range input.Spec.Subsets {
+		ser := new(types.Subset)
+		ser.Name = subset.Name
+		if len(subset.Labels) > 0 {
+			labels := make(map[string]string)
+			labels = subset.Labels
+			ser.Labels = &labels
+		}
+
+		if subset.TrafficPolicy != nil {
+			ser.TrafficPolicy = new(types.TrafficPolicy)
+			for _, port := range subset.TrafficPolicy.PortLevelSettings {
+				setting := new(types.PortLevelSetting)
+				if port.Port != nil {
+					setting.Port = new(types.DrPort)
+					setting.Port.Number = int32(port.Port.Number)
+				}
+				if port.ConnectionPool != nil {
+					setting.ConnectionPool = new(types.ConnectionPool)
+					if setting.ConnectionPool.Tcp != nil {
+						setting.ConnectionPool.Tcp = new(types.DrTcp)
+						if port.ConnectionPool.Tcp.ConnectTimeout != nil {
+							timeout := time.Duration(port.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+							setting.ConnectionPool.Tcp.ConnectTimeout = &timeout
+						}
+						setting.ConnectionPool.Tcp.MaxConnections = port.ConnectionPool.Tcp.MaxConnections
+						if port.ConnectionPool.Tcp.TcpKeepalive != nil {
+							setting.ConnectionPool.Tcp.TcpKeepalive = new(types.TcpKeepalive)
+							if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
+								t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+								setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
+							}
+							if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
+								interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+								setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
+							}
+
+							setting.ConnectionPool.Tcp.TcpKeepalive.Probes = port.ConnectionPool.Tcp.TcpKeepalive.Probes
+
+						}
+
+					}
+					if port.ConnectionPool.Http != nil {
+						setting.ConnectionPool.Http = new(types.DrHttp)
+						setting.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(port.ConnectionPool.Http.H2UpgradePolicy)
+						setting.ConnectionPool.Http.HTTP2MaxRequests = port.ConnectionPool.Http.Http2MaxRequests
+						setting.ConnectionPool.Http.HTTP1MaxPendingRequests = port.ConnectionPool.Http.Http1MaxPendingRequests
+						if port.ConnectionPool.Http.IdleTimeout != nil {
+							setting.ConnectionPool.Http.IdleTimeout = port.ConnectionPool.Http.IdleTimeout.Nanos
+						}
+						setting.ConnectionPool.Http.MaxRequestsPerConnection = port.ConnectionPool.Http.MaxRequestsPerConnection
+						setting.ConnectionPool.Http.MaxRetries = port.ConnectionPool.Http.MaxRetries
+
+					}
+
+				}
+				if port.LoadBalancer != nil {
+					setting.LoadBalancer = new(types.LoadBalancer)
+					if port.LoadBalancer.GetSimple().String() != "" {
+						setting.LoadBalancer.Simple = port.LoadBalancer.GetSimple().String()
+					} else if port.LoadBalancer.GetConsistentHash() != nil {
+						setting.LoadBalancer.ConsistentHash = new(types.ConsistentHash)
+
+						if port.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
+							setting.LoadBalancer.ConsistentHash.HttpCookie = new(types.HttpCookie)
+							if port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl != nil {
+								setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+
+							}
+
+							setting.LoadBalancer.ConsistentHash.HttpCookie.Name = port.LoadBalancer.GetConsistentHash().GetHttpCookie().GetName()
+							setting.LoadBalancer.ConsistentHash.HttpCookie.Path = port.LoadBalancer.GetConsistentHash().GetHttpCookie().GetPath()
+						} else if port.LoadBalancer.GetConsistentHash().GetHttpHeaderName() != "" {
+							setting.LoadBalancer.ConsistentHash.HTTPHeaderName = port.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
+						} else if port.LoadBalancer.GetConsistentHash().GetUseSourceIp() != false {
+							setting.LoadBalancer.ConsistentHash.UseSourceIP = port.LoadBalancer.GetConsistentHash().GetUseSourceIp()
+						}
+					}
+				}
+				if port.OutlierDetection != nil {
+					setting.OutlierDetection = new(types.OutlierDetection)
+					if port.OutlierDetection.Interval != nil {
+						interval := time.Duration(port.OutlierDetection.Interval.Nanos)
+						setting.OutlierDetection.Interval = &interval
+					}
+					if port.OutlierDetection.BaseEjectionTime != nil {
+						ejec := time.Duration(port.OutlierDetection.BaseEjectionTime.Nanos)
+						setting.OutlierDetection.BaseEjectionTime = &ejec
+					}
+					setting.OutlierDetection.ConsecutiveErrors = port.OutlierDetection.ConsecutiveErrors
+					setting.OutlierDetection.MaxEjectionPercent = port.OutlierDetection.MaxEjectionPercent
+					setting.OutlierDetection.MinHealthPercent = port.OutlierDetection.MinHealthPercent
+
+				}
+				if port.Tls != nil {
+					setting.DrTls = new(types.DrTls)
+					vServ.ServiceAttributes.TrafficPolicy.DrTls.Mode = string(port.Tls.GetMode())
+					setting.DrTls.ClientCertificate = port.Tls.ClientCertificate
+					setting.DrTls.PrivateKey = port.Tls.PrivateKey
+					setting.DrTls.CaCertificate = port.Tls.CaCertificates
+					setting.DrTls.SubjectAltNames = port.Tls.SubjectAltNames[0]
+
+				}
+				vServ.ServiceAttributes.TrafficPolicy.PortLevelSettings = append(vServ.ServiceAttributes.TrafficPolicy.PortLevelSettings, setting)
+			}
+			if subset.TrafficPolicy.LoadBalancer != nil {
+				ser.TrafficPolicy.LoadBalancer = new(types.LoadBalancer)
+				if subset.TrafficPolicy.LoadBalancer.GetSimple().String() != "" {
+					ser.TrafficPolicy.LoadBalancer.Simple = subset.TrafficPolicy.LoadBalancer.GetSimple().String()
+				} else if subset.TrafficPolicy.LoadBalancer.GetConsistentHash() != nil {
+					ser.TrafficPolicy.LoadBalancer.ConsistentHash = new(types.ConsistentHash)
+
+					if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
+						if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl != nil {
+							ser.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+
+						}
+
+						ser.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Name = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().GetName()
+						ser.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Path = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().GetPath()
+					} else if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName() != "" {
+						ser.TrafficPolicy.LoadBalancer.ConsistentHash.HTTPHeaderName = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
+					} else if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp() != false {
+						ser.TrafficPolicy.LoadBalancer.ConsistentHash.UseSourceIP = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp()
+					}
+				}
+
+			}
+			if subset.TrafficPolicy.ConnectionPool != nil {
+				ser.TrafficPolicy.ConnectionPool = new(types.ConnectionPool)
+				if subset.TrafficPolicy.ConnectionPool.Tcp != nil {
+					ser.TrafficPolicy.ConnectionPool.Tcp = new(types.DrTcp)
+					if subset.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout != nil {
+						timeout := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+						ser.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &timeout
+					}
+
+					ser.TrafficPolicy.ConnectionPool.Tcp.MaxConnections = subset.TrafficPolicy.ConnectionPool.Tcp.MaxConnections
+					if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
+						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(types.TcpKeepalive)
+						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
+							t := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &t
+						}
+						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
+							interval := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
+							ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
+						}
+
+						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes
+						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
+							ti := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
+							ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &ti
+						}
+
+					}
+
+				}
+				if subset.TrafficPolicy.ConnectionPool.Http != nil {
+					ser.TrafficPolicy.ConnectionPool.Http = new(types.DrHttp)
+					ser.TrafficPolicy.ConnectionPool.Http.ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy = int32(subset.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy)
+					ser.TrafficPolicy.ConnectionPool.Http.HTTP2MaxRequests = subset.TrafficPolicy.ConnectionPool.Http.Http2MaxRequests
+					ser.TrafficPolicy.ConnectionPool.Http.HTTP1MaxPendingRequests = subset.TrafficPolicy.ConnectionPool.Http.Http1MaxPendingRequests
+					if subset.TrafficPolicy.ConnectionPool.Http.IdleTimeout != nil {
+						ser.TrafficPolicy.ConnectionPool.Http.IdleTimeout = subset.TrafficPolicy.ConnectionPool.Http.IdleTimeout.Nanos
+					}
+					ser.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection = subset.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection
+					ser.TrafficPolicy.ConnectionPool.Http.MaxRetries = subset.TrafficPolicy.ConnectionPool.Http.MaxRetries
+
+				}
+
+			}
+
+			if subset.TrafficPolicy.OutlierDetection != nil {
+				ser.TrafficPolicy.OutlierDetection = new(types.OutlierDetection)
+				if subset.TrafficPolicy.OutlierDetection.Interval != nil {
+					interval := time.Duration(subset.TrafficPolicy.OutlierDetection.Interval.Nanos)
+					ser.TrafficPolicy.OutlierDetection.Interval = &interval
+				}
+				if subset.TrafficPolicy.OutlierDetection.BaseEjectionTime != nil {
+					ejec := time.Duration(subset.TrafficPolicy.OutlierDetection.BaseEjectionTime.Nanos)
+					ser.TrafficPolicy.OutlierDetection.BaseEjectionTime = &ejec
+				}
+				ser.TrafficPolicy.OutlierDetection.ConsecutiveErrors = subset.TrafficPolicy.OutlierDetection.ConsecutiveErrors
+				ser.TrafficPolicy.OutlierDetection.MaxEjectionPercent = subset.TrafficPolicy.OutlierDetection.MaxEjectionPercent
+				ser.TrafficPolicy.OutlierDetection.MinHealthPercent = subset.TrafficPolicy.OutlierDetection.MinHealthPercent
+
+			}
+			if subset.TrafficPolicy.Tls != nil {
+				ser.TrafficPolicy.DrTls = new(types.DrTls)
+				vServ.ServiceAttributes.TrafficPolicy.DrTls.Mode = string(subset.TrafficPolicy.Tls.GetMode())
+				ser.TrafficPolicy.DrTls.ClientCertificate = subset.TrafficPolicy.Tls.ClientCertificate
+				ser.TrafficPolicy.DrTls.PrivateKey = subset.TrafficPolicy.Tls.PrivateKey
+				ser.TrafficPolicy.DrTls.CaCertificate = subset.TrafficPolicy.Tls.CaCertificates
+				ser.TrafficPolicy.DrTls.SubjectAltNames = subset.TrafficPolicy.Tls.SubjectAltNames[0]
+			}
+		}
+		vServ.ServiceAttributes.Subsets = append(vServ.ServiceAttributes.Subsets, ser)
+	}
+
+	return vServ, nil
+}
+
+func convertToCPGateway(input *v1alpha3.Gateway) (*types.GatewayService, error) {
+	gateway := new(types.GatewayService)
+	gateway.Name = input.Name
+	if input.Labels["version"] != "" {
+		gateway.Version = input.Labels["version"]
+	} else {
+		gateway.Version = ""
+	}
+	gateway.ServiceType = "mesh"
+	gateway.ServiceSubType = "Gateway"
+	gateway.Namespace = input.Namespace
+
+	gateway.ServiceAttributes = new(types.GatewayServiceAttributes)
+	gateway.ServiceAttributes.Selectors = make(map[string]string)
+	gateway.ServiceAttributes.Selectors = input.Spec.Selector
+
+	for _, serverInput := range input.Spec.Servers {
+		server := new(types.Server)
+		if serverInput.Tls != nil {
+			server.Tls = new(types.TlsConfig)
+			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
+			server.Tls.Mode = types.Mode(serverInput.Tls.Mode.String())
+			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
+			server.Tls.CaCertificate = serverInput.Tls.CaCertificates
+			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
+			for _, altNames := range serverInput.Tls.SubjectAltNames {
+				server.Tls.SubjectAltName = append(serverInput.Tls.SubjectAltNames, altNames)
+			}
+			server.Tls.MinProtocolVersion = types.ProtocolVersion(serverInput.Tls.MinProtocolVersion.String())
+			server.Tls.MaxProtocolVersion = types.ProtocolVersion(serverInput.Tls.MaxProtocolVersion.String())
+		}
+		if serverInput.Port != nil {
+			server.Port = new(types.Port)
+			server.Port.Name = serverInput.Port.Name
+			server.Port.Nummber = serverInput.Port.Number
+			server.Port.Protocol = types.Protocols(serverInput.Port.Protocol)
+		}
+		for _, host := range serverInput.Hosts {
+			server.Hosts = append(server.Hosts, host)
+		}
+
+		gateway.ServiceAttributes.Servers = append(gateway.ServiceAttributes.Servers, server)
+
+	}
+	return gateway, nil
+
+}
+
+func convertToCPServiceEntry(input *v1alpha3.ServiceEntry) (*types.ServiceEntry, error) {
+	svcEntry := new(types.ServiceEntry)
+	svcEntry.Name = input.Name
+	svcEntry.Namespace = input.Namespace
+	svcEntry.ServiceType = "mesh"
+	svcEntry.ServiceSubType = "service_entry"
+	if input.Labels["version"] != "" {
+		svcEntry.Version = input.Labels["version"]
+	}
+	svcEntry.ServiceAttributes = new(types.ServiceEntryAttributes)
+	for _, host := range input.Spec.Hosts {
+		svcEntry.ServiceAttributes.Hosts = append(svcEntry.ServiceAttributes.Hosts, host)
+	}
+	for _, address := range input.Spec.Addresses {
+		svcEntry.ServiceAttributes.Addresses = append(svcEntry.ServiceAttributes.Addresses, address)
+	}
+	for _, port := range input.Spec.Ports {
+		tempPort := new(types.ServiceEntryPort)
+		tempPort.Name = port.Name
+		tempPort.Protocol = port.Protocol
+		tempPort.Number = port.Number
+		svcEntry.ServiceAttributes.Ports = append(svcEntry.ServiceAttributes.Ports, tempPort)
+
+	}
+	for _, entryPoint := range input.Spec.Endpoints {
+		tempEntryPoint := new(types.ServiceEntryEndpoint)
+		tempEntryPoint.Address = entryPoint.Address
+		tempEntryPoint.Locality = entryPoint.Locality
+		tempEntryPoint.Network = entryPoint.Network
+		tempEntryPoint.Ports = make(map[string]uint32)
+		tempEntryPoint.Ports = entryPoint.Ports
+		tempEntryPoint.Labels = make(map[string]string)
+		tempEntryPoint.Labels = entryPoint.Labels
+
+		svcEntry.ServiceAttributes.Endpoints = append(svcEntry.ServiceAttributes.Endpoints, tempEntryPoint)
+
+	}
+
+	svcEntry.ServiceAttributes.ExportTo = input.Spec.ExportTo
+	for _, name := range input.Spec.SubjectAltNames {
+		svcEntry.ServiceAttributes.SubjectAltNames = append(svcEntry.ServiceAttributes.SubjectAltNames, name)
+	}
+
+	return svcEntry, nil
 }

@@ -11,6 +11,8 @@ import (
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
+	"istio.io/api/networking/v1alpha3"
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v2beta2"
 	batch "k8s.io/api/batch/v1"
@@ -1443,6 +1445,14 @@ func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.De
 						}
 					}
 
+					//if istioVS, err := CreateIstioVirtualService(kubeSvc, dep.Spec.Template.Labels); err == nil{
+					//	if CpIstioVS, err1 := getCpConvertedTemplate(istioVS, istioVS.Kind); err1 == nil{
+					//
+					//	}
+					//}
+
+					// this is the place where istio components will get.
+
 				}
 			}
 		}
@@ -2130,6 +2140,30 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 	return clusterrole, nil
 }
 
+func (conn *GrpcConn) getServiceDeployments(ctx context.Context, key string, value string, namespace string) (*v1.DeploymentList, error) {
+
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "deployments", "-l", key, "=", value, "-n", namespace, "-o", "yaml"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var deploymentList *v1.DeploymentList
+	err = yaml.Unmarshal(response.Resource, &deploymentList)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return deploymentList, nil
+}
+
 func isAlreadyExist(namespace, svcsubtype, name *string) bool {
 	for _, val := range serviceTemplates {
 		if val.NameSpace == namespace && val.ServiceSubType == svcsubtype && val.Name == name {
@@ -2586,4 +2620,57 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 
 	return template, nil
 
+}
+
+func CreateIstioVirtualService(svc v2.Service, labels map[string]string) (*istioClient.VirtualService, error) {
+	istioVS := new(istioClient.VirtualService)
+	istioVS.Kind = "VirtualService"
+	istioVS.APIVersion = "networking.istio.io/v1alpha3"
+	istioVS.Name = svc.Name
+	istioVS.Namespace = svc.Namespace
+	istioVS.Spec.Hosts = []string{svc.Name}
+
+	for key, value := range labels {
+		if key == "app" {
+			continue
+		}
+		httpRoute := new(v1alpha3.HTTPRoute)
+		routeRule := new(v1alpha3.HTTPRouteDestination)
+		routeRule.Destination = &v1alpha3.Destination{Host: svc.Name, Subset: value}
+		httpRoute.Route = append(httpRoute.Route, routeRule)
+		istioVS.Spec.Http = append(istioVS.Spec.Http, httpRoute)
+	}
+
+	return istioVS, nil
+
+}
+
+func CreateIstioDestinationRule(svc v2.Service, labels map[string]string) (*istioClient.DestinationRule, error) {
+	destRule := new(istioClient.DestinationRule)
+	destRule.Kind = "DestinationRule"
+	destRule.APIVersion = "networking.istio.io/v1alpha3"
+	destRule.Name = svc.Name
+	destRule.Namespace = svc.Namespace
+	destRule.Spec.Host = svc.Name
+	destRule.Spec.TrafficPolicy = new(v1alpha3.TrafficPolicy)
+	destRule.Spec.TrafficPolicy.Tls = new(v1alpha3.TLSSettings)
+	destRule.Spec.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_ISTIO_MUTUAL
+	destRule.Spec.TrafficPolicy.LoadBalancer = new(v1alpha3.LoadBalancerSettings)
+	destRule.Spec.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+		Simple: v1alpha3.LoadBalancerSettings_ROUND_ROBIN,
+	}
+
+	var subsets []*v1alpha3.Subset
+	for key, value := range labels {
+		subset := new(v1alpha3.Subset)
+		if value == svc.Name {
+			continue
+		} else {
+			subset.Name = value
+			subset.Labels = make(map[string]string)
+			subset.Labels[key] = value
+			subsets = append(subsets, subset)
+		}
+	}
+	return destRule, nil
 }

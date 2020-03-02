@@ -106,6 +106,11 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
+	case "VirtualService":
+		if err := ConvertVirtualServiceToYaml(req, serviceResp); err != nil {
+			return nil, err
+		}
+
 	}
 
 	return serviceResp, nil
@@ -613,4 +618,25 @@ func ConvertCronJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServic
 		serviceResp.Namespace = result.Namespace
 	}
 	return nil
+}
+func ConvertVirtualServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+	ds := pb.VirtualService{}
+	if err := json.Unmarshal(req.Service, &ds); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getVirtualService(&ds)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if byteData, err := yaml.Marshal(result); err != nil {
+		utils.Error.Println(err)
+		return err
+	} else {
+		serviceResp.Service = byteData
+		serviceResp.Namespace = result.Namespace
+	}
+	return nil
+
 }
