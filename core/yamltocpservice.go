@@ -869,7 +869,7 @@ func convertToCPCronJob(job *batchv1.CronJob) (*types.CronJobService, error) {
 	cpJob.Name = job.Labels["app"]
 	cpJob.Version = job.Labels["version"]
 	cpJob.ServiceType = "k8s"
-	cpJob.ServiceSubType = "job"
+	cpJob.ServiceSubType = "cronjob"
 
 	if job.Namespace == "" {
 		cpJob.Namespace = "default"
