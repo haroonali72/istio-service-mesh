@@ -233,7 +233,9 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
+	var labels map[string]string
 	for key, value := range job.Spec.Template.Labels {
+		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
@@ -256,6 +258,14 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 						return
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, jobTemp.ServiceId)
 						jobTemp.AfterServices = append(jobTemp.AfterServices, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
@@ -609,7 +619,9 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
+	var labels map[string]string
 	for key, value := range cronjob.Spec.JobTemplate.Spec.Template.Labels {
+		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
@@ -632,6 +644,14 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 						return
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, cronjobTemp.ServiceId)
 						cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
@@ -983,7 +1003,9 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
+	var labels map[string]string
 	for key, value := range daemonset.Spec.Template.Labels {
+		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
@@ -1006,6 +1028,14 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 						return
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, daemonsetTemp.ServiceId)
 						daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
@@ -1360,7 +1390,9 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
+	var labels map[string]string
 	for key, value := range statefulset.Spec.Template.Labels {
+		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
@@ -1383,6 +1415,14 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 						return
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, stsTemp.ServiceId)
 						stsTemp.AfterServices = append(stsTemp.AfterServices, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
@@ -1762,7 +1802,9 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 
 	//finding kubernetes service
 	var kubeSvcList []*v2.Service
+	var labels map[string]string
 	for key, value := range dep.Spec.Template.Labels {
+		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			utils.Error.Println(err)
@@ -1786,6 +1828,14 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 						return
 					}
 					if !isAlreadyExist(k8serviceTemp.NameSpace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, depTemp.ServiceId)
 						depTemp.AfterServices = append(depTemp.AfterServices, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
@@ -3192,7 +3242,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 	svcTemp.AfterServices = append(svcTemp.AfterServices, DStemplate.ServiceId)
 	DStemplate.BeforeServices = append(DStemplate.BeforeServices, svcTemp.ServiceId)
 
-	svcComponents = append(svcComponents, svcTemp)
+	//svcComponents = append(svcComponents, svcTemp)
 	svcComponents = append(svcComponents, VStemplate)
 	svcComponents = append(svcComponents, DStemplate)
 
