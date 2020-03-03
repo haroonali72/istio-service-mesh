@@ -232,11 +232,14 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	}
 
 	//kubernetes service depecndency findings
-	var kubeSvcList *v2.ServiceList
+	var kubeSvcList []*v2.Service
 	for key, value := range job.Spec.Template.Labels {
-		kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
+		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
+		}
+		for _, kubesvc := range kubesvclist.Items {
+			kubeSvcList = append(kubeSvcList, &kubesvc)
 		}
 	}
 
@@ -244,9 +247,9 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	for _, container := range job.Spec.Template.Spec.Containers {
 
 		//resolving dependencies of kubernetes service
-		if kubeSvcList != nil && len(kubeSvcList.Items) > 0 {
-			for _, kubeSvc := range kubeSvcList.Items {
-				if isPortMatched(&kubeSvc, &container) {
+		if kubeSvcList != nil && len(kubeSvcList) > 0 {
+			for _, kubeSvc := range kubeSvcList {
+				if isPortMatched(kubeSvc, &container) {
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
@@ -605,11 +608,14 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	}
 
 	//kubernetes service depecndency findings
-	var kubeSvcList *v2.ServiceList
+	var kubeSvcList []*v2.Service
 	for key, value := range cronjob.Spec.JobTemplate.Spec.Template.Labels {
-		kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
+		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
+		}
+		for _, kubesvc := range kubesvclist.Items {
+			kubeSvcList = append(kubeSvcList, &kubesvc)
 		}
 	}
 
@@ -617,9 +623,9 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	for _, container := range cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers {
 
 		//resolving dependencies of kubernetes service
-		if kubeSvcList != nil && len(kubeSvcList.Items) > 0 {
-			for _, kubeSvc := range kubeSvcList.Items {
-				if isPortMatched(&kubeSvc, &container) {
+		if kubeSvcList != nil && len(kubeSvcList) > 0 {
+			for _, kubeSvc := range kubeSvcList {
+				if isPortMatched(kubeSvc, &container) {
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
@@ -976,11 +982,14 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	}
 
 	//kubernetes service depecndency findings
-	var kubeSvcList *v2.ServiceList
+	var kubeSvcList []*v2.Service
 	for key, value := range daemonset.Spec.Template.Labels {
-		kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
+		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
+		}
+		for _, kubesvc := range kubesvclist.Items {
+			kubeSvcList = append(kubeSvcList, &kubesvc)
 		}
 	}
 
@@ -988,9 +997,9 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	for _, container := range daemonset.Spec.Template.Spec.Containers {
 
 		//resolving dependencies of kubernetes service
-		if kubeSvcList != nil && len(kubeSvcList.Items) > 0 {
-			for _, kubeSvc := range kubeSvcList.Items {
-				if isPortMatched(&kubeSvc, &container) {
+		if kubeSvcList != nil && len(kubeSvcList) > 0 {
+			for _, kubeSvc := range kubeSvcList {
+				if isPortMatched(kubeSvc, &container) {
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
@@ -1350,11 +1359,14 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	}
 
 	//kubernetes service depecndency findings
-	var kubeSvcList *v2.ServiceList
+	var kubeSvcList []*v2.Service
 	for key, value := range statefulset.Spec.Template.Labels {
-		kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
+		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			return
+		}
+		for _, kubesvc := range kubesvclist.Items {
+			kubeSvcList = append(kubeSvcList, &kubesvc)
 		}
 	}
 
@@ -1362,9 +1374,9 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	for _, container := range statefulset.Spec.Template.Spec.Containers {
 
 		//resolving dependencies of kubernetes service
-		if kubeSvcList != nil && len(kubeSvcList.Items) > 0 {
-			for _, kubeSvc := range kubeSvcList.Items {
-				if isPortMatched(&kubeSvc, &container) {
+		if kubeSvcList != nil && len(kubeSvcList) > 0 {
+			for _, kubeSvc := range kubeSvcList {
+				if isPortMatched(kubeSvc, &container) {
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
@@ -1749,12 +1761,15 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	}
 
 	//finding kubernetes service
-	var kubeSvcList *v2.ServiceList
+	var kubeSvcList []*v2.Service
 	for key, value := range dep.Spec.Template.Labels {
-		kubeSvcList, err = conn.getKubernetesServices(ctx, key, value, namespace)
+		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
 		if err != nil {
 			utils.Error.Println(err)
 			return
+		}
+		for _, kubesvc := range kubesvclist.Items {
+			kubeSvcList = append(kubeSvcList, &kubesvc)
 		}
 	}
 
@@ -1762,9 +1777,9 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	for _, container := range dep.Spec.Template.Spec.Containers {
 
 		//resolving dependencies of kubernetes service
-		if kubeSvcList != nil && len(kubeSvcList.Items) > 0 {
-			for _, kubeSvc := range kubeSvcList.Items {
-				if isPortMatched(&kubeSvc, &container) {
+		if kubeSvcList != nil && len(kubeSvcList) > 0 {
+			for _, kubeSvc := range kubeSvcList {
+				if isPortMatched(kubeSvc, &container) {
 					k8serviceTemp, err := getCpConvertedTemplate(kubeSvc, kubeSvc.Kind)
 					if err != nil {
 						utils.Error.Println(err)
