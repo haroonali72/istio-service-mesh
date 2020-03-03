@@ -3092,3 +3092,162 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 	return template, nil
 
 }
+
+func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]string) ([]*types.ServiceTemplate, error) {
+	var cpKubeService types.Service
+	istioVS := new(types.VirtualService)
+	destRule := new(types.DestinationRules)
+	var svcComponents []*types.ServiceTemplate
+	cpKubeService.Name = *svcTemp.Name
+	cpKubeService.ServiceId = *svcTemp.ServiceId
+	cpKubeService.ServiceType = *svcTemp.ServiceType
+	cpKubeService.ServiceSubType = *svcTemp.ServiceSubType
+	if svcTemp.NameSpace != nil {
+		cpKubeService.Namespace = *svcTemp.NameSpace
+	} else {
+		cpKubeService.Namespace = "default"
+	}
+	bytes, err := json.Marshal(svcTemp.ServiceAttributes)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &cpKubeService)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	istioVS.Name = cpKubeService.Name
+	istioVS.Version = cpKubeService.Version
+	istioVS.Namespace = cpKubeService.Namespace
+	istioVS.ServiceType = "mesh"
+	istioVS.ServiceSubType = "virtual_service"
+	istioVS.ServiceAttributes = new(types.VSServiceAttribute)
+	istioVS.ServiceAttributes.Hosts = []string{cpKubeService.Name}
+
+	for key, value := range labels {
+		if key == "app" {
+			continue
+		}
+		http := new(types.Http)
+		httpRoute := new(types.HttpRoute)
+		routeRule := new(types.RouteDestination)
+		routeRule.Host = cpKubeService.Name
+		routeRule.Subnet = value
+		httpRoute.Routes = append(httpRoute.Routes, routeRule)
+		http.Name = cpKubeService.Name + "-" + value
+		http.HttpRoute = append(http.HttpRoute, httpRoute)
+		istioVS.ServiceAttributes.Http = append(istioVS.ServiceAttributes.Http, http)
+
+	}
+	destRule.ServiceType = "mesh"
+	destRule.ServiceSubType = "destination_rules"
+	destRule.Name = cpKubeService.Name + "-destination-rule"
+	destRule.ServiceAttributes.Host = cpKubeService.Name
+	destRule.ServiceAttributes.TrafficPolicy = &types.TrafficPolicy{
+		LoadBalancer: &types.LoadBalancer{Simple: "ROUND_ROBIN"},
+	}
+	for key, value := range labels {
+		subset := new(types.Subset)
+		if value == cpKubeService.Name {
+			continue
+		} else {
+			subset.Name = value
+			lab := make(map[string]string)
+			lab[key] = value
+			subset.Labels = &lab
+			destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
+		}
+	}
+
+	var VStemplate *types.ServiceTemplate
+	bytes, err = json.Marshal(istioVS)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &VStemplate)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	id := strconv.Itoa(rand.Int())
+	VStemplate.ServiceId = &id
+	svcTemp.AfterServices = append(svcTemp.AfterServices, VStemplate.ServiceId)
+	VStemplate.BeforeServices = append(VStemplate.BeforeServices, svcTemp.ServiceId)
+
+	var DStemplate *types.ServiceTemplate
+	bytes, err = json.Marshal(destRule)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	err = json.Unmarshal(bytes, &DStemplate)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+	id = strconv.Itoa(rand.Int())
+	DStemplate.ServiceId = &id
+	svcTemp.AfterServices = append(svcTemp.AfterServices, DStemplate.ServiceId)
+	DStemplate.BeforeServices = append(DStemplate.BeforeServices, svcTemp.ServiceId)
+
+	svcComponents = append(svcComponents, svcTemp)
+	svcComponents = append(svcComponents, VStemplate)
+	svcComponents = append(svcComponents, DStemplate)
+
+	return svcComponents, nil
+}
+
+//func CreateIstioVirtualService(svc v2.Service, labels map[string]string) (*istioClient.VirtualService, error) {
+//	istioVS := new(istioClient.VirtualService)
+//	istioVS.Kind = "VirtualService"
+//	istioVS.APIVersion = "networking.istio.io/v1alpha3"
+//	istioVS.Name = svc.Name
+//	istioVS.Namespace = svc.Namespace
+//	istioVS.Spec.Hosts = []string{svc.Name}
+//
+//	for key, value := range labels {
+//		if key == "app" {
+//			continue
+//		}
+//		httpRoute := new(v1alpha3.HTTPRoute)
+//		routeRule := new(v1alpha3.HTTPRouteDestination)
+//		routeRule.Destination = &v1alpha3.Destination{Host: svc.Name, Subset: value}
+//		httpRoute.Route = append(httpRoute.Route, routeRule)
+//		istioVS.Spec.Http = append(istioVS.Spec.Http, httpRoute)
+//	}
+//
+//	return istioVS, nil
+//
+//}
+//
+//func CreateIstioDestinationRule(svc v2.Service, labels map[string]string) (*istioClient.DestinationRule, error) {
+//	destRule := new(istioClient.DestinationRule)
+//	destRule.Kind = "DestinationRule"
+//	destRule.APIVersion = "networking.istio.io/v1alpha3"
+//	destRule.Name = svc.Name
+//	destRule.Namespace = svc.Namespace
+//	destRule.Spec.Host = svc.Name
+//	destRule.Spec.TrafficPolicy = new(v1alpha3.TrafficPolicy)
+//	destRule.Spec.TrafficPolicy.Tls = new(v1alpha3.TLSSettings)
+//	destRule.Spec.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_ISTIO_MUTUAL
+//	destRule.Spec.TrafficPolicy.LoadBalancer = new(v1alpha3.LoadBalancerSettings)
+//	destRule.Spec.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+//		Simple: v1alpha3.LoadBalancerSettings_ROUND_ROBIN,
+//	}
+//
+//	var subsets []*v1alpha3.Subset
+//	for key, value := range labels {
+//		subset := new(v1alpha3.Subset)
+//		if value == svc.Name {
+//			continue
+//		} else {
+//			subset.Name = value
+//			subset.Labels = make(map[string]string)
+//			subset.Labels[key] = value
+//			subsets = append(subsets, subset)
+//		}
+//	}
+//	return destRule, nil
+//}
