@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"sigs.k8s.io/yaml"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -217,7 +218,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	}
 	if len(hpaList.Items) > 0 {
 		for _, hpa := range hpaList.Items {
-			if hpa.Spec.ScaleTargetRef.APIVersion == job.APIVersion && hpa.Spec.ScaleTargetRef.Kind == job.Kind && hpa.Spec.ScaleTargetRef.Name == job.Name {
+			if hpa.Spec.ScaleTargetRef.APIVersion == job.APIVersion && strings.ToLower(hpa.Spec.ScaleTargetRef.Kind) == strings.ToLower(job.Kind) && hpa.Spec.ScaleTargetRef.Name == job.Name {
 				hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 				if err != nil {
 					utils.Error.Println(err)
@@ -590,7 +591,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	}
 	if len(hpaList.Items) > 0 {
 		for _, hpa := range hpaList.Items {
-			if hpa.Spec.ScaleTargetRef.APIVersion == cronjob.APIVersion && hpa.Spec.ScaleTargetRef.Kind == cronjob.Kind && hpa.Spec.ScaleTargetRef.Name == cronjob.Name {
+			if hpa.Spec.ScaleTargetRef.APIVersion == cronjob.APIVersion && strings.ToLower(hpa.Spec.ScaleTargetRef.Kind) == strings.ToLower(cronjob.Kind) && hpa.Spec.ScaleTargetRef.Name == cronjob.Name {
 				hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 				if err != nil {
 					utils.Error.Println(err)
@@ -1335,7 +1336,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 
 	if len(hpaList.Items) > 0 {
 		for _, hpa := range hpaList.Items {
-			if hpa.Spec.ScaleTargetRef.APIVersion == statefulset.APIVersion && hpa.Spec.ScaleTargetRef.Kind == statefulset.Kind && hpa.Spec.ScaleTargetRef.Name == statefulset.Name {
+			if hpa.Spec.ScaleTargetRef.APIVersion == statefulset.APIVersion && strings.ToLower(hpa.Spec.ScaleTargetRef.Kind) == strings.ToLower(statefulset.Kind) && hpa.Spec.ScaleTargetRef.Name == statefulset.Name {
 				hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 				if err != nil {
 					utils.Error.Println(err)
@@ -1734,7 +1735,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	}
 	if len(hpaList.Items) > 0 {
 		for _, hpa := range hpaList.Items {
-			if hpa.Spec.ScaleTargetRef.APIVersion == dep.APIVersion && hpa.Spec.ScaleTargetRef.Kind == dep.Kind && hpa.Spec.ScaleTargetRef.Name == dep.Name {
+			if hpa.Spec.ScaleTargetRef.APIVersion == dep.APIVersion && strings.ToLower(hpa.Spec.ScaleTargetRef.Kind) == strings.ToLower(dep.Kind) && hpa.Spec.ScaleTargetRef.Name == dep.Name {
 				hpaTemplate, err := getCpConvertedTemplate(hpa, hpa.Kind)
 				if err != nil {
 					utils.Error.Println(err)
