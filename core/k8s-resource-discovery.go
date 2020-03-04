@@ -1802,7 +1802,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 
 	//finding kubernetes service
 	var kubeSvcList []*v2.Service
-	var labels map[string]string
+	labels := make(map[string]string)
 	for key, value := range dep.Spec.Template.Labels {
 		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
@@ -3144,10 +3144,11 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 }
 
 func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]string) ([]*types.ServiceTemplate, error) {
-	var cpKubeService types.Service
-	istioVS := new(types.VirtualService)
-	destRule := new(types.DestinationRules)
+
 	var svcComponents []*types.ServiceTemplate
+	VSSubType := "virtual_service"
+	DRSubType := "destination_rule"
+	cpKubeService := new(types.Service)
 	cpKubeService.Name = *svcTemp.Name
 	cpKubeService.ServiceId = *svcTemp.ServiceId
 	cpKubeService.ServiceType = *svcTemp.ServiceType
@@ -3162,89 +3163,170 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 		utils.Error.Println(err)
 		return nil, err
 	}
-	err = json.Unmarshal(bytes, &cpKubeService)
+	err = json.Unmarshal(bytes, &cpKubeService.ServiceAttributes)
 	if err != nil {
 		utils.Error.Println(err)
 		return nil, err
 	}
-	istioVS.Name = cpKubeService.Name
-	istioVS.Version = cpKubeService.Version
-	istioVS.Namespace = cpKubeService.Namespace
-	istioVS.ServiceType = "mesh"
-	istioVS.ServiceSubType = "virtual_service"
-	istioVS.ServiceAttributes = new(types.VSServiceAttribute)
-	istioVS.ServiceAttributes.Hosts = []string{cpKubeService.Name}
 
-	for key, value := range labels {
-		if key == "app" {
-			continue
+	if !isAlreadyExist(svcTemp.NameSpace, &VSSubType, svcTemp.Name) {
+		destRule := new(types.DestinationRules)
+		istioVS := new(types.VirtualService)
+		istioVS.Name = cpKubeService.Name
+		istioVS.Namespace = cpKubeService.Namespace
+		istioVS.Version = cpKubeService.Version
+		istioVS.ServiceType = "mesh"
+		istioVS.ServiceSubType = "virtual_service"
+		istioVS.ServiceAttributes = new(types.VSServiceAttribute)
+		for _, value := range cpKubeService.ServiceAttributes.Selector {
+			istioVS.ServiceAttributes.Hosts = []string{value}
+			for _, label := range labels {
+				if label == value {
+					continue
+				}
+				http := new(types.Http)
+				httpRoute := new(types.HttpRoute)
+				routeRule := new(types.RouteDestination)
+				routeRule.Host = value
+				routeRule.Subnet = label
+				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
+				httpRoute.Routes = append(httpRoute.Routes, routeRule)
+				http.HttpRoute = append(http.HttpRoute, httpRoute)
+				istioVS.ServiceAttributes.Http = append(istioVS.ServiceAttributes.Http, http)
+
+			}
 		}
-		http := new(types.Http)
-		httpRoute := new(types.HttpRoute)
-		routeRule := new(types.RouteDestination)
-		routeRule.Host = cpKubeService.Name
-		routeRule.Subnet = value
-		httpRoute.Routes = append(httpRoute.Routes, routeRule)
-		http.Name = cpKubeService.Name + "-" + value
-		http.HttpRoute = append(http.HttpRoute, httpRoute)
-		istioVS.ServiceAttributes.Http = append(istioVS.ServiceAttributes.Http, http)
 
-	}
-	destRule.ServiceType = "mesh"
-	destRule.ServiceSubType = "destination_rules"
-	destRule.Name = cpKubeService.Name + "-destination-rule"
-	destRule.ServiceAttributes.Host = cpKubeService.Name
-	destRule.ServiceAttributes.TrafficPolicy = &types.TrafficPolicy{
-		LoadBalancer: &types.LoadBalancer{Simple: "ROUND_ROBIN"},
-	}
-	for key, value := range labels {
-		subset := new(types.Subset)
-		if value == cpKubeService.Name {
-			continue
-		} else {
-			subset.Name = value
-			lab := make(map[string]string)
-			lab[key] = value
-			subset.Labels = &lab
-			destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
+		destRule.ServiceType = "mesh"
+		destRule.ServiceSubType = "destination_rule"
+		destRule.Name = cpKubeService.Name
+		destRule.Namespace = cpKubeService.Namespace
+		for _, value := range cpKubeService.ServiceAttributes.Selector {
+			destRule.ServiceAttributes.Host = value
+			for key, label := range labels {
+				subset := new(types.Subset)
+				if label == value {
+					continue
+				} else {
+					subset.Name = label
+					lab := make(map[string]string)
+					lab[key] = label
+					subset.Labels = &lab
+					destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
+				}
+			}
 		}
-	}
 
-	var VStemplate *types.ServiceTemplate
-	bytes, err = json.Marshal(istioVS)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
-	}
-	err = json.Unmarshal(bytes, &VStemplate)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
-	}
-	id := strconv.Itoa(rand.Int())
-	VStemplate.ServiceId = &id
-	svcTemp.AfterServices = append(svcTemp.AfterServices, VStemplate.ServiceId)
-	VStemplate.BeforeServices = append(VStemplate.BeforeServices, svcTemp.ServiceId)
+		var VStemplate *types.ServiceTemplate
+		bytes, err = json.Marshal(istioVS)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &VStemplate)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		VStemplate.ServiceId = &id
+		svcTemp.AfterServices = append(svcTemp.AfterServices, VStemplate.ServiceId)
+		VStemplate.BeforeServices = append(VStemplate.BeforeServices, svcTemp.ServiceId)
 
-	var DStemplate *types.ServiceTemplate
-	bytes, err = json.Marshal(destRule)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
-	}
-	err = json.Unmarshal(bytes, &DStemplate)
-	if err != nil {
-		utils.Error.Println(err)
-		return nil, err
-	}
-	id = strconv.Itoa(rand.Int())
-	DStemplate.ServiceId = &id
-	svcTemp.AfterServices = append(svcTemp.AfterServices, DStemplate.ServiceId)
-	DStemplate.BeforeServices = append(DStemplate.BeforeServices, svcTemp.ServiceId)
+		var DStemplate *types.ServiceTemplate
+		bytes, err = json.Marshal(destRule)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &DStemplate)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id = strconv.Itoa(rand.Int())
+		DStemplate.ServiceId = &id
+		svcTemp.AfterServices = append(svcTemp.AfterServices, DStemplate.ServiceId)
+		DStemplate.BeforeServices = append(DStemplate.BeforeServices, svcTemp.ServiceId)
 
-	//svcComponents = append(svcComponents, svcTemp)
-	svcComponents = append(svcComponents, VStemplate)
-	svcComponents = append(svcComponents, DStemplate)
+		//svcComponents = append(svcComponents, svcTemp)
+		svcComponents = append(svcComponents, VStemplate)
+		svcComponents = append(svcComponents, DStemplate)
+		return svcComponents, nil
+
+	} else {
+
+		VStemplate := GetExistingService(svcTemp.NameSpace, &VSSubType, svcTemp.Name)
+		DRtemplate := GetExistingService(svcTemp.NameSpace, &DRSubType, svcTemp.Name)
+		bytes, err := json.Marshal(VStemplate.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		virtualServiceAttr := new(types.VSServiceAttribute)
+		err = json.Unmarshal(bytes, &virtualServiceAttr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		for _, value := range cpKubeService.ServiceAttributes.Selector {
+			for _, label := range labels {
+				if label == value {
+					continue
+				}
+				http := new(types.Http)
+				httpRoute := new(types.HttpRoute)
+				routeRule := new(types.RouteDestination)
+				routeRule.Host = value
+				routeRule.Subnet = label
+				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
+				httpRoute.Routes = append(httpRoute.Routes, routeRule)
+				http.HttpRoute = append(http.HttpRoute, httpRoute)
+				virtualServiceAttr.Http = append(virtualServiceAttr.Http, http)
+
+			}
+		}
+
+		bytes, err = json.Marshal(virtualServiceAttr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &VStemplate.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		bytes, err = json.Marshal(DRtemplate.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var destRule types.DRServiceAttribute
+		err = json.Unmarshal(bytes, &destRule)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		for _, value := range cpKubeService.ServiceAttributes.Selector {
+			destRule.Host = value
+			for key, label := range labels {
+				subset := new(types.Subset)
+				if label == value {
+					continue
+				} else {
+					subset.Name = label
+					lab := make(map[string]string)
+					lab[key] = label
+					subset.Labels = &lab
+					destRule.Subsets = append(destRule.Subsets, subset)
+				}
+			}
+		}
+
+	}
 
 	return svcComponents, nil
 }
