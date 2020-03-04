@@ -3279,20 +3279,17 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
+
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			for _, label := range labels {
 				if label == value {
 					continue
 				}
-				http := new(types.Http)
-				httpRoute := new(types.HttpRoute)
 				routeRule := new(types.RouteDestination)
 				routeRule.Host = value
 				routeRule.Subnet = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
-				httpRoute.Routes = append(httpRoute.Routes, routeRule)
-				http.HttpRoute = append(http.HttpRoute, httpRoute)
-				virtualServiceAttr.Http = append(virtualServiceAttr.Http, http)
+				virtualServiceAttr.Http[0].HttpRoute[0].Routes = append(virtualServiceAttr.Http[0].HttpRoute[0].Routes, routeRule)
 
 			}
 		}
@@ -3313,15 +3310,15 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
-		var destRule types.DRServiceAttribute
-		err = json.Unmarshal(bytes, &destRule)
+		var destRuleAttr types.DRServiceAttribute
+		err = json.Unmarshal(bytes, &destRuleAttr)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
 		}
 
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
-			destRule.Host = value
+			destRuleAttr.Host = value
 			for key, label := range labels {
 				subset := new(types.Subset)
 				if label == value {
@@ -3331,14 +3328,22 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 					lab := make(map[string]string)
 					lab[key] = label
 					subset.Labels = &lab
-					destRule.Subsets = append(destRule.Subsets, subset)
+					destRuleAttr.Subsets = append(destRuleAttr.Subsets, subset)
 				}
 			}
 		}
-
+		bytes, err = json.Marshal(destRuleAttr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &DRtemplate.ServiceAttributes)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		return nil, nil
 	}
-
-	return svcComponents, nil
 }
 
 //func CreateIstioVirtualService(svc v2.Service, labels map[string]string) (*istioClient.VirtualService, error) {
