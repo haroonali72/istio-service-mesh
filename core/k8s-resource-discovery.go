@@ -233,7 +233,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
-	var labels map[string]string
+	labels := make(map[string]string)
 	for key, value := range job.Spec.Template.Labels {
 		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
@@ -621,7 +621,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
-	var labels map[string]string
+	labels := make(map[string]string)
 	for key, value := range cronjob.Spec.JobTemplate.Spec.Template.Labels {
 		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
@@ -1007,7 +1007,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
-	var labels map[string]string
+	labels := make(map[string]string)
 	for key, value := range daemonset.Spec.Template.Labels {
 		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
@@ -1396,7 +1396,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 
 	//kubernetes service depecndency findings
 	var kubeSvcList []*v2.Service
-	var labels map[string]string
+	labels := make(map[string]string)
 	for key, value := range statefulset.Spec.Template.Labels {
 		labels[key] = value
 		kubesvclist, err := conn.getKubernetesServices(ctx, key, value, namespace)
