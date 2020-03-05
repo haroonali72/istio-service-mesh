@@ -1,6 +1,12 @@
 package volumes
 
-import ()
+import (
+	"istio-service-mesh/types"
+	core "k8s.io/api/core/v1"
+	"k8s.io/api/storage/v1"
+	"strconv"
+	"strings"
+)
 
 /*
 func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
@@ -34,10 +40,10 @@ func GetStorageClassName(volumeName string) string {
 func provisionAwsClass(storageClass *v1.StorageClass, volume types.Volume) {
 	storageClass.Provisioner = "kubernetes.io/aws-ebs"
 
-	if strings.ToLower(volume.Params.Type) == "io1" && volume.Params.Iops != "" {
+	if strings.ToLower(volume.Params.Type) == "io1" && volume.Params.Iops != 0 {
 		storageClass.Parameters = map[string]string{
 			"type":      volume.Params.Type,
-			"iopsPerGB": volume.Params.Iops,
+			"iopsPerGB": strconv.Itoa(volume.Params.Iops),
 		}
 	} else if strings.ToLower(volume.Params.Type) != "" {
 		storageClass.Parameters = map[string]string{
