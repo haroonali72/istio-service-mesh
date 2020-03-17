@@ -11,7 +11,12 @@ import (
 func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim := v1.PersistentVolumeClaim{}
 
-	storageClassName := GetStorageClassName(volume.Name)
+	var storageClassName string
+	if volume.Cloud == string(types.DO) {
+		storageClassName = "do-block-storage"
+	} else {
+		storageClassName = GetStorageClassName(volume.Name)
+	}
 
 	volumeClaim.TypeMeta.Kind = "PersistentVolumeClaim"
 	volumeClaim.TypeMeta.APIVersion = "v1"

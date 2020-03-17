@@ -6,6 +6,7 @@ const (
 	AWS   Cloud = "aws"
 	Azure Cloud = "azure"
 	GCP   Cloud = "gcp"
+	DO    Cloud = "do"
 )
 
 type Parameters struct {

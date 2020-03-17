@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
+func ProvisionStorageClass(volume types.Volume) *v1.StorageClass {
 	storageClass := v1.StorageClass{}
 
 	storageClass.TypeMeta.Kind = "StorageClass"
@@ -27,9 +27,11 @@ func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 		provisionAzureClass(&storageClass, volume)
 	case string(types.GCP):
 		provisionGCPClass(&storageClass, volume)
+	case string(types.DO):
+		return nil
 	}
 
-	return storageClass
+	return &storageClass
 }
 
 func GetStorageClassName(volumeName string) string {
