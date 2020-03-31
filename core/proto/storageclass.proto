@@ -27,15 +27,23 @@ message StorageClassServiceResponse {
 
 message StorageClassAttributes{
     VolumeBindingMode volumeBindingMode =1;
-    bool allowVolumeExpansion  =2;
+    string allowVolumeExpansion  =2;
     string  provisioner =3;
     Parameters scParameters =4;
     ReclaimPolicy reclaimPolicy =5;
+    repeated string mountOptions=6;
+    repeated TopologySelectorTerm allowedTopologies=7;
 }
-
+message  TopologySelectorTerm{
+   repeated TopologySelectorLabelRequirement matchLabelExpressions=1;
+}
+message TopologySelectorLabelRequirement{
+    string key=1;
+    repeated string values=2;
+}
 enum VolumeBindingMode{
     Immediate=0;
-    WaitForFirstCustomer=1;
+    WaitForFirstConsumer=1;
 }
 
 enum ReclaimPolicy{

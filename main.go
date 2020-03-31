@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"io/ioutil"
 	"istio-service-mesh/constants"
-	"istio-service-mesh/controllers"
 	"istio-service-mesh/core"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
@@ -61,7 +60,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_ = controllers.Notifier.Init_notifier()
 
 	port := fmt.Sprintf(":%s", constants.ServicePort)
 	lis, err := net.Listen("tcp", port)
@@ -70,16 +68,16 @@ func main() {
 	}
 	srv := grpc.NewServer(grpc.StatsHandler(&ocgrpc.ServerHandler{}))
 	svc := &core.Server{}
-	pb.RegisterKubernetesServer(srv, svc)
-	pb.RegisterRoleServer(srv, svc)
-	pb.RegisterRoleBindingServer(srv, svc)
-	pb.RegisterServiceAccountServer(srv, svc)
 	pb.RegisterGatewayServer(srv, svc)
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
 	pb.RegisterHpaServer(srv, svc)
-	pb.RegisterVirtualServer(srv, svc)
-	pb.RegisterDestinationrulesServer(srv, svc)
+
+	pb.RegisterServiceEntryServer(srv, svc)
+	pb.RegisterDeploymentServer(srv, svc)
+	pb.RegisterStorageClassServer(srv, svc)
+	pb.RegisterYamlServiceServer(srv, svc)
+	pb.RegisterYamlToCPServiceServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {

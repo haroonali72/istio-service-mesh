@@ -1,14 +1,9 @@
 package volumes
 
-import (
-	"istio-service-mesh/types"
-	core "k8s.io/api/core/v1"
-	"k8s.io/api/storage/v1"
-	"strconv"
-	"strings"
-)
+import ()
 
-func ProvisionStorageClass(volume types.Volume) *v1.StorageClass {
+/*
+func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 	storageClass := v1.StorageClass{}
 
 	storageClass.TypeMeta.Kind = "StorageClass"
@@ -27,11 +22,9 @@ func ProvisionStorageClass(volume types.Volume) *v1.StorageClass {
 		provisionAzureClass(&storageClass, volume)
 	case string(types.GCP):
 		provisionGCPClass(&storageClass, volume)
-	case string(types.DO):
-		return nil
 	}
 
-	return &storageClass
+	return storageClass
 }
 
 func GetStorageClassName(volumeName string) string {
@@ -41,10 +34,10 @@ func GetStorageClassName(volumeName string) string {
 func provisionAwsClass(storageClass *v1.StorageClass, volume types.Volume) {
 	storageClass.Provisioner = "kubernetes.io/aws-ebs"
 
-	if strings.ToLower(volume.Params.Type) == "io1" && volume.Params.Iops != 0 {
+	if strings.ToLower(volume.Params.Type) == "io1" && volume.Params.Iops != "" {
 		storageClass.Parameters = map[string]string{
 			"type":      volume.Params.Type,
-			"iopsPerGB": strconv.Itoa(volume.Params.Iops),
+			"iopsPerGB": volume.Params.Iops,
 		}
 	} else if strings.ToLower(volume.Params.Type) != "" {
 		storageClass.Parameters = map[string]string{
@@ -86,3 +79,4 @@ func provisionGCPClass(storageClass *v1.StorageClass, volume types.Volume) {
 		storageClass.Parameters["replication-type"] = volume.Params.ReplicationType
 	}
 }
+*/
