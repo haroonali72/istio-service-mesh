@@ -1830,7 +1830,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				}
 			}
 			utils.Info.Println(deployment.Name)
-			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
+
 			//add rbac classes
 
 			byteData, _ := json.Marshal(service.ServiceAttributes)
@@ -1860,6 +1860,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 
 						//add service account
 						finalObj.Services.ServiceAccountClasses = append(finalObj.Services.ServiceAccountClasses, serviceAccount)
+						deployment.Spec.Template.Spec.ServiceAccountName = serviceAccount.Name
 
 						// add roles and role bindings
 						for _, role := range roles {
@@ -1892,6 +1893,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 					utils.Info.Println("")
 				}
 			}
+			finalObj.Services.Deployments = append(finalObj.Services.Deployments, deployment)
 
 		case "daemonset":
 			daemonset, err := getDaemonSetObject(service)
