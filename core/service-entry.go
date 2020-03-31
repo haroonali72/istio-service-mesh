@@ -286,7 +286,9 @@ func getIstioServiceEntry(input *pb.ServiceEntryTemplate) (*istioClient.ServiceE
 	for _, endpoint := range input.ServiceAttributes.Endpoints {
 		Endpoint := new(v1alpha3.ServiceEntry_Endpoint)
 		Endpoint.Address = endpoint.Address
+		Endpoint.Ports = make(map[string]uint32)
 		Endpoint.Ports = endpoint.Ports
+		Endpoint.Labels = make(map[string]string)
 		Endpoint.Labels = endpoint.Labels
 		Endpoint.Locality = endpoint.Locality
 		Endpoint.Weight = endpoint.Weight

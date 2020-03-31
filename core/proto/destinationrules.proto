@@ -28,7 +28,7 @@ message DestinationRules {
 message DRServiceAttributes {
     string host =1;
     TrafficPolicy               traffic_policy	    =2;
-    Subset                      subsets		        =3;
+    repeated Subset                      subsets		        =3;
 }
 message TrafficPolicy {
     LoadBalancer                load_balancer        =1;
@@ -39,7 +39,7 @@ message TrafficPolicy {
 }
 
 message LoadBalancer {
-    string                      simple				 =1;
+    Simple                      simple				 =1;
     ConsistentHash              consistent_hash		 =2;
 }
 message  ConsistentHash {
@@ -54,7 +54,7 @@ message HttpCookie  {
     int64                       ttl                   =3;
 }
 message  PortLevelSetting {
-    DrPort                    dr_port 			        =1;
+    DrPort                    dr_port 			      =1;
     LoadBalancer              load_balancer			  =2;
     ConnectionPool            connection_pool	      =3;
     OutlierDetection          outlier_detection       =4;
@@ -79,7 +79,7 @@ message  TcpKeepalive {
 }
 message DrHttp{
     int32                     http_1_max_pending_requests =1;
-    int32                     http_2_max_requests         =2;
+    HTTPSettings              http_2_max_requests         =2;
     int32                     max_requests_per_connection =3;
     int32                     max_retries                 =4;
     int32                     idle_timeout                =5;
@@ -94,13 +94,13 @@ message  OutlierDetection{
     int32                    min_health_percent        =5;
 }
 message Subset{
-    repeated    string        name      			    =1;
+     string        name      			    =1;
     map<string, string>       labels	                =2;
     TrafficPolicy             traffic_policy		    =3;
 }
 
 message DrTls{
-    string                     mode			        =1;
+    TLSSettings               mode			            =1;
     string                    client_certificate	    =2;
     string                     private_key		        =3;
     string                    ca_certificate            =4;
@@ -108,16 +108,22 @@ message DrTls{
     repeated string           name                      =6;
 }
 
-//enum Mode {
-//    DISABLE = 0;
-//    SIMPLE = 1;
-//    MUTUAL = 2;
-//    ISTIO_MUTUAL = 3;
-//}
+enum TLSSettings {
+    DISABLE = 0;
+    SIMPLE = 1;
+    MUTUAL = 2;
+    ISTIO_MUTUAL = 3;
+}
 
-//enum Simple{
-//    ROUND_ROBIN=0;
-//    LEAST_CONN=1;
-//    RANDOM=2;
-//    PASSTHROUGH=3;
-//}
+enum Simple{
+   ROUND_ROBIN=0;
+  LEAST_CONN=1;
+   RANDOM=2;
+   PASSTHROUGH=3;
+}
+
+enum HTTPSettings{
+    DEFAULT=0;
+    DO_NOT_UPGRADE=1;
+    UPGRADE=2;
+}

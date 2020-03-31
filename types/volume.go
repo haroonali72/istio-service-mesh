@@ -4,8 +4,8 @@ import "k8s.io/apimachinery/pkg/api/resource"
 
 // Volume represents a named volume in a pod that may be accessed by any container in the pod.
 type Volume struct {
-	Name         string `json:"name" protobuf:"bytes,1,opt,name=name"`
-	VolumeSource `json:",inline" protobuf:"bytes,2,opt,name=volumeSource"`
+	Name         string       `json:"name" protobuf:"bytes,1,opt,name=name"`
+	VolumeSource VolumeSource `json:"volumeSource" protobuf:"bytes,2,opt,name=volumeSource"`
 }
 
 // Represents the source of a volume to mount.

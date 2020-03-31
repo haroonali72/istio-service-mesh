@@ -34,12 +34,20 @@ message DeploymentServiceAttributes {
     map<string, string> node_selector = 4;
     map<string, string> labels = 5;
     map<string, string> annotations = 6;
-    bool is_rbac_enabled = 7;
     repeated K8sRbacAttribute roles= 8;
     repeated IstioRbacAttribute istio_roles = 9;
     DeploymentStrategy strategy = 10;
     repeated Volume volumes = 11;
     Affinity affinity = 12;
     map<string, ContainerAttributes> initContainers = 13;
-
+    Replicas replicas=14;
+    TerminationGracePeriodSeconds TerminationGracePeriodSeconds = 15;
+    repeated LocalObjectReference imagePullSecrets = 16;
+    string serviceAccountName = 17;
+    AutomountServiceAccountToken automountServiceAccountToken = 18;
 }
+
+message AutomountServiceAccountToken{
+    bool value = 1;
+}
+

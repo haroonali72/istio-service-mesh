@@ -4,8 +4,8 @@ package proto;
 message Volume {
     string name = 1;
     VolumeSource volumeSource = 2;
-}
 
+}
 message VolumeSource {
     HostPathVolumeSource hostPath = 1;
     EmptyDirVolumeSource emptyDir = 2;
@@ -17,6 +17,7 @@ message VolumeSource {
     AzureDiskVolumeSource azureDisk = 8;
     AWSElasticBlockStoreVolumeSource awsElasticBlockStore = 9;
 }
+
 
 message HostPathVolumeSource {
     string path = 1;

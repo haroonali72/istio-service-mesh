@@ -3,11 +3,13 @@ package core
 import (
 	"context"
 	"encoding/json"
-	kb "golang.org/x/build/kubernetes/api"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
+	kb "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"strings"
 )
 
@@ -18,7 +20,7 @@ func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.Kubernetes
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -64,7 +66,7 @@ func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesSer
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -109,7 +111,7 @@ func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.Kubernetes
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -154,7 +156,7 @@ func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesS
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -198,7 +200,7 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestKubeObject(req)
+	ksdRequest, err := getKubernetesService(req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -242,38 +244,80 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	kube.Kind = "Service"
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
-	kube.Namespace = input.Namespace
-	kube.ResourceVersion = input.Version
+	if input.Namespace != "" {
+		kube.Namespace = input.Namespace
+	}
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	kube.Labels = labels
-
+	portNames := make(map[string]bool)
+	if input.KubeServiceAttributes == nil {
+		return nil, errors.New("can not find service attribute object in service")
+	}
 	for _, port := range input.KubeServiceAttributes.KubePorts {
 		spec := *new(kb.ServicePort)
-		spec.Name = port.Name
-		spec.Port = int(port.Port)
-		spec.Protocol = kb.Protocol(port.Protocol)
-		spec.NodePort = int(port.NodePort)
-		g := kb.IntOrString{IntVal: int(port.TargetPort), Kind: kb.IntstrKind(1)}
-		spec.TargetPort = g
+		if port.Name != "" {
+			spec.Name = port.Name
+			if portNames[spec.Name] {
+				return nil, errors.New("port Name Already in this service")
+			}
+
+			portNames[spec.Name] = true
+		}
+		if port.Port < 1 || port.Port > 65535 {
+			return nil, errors.New("invalid Port Number Port number should be between 1 and 65535")
+		}
+		spec.Port = port.Port
+		if port.Protocol == string(kb.ProtocolTCP) {
+			spec.Protocol = kb.ProtocolTCP
+		} else if port.Protocol == string(kb.ProtocolUDP) {
+			spec.Protocol = kb.ProtocolUDP
+		} else if port.Protocol == string(kb.ProtocolSCTP) {
+			spec.Protocol = kb.ProtocolSCTP
+		} else {
+			return nil, errors.New("invalid protocol supported protocols are TCP, UDP and SCTP")
+		}
+		if port.TargetPort.PortName != "" {
+			spec.TargetPort.StrVal = port.TargetPort.PortName
+			spec.TargetPort.Type = intstr.String
+		} else if port.Port > 0 && port.Port < 65536 {
+			spec.TargetPort.IntVal = port.TargetPort.PortNumber
+			spec.TargetPort.Type = intstr.Int
+		}
+		if port.NodePort >= 30000 && port.NodePort <= 32767 {
+			spec.NodePort = port.NodePort
+		}
+
 		kube.Spec.Ports = append(kube.Spec.Ports, spec)
 	}
-
-	thisMap := make(map[string]string)
-	thisMap["label1"] = input.KubeServiceAttributes.Selector.Label1
-	thisMap["label2"] = input.KubeServiceAttributes.Selector.Label2
-	kube.Spec.Selector = thisMap
-	kube.Spec.Type = kb.ServiceType(input.KubeServiceAttributes.Type)
-	kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
-	return kube, nil
-}
-func getRequestKubeObject(req *pb.KubernetesService) (*kb.Service, error) {
-	gtwReq, err := getKubernetesService(req)
-	if err != nil {
-		utils.Error.Println(err)
-
-		return nil, err
+	if len(input.KubeServiceAttributes.Selector) > 0 {
+		kube.Spec.Selector = make(map[string]string)
 	}
-	return gtwReq, nil
+	for key, value := range input.KubeServiceAttributes.Selector {
+		kube.Spec.Selector[key] = value
+	}
+	if input.KubeServiceAttributes.Type == string(kb.ServiceTypeClusterIP) {
+		kube.Spec.Type = kb.ServiceTypeClusterIP
+		if input.KubeServiceAttributes.ClusterIp == "None" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		} else if input.KubeServiceAttributes.ClusterIp != "" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		}
+	} else if input.KubeServiceAttributes.Type == string(kb.ServiceTypeNodePort) {
+		kube.Spec.Type = kb.ServiceTypeNodePort
+		if input.KubeServiceAttributes.ClusterIp == "None" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		} else if input.KubeServiceAttributes.ClusterIp != "" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		}
+	} else if input.KubeServiceAttributes.Type == string(kb.ServiceTypeLoadBalancer) {
+		kube.Spec.Type = kb.ServiceTypeLoadBalancer
+		if input.KubeServiceAttributes.ClusterIp == "None" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		} else if input.KubeServiceAttributes.ClusterIp != "" {
+			kube.Spec.ClusterIP = input.KubeServiceAttributes.ClusterIp
+		}
+	}
+	return kube, nil
 }

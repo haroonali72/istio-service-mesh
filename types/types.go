@@ -134,8 +134,7 @@ type HPAAttributes struct {
 }
 type Metrics struct {
 	TargetValueKind string `json:"target_value_kind"`
-	TargetValue     int64  `json:"target_value"`
-	TargetValueUnit string `json:"target_value_unit"`
+	TargetValue     string `json:"target_value"`
 	ResourceKind    string `json:"resource_kind"`
 }
 type ScaleTargetRef struct {
@@ -153,12 +152,12 @@ type KubernetesSecret struct {
 	StringData map[string]string `json:"string_data"`
 }
 
-type ConfigMap struct {
-	Name      *string           `json:"name"`
-	Version   *string           `json:"version"`
-	Namespace *string           `json:"namespace"`
-	Data      map[string]string `json:"data"`
-}
+//type ConfigMap struct {
+//	Name      *string           `json:"name"`
+//	Version   *string           `json:"version"`
+//	Namespace *string           `json:"namespace"`
+//	Data      map[string]string `json:"data"`
+//}
 
 // ```yaml
 // apiVersion: networking.istio.io/v1alpha3
@@ -206,19 +205,19 @@ type ServiceDependencyx struct {
 	ServiceAttributes ServiceAttributes `json:"service_attributes"`
 }*/
 
-type Service struct {
-	ServiceType           string              `json:"service_type"`
-	SubType               string              `json:"service_sub_type"`
-	Name                  string              `json:"name"`
-	ID                    string              `json:"service_id"`
-	Version               string              `json:"version"`
-	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
-	ServiceAttributes     interface{}         `json:"service_attributes"`
-	Namespace             string              `json:"namespace"`
-	GroupId               string              `json:"group_id"`
-	Hostnames             []string            `json:"hostnames"`
-	Replicas              int32               `json:"replicas"`
-}
+//type Service struct {
+//	ServiceType           string              `json:"service_type"`
+//	SubType               string              `json:"service_sub_type"`
+//	Name                  string              `json:"name"`
+//	ID                    string              `json:"service_id"`
+//	Version               string              `json:"version"`
+//	ServiceDependencyInfo []ServiceDependency `json:"service_dependency_info"`
+//	ServiceAttributes     interface{}         `json:"service_attributes"`
+//	Namespace             string              `json:"namespace"`
+//	GroupId               string              `json:"group_id"`
+//	Hostnames             []string            `json:"hostnames"`
+//	Replicas              int32               `json:"replicas"`
+//}
 type SolutionInfo struct {
 	ID      string  `json:"_id"`
 	Name    string  `json:"name"`

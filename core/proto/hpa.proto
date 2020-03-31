@@ -3,7 +3,6 @@ syntax = "proto3";
 package proto;
 
 import "serviceresponse.proto";
-import "google/protobuf/any.proto";
 
 service hpa {
    rpc CreateHPA (HPA) returns (ServiceResponse) {}
@@ -21,7 +20,6 @@ message HPA {
     string service_sub_type = 5;
     string status = 6;
     string token = 7;
-    google.protobuf.Any service_dependency_info = 8;
 	string namespace = 9;
 	HpaSvcAttr service_attributes = 10;
 	string company_id = 11;
@@ -44,7 +42,6 @@ message CrossObjectVersion {
 message MetricValue {
 	string target_value_kind = 1;
 	string target_value = 2;
-	string target_value_unit = 3;
 	string resource_kind = 4;
 }
 

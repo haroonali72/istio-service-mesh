@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -240,25 +241,51 @@ func (s *Server) PutClusterRoleBinding(ctx context.Context, req *pb.ClusterRoleB
 
 func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding, error) {
 	var clstrRolBindSvc = new(v1.ClusterRoleBinding)
+	if input.Name != "" {
+		clstrRolBindSvc.Name = input.Name
+	} else {
+		return nil, errors.New("can not find name in cluster role binding")
+	}
+
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
-	labels["version"] = strings.ToLower(input.Version)
+	if input.Version != "" {
+		labels["version"] = strings.ToLower(input.Version)
+	}
 	clstrRolBindSvc.Kind = "ClusterRoleBinding"
 	clstrRolBindSvc.APIVersion = "rbac.authorization.k8s.io/v1"
-	clstrRolBindSvc.Name = input.Name
+
 	clstrRolBindSvc.Labels = labels
 
 	for _, subject := range input.ServiceAttributes.Subjects {
 		var reqsub v1.Subject
-		reqsub.Name = subject.Name
-		reqsub.Kind = subject.Kind
-		reqsub.Namespace = subject.Namespace
+		if subject.Name != "" {
+			reqsub.Name = subject.Name
+		} else {
+			return nil, errors.New("can not find name for subject")
+		}
+		if subject.Kind == "User" || subject.Kind == "Group" {
+			reqsub.Kind = subject.Kind
+			reqsub.APIGroup = "rbac.authorization.k8s.io"
+		} else if subject.Kind == "ServiceAccount" {
+			reqsub.Kind = subject.Kind
+			if subject.Namespace != "" {
+				reqsub.Namespace = subject.Namespace
+			} else {
+				return nil, errors.New("can not find name space for service account" + reqsub.Name)
+			}
+
+		} else {
+			return nil, errors.New("can not find name space for service account" + reqsub.Name)
+		}
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
-
-	clstrRolBindSvc.RoleRef.Kind = input.ServiceAttributes.RoleReference.Kind
-	clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
-	clstrRolBindSvc.RoleRef.APIGroup = input.ServiceAttributes.RoleReference.ApiGroup
-
+	clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
+	clstrRolBindSvc.RoleRef.APIGroup = "rbac.authorization.k8s.io"
+	if input.ServiceAttributes.NameClusterRoleRef != "" {
+		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.NameClusterRoleRef
+	} else {
+		return nil, errors.New("can not find Name in cluster role binding ref " + input.Name)
+	}
 	return clstrRolBindSvc, nil
 }

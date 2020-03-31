@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
@@ -72,7 +73,10 @@ func main() {
 	pb.RegisterClusterroleServer(srv, svc)
 	pb.RegisterClusterrolebindingServer(srv, svc)
 	pb.RegisterHpaServer(srv, svc)
-
+	pb.RegisterVirtualServer(srv, svc)
+	pb.RegisterDestinationrulesServer(srv, svc)
+	pb.RegisterK8SResourceServer(srv, svc)
+	//go handleclient()
 	pb.RegisterServiceEntryServer(srv, svc)
 	pb.RegisterDeploymentServer(srv, svc)
 	pb.RegisterStorageClassServer(srv, svc)
@@ -88,4 +92,21 @@ func main() {
 	r.HandleFunc("/istioservicedeployer", controllers.ServiceRequest)
 	r.HandleFunc("/importservice", controllers.ImportServiceRequest)
 	log.Fatal(http.ListenAndServe(":"+constants.ServicePort, r))*/
+}
+
+func handleclient() {
+	conn, err := grpc.Dial("localhost:8654", grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+	}
+
+	_, err = pb.NewK8SResourceClient(conn).GetK8SResource(context.Background(), &pb.K8SResourceRequest{
+		ProjectId: "application-cronjobhpa",
+		CompanyId: "5d945edc2dcc2f00089d8476",
+		Token:     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.CnsKICAidGVhbXNfcm9sZXMiOnt9LAogICJpc3MiOiJjbG91ZHBsZXgiLAogICJleHAiOiIxNTgyMjY5MzA4NDA1IiwKICAidXNlcm5hbWUiOiJhc21hLnNhcmRhckBjbG91ZHBsZXguaW8iLAogICJjb21wYW55SWQiOiI1ZDk0NWVkYzJkY2MyZjAwMDg5ZDg0NzYiLAogICJpc0FkbWluIjoiZmFsc2UiLAogICJ0b2tlbl90eXBlIjoiMCIsCiAgIm15cm9sZXMiOlsiU3VwZXItVXNlciIsIlRlYW0gTWVtYmVyIiwiVGVhbSBNZW1iZXIiXQp9CiAgICAgIA.-nuUYUUBi9olNbH62wCUoh9_lydHXhyCVPx--uWXsus",
+	})
+	if err != nil {
+		utils.Error.Println(err)
+	}
+
 }

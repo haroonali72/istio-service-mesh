@@ -43,8 +43,8 @@ const (
 )
 
 type PortItntOrString struct {
-	PortNumber int32  `json:"port_number"`
-	PortName   string `json:"port_name"`
+	PortNumber int32  `json:"port_number,omitempty"`
+	PortName   string `json:"port_name,omitempty"`
 }
 
 type IPBlock struct {
