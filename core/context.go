@@ -184,13 +184,14 @@ func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
 	if len(token) <= 0 {
 		return errors.New("invalid token")
 	}
-	tokenInfo, err := utils.TokenInfo(token)
-	if err != nil {
-		return err
+	companyId := r.Header.Get("company_id")
+	user := r.Header.Get("user")
+	if companyId == "" || user == "" {
+		return errors.New("user or companyID must not be empty")
 	}
-	c.Set("company_id", tokenInfo["companyId"])
-	c.Set("user", tokenInfo["username"])
-	c.Set("user_id", tokenInfo["username"])
+	c.Set("company_id", companyId)
+	c.Set("user", user)
+	c.Set("user_id", user)
 	c.Set("token", token)
 	return nil
 }

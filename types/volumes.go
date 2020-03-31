@@ -11,7 +11,7 @@ const (
 type Parameters struct {
 	Type            string `json:"type"`
 	ReplicationType string `json:"replication_type"`
-	Iops            string `json:"iops"`
+	Iops            int    `json:"iops"`
 	Plugin          string `json:"plugin"`
 	SkuName         string `json:"sku_name"`
 	Location        string `json:"location"`

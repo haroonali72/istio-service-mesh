@@ -155,7 +155,6 @@ func getIstioGateway() (v1alpha3.Gateway, error) {
 	var hosts []string
 	hosts = append(hosts, "*")
 	var servers []*v1alpha3.Server
-
 	var serv v1alpha3.Server
 	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
 	serv.Hosts = hosts
@@ -530,6 +529,14 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 	}
 
 	hpa.Spec.Metrics = metricsArr
+	hpa.Status = autoscaling.HorizontalPodAutoscalerStatus{
+		Conditions: []autoscaling.HorizontalPodAutoscalerCondition{
+			{
+				Type:   autoscaling.AbleToScale,
+				Status: v1.ConditionTrue,
+			},
+		},
+	}
 	return hpa, nil
 }
 func ScaleUnit(unit string) resource.Scale {
@@ -634,7 +641,8 @@ func getDeploymentObject(service types.Service) (v12.Deployment, error) {
 		//Failed
 		return v12.Deployment{}, errors.New("Service name not found")
 	}
-
+	deployment.Kind = "Deployment"
+	deployment.APIVersion = "apps/v1"
 	if service.Namespace == "" {
 		deployment.ObjectMeta.Namespace = "default"
 	} else {
@@ -1168,7 +1176,7 @@ func getStatefulSetObject(service types.Service) (v12.StatefulSet, error) {
 		statefulset.ObjectMeta.Namespace = service.Namespace
 	}
 	statefulset.Kind = "StatefulSet"
-	statefulset.APIVersion = "v1"
+	statefulset.APIVersion = "apps/v1"
 	// Label Selector
 	//keel labels
 	var err2 error
@@ -1290,6 +1298,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 	}
 
 	var configmap = v1.ConfigMap{}
+	configmap.Kind = "ConfigMap"
+	configmap.APIVersion = "v1"
 	// Label Selector
 	//keel labels
 	//deploymentLabels := make(map[string]string)
@@ -1334,7 +1344,8 @@ func getConfigMapObject(service types.Service) (*v1.ConfigMap, error) {
 func getServiceObject(input types.Service) (*v1.Service, error) {
 
 	service := v1.Service{}
-
+	service.Kind = "Service"
+	service.APIVersion = "v1"
 	service.Name = input.Name
 	service.ObjectMeta.Name = input.Name
 
@@ -2481,6 +2492,37 @@ func GetFromKube(requestBody []byte, env_id string, ret types.StatusRequest, req
 
 					}
 					return ret, res
+
+				} else {
+
+					for itr, _ := range res.Service.Nodes {
+						err = json.Unmarshal([]byte(res.Service.Nodes[itr].KubeData), &res.Service.Nodes[itr].Nodes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Deployments {
+						err = json.Unmarshal([]byte(res.Service.Deployments[itr].KubeData), &res.Service.Deployments[itr].Deployments)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Istio {
+						err = json.Unmarshal([]byte(res.Service.Istio[itr].KubeData), &res.Service.Istio[itr].Istio)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
+					for itr, _ := range res.Service.Kubernetes {
+						err = json.Unmarshal([]byte(res.Service.Kubernetes[itr].KubeData), &res.Service.Kubernetes[itr].Kubernetes)
+						if err != nil {
+							utils.Error.Println(err.Error())
+						}
+					}
+
 				}
 				return ret, res
 			}
@@ -2511,9 +2553,6 @@ func ForwardToKube(requestBody []byte, env_id string, requestType string, ret ty
 	}
 	if cpContext.Exists("user") {
 		req.Header.Set("user", cpContext.GetString("user"))
-	}
-	if cpContext.Exists("token") {
-		req.Header.Set("token", cpContext.GetString("token"))
 	}
 	client := &http.Client{}
 	//issue here
@@ -2814,13 +2853,20 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 	profileId := serviceAttr.ImageRepositoryConfigurations.Profile
 	if profileId != "" {
 		var vault types.VaultCredentialsConfigurations
-		req, err := http.Get(constants.VaultURL + constants.VAULT_BACKEND + profileId)
+		url := constants.VaultURL + constants.VAULT_BACKEND + profileId
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return v1.Secret{}, false
+		}
+		req.Header.Set("token", cpContext.GetString("token"))
+		reqClient := http.Client{}
+		res, err := reqClient.Do(req)
 		if err == nil {
-			result, err := ioutil.ReadAll(req.Body)
+			result, err := ioutil.ReadAll(res.Body)
 			if err == nil {
 				err = json.Unmarshal(result, &vault)
 				typeArray := []string{"frontendLogging"}
-				cpContext.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password, constants.LOGGING_LEVEL_ERROR, typeArray)
+				cpContext.SendLog("creds fetched "+vault.Credentials.Username+":"+vault.Credentials.Password, constants.LOGGING_LEVEL_INFO, typeArray)
 
 				if err == nil {
 					if vault.Credentials.Username != "" && vault.Credentials.Password != "" {
@@ -2856,31 +2902,35 @@ func CreateDockerCfgSecret(service types.Service, projectId string, cpContext *c
 
 	username := serviceAttr.ImageRepositoryConfigurations.Credentials.Username
 	password := serviceAttr.ImageRepositoryConfigurations.Credentials.Password
-	email := "email@email.com"
+	email := "my-account-email@address.com"
 	server := serviceAttr.ImageName
 
 	tokens := strings.Split(server, "/")
 	registry := tokens[0]
-
-	dockerConf := map[string]map[string]string{
-		registry: {
-			"username": username,
-			"password": password,
-			"email":    email,
-			"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+	if strings.TrimSpace(registry) == "docker.io" {
+		registry = "https://index.docker.io/v1/"
+	}
+	dockerConf := map[string]map[string]map[string]string{
+		"auths": {
+			registry: {
+				"username": username,
+				"password": password,
+				"email":    email,
+				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			},
 		},
 	}
 
 	dockerConfMarshaled, _ := json.Marshal(dockerConf)
 
 	data := map[string][]byte{
-		".dockercfg": dockerConfMarshaled,
+		".dockerconfigjson": dockerConfMarshaled,
 	}
 
 	secret.TypeMeta = typeMeta
 	secret.ObjectMeta = objectMeta
 	secret.Data = data
-	secret.Type = v1.SecretTypeDockercfg
+	secret.Type = "kubernetes.io/dockerconfigjson"
 
 	return secret, true
 }
