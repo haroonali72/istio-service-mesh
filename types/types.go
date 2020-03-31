@@ -126,7 +126,7 @@ type IstioDestinationRuleAttributes struct {
 	HPA           HPAAttributes `json:"hpa_configurations"`
 }*/
 type HPAAttributes struct {
-	MixReplicas        int32          `json:"min_replicas"`
+	MinReplicas        int32          `json:"min_replicas"`
 	MaxReplicas        int32          `json:"max_replicas"`
 	Metrics_           []Metrics      `json:"metrics_values"`
 	CrossObjectVersion ScaleTargetRef `json:"cross_object_version"`
