@@ -8,6 +8,7 @@ service YamlService {
 message YamlServiceResponse {
     bytes service = 1;
     string namespace=2;
+    bytes parameters = 3;
 }
 message YamlServiceRequest{
     string type =1;
