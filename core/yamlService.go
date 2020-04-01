@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"regexp"
@@ -12,105 +13,100 @@ import (
 func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest) (*pb.YamlServiceResponse, error) {
 	serviceResp := new(pb.YamlServiceResponse)
 	switch req.Type {
-	case "SC":
+	case constants.StorageClassServiceType:
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case "PVC":
+	case constants.PVCServiceType:
 		if err := ConvertPVCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "PV":
+	case constants.PVServiceType:
 		if err := ConvertPVToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "gateway":
+	case constants.GatewayServiceType:
 		if err := ConvertGatewayToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "kubernetesservice":
+	case constants.KubernetesServiceType:
 		if err := ConvertKubernetesServiceToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "networkPolicy":
+	case constants.NetworkPolicyServiceType:
 		if err := ConvertNetworkPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "role":
+	case constants.RoleServiceType:
 		if err := ConvertRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "policy":
+	case constants.PolicyType:
 		if err := ConvertPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "rolebinding":
+	case constants.RoleBindingServiceType:
 		if err := ConvertRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "serviceaccount":
+	case constants.ServiceAccountServiceType:
 		if err := ConvertServiceAccountToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "cluster_role":
+	case constants.ClusterRoleServiceType:
 		if err := ConvertClusterRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "cluster_role_binding":
+	case constants.ClusterRoleBindingServiceType:
 		if err := ConvertClusterRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "hpa":
+	case constants.HpaServiceType:
 		if err := ConvertHPAToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "deployment":
+	case constants.DeploymentServiceType:
 		if err := ConvertDeploymentToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "DaemonSet":
+	case constants.DaemonSetServiceType:
 		if err := ConvertDaemonSeToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "secret":
+	case constants.SecretServiceType:
 		if err := ConvertSecretToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "configmap":
+	case constants.ConfigMapServiceType:
 		if err := ConvertConfigMapToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "service_entry":
+	case constants.ServiceEntryType:
 		if err := ConvertServiceEntryToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "virtual_service":
+	case constants.VirtualServiceType:
 		if err := ConvertVSToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case "destination_rule":
+	case constants.DestinationRulesType:
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "StatefulSet":
+	case constants.StatefulSetServiceType:
 		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "Job":
+	case constants.JobServiceType:
 		if err := ConvertJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "CronJob":
+	case constants.CronJobServiceType:
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case "VirtualService":
-		if err := ConvertVirtualServiceToYaml(req, serviceResp); err != nil {
-			return nil, err
-		}
-
 	}
 
 	return serviceResp, nil
