@@ -48,7 +48,7 @@ type PodTemplate struct {
 
 	Subdomain string `json:"subdomain,omitempty" protobuf:"bytes,17,opt,name=subdomain"`
 
-	Affinity string `json:"affinity,omitempty" protobuf:"bytes,18,opt,name=affinity"`
+	Affinity *Affinity `json:"affinity,omitempty" protobuf:"bytes,18,opt,name=affinity"`
 
 	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,19,opt,name=schedulerName"`
 
@@ -114,4 +114,17 @@ type ContainerTemplate struct {
 	StdinOnce interface{} `json:"stdinOnce,omitempty" protobuf:"varint,17,opt,name=stdinOnce"`
 
 	TTY interface{} `json:"tty,omitempty" protobuf:"varint,18,opt,name=tty"`
+}
+
+// Affinity is a group of affinity scheduling rules.
+type Affinity struct {
+	// Describes node affinity scheduling rules for the pod.
+	// +optional
+	NodeAffinity interface{} `json:"nodeAffinity,omitempty" protobuf:"bytes,1,opt,name=nodeAffinity"`
+	// Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
+	// +optional
+	PodAffinity interface{} `json:"podAffinity,omitempty" protobuf:"bytes,2,opt,name=podAffinity"`
+	// Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
+	// +optional
+	PodAntiAffinity interface{} `json:"podAntiAffinity,omitempty" protobuf:"bytes,3,opt,name=podAntiAffinity"`
 }

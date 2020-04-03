@@ -6,6 +6,8 @@ type CoreComponentsChartValues struct {
 	ImageInfo     `json:"image,omitempty" yaml:"image,omitempty"`
 	Probe         `json:"prob,omitempty" yaml:"prob,omitempty"`
 	Ports         interface{} `json:"ports,omitempty" yaml:"ports,omitempty"`
+
+	CronExpression string `json:"cronExpression,omitempty"  yaml:"cronExpression,omitempty"`
 }
 
 type ImageInfo struct {

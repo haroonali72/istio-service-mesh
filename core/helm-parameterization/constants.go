@@ -30,6 +30,8 @@ const (
 
 	EndParameter = `
 	{{- end }}`
+
+	CronExpressionParameter = "{{ .Values.cronExpression }}"
 )
 
 const (
