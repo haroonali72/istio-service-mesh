@@ -1,25 +1,35 @@
 package helm_parameterization
 
+//Spaces and next lines are added because of a reason. Don't change them
 const (
 	NameHelmParameter = `{{ template "{{ .Name }}.fullname" . }}`
 
-	CommandParameters = `{{ .Values.command }}`
-	ArgsParameters    = `{{ .Values.Args }}`
-	PortsParameters   = `{{ .Values.Ports }}`
+	CommandParameters = `{{ toYaml .Values.command }}`
+	ArgsParameters    = `{{ toYaml .Values.args }}`
+	PortsParameters   = `{{ toYaml .Values.ports | nindent 8 }}`
 
-	LabelParameter         = `{{- include "{{ .Name }}.labels" . | nindent {{ .Indent }} }}`
-	AnnotationParameter    = `{{- include "{{ .Name }}.Annotation" . | nindent {{ .Indent }} }}`
-	MatchSelectorParameter = `{{- include "{{ .Name }}.matchLabels" . | nindent {{ .Indent }} }}`
+	LabelParameter            = `{{- include "{{ .Name }}.labels" . | nindent {{ .Indent }} }}`
+	AnnotationParameter       = `{{- include "{{ .Name }}.annotation" . | nindent {{ .Indent }} }}`
+	MatchSelectorParameter    = `{{- include "{{ .Name }}.matchLabels" . | nindent {{ .Indent }} }}`
+	LivelinessProbIfCondition = `{{- if .Values.prob.livenessProbe }}
+       `
+	LivelinessProbParameter  = `{{ toYaml .Values.prob.livenessProbe | nindent 8 }}`
+	ReadinessProbIfCondition = `{{- if .Values.prob.readinessProbe }}
+       `
+	ReadinessProbParameter = `{{ toYaml .Values.prob.readinessProbe | nindent 8 }}`
 
-	LivelinessProbParameter = `\n        {{ toYaml .Values.livenessProbe | nindent 8 }}`
-	ReadinessProbParameter  = `\n        {{ toYaml .Values.readinessProbe | nindent 8 }}`
+	ResourcesParameter   = `{{ toYaml .Values.resource | nindent 10 }}`
+	ResourcesIfCondition = `{{- if .Values.resource }}
+       `
+	ReplicasHelmParameter      = "{{ .Values.replicaCount | default 1 }}"
+	ImageHelmParameter         = "{{ .Values.image.image }}"
+	ImagePullPolicyParameter   = `{{ .Values.image.imagePullPolicy | default "IfNotPresent"}}`
+	ImagePullSecretIfCondition = `{{- if .Values.image.imagePullSecrets }}
+       `
+	ImagePullSecret = `{{ toYaml .Values.image.imagePullSecrets | nindent 8 }}`
 
-	ResourcesParameter = `\n          {{ toYaml .Values.resource | nindent 10 }}`
-
-	ReplicasHelmParameter    = "{{ .Values.replicaCount | default 1 }}"
-	ImageHelmParameter       = "{{ .Values.image }}"
-	ImagePullPolicyParameter = `{{ .Values.pullPolicy | default "Always" }}`
-	ImagePullSecret          = `\n       {{ .Values.imagePullSecrets }}`
+	EndParameter = `
+	{{- end }}`
 )
 
 const (
@@ -40,10 +50,13 @@ const (
 {{- end -}}
 {{- end -}}
 `
+	chartFunction = `
+{{- define "{{ .Name  }}.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+`
 	LabelFunction = `
 {{- define "{{ .Name }}.labels" -}}
-#app: {{ include "cassandra.name" . }}
-chart: {{ include "{{ .Name }}.chart" . }}
 release: {{ .Release.Name }}
 heritage: {{ .Release.Service }}
 {{ .Labels }}{{- end -}}
