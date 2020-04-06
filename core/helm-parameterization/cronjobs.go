@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func CronJobParameters(job v1beta1.CronJob) (jobYaml []byte, jobParams []byte, functionsData []byte, err error) {
+func CronJobParameters(job *v1beta1.CronJob) (jobYaml []byte, jobParams []byte, functionsData []byte, err error) {
 	result, err := yaml.Marshal(job)
 	if err != nil {
 		return nil, nil, nil, err
