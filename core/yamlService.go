@@ -1,10 +1,10 @@
 package core
 
 import (
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"regexp"
 	"sigs.k8s.io/yaml"

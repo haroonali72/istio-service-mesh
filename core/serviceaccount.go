@@ -1,12 +1,13 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	kb "golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"strings"
 )
@@ -39,7 +40,7 @@ func (s *Server) CreateServiceAccountService(ctx context.Context, req *pb.Servic
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -85,7 +86,7 @@ func (s *Server) GetServiceAccountService(ctx context.Context, req *pb.ServiceAc
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -130,7 +131,7 @@ func (s *Server) DeleteServiceAccountService(ctx context.Context, req *pb.Servic
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -175,7 +176,7 @@ func (s *Server) PatchServiceAccountService(ctx context.Context, req *pb.Service
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -220,7 +221,7 @@ func (s *Server) PutServiceAccountService(ctx context.Context, req *pb.ServiceAc
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,

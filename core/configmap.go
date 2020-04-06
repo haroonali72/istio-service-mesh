@@ -1,11 +1,12 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	kb "k8s.io/api/core/v1"
 	"strings"
@@ -40,7 +41,7 @@ func (s *Server) CreateConfigMapService(ctx context.Context, req *pb.ConfigMapSe
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -86,7 +87,7 @@ func (s *Server) GetConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -131,7 +132,7 @@ func (s *Server) DeleteConfigMapService(ctx context.Context, req *pb.ConfigMapSe
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -175,7 +176,7 @@ func (s *Server) PatchConfigMapService(ctx context.Context, req *pb.ConfigMapSer
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -220,7 +221,7 @@ func (s *Server) PutConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
