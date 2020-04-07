@@ -34,7 +34,7 @@ const (
 	Backend_logging  Logger = "backendLogging"
 	Frontend_logging Logger = "frontendLogging"
 
-	//---------k8s service type -----------------/////
+	/*//---------k8s service type -----------------/////
 	DeploymentServiceType         = "deployment"
 	StatefulSetServiceType        = "statefulSet"
 	DaemonSetServiceType          = "daemonSet"
@@ -68,7 +68,7 @@ const (
 	VirtualServiceDataBase   = "virtual_service_template"
 	DestinationRulesDataBase = "destination_rules_template"
 	PolicyDataBase           = "policy_template"
-	ServiceEntryDatabase     = "service_entry_template"
+	ServiceEntryDatabase     = "service_entry_template"*/
 
 	//RBAc
 	Rbac_Token_Info = "/security/api/rbac/token/info"

@@ -1,10 +1,10 @@
 package core
 
 import (
+	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
-	"istio-service-mesh/constants"
 	helm_parameterization "istio-service-mesh/core/helm-parameterization"
 	"istio-service-mesh/utils"
 	"regexp"
@@ -14,97 +14,97 @@ import (
 func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest) (*pb.YamlServiceResponse, error) {
 	serviceResp := new(pb.YamlServiceResponse)
 	switch req.Type {
-	case constants.StorageClassServiceType:
+	case meshConstants.StorageClassServiceType:
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case constants.PVCServiceType:
+	case meshConstants.PVCServiceType:
 		if err := ConvertPVCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.PVServiceType:
+	case meshConstants.PVServiceType:
 		if err := ConvertPVToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.GatewayServiceType:
+	case meshConstants.GatewayServiceType:
 		if err := ConvertGatewayToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.KubernetesServiceType:
+	case meshConstants.KubernetesServiceType:
 		if err := ConvertKubernetesServiceToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.NetworkPolicyServiceType:
+	case meshConstants.NetworkPolicyServiceType:
 		if err := ConvertNetworkPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.RoleServiceType:
+	case meshConstants.RoleServiceType:
 		if err := ConvertRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.PolicyType:
+	case meshConstants.PolicyType:
 		if err := ConvertPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.RoleBindingServiceType:
+	case meshConstants.RoleBindingServiceType:
 		if err := ConvertRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.ServiceAccountServiceType:
+	case meshConstants.ServiceAccountServiceType:
 		if err := ConvertServiceAccountToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.ClusterRoleServiceType:
+	case meshConstants.ClusterRoleServiceType:
 		if err := ConvertClusterRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.ClusterRoleBindingServiceType:
+	case meshConstants.ClusterRoleBindingServiceType:
 		if err := ConvertClusterRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.HpaServiceType:
+	case meshConstants.HpaServiceType:
 		if err := ConvertHPAToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.DeploymentServiceType:
+	case meshConstants.DeploymentServiceType:
 		if err := ConvertDeploymentToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.DaemonSetServiceType:
+	case meshConstants.DaemonSetServiceType:
 		if err := ConvertDaemonSeToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.SecretServiceType:
+	case meshConstants.SecretServiceType:
 		if err := ConvertSecretToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.ConfigMapServiceType:
+	case meshConstants.ConfigMapServiceType:
 		if err := ConvertConfigMapToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.ServiceEntryType:
+	case meshConstants.ServiceEntryType:
 		if err := ConvertServiceEntryToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.VirtualServiceType:
+	case meshConstants.VirtualServiceType:
 		if err := ConvertVSToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case constants.DestinationRulesType:
+	case meshConstants.DestinationRulesType:
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.StatefulSetServiceType:
+	case meshConstants.StatefulSetServiceType:
 		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.JobServiceType:
+	case meshConstants.JobServiceType:
 		if err := ConvertJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case constants.CronJobServiceType:
+	case meshConstants.CronJobServiceType:
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}

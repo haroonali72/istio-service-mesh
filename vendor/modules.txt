@@ -2,6 +2,7 @@
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
 # bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200407170028-96aae6370d26
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
+bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 # github.com/astaxie/beego v1.12.1
 github.com/astaxie/beego
 github.com/astaxie/beego/config
