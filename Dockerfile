@@ -1,12 +1,12 @@
 # build stage
-FROM golang:1.11.3  AS build-env
+FROM golang:1.14.1  AS build-env
 
 # Set our workdir to our current service in the gopath
 WORKDIR /go/src/istio-service-mesh/
 # Copy the current code into our workdir
 COPY . .
 ENV GOPATH /go/
-RUN go build -o IstioMesh main/main.go
+RUN CGO_ENABLED=0 go build -o IstioMesh main.go
 
 # final stage
 FROM ubuntu:bionic
