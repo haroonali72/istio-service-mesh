@@ -280,10 +280,15 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 	if service.Version != "" {
 		daemonSet.Spec.Selector.MatchLabels["version"] = service.Version
 	}
-
-	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
-		daemonSet.Spec.Selector.MatchLabels[key] = value
+	if service.ServiceAttributes.LabelSelector != nil {
+		daemonSet.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	} else {
+		daemonSet.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
 	}
+
+	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+		daemonSet.Spec.Selector.MatchLabels[key] = value
+	}*/
 	daemonSet.Spec.Template.Labels = make(map[string]string)
 	daemonSet.Spec.Template.Labels["app"] = service.Name
 	if service.Version != "" {

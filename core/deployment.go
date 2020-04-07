@@ -284,10 +284,12 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
 	if service.ServiceAttributes.LabelSelector != nil {
 		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	} else {
+		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
 	}
-	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
 		deployment.Spec.Selector.MatchLabels[key] = value
-	}
+	}*/
 
 	deployment.Spec.Template.Labels = make(map[string]string)
 	deployment.Spec.Template.Labels["app"] = service.Name
