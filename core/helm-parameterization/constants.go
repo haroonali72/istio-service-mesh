@@ -32,6 +32,7 @@ const (
 	{{- end }}`
 
 	CronExpressionParameter = "{{ .Values.cronExpression }}"
+	RulesParameters         = "{{ toYaml .Values.rules | nindent 8 }}"
 )
 
 const (

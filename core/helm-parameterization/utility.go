@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"istio-service-mesh/core/helm-parameterization/types"
 	v12 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/yaml"
 	"strings"
 )
@@ -123,4 +124,9 @@ func appendExtraStatements(deployment string, findString, appendString string) s
 
 	}
 	return deployment
+}
+
+func appendRules(policyRule []v1.PolicyRule, chartFile *types.CoreComponentsChartValues) (string, error) {
+	chartFile.Rules = policyRule
+	return RulesParameters, nil
 }
