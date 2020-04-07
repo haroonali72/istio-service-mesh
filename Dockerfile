@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.14.1  AS build-env
+FROM golang:1.12.17  AS build-env
 
 # Set our workdir to our current service in the gopath
 WORKDIR /go/src/istio-service-mesh/
