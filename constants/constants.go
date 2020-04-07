@@ -34,28 +34,42 @@ const (
 	Backend_logging  Logger = "backendLogging"
 	Frontend_logging Logger = "frontendLogging"
 
-	//Kubernetes Component
-	Deployment  K8sKind = "Deployment"
-	CronJob     K8sKind = "CronJob"
-	Job         K8sKind = "Job"
-	StatefulSet K8sKind = "StatefulSet"
-	Service     K8sKind = "service"
-	ConfigMap   K8sKind = "ConfigMap"
-	Secret      K8sKind = "Secret"
-	Daemonset   K8sKind = "daemonset"
+	//---------k8s service type -----------------/////
+	DeploymentServiceType         = "deployment"
+	StatefulSetServiceType        = "statefulSet"
+	DaemonSetServiceType          = "daemonSet"
+	JobServiceType                = "job"
+	CronJobServiceType            = "cronJob"
+	KubernetesServiceType         = "kubernetes"
+	RoleServiceType               = "role"
+	RoleBindingServiceType        = "role_binding"
+	ClusterRoleServiceType        = "cluster_role"
+	ClusterRoleBindingServiceType = "cluster_role_binding"
+	ServiceAccountServiceType     = "service_account"
+	Resources                     = "resources"
+	SecretServiceType             = "secret"
+	ConfigMapServiceType          = "config_map"
+	PVCServiceType                = "pvc"
+	PVServiceType                 = "pv"
+	StorageClassServiceType       = "storage_class"
+	NetworkPolicyServiceType      = "network_policy"
+	HpaServiceType                = "hpa"
 
-	////Istio Components
-	VirtualService  K8sKind = "VritualService"
-	Gateway         K8sKind = "gateway"
-	DestinationRule K8sKind = "DestinationRule"
-	Policy          K8sKind = "Policy"
-	ServiceEntry    K8sKind = "ServiceEntry"
+	/////---------------Istio service type---------------//////
 
-	//RBAC
-	Role               K8sKind = "Role"
-	RoleBinding        K8sKind = "RoleBinding"
-	ClusterRole        K8sKind = "ClusterRole"
-	ClusterRoleBinding K8sKind = "ClusterRoleBinding"
+	GatewayServiceType   = "gateway"
+	VirtualServiceType   = "virtual"
+	DestinationRulesType = "destination_rules"
+	ServiceEntryType     = "service_entry"
+	PolicyType           = "policy"
+
+	/////---------------Istio service database collection--------------------////////
+	GatewayServiceDataBase   = "gateway_service_template"
+	VirtualServiceDataBase   = "virtual_service_template"
+	DestinationRulesDataBase = "destination_rules_template"
+	PolicyDataBase           = "policy_template"
+	ServiceEntryDatabase     = "service_entry_template"
+
 	//RBAc
 	Rbac_Token_Info = "/security/api/rbac/token/info"
 	Ksd_Get_Nobe    = "/all"

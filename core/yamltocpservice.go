@@ -1,12 +1,12 @@
 package core
 
 import (
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v1alpha32 "istio.io/api/networking/v1alpha3"

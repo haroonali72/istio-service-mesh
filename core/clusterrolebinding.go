@@ -1,12 +1,13 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/rbac/v1"
 	"strings"
@@ -41,7 +42,7 @@ func (s *Server) CreateClusterRoleBinding(ctx context.Context, req *pb.ClusterRo
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -86,7 +87,7 @@ func (s *Server) GetClusterRoleBinding(ctx context.Context, req *pb.ClusterRoleB
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -131,7 +132,7 @@ func (s *Server) DeleteClusterRoleBinding(ctx context.Context, req *pb.ClusterRo
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -176,7 +177,7 @@ func (s *Server) PatchClusterRoleBinding(ctx context.Context, req *pb.ClusterRol
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -221,7 +222,7 @@ func (s *Server) PutClusterRoleBinding(ctx context.Context, req *pb.ClusterRoleB
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,

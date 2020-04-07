@@ -1,12 +1,13 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +42,7 @@ func (s *Server) CreateDaemonSet(ctx context.Context, req *pb.DaemonSetService) 
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -88,7 +89,7 @@ func (s *Server) GetDaemonSet(ctx context.Context, req *pb.DaemonSetService) (*p
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -135,7 +136,7 @@ func (s *Server) DeleteDaemonSet(ctx context.Context, req *pb.DaemonSetService) 
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -182,7 +183,7 @@ func (s *Server) PatchDaemonSet(ctx context.Context, req *pb.DaemonSetService) (
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -229,7 +230,7 @@ func (s *Server) PutDaemonSet(ctx context.Context, req *pb.DaemonSetService) (*p
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,

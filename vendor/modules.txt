@@ -1,3 +1,7 @@
+# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200406102106-7045f8f84475
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200406103810-c908ee7a52e9
+bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 # github.com/astaxie/beego v1.12.1
 github.com/astaxie/beego
 github.com/astaxie/beego/config
@@ -96,10 +100,10 @@ golang.org/x/net/idna
 golang.org/x/net/http/httpguts
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/context
-# golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
+# golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
+# golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
@@ -117,7 +121,7 @@ google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
 google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
-# google.golang.org/genproto v0.0.0-20200210034751-acff78025515
+# google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.27.1
 google.golang.org/grpc
@@ -173,9 +177,9 @@ istio.io/client-go/pkg/apis/networking/v1alpha3
 # istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9
 istio.io/gogo-genproto/googleapis/google/api
 # k8s.io/api v0.17.2 => k8s.io/api v0.16.4
+k8s.io/api/apps/v1
 k8s.io/api/core/v1
 k8s.io/api/rbac/v1
-k8s.io/api/apps/v1
 k8s.io/api/autoscaling/v2beta2
 k8s.io/api/batch/v1
 k8s.io/api/batch/v1beta1
