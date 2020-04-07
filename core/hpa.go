@@ -339,45 +339,45 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 	}
 	hpaSvc.Spec.Metrics = metrics
 	/*
-	var metrics []v2beta2.MetricSpec
-		for _, metric := range input.ServiceAttributes.MetricValues {
-			met := v2beta2.MetricSpec{
-				Type: v2beta2.ResourceMetricSourceType,
+		var metrics []v2beta2.MetricSpec
+			for _, metric := range input.ServiceAttributes.MetricValues {
+				met := v2beta2.MetricSpec{
+					Type: v2beta2.ResourceMetricSourceType,
+				}
+				target := v2beta2.MetricTarget{}
+				if metric.TargetValueKind == "value" {
+					target.Type = v2beta2.ValueMetricType
+					value, _ := strconv.Atoi(metric.TargetValue)
+					target.Value = resource.NewScaledQuantity(int64(value), ScaleUnit(metric.TargetValueUnit))
+
+				} else if metric.TargetValueKind == "utilization" {
+					target.Type = v2beta2.UtilizationMetricType
+					value, _ := strconv.Atoi(metric.TargetValue)
+					ptrval := int32(value)
+					target.AverageUtilization = &ptrval
+				} else if metric.TargetValueKind == "average" {
+					target.Type = v2beta2.AverageValueMetricType
+					value, _ := strconv.Atoi(metric.TargetValue)
+					target.AverageValue = resource.NewScaledQuantity(int64(value), ScaleUnit(metric.TargetValueUnit))
+				}
+
+				resource := v2beta2.ResourceMetricSource{}
+				if metric.ResourceKind == "cpu" {
+					resource.Name = v1.ResourceCPU
+				} else if metric.ResourceKind == "memory" {
+					resource.Name = v1.ResourceMemory
+				} else if metric.ResourceKind == "storage" {
+					resource.Name = v1.ResourceEphemeralStorage
+				}
+
+				resource.Target = target
+
+				met.Resource = &resource
+				metrics = append(metrics, met)
 			}
-			target := v2beta2.MetricTarget{}
-			if metric.TargetValueKind == "value" {
-				target.Type = v2beta2.ValueMetricType
-				value, _ := strconv.Atoi(metric.TargetValue)
-				target.Value = resource.NewScaledQuantity(int64(value), ScaleUnit(metric.TargetValueUnit))
+			hpaSvc.Spec.Metrics = metrics
 
-			} else if metric.TargetValueKind == "utilization" {
-				target.Type = v2beta2.UtilizationMetricType
-				value, _ := strconv.Atoi(metric.TargetValue)
-				ptrval := int32(value)
-				target.AverageUtilization = &ptrval
-			} else if metric.TargetValueKind == "average" {
-				target.Type = v2beta2.AverageValueMetricType
-				value, _ := strconv.Atoi(metric.TargetValue)
-				target.AverageValue = resource.NewScaledQuantity(int64(value), ScaleUnit(metric.TargetValueUnit))
-			}
-
-			resource := v2beta2.ResourceMetricSource{}
-			if metric.ResourceKind == "cpu" {
-				resource.Name = v1.ResourceCPU
-			} else if metric.ResourceKind == "memory" {
-				resource.Name = v1.ResourceMemory
-			} else if metric.ResourceKind == "storage" {
-				resource.Name = v1.ResourceEphemeralStorage
-			}
-
-			resource.Target = target
-
-			met.Resource = &resource
-			metrics = append(metrics, met)
-		}
-		hpaSvc.Spec.Metrics = metrics
-
-	 */
+	*/
 	return hpaSvc, nil
 }
 
