@@ -1,10 +1,11 @@
 package core
 
 import (
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
+	helm_parameterization "istio-service-mesh/core/helm-parameterization"
 	"istio-service-mesh/utils"
 	"regexp"
 	"sigs.k8s.io/yaml"
@@ -320,13 +321,16 @@ func ConvertDaemonSeToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.DaemonSetsParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -342,13 +346,16 @@ func ConvertDeploymentToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSer
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -564,13 +571,16 @@ func ConvertStatefulToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.StatefulSetParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -585,13 +595,16 @@ func ConvertJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.JobParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -606,13 +619,16 @@ func ConvertCronJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServic
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.CronJobParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertVirtualServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
