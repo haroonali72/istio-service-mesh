@@ -434,7 +434,9 @@ func init() {
 	proto.RegisterType((*FailedJobsHistoryLimit)(nil), "proto.FailedJobsHistoryLimit")
 }
 
-func init() { proto.RegisterFile("cronjob.proto", fileDescriptor_9693a1980b1a682f) }
+func init() {
+	proto.RegisterFile("cronjob.proto", fileDescriptor_9693a1980b1a682f)
+}
 
 var fileDescriptor_9693a1980b1a682f = []byte{
 	// 665 bytes of a gzipped FileDescriptorProto

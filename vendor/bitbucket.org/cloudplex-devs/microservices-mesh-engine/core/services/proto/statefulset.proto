@@ -34,8 +34,8 @@ message StatefulSetServiceAttributes {
     Replicas replicas = 4;
     RevisionHistoryLimit revisionHistoryLimit = 5;
     StateFulSetUpdateStrategy updateStrategy = 6;
-    map<string, ContainerAttributes> containers = 7;
-    map<string, ContainerAttributes> initContainers = 8;
+    repeated  ContainerAttributes containers = 7;
+    repeated ContainerAttributes initContainers = 8;
     map<string, string> node_selector = 9;
     IstioConfig istio_config = 10;
     bool is_rbac_enabled = 11;

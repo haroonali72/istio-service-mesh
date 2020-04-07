@@ -42,8 +42,8 @@ message JobServiceAttribute {
     map<string, string> annotations = 16;
     repeated K8sRbacAttribute roles= 20;
     repeated IstioRbacAttribute istio_roles = 21;
-    map<string, ContainerAttributes> containers = 22;
-    map<string, ContainerAttributes> initContainers = 23;
+    repeated ContainerAttributes containers = 22;
+    repeated ContainerAttributes initContainers = 23;
     bool is_rbac_enabled = 24;
 }
 

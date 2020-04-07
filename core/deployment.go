@@ -517,15 +517,16 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 }
 
-func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
+func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
 
 	volumeMountNames := make(map[string]bool)
 
 	var containers []v2.Container
 
-	for key, container := range conts {
+	for _, container := range conts {
 		var containerTemp v2.Container
-		containerTemp.Name = key
+		//todo: change it and add containerName field
+		containerTemp.Name = container.ImageName
 		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			return nil, nil, err
 		}

@@ -35,8 +35,8 @@ message DaemonSetServiceAttributes {
     RevisionHistoryLimit revisionHistoryLimit = 8;
     Affinity affinity = 5;
     repeated Volume volumes = 9;
-    map<string, ContainerAttributes> containers = 10;
-    map<string, ContainerAttributes> initContainers = 11;
+    repeated ContainerAttributes containers = 10;
+    repeated ContainerAttributes initContainers = 11;
     map<string, string> node_selector = 6;
     IstioConfig istio_config = 12;
     bool is_rbac_enabled = 19;
