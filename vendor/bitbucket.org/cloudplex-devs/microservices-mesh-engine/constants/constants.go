@@ -80,46 +80,13 @@ const (
 	LEGACY_VM_EXTENSION_ENDPOINT = "/legacy/api/v1/vmextansion/setup/{projectId}"
 
 	//database Collections/////
-	Solution                     = "solutions"
-	Services                     = "services"
-	SolutionTemplate             = "templates"
-	DynamicData                  = "dynamicData"
-	DynamicConfigurationSchema   = "dynamicConfigurationSchema"
-	DeletedServiceState          = "servicesState"
-	CustomerSolutionTemplate     = "customerSolutionTemplates"
-	Deploymentservice            = "deploymentService"
-	Statefulsetservice           = "statefulsetService"
-	Daemonsetservice             = "daemonsetService"
-	Jobservice                   = "jobService"
-	CronJobservice               = "cronJobService"
-	StorageclassService          = "storageClassService"
-	PersistentVolumeService      = "persistentVolumeService"
-	PersistentVolumeClaimService = "persistentVolumeClaimService"
-	NetworkPolicyService         = "networkPolicyService"
-
-	////////////////////////////////////////
-	//------------------Services------------------------------------//
-
-	//---------k8s service type -----------------/////
-	DeploymentServiceType         = "deployment"
-	StatefulSetServiceType        = "statefulSet"
-	DaemonSetServiceType          = "daemonSet"
-	JobServiceType                = "job"
-	CronJobServiceType            = "cronJob"
-	KubernetesServiceType         = "kubernetes_service"
-	RoleServiceType               = "role"
-	RoleBindingServiceType        = "role_binding"
-	ClusterRoleServiceType        = "cluster_role"
-	ClusterRoleBindingServiceType = "cluster_role_binding"
-	ServiceAccountServiceType     = "service_account"
-	Resources                     = "resources"
-	SecretServiceType             = "secret"
-	ConfigMapServiceType          = "config_map"
-	PVCServiceType                = "pvc"
-	PVServiceType                 = "pv"
-	StorageClassServiceType       = "storage_class"
-	NetworkPolicyServiceType      = "network_policy"
-	HpaServiceType                = "hpa"
+	Solution                   = "solutions"
+	Services                   = "services"
+	SolutionTemplate           = "templates"
+	DynamicData                = "dynamicData"
+	DynamicConfigurationSchema = "dynamicConfigurationSchema"
+	DeletedServiceState        = "services_state"
+	CustomerSolutionTemplate   = "customer_solution_templates"
 
 	//---------k8s service database collection-------------  /////
 
@@ -128,17 +95,22 @@ const (
 	RoleServiceDataBase           = "role_service_template"
 	RoleBindingServiceDataBase    = "role__binding_service_template"
 	ServiceAccountServiceDataBase = "service_account_template"
-	ResourcesDatabase             = "resource"
-	DefaultResourcesDatabase      = "default_resources"
-	ConfigMapServiceDataBase      = "cofigmap_template"
-
-	/////---------------Istio service type---------------//////
-
-	GatewayServiceType   = "gateway"
-	VirtualServiceType   = "virtual"
-	DestinationRulesType = "destination_rules"
-	ServiceEntryType     = "service_entry"
-	PolicyType           = "policy"
+	ConfigMapServiceDataBase      = "configmap_template"
+	ClusterRoleService            = "cluster_role_service_template"
+	ClusterRoleBindingService     = "cluster_role_binding_service_template"
+	HpaService                    = "hpa_service_template"
+	//////////////////////////////////////////////////////////////////
+	Deploymentservice            = "deployment_service"
+	Statefulsetservice           = "statefulset_service"
+	Daemonsetservice             = "daemonset_service"
+	Jobservice                   = "job_service"
+	CronJobservice               = "cron_job_service"
+	StorageclassService          = "storage_class_service"
+	PersistentVolumeService      = "persistent_volume_service"
+	PersistentVolumeClaimService = "persistent_volume_claim_service"
+	NetworkPolicyService         = "network_policy_service"
+	DefaultResourcesDatabase     = "default_resources"
+	ResourcesDatabase            = "resource"
 
 	/////---------------Istio service database collection--------------------////////
 	GatewayServiceDataBase   = "gateway_service_template"
@@ -167,11 +139,6 @@ const (
 	Rbac_List              = "/security/api/rbac/list?companyId={companyID}&resource_type={resourceType}"
 	Rbac_Evaluate          = "/security/api/rbac/evaluate"
 	Rbac_Subscription_Plan = "/security/api/rbac/company/plan?companyId={companyID}"
-
-	//----------------SerivcesDbCollections----------------------------//
-	ClusterRoleService        = "cluster_role_service_template"
-	ClusterRoleBindingService = "cluster_role_binding_service_template"
-	HpaService                = "hpa_service_template"
 )
 
 var ListOfIgnoredServicesInAppSize = []string{

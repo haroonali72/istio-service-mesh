@@ -32,16 +32,16 @@ message PersistentVolumeClaimServiceResponse {
 }
 message PersistentVolumeClaimAttributes {
     LabelSelectorObj   label_selector =1;
-    string volumeName=2;
-    repeated AccessMode accessMode=3;
-    string storageClassName=4;
-    string requestQuantity=5;
-    string limitQuantity=6;
-    PersistentVolumeMode volumeMode=7;
-    TypedLocalObjectReference dataSource=8;
+    string volume_name=2;
+    repeated AccessMode access_mode=3;
+    string storage_class_name=4;
+    string request_quantity=5;
+    string limit_quantity=6;
+    PersistentVolumeMode volume_mode=7;
+    TypedLocalObjectReference data_source=8;
 }
 message  TypedLocalObjectReference  {
- string apiGroup=1;
+ string api_group=1;
  string kind=2;
 string name=3;
 }

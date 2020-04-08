@@ -39,12 +39,12 @@ message DeploymentServiceAttributes {
     DeploymentStrategy strategy = 10;
     repeated Volume volumes = 11;
     Affinity affinity = 12;
-    repeated ContainerAttributes initContainers = 13;
+    repeated ContainerAttributes init_containers = 13;
     Replicas replicas=14;
-    TerminationGracePeriodSeconds TerminationGracePeriodSeconds = 15;
-    repeated LocalObjectReference imagePullSecrets = 16;
+    TerminationGracePeriodSeconds Termination_grace_period_seconds = 15;
+    repeated LocalObjectReference image_pull_secrets = 16;
     string serviceAccountName = 17;
-    AutomountServiceAccountToken automountServiceAccountToken = 18;
+    AutomountServiceAccountToken automount_service_account_token = 18;
 }
 
 message AutomountServiceAccountToken{

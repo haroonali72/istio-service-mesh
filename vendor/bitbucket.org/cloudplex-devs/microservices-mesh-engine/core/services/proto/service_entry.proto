@@ -36,7 +36,7 @@ message ServiceEntryAttributes {
 
     repeated ServiceEntryEndpoint endpoints = 6;
     repeated string exportTo = 7;
-    repeated string subjectAltNames = 8;
+    repeated string subject_alt_names = 8;
 }
 
 message ServiceEntryPort {
