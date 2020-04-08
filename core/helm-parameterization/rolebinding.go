@@ -1,20 +1,20 @@
 package helm_parameterization
 
 import (
-	"gopkg.in/yaml.v2"
 	"istio-service-mesh/core/helm-parameterization/types"
 	v1 "k8s.io/api/rbac/v1"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
-func ClusterRoleParameters(role v1.ClusterRole) (roleYaml []byte, values []byte, functionsData []byte, err error) {
-	result, err := yaml.Marshal(role)
+func RoleBindingParameters(roleBinding *v1.RoleBinding) (roleBindingYaml []byte, values []byte, functionsData []byte, err error) {
+	result, err := yaml.Marshal(roleBinding)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	roleRaw := new(types.RoleTemplate)
-	err = yaml.Unmarshal(result, roleRaw)
+	roleBindingRaw := new(types.RoleBindingTemplate)
+	err = yaml.Unmarshal(result, roleBindingRaw)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -22,17 +22,16 @@ func ClusterRoleParameters(role v1.ClusterRole) (roleYaml []byte, values []byte,
 	_ = tplFile
 
 	chartFile := new([]byte)
-	roleRaw.Labels, _ = appendLabels(role.Labels, role.Name, tplFile)
-	roleRaw.Name, _ = appendName(role.Name, tplFile)
+	roleBindingRaw.Labels, _ = appendLabels(roleBinding.Labels, roleBinding.Name, tplFile)
+	roleBindingRaw.Name, _ = appendName(roleBinding.Name, tplFile)
 
-	dep, err := yaml.Marshal(roleRaw)
+	dep, err := yaml.Marshal(roleBindingRaw)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
 	depString = strings.ReplaceAll(depString, "}}'", "}}")
-
 	depString = appendIfStatements(depString, "apiVersion", KubernetesRBACIfCondition)
 
 	chartRaw, err := yaml.Marshal(chartFile)

@@ -33,6 +33,9 @@ const (
 
 	CronExpressionParameter = "{{ .Values.cronExpression }}"
 	RulesParameters         = "{{ toYaml .Values.rules | nindent 8 }}"
+
+	KubernetesRBACIfCondition = "{{- if .Values.rbac.create }}"
+	ServiceAccountIfCondition = "{{- if .Values."
 )
 
 const (
@@ -63,5 +66,14 @@ const (
 release: {{ .Release.Name }}
 heritage: {{ .Release.Service }}
 {{ .Labels }}{{- end -}}
+`
+	ServiceAccountNameFunction = `
+{{- define "{{ .Name }}.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "{{ .Name }}.fullname" .) .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
 `
 )

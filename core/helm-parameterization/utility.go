@@ -19,6 +19,16 @@ func appendName(actualName string, tplFile *[]byte) (string, error) {
 	return name, nil
 }
 
+func appendServiceAccountName(actualName string, tplFile *[]byte) (string, error) {
+	name := strings.Replace(NameHelmParameter, "{{ .Name }}", actualName, -1)
+	var nameInterface interface{}
+	_ = json.Unmarshal([]byte(name), &nameInterface)
+
+	nameGenFunc := strings.ReplaceAll(ServiceAccountNameFunction, "{{ .Name }}", actualName)
+	*tplFile = append(*tplFile, []byte(nameGenFunc)...)
+	return name, nil
+}
+
 func appendLabels(labels map[string]string, name string, tplFile *[]byte) (string, error) {
 	rawLabels, err := yaml.Marshal(labels)
 	if err != nil {
@@ -123,4 +133,12 @@ func appendExtraStatements(deployment string, findString, appendString string) s
 
 	}
 	return deployment
+}
+
+func appendIfStatements(str string, findStr, appStr string) string {
+	if index := strings.Index(str, findStr); index != -1 {
+		str = appStr + "\n" + str
+	}
+	str = str + "\n" + "{{- end }}"
+	return str
 }

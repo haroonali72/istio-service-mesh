@@ -2,7 +2,7 @@ package types
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-type ClusterRoleBindingTemplate struct {
+type RoleBindingTemplate struct {
 	metav1.TypeMeta    `json:",inline"`
 	ObjectMetaTemplate `json:"metdata" yaml:"metdata"`
 	Subjects           []Subject `json:"subjects" yaml:"subjects"`

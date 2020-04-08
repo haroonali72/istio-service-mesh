@@ -457,6 +457,10 @@ func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb
 		return err
 	}
 	result, err := getClusterRoleBinding(&crBinding)
+
+	a, b, c, err := helm_parameterization.ClusterRoleBindingParameters(result)
+	fmt.Println(a, b, c)
+
 	if err != nil {
 		utils.Error.Println(err)
 		return err

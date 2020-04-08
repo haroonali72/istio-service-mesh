@@ -7,32 +7,38 @@ import (
 	"strings"
 )
 
-func ClusterRoleBindingParameters(roleBinding v1.ClusterRoleBinding) (roleBindingYaml []byte, functionsData []byte, err error) {
+func ClusterRoleBindingParameters(roleBinding *v1.ClusterRoleBinding) (roleBindingYaml []byte, values []byte, functionsData []byte, err error) {
 	result, err := yaml.Marshal(roleBinding)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	roleBindingRaw := new(types.ClusterRoleBindingTemplate)
+	roleBindingRaw := new(types.RoleBindingTemplate)
 	err = yaml.Unmarshal(result, roleBindingRaw)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	tplFile := new([]byte)
 	_ = tplFile
 
+	chartFile := new(types.CoreComponentsChartValues)
 	roleBindingRaw.Labels, _ = appendLabels(roleBinding.Labels, roleBinding.Name, tplFile)
-	//roleBindingRaw.RoleRef.Name, _ = appendName()
 	roleBindingRaw.Name, _ = appendName(roleBinding.Name, tplFile)
 
 	dep, err := yaml.Marshal(roleBindingRaw)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
 	depString = strings.ReplaceAll(depString, "}}'", "}}")
+	depString = appendIfStatements(depString, "apiVersion", KubernetesRBACIfCondition)
 
-	return []byte(depString), *tplFile, nil
+	chartRaw, err := yaml.Marshal(chartFile)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return []byte(depString), chartRaw, *tplFile, nil
 
 }

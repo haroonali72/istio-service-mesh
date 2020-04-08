@@ -20,15 +20,11 @@ func RoleParameters(role *v1.Role) ([]byte, []byte, []byte, error) {
 
 	tplFile := new([]byte)
 	_ = tplFile
-	chartFile := new(types.CoreComponentsChartValues)
+	chartFile := new([]byte)
 
+	roleRaw.Labels, _ = appendLabels(role.Labels, role.Name, tplFile)
 	roleRaw.Name, _ = appendName(role.Name, tplFile)
 	roleYaml, err := yaml.Marshal(roleRaw)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	valuesYaml, err := yaml.Marshal(chartFile)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -36,6 +32,11 @@ func RoleParameters(role *v1.Role) ([]byte, []byte, []byte, error) {
 	roleString := strings.ReplaceAll(string(roleYaml), "'{{", "{{")
 	roleString = strings.ReplaceAll(roleString, "}}'", "}}")
 
+	roleString = appendIfStatements(roleString, "apiVersion", KubernetesRBACIfCondition)
+	valuesYaml, err := yaml.Marshal(chartFile)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	return []byte(roleString), valuesYaml, *tplFile, nil
 
 }

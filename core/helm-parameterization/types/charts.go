@@ -7,8 +7,8 @@ type CoreComponentsChartValues struct {
 	Probe         `json:"prob,omitempty" yaml:"prob,omitempty"`
 	Ports         interface{} `json:"ports,omitempty" yaml:"ports,omitempty"`
 
-	CronExpression string      `json:"cronExpression,omitempty"  yaml:"cronExpression,omitempty"`
-	Rules          interface{} `json:"rules,omitempty" yaml:"rules,omitempty"`
+	CronExpression string `json:"cronExpression,omitempty"  yaml:"cronExpression,omitempty"`
+	RBAC           `json:"rbac,omitempty" yaml:"rbac,omitempty"`
 }
 
 type ImageInfo struct {
@@ -19,4 +19,8 @@ type ImageInfo struct {
 type Probe struct {
 	LivenessProb   interface{} `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
 	ReadinessProbe interface{} `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
+}
+
+type RBAC struct {
+	Create bool `json:"create,omitempty" yaml:"create,omitempty"`
 }
