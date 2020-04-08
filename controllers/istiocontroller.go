@@ -21,7 +21,7 @@ import (
 	ist_rbac "istio.io/api/rbac/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	v12 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
@@ -452,7 +452,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 
 	//keel labels
 	hpa.Kind = "HorizontalPodAutoscaler"
-	hpa.APIVersion = "autoscaling/v2beta2"
+	hpa.APIVersion = "autoscaling/v1"
 	hpaLabels := make(map[string]string)
 	//deploymentLabels["keel.sh/match-tag"] = "true"
 	hpaLabels["keel.sh/policy"] = "force"
@@ -498,7 +498,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 	}
 	hpa.Spec.ScaleTargetRef = crossObj
 
-	var metricsArr []autoscaling.MetricSpec
+	/*var metricsArr []autoscaling.MetricSpec
 	for _, metrics := range serviceAttr.Metrics_ {
 		met := autoscaling.MetricSpec{
 			Type: autoscaling.ResourceMetricSourceType,
@@ -540,7 +540,7 @@ func getHPAObject(service types.Service) (autoscaling.HorizontalPodAutoscaler, e
 				Status: v1.ConditionTrue,
 			},
 		},
-	}
+	}*/
 	return hpa, nil
 }
 func ScaleUnit(unit string) resource.Scale {
