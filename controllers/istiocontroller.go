@@ -1795,7 +1795,7 @@ func DeployIstio(input types.ServiceInput, requestType string, cpContext *core.C
 				return ret
 			}
 			hpa.Kind = "HorizontalPodAutoscaler"
-			hpa.APIVersion = "autoscaling/v2beta2"
+			hpa.APIVersion = "autoscaling/v1"
 			finalObj.Services.HPA = append(finalObj.Services.HPA, hpa)
 
 		case "deployment":
