@@ -4,6 +4,7 @@ import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
+	"fmt"
 	"istio-service-mesh/constants"
 	helm_parameterization "istio-service-mesh/core/helm-parameterization"
 	"istio-service-mesh/utils"
@@ -409,6 +410,12 @@ func ConvertRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRe
 		return err
 	}
 	result, err := getRole(&role)
+
+	a, b, c, err := helm_parameterization.RoleParameters(result)
+	fmt.Println(a)
+	fmt.Println(b)
+	fmt.Println(c)
+
 	if err != nil {
 		utils.Error.Println(err)
 		return err

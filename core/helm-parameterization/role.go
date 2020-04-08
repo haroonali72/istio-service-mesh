@@ -22,9 +22,7 @@ func RoleParameters(role *v1.Role) ([]byte, []byte, []byte, error) {
 	_ = tplFile
 	chartFile := new(types.CoreComponentsChartValues)
 
-	roleRaw.Rules, _ = appendRules(role.Rules, chartFile)
 	roleRaw.Name, _ = appendName(role.Name, tplFile)
-
 	roleYaml, err := yaml.Marshal(roleRaw)
 	if err != nil {
 		return nil, nil, nil, err
