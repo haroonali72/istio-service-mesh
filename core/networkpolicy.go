@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gogo/protobuf/jsonpb"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	pb "istio-service-mesh/core/proto"
@@ -13,7 +12,6 @@ import (
 	net "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strings"
 )
 
 func (s *Server) CreateNetworkPolicy(ctx context.Context, req *pb.NetworkPolicyService) (*pb.ServiceResponse, error) {
@@ -389,29 +387,34 @@ func getLabelSelector(service *pb.LabelSelectorObj) (*metav1.LabelSelector, erro
 	}
 	for i := 0; i < len(service.MatchExpressions); i++ {
 		if len(service.MatchExpressions[i].Key) > 0 {
-			var temp = new(metav1.LabelSelectorRequirement)
-			//if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_DoesNotExist.String() {
-			//	temp.Operator = metav1.LabelSelectorOpDoesNotExist
-			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_Exists.String() {
-			//	temp.Operator = metav1.LabelSelectorOpExists
-			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_In.String() {
-			//	temp.Operator = metav1.LabelSelectorOpIn
-			//} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_NotIn.String() {
-			//	temp.Operator = metav1.LabelSelectorOpNotIn
-			//} else {
-			//	return nil, errors.New("Invalid operator in label selector")
-			//}
 
-			m := jsonpb.Marshaler{}
-			tJson, err := m.MarshalToString(service.MatchExpressions[i])
-			if err != nil {
-				return nil, err
+			var temp = new(metav1.LabelSelectorRequirement)
+			temp.Key = service.MatchExpressions[i].Key
+			for _, each := range service.MatchExpressions[i].Values {
+				temp.Values = append(temp.Values, each)
 			}
-			um := jsonpb.Unmarshaler{}
-			err = um.Unmarshal(strings.NewReader(tJson), temp)
-			if err != nil {
-				return nil, err
+			if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_DoesNotExist.String() {
+				temp.Operator = metav1.LabelSelectorOpDoesNotExist
+			} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_Exists.String() {
+				temp.Operator = metav1.LabelSelectorOpExists
+			} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_In.String() {
+				temp.Operator = metav1.LabelSelectorOpIn
+			} else if service.MatchExpressions[i].Operator.String() == pb.LabelSelectorOperator_NotIn.String() {
+				temp.Operator = metav1.LabelSelectorOpNotIn
+			} else {
+				return nil, errors.New("Invalid operator in label selector")
 			}
+
+			//m := jsonpb.Marshaler{}
+			//tJson, err := m.MarshalToString(service.MatchExpressions[i])
+			//if err != nil {
+			//	return nil, err
+			//}
+			//um := jsonpb.Unmarshaler{}
+			//err = um.Unmarshal(strings.NewReader(tJson), temp)
+			//if err != nil {
+			//	return nil, err
+			//}
 			ls.MatchExpressions = append(ls.MatchExpressions, *temp)
 		} else {
 			return nil, errors.New("key required in label selector match expression object")

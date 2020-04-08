@@ -3,7 +3,9 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"istio-service-mesh/constants"
+	helm_parameterization "istio-service-mesh/core/helm-parameterization"
 	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"regexp"
@@ -124,6 +126,7 @@ func ConvertSCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -145,11 +148,20 @@ func ConvertPVCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, d := helm_parameterization.PersistentVolumeClaimParameters(result)
+
+	fmt.Println(a, b, c, d)
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
 	return nil
@@ -167,6 +179,10 @@ func ConvertPVToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, d := helm_parameterization.PersistentVolumeParameters(result)
+
+	fmt.Println(a, b, c, d)
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -276,6 +292,9 @@ func ConvertConfigMapToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServ
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, d := helm_parameterization.ConfigMapParameters(result)
+
+	fmt.Println(a, b, c, d)
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -298,6 +317,10 @@ func ConvertSecretToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, d := helm_parameterization.SecretParameters(result)
+
+	fmt.Println(a, b, c, d)
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -537,6 +560,10 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, d := helm_parameterization.KubernetesServiceParameters(result)
+
+	fmt.Println(a, b, c, d)
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err

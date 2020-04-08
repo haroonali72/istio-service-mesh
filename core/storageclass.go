@@ -264,6 +264,10 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 	if input.ServiceAttributes == nil {
 		return nil, errors.New("not found")
 	}
+	if input.ServiceAttributes.Provisioner == "" {
+		return nil, errors.New("storage class must have provisioner")
+	}
+	sc.Provisioner = input.ServiceAttributes.Provisioner
 	if input.ServiceAttributes.AllowVolumeExpansion == "true" {
 		vE := true
 		sc.AllowVolumeExpansion = &vE
@@ -300,98 +304,15 @@ func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 		}
 		sc.AllowedTopologies = append(sc.AllowedTopologies, aT)
 	}
-	sc.Parameters = make(map[string]string)
-	// SC  AWSEBS
-	if len(input.ServiceAttributes.ScParameters.AwsebsscParm) > 0 {
-		sc.Provisioner = "kubernetes.io/aws-ebs"
-		ebsType := input.ServiceAttributes.ScParameters.AwsebsscParm["type"]
-		if ebsType == "io1" {
 
-			io1IopsperGb := input.ServiceAttributes.ScParameters.AwsebsscParm["iopsPerGB"]
-			if io1IopsperGb == "" {
-				return nil, errors.New("can not find io1 IopsperGb in sc parameters")
-			}
-			sc.Parameters["iopsPerGB"] = io1IopsperGb
-		}
-		sc.Parameters["type"] = ebsType
-		if input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"] != "" {
-			sc.Parameters["encrypted"] = input.ServiceAttributes.ScParameters.AwsebsscParm["encrypted"]
-		}
-		if kmsKeyId := input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]; kmsKeyId != "" {
-			sc.Parameters["kmsKeyId"] = input.ServiceAttributes.ScParameters.AwsebsscParm["kmsKeyId"]
-		}
-		if fsType := input.ServiceAttributes.ScParameters.AwsebsscParm["fsType"]; fsType != "" {
-			sc.Parameters["fsType"] = fsType
-		}
-		for _, each := range input.ServiceAttributes.MountOptions {
-			sc.MountOptions = append(sc.MountOptions, each)
-		}
-		if input.ServiceAttributes.ScParameters.AwsebsscParm["zone"] != "" {
-			sc.Parameters["zone"] = input.ServiceAttributes.ScParameters.AwsebsscParm["zone"]
-		} else if input.ServiceAttributes.ScParameters.AwsebsscParm["zones"] != "" {
-			sc.Parameters["zones"] = input.ServiceAttributes.ScParameters.AwsebsscParm["zones"]
-		}
+	if len(input.ServiceAttributes.Parameters) > 0 {
+		sc.Parameters = make(map[string]string)
 	}
-
-	// SC  GCPPD
-	if len(input.ServiceAttributes.ScParameters.GcppdscParm) > 0 {
-		sc.Provisioner = "kubernetes.io/gce-pd"
-
-		if gcppdType := input.ServiceAttributes.ScParameters.GcppdscParm["type"]; gcppdType == "pd-standard" {
-			sc.Parameters["type"] = gcppdType
-		}
-		if regionalpd := input.ServiceAttributes.ScParameters.GcppdscParm["replication-type"]; regionalpd == "regional-pd" {
-			sc.Parameters["replication-type"] = regionalpd
-		}
-		for _, each := range input.ServiceAttributes.MountOptions {
-			sc.MountOptions = append(sc.MountOptions, each)
-		}
-		if input.ServiceAttributes.ScParameters.GcppdscParm["zone"] != "" {
-			sc.Parameters["zone"] = input.ServiceAttributes.ScParameters.GcppdscParm["zone"]
-		} else if input.ServiceAttributes.ScParameters.GcppdscParm["zones"] != "" {
-			sc.Parameters["zones"] = input.ServiceAttributes.ScParameters.GcppdscParm["zones"]
-		}
+	for key, value := range input.ServiceAttributes.Parameters {
+		sc.Parameters[key] = value
 	}
-	// SC  Azuredisk
-	if len(input.ServiceAttributes.ScParameters.AzurdiskscParm) > 0 {
-		sc.Provisioner = "kubernetes.io/azure-disk"
-		if skuName := input.ServiceAttributes.ScParameters.AzurdiskscParm["skuName"]; skuName != "" {
-			sc.Parameters["skuName"] = skuName
-		}
-		if location := input.ServiceAttributes.ScParameters.AzurdiskscParm["location"]; location != "" {
-			sc.Parameters["location"] = location
-		}
-		if sa := input.ServiceAttributes.ScParameters.AzurdiskscParm["storageAccount"]; sa != "" {
-			sc.Parameters["storageAccount"] = sa
-		}
-		for _, each := range input.ServiceAttributes.MountOptions {
-			sc.MountOptions = append(sc.MountOptions, each)
-		}
-	}
-	// SC  AzureFile
-	if len(input.ServiceAttributes.ScParameters.AzurfilescParm) > 0 {
-		sc.Provisioner = "kubernetes.io/azure-file"
-		if skuName := input.ServiceAttributes.ScParameters.AzurfilescParm["skuName"]; skuName != "" {
-			sc.Parameters["skuName"] = skuName
-		}
-		if location := input.ServiceAttributes.ScParameters.AzurfilescParm["location"]; location != "" {
-			sc.Parameters["location"] = location
-		}
-		if sa := input.ServiceAttributes.ScParameters.AzurfilescParm["storageAccount"]; sa != "" {
-			sc.Parameters["storageAccount"] = sa
-		}
-		if scNs := input.ServiceAttributes.ScParameters.AzurfilescParm["secretNamespace"]; scNs != "" {
-			sc.Parameters["secretNamespace"] = scNs
-		}
-		if sa := input.ServiceAttributes.ScParameters.AzurfilescParm["secretName"]; sa != "" {
-			sc.Parameters["secretName"] = sa
-		}
-		if re := input.ServiceAttributes.ScParameters.AzurfilescParm["readOnly"]; re != "" {
-			sc.Parameters["readOnly"] = re
-		}
-		for _, each := range input.ServiceAttributes.MountOptions {
-			sc.MountOptions = append(sc.MountOptions, each)
-		}
+	for _, each := range input.ServiceAttributes.MountOptions {
+		sc.MountOptions = append(sc.MountOptions, each)
 	}
 	return sc, nil
 }

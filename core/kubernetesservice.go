@@ -275,7 +275,7 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 			spec.Protocol = kb.ProtocolUDP
 		} else if port.Protocol == string(kb.ProtocolSCTP) {
 			spec.Protocol = kb.ProtocolSCTP
-		} else {
+		} else if port.Protocol != "" {
 			return nil, errors.New("invalid protocol supported protocols are TCP, UDP and SCTP")
 		}
 		if port.TargetPort.PortName != "" {

@@ -29,13 +29,13 @@ message StorageClassAttributes{
     VolumeBindingMode volumeBindingMode =1;
     string allowVolumeExpansion  =2;
     string  provisioner =3;
-    Parameters scParameters =4;
+    map<string,string> parameters =4;
     ReclaimPolicy reclaimPolicy =5;
     repeated string mountOptions=6;
     repeated TopologySelectorTerm allowedTopologies=7;
 }
 message  TopologySelectorTerm{
-   repeated TopologySelectorLabelRequirement matchLabelExpressions=1;
+    repeated TopologySelectorLabelRequirement matchLabelExpressions=1;
 }
 message TopologySelectorLabelRequirement{
     string key=1;
@@ -49,11 +49,4 @@ enum VolumeBindingMode{
 enum ReclaimPolicy{
     Retain=0;
     Delete=1;
-}
-
-message Parameters{
-    map<string,string>  gcppdscParm    =1;
-    map<string,string>  awsebsscParm    =2;
-    map<string,string>  azurdiskscParm    =3;
-    map<string,string>  azurfilescParm  =4;
 }

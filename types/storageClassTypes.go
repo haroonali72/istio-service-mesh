@@ -17,7 +17,7 @@ type StorageClassServiceAttribute struct {
 	BindingMod           VolumeBindingMode      `json:"volumeBindingMode,omitempty"`
 	AllowVolumeExpansion string                 `json:"allowVolumeExpansion,omitempty"`
 	Provisioner          string                 `json:"provisioner,omitempty"`
-	SCParameters         Parameters             `json:"scParameters,omitempty"`
+	Parameters           map[string]string      `json:"parameters,omitempty"`
 	ReclaimPolicy        ReclaimPolicy          `json:"reclaimPolicy,omitempty"`
 	MountOptions         []string               `json:"mountOptions,omitempty"`
 	AllowedTopologies    []TopologySelectorTerm `json:"allowedTopologies,omitempty"`
@@ -30,13 +30,6 @@ type TopologySelectorLabelRequirement struct {
 	Key    string   `json:"key,omitempty"`
 	Values []string `json:"values,omitempty"`
 }
-type Parameters struct {
-	GcpPdScParm     map[string]string `json:"gcppdscParm,omitempty"`
-	AwsEbsScParm    map[string]string `json:"awsebsscParm,omitempty"`
-	AzureDiskScParm map[string]string `json:"azurdiskscParm,omitempty"`
-	AzureFileScParm map[string]string `json:"azurfilescParm,omitempty"`
-}
-
 type VolumeBindingMode string
 
 const (
