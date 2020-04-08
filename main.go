@@ -1,6 +1,7 @@
 package main
 
 import (
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"fmt"
 	"go.opencensus.io/plugin/ocgrpc"
@@ -9,7 +10,6 @@ import (
 	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/core"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	"log"
 	"net"

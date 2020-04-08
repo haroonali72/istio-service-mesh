@@ -1,9 +1,9 @@
 package core
 
 import (
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
-	pb "istio-service-mesh/core/proto"
 )
 
 func converToResp(resp *pb.ServiceResponse, projectId string, responseStatusCode int, responseBody []byte) {

@@ -1,12 +1,13 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	"k8s.io/api/apps/v1"
@@ -45,7 +46,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *pb.DeploymentService
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -92,7 +93,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *pb.DeploymentService) (
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -139,7 +140,7 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *pb.DeploymentService
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -186,7 +187,7 @@ func (s *Server) PatchDeployment(ctx context.Context, req *pb.DeploymentService)
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -233,7 +234,7 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -283,10 +284,12 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Selector.MatchLabels["version"] = service.Version
 	if service.ServiceAttributes.LabelSelector != nil {
 		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	} else {
+		deployment.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
 	}
-	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
 		deployment.Spec.Selector.MatchLabels[key] = value
-	}
+	}*/
 
 	deployment.Spec.Template.Labels = make(map[string]string)
 	deployment.Spec.Template.Labels["app"] = service.Name
@@ -432,7 +435,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 		if volume.VolumeSource.AwsElasticBlockStore != nil {
 			tempVolume.AWSElasticBlockStore = new(v2.AWSElasticBlockStoreVolumeSource)
-			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AwsElasticBlockStore.ReadOnly
+			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AwsElasticBlockStore.Readonly
 			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AwsElasticBlockStore.Partition
 		}
 
@@ -457,14 +460,14 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 		if volume.VolumeSource.GcePersistentDisk != nil {
 			tempVolume.GCEPersistentDisk = new(v2.GCEPersistentDiskVolumeSource)
 			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GcePersistentDisk.Partition
-			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GcePersistentDisk.ReadOnly
+			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GcePersistentDisk.Readonly
 			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GcePersistentDisk.PdName
 		}
 
 		if volume.VolumeSource.AzureDisk != nil {
 			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
-			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.ReadOnly
-			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskURI
+			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.Readonly
+			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskUri
 
 			if volume.VolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
 				temp := v2.AzureDataDiskCachingNone
@@ -491,7 +494,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 		if volume.VolumeSource.AzureFile != nil {
 			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
-			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.Readonly
 			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
 			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
 
@@ -516,15 +519,16 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 }
 
-func getContainers(conts map[string]*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
+func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
 
 	volumeMountNames := make(map[string]bool)
 
 	var containers []v2.Container
 
-	for key, container := range conts {
+	for _, container := range conts {
 		var containerTemp v2.Container
-		containerTemp.Name = key
+		//todo: change it and add containerName field
+		containerTemp.Name = "app-" + utils.RandStringRunes(4)
 		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			return nil, nil, err
 		}

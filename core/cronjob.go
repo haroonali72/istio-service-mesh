@@ -1,12 +1,13 @@
 package core
 
 import (
+	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
-	pb "istio-service-mesh/core/proto"
 	"istio-service-mesh/utils"
 	_ "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/batch/v1beta1"
@@ -41,7 +42,7 @@ func (s *Server) CreateCronJob(ctx context.Context, req *pb.CronJobService) (*pb
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).CreateService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -88,7 +89,7 @@ func (s *Server) GetCronJob(ctx context.Context, req *pb.CronJobService) (*pb.Se
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).GetService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -135,7 +136,7 @@ func (s *Server) DeleteCronJob(ctx context.Context, req *pb.CronJobService) (*pb
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).DeleteService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -182,7 +183,7 @@ func (s *Server) PutCronJob(ctx context.Context, req *pb.CronJobService) (*pb.Se
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PutService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -229,7 +230,7 @@ func (s *Server) PatchCronJob(ctx context.Context, req *pb.CronJobService) (*pb.
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	result, err := pb.NewServiceClient(conn).PatchService(ctx, &pb.ServiceRequest{
+	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
 		ProjectId: req.ProjectId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
@@ -278,9 +279,15 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = make(map[string]string)
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["app"] = service.Name
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["version"] = service.Version
-	for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
+
+	if service.CronJobServiceAttribute.JobTemplate.LabelSelector != nil {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels
+	} else {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.Labels
 	}
+	/*for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
+	}*/
 	cjob.Spec.JobTemplate.Labels["app"] = service.Name
 	cjob.Spec.JobTemplate.Labels["version"] = service.Version
 	for key, value := range service.CronJobServiceAttribute.JobTemplate.Labels {
