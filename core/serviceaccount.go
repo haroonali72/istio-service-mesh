@@ -5,10 +5,10 @@ import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
-	kb "golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/utils"
+	kb "k8s.io/api/core/v1"
 	"strings"
 )
 

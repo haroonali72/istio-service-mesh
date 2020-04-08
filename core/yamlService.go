@@ -486,6 +486,9 @@ func ConvertServiceAccountToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yam
 		utils.Error.Println(err)
 		return err
 	}
+	a, b, c, err := helm_parameterization.ServiceAccountParameters(result)
+	fmt.Println(a, b, c)
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err

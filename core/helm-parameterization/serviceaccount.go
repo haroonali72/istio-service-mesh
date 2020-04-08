@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ServiceAccountParameters(svcAccount v1.ServiceAccount) (svcYaml []byte, values []byte, functionsData []byte, err error) {
+func ServiceAccountParameters(svcAccount *v1.ServiceAccount) (svcYaml []byte, values []byte, functionsData []byte, err error) {
 	result, err := yaml.Marshal(svcAccount)
 	if err != nil {
 		return nil, nil, nil, err
