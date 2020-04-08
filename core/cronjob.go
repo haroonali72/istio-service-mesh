@@ -279,9 +279,15 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = make(map[string]string)
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["app"] = service.Name
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["version"] = service.Version
-	for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
+
+	if service.CronJobServiceAttribute.JobTemplate.LabelSelector != nil {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels
+	} else {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.Labels
 	}
+	/*for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
+	}*/
 	cjob.Spec.JobTemplate.Labels["app"] = service.Name
 	cjob.Spec.JobTemplate.Labels["version"] = service.Version
 	for key, value := range service.CronJobServiceAttribute.JobTemplate.Labels {

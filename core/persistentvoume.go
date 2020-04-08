@@ -314,11 +314,11 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
 		pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
 		pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
-		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.ReadOnly
+		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.Readonly
 	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
 		pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
 		pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
-		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.ReadOnly
+		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Readonly
 	} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk != nil {
 		pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
 		pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName

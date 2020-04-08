@@ -9,6 +9,12 @@ bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200406093420-71a
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200406093420-71af7fc3fe5c/go.mod h1:d+cHbOcDjbok9XTxQ762elhPi0xTWuU8kaf6RDBsN2U=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200406103810-c908ee7a52e9 h1:N+pyGYmPdCVGXBekLy6nHP2+LqrP9C64hRiOHT4NK34=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200406103810-c908ee7a52e9/go.mod h1:d+cHbOcDjbok9XTxQ762elhPi0xTWuU8kaf6RDBsN2U=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200407170028-96aae6370d26 h1:tSEvN22ci7JaNFVvBZ2GJiM2s7Rs4Sx3E9mVwLcJ9uc=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200407170028-96aae6370d26/go.mod h1:OmVwhzPXRFcTR0UymWU7pNs1Vt9jeUhaHJ8zgvLJRs4=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200408085836-9bc2803488d7 h1:QTzMiGUC+KUMbFRWBg1MrwFZOtQsVDMu//dyFqLWXPo=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200408085836-9bc2803488d7/go.mod h1:OmVwhzPXRFcTR0UymWU7pNs1Vt9jeUhaHJ8zgvLJRs4=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200408091709-f48bc26517e6 h1:BbFSb6B/1kOVn+uSezb80VmFOifvVAZOaMozfRM1c08=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200408091709-f48bc26517e6/go.mod h1:OmVwhzPXRFcTR0UymWU7pNs1Vt9jeUhaHJ8zgvLJRs4=
 bitbucket.org/cloudplex-devs/woodpecker v0.0.0-20200130130714-b6df537e38c6/go.mod h1:BbcPoZMTVsFbwbcsNBu4qQFN2711UfYnZBlg1SG+dIk=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
@@ -646,6 +652,7 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tmc/scp v0.0.0-20170824174625-f7b48647feef/go.mod h1:WLFStEdnJXpjK8kd4qKLwQKX/1vrDzp5BcDyiZJBHJM=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
+github.com/twmb/algoimpl v0.0.0-20170717182524-076353e90b94/go.mod h1:+E0GZE9c8UBk2GYXo9mPIHAtmmBkJlSWCdzLMcsCWV0=
 github.com/uber/jaeger-client-go v0.0.0-20190228190846-ecf2d03a9e80/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.0.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=

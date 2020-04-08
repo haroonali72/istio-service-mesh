@@ -29,14 +29,14 @@ message CronJobService {
 message CronJobServiceAttribute {
 
     string schedule = 1;
-    StartingDeadlineSeconds startingDeadlineSeconds = 2;
-    ConcurrencyPolicy concurrencyPolicy = 3;
+    StartingDeadlineSeconds starting_deadline_seconds = 2;
+    ConcurrencyPolicy concurrency_policy = 3;
     Suspend suspend = 4;
-    FailedJobsHistoryLimit failedJobsHistoryLimit = 5;
-    SuccessfulJobsHistoryLimit successfulJobsHistoryLimit = 6;
+    FailedJobsHistoryLimit failed_jobs_history_limit = 5;
+    SuccessfulJobsHistoryLimit successful_jobs_history_limit = 6;
     map<string, string> labels = 16;
     map<string, string> annotations = 17;
-    JobServiceAttribute jobTemplate = 18;
+    JobServiceAttribute job_template = 18;
 }
 
 message StartingDeadlineSeconds{

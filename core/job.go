@@ -279,9 +279,15 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	job.Spec.Selector.MatchLabels = make(map[string]string)
 	job.Spec.Selector.MatchLabels["app"] = service.Name
 	job.Spec.Selector.MatchLabels["version"] = service.Version
-	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
-		job.Spec.Selector.MatchLabels[key] = value
+	if service.ServiceAttributes.LabelSelector != nil {
+		job.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	} else {
+		job.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
 	}
+
+	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+		job.Spec.Selector.MatchLabels[key] = value
+	}*/
 	job.Spec.Template.Labels["app"] = service.Name
 	job.Spec.Template.Labels["version"] = service.Version
 	for key, value := range service.ServiceAttributes.Labels {

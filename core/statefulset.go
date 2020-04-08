@@ -277,9 +277,15 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	statefulSet.Spec.Selector.MatchLabels = make(map[string]string)
 	statefulSet.Spec.Selector.MatchLabels["app"] = service.Name
 	statefulSet.Spec.Selector.MatchLabels["version"] = service.Version
-	for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
-		statefulSet.Spec.Selector.MatchLabels[key] = value
+
+	if service.ServiceAttributes.LabelSelector != nil {
+		statefulSet.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
+	} else {
+		statefulSet.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
 	}
+	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
+		statefulSet.Spec.Selector.MatchLabels[key] = value
+	}*/
 	statefulSet.Spec.Template.Labels = make(map[string]string)
 	statefulSet.Spec.Template.Labels["app"] = service.Name
 	statefulSet.Spec.Template.Labels["version"] = service.Version

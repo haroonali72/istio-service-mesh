@@ -32,10 +32,10 @@ message StatefulSetServiceAttributes {
     map<string, string> annotations = 2;
     LabelSelectorObj label_selector = 3;
     Replicas replicas = 4;
-    RevisionHistoryLimit revisionHistoryLimit = 5;
-    StateFulSetUpdateStrategy updateStrategy = 6;
-    map<string, ContainerAttributes> containers = 7;
-    map<string, ContainerAttributes> initContainers = 8;
+    RevisionHistoryLimit revision_history_limit = 5;
+    StateFulSetUpdateStrategy update_strategy = 6;
+    repeated  ContainerAttributes containers = 7;
+    repeated ContainerAttributes init_containers = 8;
     map<string, string> node_selector = 9;
     IstioConfig istio_config = 10;
     bool is_rbac_enabled = 11;
@@ -43,10 +43,10 @@ message StatefulSetServiceAttributes {
     repeated IstioRbacAttribute istio_roles = 13;
     repeated Volume volumes = 14;
     Affinity affinity = 15;
-    string serviceName = 16;
-    TerminationGracePeriodSeconds terminationGracePeriodSeconds = 17;
-    repeated PersistentVolumeClaimService volumeClaimTemplates = 18;
-    PodManagementPolicyType podManagementPolicy = 19;
+    string service_name = 16;
+    TerminationGracePeriodSeconds termination_grace_period_seconds = 17;
+    repeated PersistentVolumeClaimService volume_claim_templates = 18;
+    PodManagementPolicyType pod_management_policy = 19;
 }
 
 enum PodManagementPolicyType

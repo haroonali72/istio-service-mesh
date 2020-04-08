@@ -34,6 +34,6 @@ message RoleRule{
     repeated string resources =1;
     repeated string verbs =2;
     repeated string api_groups=3;
-    repeated string resourceNames=4;
+    repeated string resource_names=4;
 }
 

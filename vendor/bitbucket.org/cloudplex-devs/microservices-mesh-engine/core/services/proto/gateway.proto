@@ -44,21 +44,14 @@ message Port {
     Protocols protocol = 3;
 }
 message TlsConfig {
-    bool httpsRedirect = 1;
+    bool https_redirect = 1;
     Mode mode = 2;
-    string serverCertificate = 3;
-    string privateKey = 4;
-    string caCertificate = 5;
-    repeated string subjectAltName = 6;
-    ProtocolVersion minProtocolVersion = 7;
-    ProtocolVersion maxProtocolVersion = 8;
-}
-enum Mode {
-    PASSTHROUGH = 0;
-    SIMPLE = 1;
-    MUTUAL = 2;
-    AUTO_PASSTHROUGH = 3;
-    ISTIO_MUTUAL = 4;
+    string server_certificate = 3;
+    string private_key = 4;
+    string ca_certificate = 5;
+    repeated string subject_alt_name = 6;
+    ProtocolVersion min_protocol_version = 7;
+    ProtocolVersion max_protocol_version = 8;
 }
 
 

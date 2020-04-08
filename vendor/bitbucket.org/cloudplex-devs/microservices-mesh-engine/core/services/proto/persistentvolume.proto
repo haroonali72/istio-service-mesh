@@ -27,34 +27,34 @@ message PersistentVolumeService {
 
 message PersistentVolumeAttributes{
     map<string,string>  labels    =1;
-    ReclaimPolicy reclaimPolicy =2;
-    repeated AccessMode accessMode =3;
+    ReclaimPolicy reclaim_policy =2;
+    repeated AccessMode access_mode =3;
     string capcity =4;
-    PersistentVolumeSource persistentVolumeSource=5;
-   string storageClassName =6;
-    repeated string mountOptions=7;
-    PersistentVolumeMode volumeMode=8;
-    VolumeNodeAffinity nodeAffinity=9;
+    PersistentVolumeSource persistent_volume_source=5;
+   string storage_class_name =6;
+    repeated string mount_options=7;
+    PersistentVolumeMode volume_mode=8;
+    VolumeNodeAffinity node_affinity=9;
 }
 
 message PersistentVolumeSource {
-    GCPPD  gcpPd=1;
-    AWSEBS  awsEbs=2;
-    AzureDisk azureDisk=3;
-    AzureFile azureFile=4;
+    GCPPD  gcp_pd=1;
+    AWSEBS  aws_ebs=2;
+    AzureDisk azure_disk=3;
+    AzureFile azure_file=4;
 }
 message GCPPD {
-string pdName=1;
-string fileSystem=2;
+string pd_name=1;
+string file_system=2;
 int64 partation=3;
-bool readOnly=4;
+bool readonly=4;
 }
 
 message AWSEBS {
-    string volumeId=1;
-    string fileSystem=2;
+    string volume_id=1;
+    string file_system=2;
     int64 partation=3;
-    bool readOnly=4;
+    bool readonly=4;
 }
 
 message AzureDisk {

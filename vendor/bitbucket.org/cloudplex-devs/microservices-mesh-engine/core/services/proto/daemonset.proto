@@ -30,19 +30,19 @@ message DaemonSetServiceAttributes {
     map<string, string> labels = 1;
     map<string, string> annotations = 2;
     LabelSelectorObj label_selector = 3;
-    DaemonSetUpdateStrategy updateStrategy = 4;
-    int32 minReadySeconds = 7;
-    RevisionHistoryLimit revisionHistoryLimit = 8;
+    DaemonSetUpdateStrategy update_strategy = 4;
+    int32 min_ready_seconds = 7;
+    RevisionHistoryLimit revision_history_limit = 8;
     Affinity affinity = 5;
     repeated Volume volumes = 9;
-    map<string, ContainerAttributes> containers = 10;
-    map<string, ContainerAttributes> initContainers = 11;
+    repeated ContainerAttributes containers = 10;
+    repeated ContainerAttributes init_containers = 11;
     map<string, string> node_selector = 6;
     IstioConfig istio_config = 12;
     bool is_rbac_enabled = 19;
     repeated K8sRbacAttribute roles= 20;
     repeated IstioRbacAttribute istio_roles = 21;
-    TerminationGracePeriodSeconds terminationGracePeriodSeconds = 22;
-    ActiveDeadlineSeconds activeDeadlineSeconds = 23;
+    TerminationGracePeriodSeconds termination_grace_period_seconds = 22;
+    ActiveDeadlineSeconds active_deadline_seconds = 23;
 }
 
