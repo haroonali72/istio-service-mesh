@@ -41,7 +41,7 @@ message ServiceStatus {
    string id = 1;
    string serviceId = 2;
    string name = 3;
-   repeated string statusIndividual = 4;
+   repeated string status_individual = 4;
    string status = 5;
    string reason = 6;
 }

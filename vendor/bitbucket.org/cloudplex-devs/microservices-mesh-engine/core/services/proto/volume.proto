@@ -8,14 +8,14 @@ message Volume {
 }
 message VolumeSource {
     HostPathVolumeSource hostPath = 1;
-    EmptyDirVolumeSource emptyDir = 2;
-    GCEPersistentDiskVolumeSource gcePersistentDisk= 3;
+    EmptyDirVolumeSource empty_dir = 2;
+    GCEPersistentDiskVolumeSource gce_persistent_disk= 3;
     SecretVolumeSource secret = 4;
-    PersistentVolumeClaimVolumeSource persistentVolumeClaim = 5;
-    AzureFileVolumeSource azureFile = 6;
-    ConfigMapVolumeSource configMap = 7;
-    AzureDiskVolumeSource azureDisk = 8;
-    AWSElasticBlockStoreVolumeSource awsElasticBlockStore = 9;
+    PersistentVolumeClaimVolumeSource persistent_volume_claim = 5;
+    AzureFileVolumeSource azure_file = 6;
+    ConfigMapVolumeSource config_map = 7;
+    AzureDiskVolumeSource azure_disk = 8;
+    AWSElasticBlockStoreVolumeSource aws_elastic_block_store = 9;
 }
 
 
@@ -31,15 +31,15 @@ message EmptyDirVolumeSource {
 }
 
 message GCEPersistentDiskVolumeSource {
-    string pdName = 1;
-    string fsType = 2;
+    string pd_name = 1;
+    string fs_type = 2;
     int32 partition = 3;
-    bool readOnly = 4;
+    bool readonly = 4;
 }
 
 message SecretVolumeSource{
-    string secretName = 1;
-    int32 defaultMode = 2;
+    string secret_name = 1;
+    int32 default_mode = 2;
     repeated KeyToPath items = 3;
     bool optional = 4;
 }
@@ -51,40 +51,40 @@ message KeyToPath {
 }
 
 message PersistentVolumeClaimVolumeSource{
-    string claimName = 1;
-    bool readOnly = 2;
+    string claim_name = 1;
+    bool readonly = 2;
 }
 
 message AzureFileVolumeSource{
-    string secretName = 1;
-    string shareName = 2;
-    bool readOnly = 3;
+    string secret_name = 1;
+    string share_name = 2;
+    bool readonly = 3;
 }
 
 message ConfigMapVolumeSource{
-    LocalObjectReference localObjectReference = 1;
+    LocalObjectReference local_object_reference = 1;
     repeated KeyToPath items = 2;
-    int32 defaultMode = 3;
+    int32 default_mode = 3;
     bool optional = 4;
 
 
 }
 
 message AzureDiskVolumeSource{
-    string diskName = 1;
-    string diskURI = 2;
-    string fsType = 3;
-    bool readOnly = 4;
-    AzureDataDiskCachingMode cachingMode = 5;
+    string disk_name = 1;
+    string disk_uri = 2;
+    string fs_type = 3;
+    bool readonly = 4;
+    AzureDataDiskCachingMode caching_mode = 5;
     AzureDataDiskKind kind = 6;
 
 }
 
 message AWSElasticBlockStoreVolumeSource{
-    string volumeID = 1;
-    string fsType = 2;
+    string volume_id = 1;
+    string fs_Type = 2;
     int32 partition = 3;
-    bool readOnly = 4;
+    bool readonly = 4;
 }
 
 message LocalObjectReference {

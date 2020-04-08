@@ -435,7 +435,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 		if volume.VolumeSource.AwsElasticBlockStore != nil {
 			tempVolume.AWSElasticBlockStore = new(v2.AWSElasticBlockStoreVolumeSource)
-			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AwsElasticBlockStore.ReadOnly
+			tempVolume.AWSElasticBlockStore.ReadOnly = volume.VolumeSource.AwsElasticBlockStore.Readonly
 			tempVolume.AWSElasticBlockStore.Partition = volume.VolumeSource.AwsElasticBlockStore.Partition
 		}
 
@@ -460,14 +460,14 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 		if volume.VolumeSource.GcePersistentDisk != nil {
 			tempVolume.GCEPersistentDisk = new(v2.GCEPersistentDiskVolumeSource)
 			tempVolume.GCEPersistentDisk.Partition = volume.VolumeSource.GcePersistentDisk.Partition
-			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GcePersistentDisk.ReadOnly
+			tempVolume.GCEPersistentDisk.ReadOnly = volume.VolumeSource.GcePersistentDisk.Readonly
 			tempVolume.GCEPersistentDisk.PDName = volume.VolumeSource.GcePersistentDisk.PdName
 		}
 
 		if volume.VolumeSource.AzureDisk != nil {
 			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
-			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.ReadOnly
-			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskURI
+			tempVolume.AzureDisk.ReadOnly = &volume.VolumeSource.AzureDisk.Readonly
+			tempVolume.AzureDisk.DataDiskURI = volume.VolumeSource.AzureDisk.DiskUri
 
 			if volume.VolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
 				temp := v2.AzureDataDiskCachingNone
@@ -494,7 +494,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 		if volume.VolumeSource.AzureFile != nil {
 			tempVolume.AzureFile = new(v2.AzureFileVolumeSource)
-			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.ReadOnly
+			tempVolume.AzureFile.ReadOnly = volume.VolumeSource.AzureFile.Readonly
 			tempVolume.AzureFile.SecretName = volume.VolumeSource.AzureFile.SecretName
 			tempVolume.AzureFile.ShareName = volume.VolumeSource.AzureFile.ShareName
 

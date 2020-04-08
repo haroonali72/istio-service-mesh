@@ -29,21 +29,21 @@ message JobService {
 message JobServiceAttribute {
     Parallelism parallelism = 1;
     Completions completions = 2;
-    ActiveDeadlineSeconds activeDeadlineSeconds = 3;
-    BackoffLimit backoffLimit = 4;
+    ActiveDeadlineSeconds active_deadline_seconds = 3;
+    BackoffLimit backoff_limit = 4;
     LabelSelectorObj label_selector = 5;
-    ManualSelector manualSelector = 6;
+    ManualSelector manual_selector = 6;
     IstioConfig istio_config = 7;
     repeated Volume volumes = 8;
     map<string, string> node_selector = 9;
     Affinity affinity = 10;
-    TTLSecondsAfterFinished ttlSecondsAfterFinished = 11;
+    TTLSecondsAfterFinished ttl_seconds_after_finished = 11;
     map<string, string> labels = 15;
     map<string, string> annotations = 16;
     repeated K8sRbacAttribute roles= 20;
     repeated IstioRbacAttribute istio_roles = 21;
     repeated ContainerAttributes containers = 22;
-    repeated ContainerAttributes initContainers = 23;
+    repeated ContainerAttributes init_containers = 23;
     bool is_rbac_enabled = 24;
 }
 

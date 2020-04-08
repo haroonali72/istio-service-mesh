@@ -16,7 +16,7 @@ message ContainerAttributes{
     Probe liveness_probe = 11;
     Probe readiness_probe = 12;
     SecurityContextStruct security_context = 13;
-    repeated VolumeMount volumeMounts = 14;
+    repeated VolumeMount volume_mounts = 14;
 
 }
 message VolumeMount {
@@ -25,30 +25,30 @@ message VolumeMount {
     string mountPath = 3;
     string subPath = 4;
     string subPathExpr = 5;
-    MountPropagationMode mountPropagation = 6;
+    MountPropagationMode mount_propagation = 6;
 }
 
 message Affinity{
-    NodeAffinity nodeAffinity = 1;
-    PodAffinity podAffinity = 2;
-    PodAntiAffinity podAntiAffinity = 3;
+    NodeAffinity node_affinity = 1;
+    PodAffinity pod_affinity = 2;
+    PodAntiAffinity pod_anti_affinity = 3;
 
 }
 
 message NodeAffinity{
-    NodeSelector reqDuringSchedulingIgnDuringExec = 1;
-    repeated PreferredSchedulingTerm prefDuringIgnDuringExec = 2;
+    NodeSelector req_during_scheduling_ign_during_exec = 1;
+    repeated PreferredSchedulingTerm pref_during_ign_during_exec = 2;
 
 }
 
 message NodeSelector {
-    repeated NodeSelectorTerm nodeSelectorTerms = 1;
+    repeated NodeSelectorTerm node_selector_terms = 1;
 
 }
 
 message NodeSelectorTerm{
-    repeated NodeSelectorRequirement matchExpressions = 1;
-    repeated NodeSelectorRequirement matchFields = 2;
+    repeated NodeSelectorRequirement match_expressions = 1;
+    repeated NodeSelectorRequirement match_fields = 2;
 }
 
 message NodeSelectorRequirement{
@@ -63,14 +63,14 @@ message PreferredSchedulingTerm{
 }
 
 message PodAffinity{
-    repeated PodAffinityTerm reqDuringSchedulingIgnDuringExec = 1;
-    repeated WeightedPodAffinityTerm prefDuringIgnDuringExec = 2;
+    repeated PodAffinityTerm req_during_scheduling_ign_during_exec = 1;
+    repeated WeightedPodAffinityTerm pref_during_ign_during_exec = 2;
 }
 
 message PodAffinityTerm{
     LabelSelectorObj label_selector = 1;
     repeated string namespaces = 2;
-    string topologyKey = 3;
+    string topology_key = 3;
 
 }
 
@@ -79,8 +79,8 @@ message WeightedPodAffinityTerm{
     PodAffinityTerm podAffinityTerm = 2;
 }
 message PodAntiAffinity {
-    repeated PodAffinityTerm reqDuringSchedulingIgnDuringExec = 1;
-    repeated WeightedPodAffinityTerm prefDuringIgnDuringExec = 2;
+    repeated PodAffinityTerm req_during_scheduling_ign_during_exec = 1;
+    repeated WeightedPodAffinityTerm pref_during_ign_during_exec = 2;
 }
 
 message EnvironmentVariable {
@@ -105,10 +105,10 @@ message BasicAuthCredentials {
 
 message ContainerPort {
     string name = 1;
-    int32 hostPort = 2;
-    int32 containerPort = 3;
+    int32 host_port = 2;
+    int32 container_port = 3;
     string protocol = 4;
-    string hostIP = 5;
+    string host_ip = 5;
 }
 
 message IstioConfig {
@@ -209,16 +209,16 @@ message IstioRbacAttribute {
 
 message DeploymentStrategy {
     DeploymentStrategyType type = 1;
-    RollingUpdateDeployment rollingUpdate = 2;
+    RollingUpdateDeployment rolling_update = 2;
 }
 
 message RollingUpdateDeployment {
-    int32 maxUnavailable = 1;
-    int32  maxSurge = 2;
+    int32 max_unavailable = 1;
+    int32  max_surge = 2;
 }
 message DaemonSetUpdateStrategy {
     DaemonSetUpdateStrategyType type = 1;
-    RollingUpdateDaemonSet rollingUpdate = 2;
+    RollingUpdateDaemonSet rolling_update = 2;
 }
 message RollingUpdateDaemonSet{
     oneof maxUnavailable{
@@ -229,7 +229,7 @@ message RollingUpdateDaemonSet{
 
 message StateFulSetUpdateStrategy{
     StatefulSetUpdateStrategyType type = 1;
-    RollingUpdateStatefulSetStrategy rollingUpdate = 2;
+    RollingUpdateStatefulSetStrategy rolling_update = 2;
 }
 
 message RollingUpdateStatefulSetStrategy{

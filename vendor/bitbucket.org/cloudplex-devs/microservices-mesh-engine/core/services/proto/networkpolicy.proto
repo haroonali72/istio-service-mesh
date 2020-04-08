@@ -1,7 +1,6 @@
 syntax = "proto3";
 import "service.proto";
 import "general.proto";
-import "persistentvolumeclaim.proto";
 package proto;
 service NetworkPolicy {
     rpc CreateNetworkPolicy (NetworkPolicyService) returns (ServiceResponse) {}
@@ -24,7 +23,7 @@ message NetworkPolicyService {
     string namespace = 10;
 }
 message NetworkPolicyAttributes {
-    LabelSelectorObj   podSelector =1;
+    LabelSelectorObj   pod_selector =1;
     repeated IngressRule ingress=2;
     repeated  EgressRule  egress=3;
 }
@@ -53,9 +52,9 @@ message PortItntOrString{
 }
 
 message NetworkPolicyPeer{
-    LabelSelectorObj  podSelector =1;
-    LabelSelectorObj namespaceSelector=2;
-    IPBlock  ipBlock=3;
+    LabelSelectorObj  pod_selector =1;
+    LabelSelectorObj namespace_selector=2;
+    IPBlock  ip_block=3;
 }
 
 message IPBlock{
