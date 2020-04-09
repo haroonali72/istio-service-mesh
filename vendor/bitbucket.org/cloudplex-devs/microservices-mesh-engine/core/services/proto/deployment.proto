@@ -40,11 +40,12 @@ message DeploymentServiceAttributes {
     repeated Volume volumes = 11;
     Affinity affinity = 12;
     repeated ContainerAttributes init_containers = 13;
-    Replicas replicas=14;
+    int32 replicas=14;
     TerminationGracePeriodSeconds Termination_grace_period_seconds = 15;
     repeated LocalObjectReference image_pull_secrets = 16;
     string serviceAccountName = 17;
     AutomountServiceAccountToken automount_service_account_token = 18;
+    bool is_rbac_enabled = 19;
 }
 
 message AutomountServiceAccountToken{

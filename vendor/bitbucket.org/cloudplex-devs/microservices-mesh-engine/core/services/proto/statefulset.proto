@@ -31,7 +31,7 @@ message StatefulSetServiceAttributes {
     map<string, string> labels = 1;
     map<string, string> annotations = 2;
     LabelSelectorObj label_selector = 3;
-    Replicas replicas = 4;
+    int32 replicas = 4;
     RevisionHistoryLimit revision_history_limit = 5;
     StateFulSetUpdateStrategy update_strategy = 6;
     repeated  ContainerAttributes containers = 7;
