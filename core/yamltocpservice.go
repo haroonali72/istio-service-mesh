@@ -785,7 +785,7 @@ func convertToCPJob(job *batch.Job) (*types.JobService, error) {
 	cpJob := new(types.JobService)
 	cpJob.Name = job.Name
 	cpJob.ServiceType = "k8s"
-	cpJob.ServiceSubType = meshConstants.JobServiceType
+	cpJob.ServiceSubType = "job"
 	if job.Namespace == "" {
 		cpJob.Namespace = "default"
 	} else {
@@ -1105,21 +1105,29 @@ func convertToCPPersistentVolume(pv *v1.PersistentVolume) (*types.PersistentVolu
 		persistentVolume.ServiceAttributes.AccessMode = append(persistentVolume.ServiceAttributes.AccessMode, am)
 	}
 	if pv.Spec.PersistentVolumeSource.AWSElasticBlockStore != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource = new(types.PersistentVolumeSource)
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS = new(types.AWSEBS)
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.VolumeId = pv.Spec.AWSElasticBlockStore.VolumeID
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.ReadOnly = pv.Spec.AWSElasticBlockStore.ReadOnly
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.Filesystem = pv.Spec.AWSElasticBlockStore.FSType
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AWSEBS.Partition = int(pv.Spec.AWSElasticBlockStore.Partition)
 	} else if pv.Spec.PersistentVolumeSource.GCEPersistentDisk != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource = new(types.PersistentVolumeSource)
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD = new(types.GCPPD)
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.PdName = pv.Spec.GCEPersistentDisk.PDName
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.ReadOnly = pv.Spec.GCEPersistentDisk.ReadOnly
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.Filesystem = pv.Spec.GCEPersistentDisk.FSType
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.GCPPD.Partition = int(pv.Spec.GCEPersistentDisk.Partition)
 	} else if pv.Spec.PersistentVolumeSource.AzureFile != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource = new(types.PersistentVolumeSource)
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile = new(types.AzureFile)
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly = pv.Spec.AzureFile.ReadOnly
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName = pv.Spec.AzureFile.ShareName
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName = pv.Spec.AzureFile.SecretName
 		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace = *pv.Spec.AzureFile.SecretNamespace
 	} else if pv.Spec.PersistentVolumeSource.AzureDisk != nil {
+		persistentVolume.ServiceAttributes.PersistentVolumeSource = new(types.PersistentVolumeSource)
+		persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk = new(types.AzureDisk)
 		if pv.Spec.AzureDisk.ReadOnly != nil {
 			persistentVolume.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly = *pv.Spec.AzureDisk.ReadOnly
 		}
@@ -1189,69 +1197,16 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*types.StorageClassServi
 		storageClass.ServiceAttributes.AllowedTopologies = append(storageClass.ServiceAttributes.AllowedTopologies, aT)
 	}
 
-	if sc.Provisioner == "kubernetes.io/aws-ebs" {
-		storageClass.ServiceAttributes.SCParameters.AwsEbsScParm = make(map[string]string)
-		storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["type"] = sc.Parameters["type"]
-		if storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["type"] == "io1" {
-			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["iopsPerGB"] = sc.Parameters["iopsPerGB"]
-		}
-		if sc.Parameters["encrypted"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["encrypted"] = sc.Parameters["encrypted"]
-		}
-		if sc.Parameters["kmsKeyId"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["kmsKeyId"] = sc.Parameters["kmsKeyId"]
-		}
-		if sc.Parameters["zone"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["zone"] = sc.Parameters["zone"]
-		} else if sc.Parameters["zones"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AwsEbsScParm["zones"] = sc.Parameters["zones"]
-		}
-	} else if sc.Provisioner == "kubernetes.io/gce-pd" {
-		storageClass.ServiceAttributes.SCParameters.GcpPdScParm = make(map[string]string)
-		storageClass.ServiceAttributes.SCParameters.GcpPdScParm["type"] = sc.Parameters["type"]
-		if sc.Parameters["replication-type"] != "" {
-			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["replication-type"] = sc.Parameters["replication-type"]
-		}
-		if sc.Parameters["zone"] != "" {
-			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["zone"] = sc.Parameters["zone"]
-		} else if sc.Parameters["zones"] != "" {
-			storageClass.ServiceAttributes.SCParameters.GcpPdScParm["zones"] = sc.Parameters["zones"]
-		}
-	} else if sc.Provisioner == "kubernetes.io/azure-disk" {
-		storageClass.ServiceAttributes.SCParameters.AzureDiskScParm = make(map[string]string)
-		if sc.Parameters["skuName"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["skuName"] = sc.Parameters["skuName"]
-		}
-		if sc.Parameters["location"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["location"] = sc.Parameters["location"]
-		}
-		if sc.Parameters["storageAccount"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureDiskScParm["storageAccount"] = sc.Parameters["storageAccount"]
-		}
-	} else if sc.Provisioner == "kubernetes.io/azure-file" {
-
-		storageClass.ServiceAttributes.SCParameters.AzureFileScParm = make(map[string]string)
-		if sc.Parameters["skuName"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["skuName"] = sc.Parameters["skuName"]
-		}
-		if sc.Parameters["location"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["location"] = sc.Parameters["location"]
-		}
-		if sc.Parameters["storageAccount"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["storageAccount"] = sc.Parameters["storageAccount"]
-		}
-		if sc.Parameters["secretNamespace"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["secretNamespace"] = sc.Parameters["secretNamespace"]
-		}
-		if sc.Parameters["secretName"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["secretName"] = sc.Parameters["secretName"]
-		}
-		if sc.Parameters["readOnly"] != "" {
-			storageClass.ServiceAttributes.SCParameters.AzureFileScParm["readOnly"] = sc.Parameters["readOnly"]
-		}
-	}
 	if sc.VolumeBindingMode != nil {
 		storageClass.ServiceAttributes.BindingMod = types.VolumeBindingMode(*sc.VolumeBindingMode)
+	}
+	storageClass.ServiceAttributes.Provisioner = sc.Provisioner
+	if len(sc.Parameters) > 0 {
+		storageClass.ServiceAttributes.Parameters = make(map[string]string)
+	}
+
+	for key, value := range sc.Parameters {
+		storageClass.ServiceAttributes.Parameters[key] = value
 	}
 
 	return storageClass, nil
@@ -1470,19 +1425,26 @@ func convertToCPKubernetesService(svc *v1.Service) (*types.Service, error) {
 	service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
 	for _, each := range svc.Spec.Ports {
 		cpPort := types.KubePort{}
-		cpPort.Name = each.Name
-		cpPort.Port = each.Port
-		if !(svc.Spec.ClusterIP == "None" || svc.Spec.ClusterIP == "") {
+		if each.Name != "" {
+			cpPort.Name = each.Name
+		}
+		if each.Port != 0 {
+			cpPort.Port = each.Port
+		}
+
+		if !(svc.Spec.ClusterIP == "None") {
 			if each.TargetPort.Type == intstr.String {
 				cpPort.TargetPort.PortName = each.TargetPort.StrVal
 			} else if each.TargetPort.Type == intstr.Int {
 				cpPort.TargetPort.PortNumber = each.TargetPort.IntVal
 			}
 		} else {
-			service.ServiceAttributes.ClusterIP = "None"
+			service.ServiceAttributes.ClusterIP = ""
 		}
 		cpPort.Protocol = string(each.Protocol)
-		cpPort.NodePort = each.NodePort
+		if each.NodePort != 0 {
+			cpPort.NodePort = each.NodePort
+		}
 
 		service.ServiceAttributes.Ports = append(service.ServiceAttributes.Ports, cpPort)
 	}

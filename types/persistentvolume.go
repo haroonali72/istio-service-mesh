@@ -14,15 +14,15 @@ type PersistentVolumeService struct {
 	ServiceAttributes *PersistentVolumeServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type PersistentVolumeServiceAttribute struct {
-	Labels                 map[string]string      `json:"labels"`
-	ReclaimPolicy          ReclaimPolicy          `json:"reclaimPolicy"`
-	PersistentVolumeSource PersistentVolumeSource `json:"persistentVolumeSource"`
-	AccessMode             []AccessMode           `json:"accessMode"`
-	Capcity                string                 `json:"capcity,omitempty"`
-	StorageClassName       string                 `json:"storageClassName,omitempty"`
-	MountOptions           []string               `json:"mountOptions,omitempty"`
-	VolumeMode             *PersistentVolumeMode  `json:"volumeMode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
-	NodeAffinity           *VolumeNodeAffinity    `json:"nodeAffinity,omitempty"`
+	Labels                 map[string]string       `json:"labels,omitempty"`
+	ReclaimPolicy          ReclaimPolicy           `json:"reclaimPolicy,omitempty"`
+	PersistentVolumeSource *PersistentVolumeSource `json:"persistentVolumeSource,omitempty"`
+	AccessMode             []AccessMode            `json:"accessMode"`
+	Capcity                string                  `json:"capcity,omitempty"`
+	StorageClassName       string                  `json:"storageClassName,omitempty"`
+	MountOptions           []string                `json:"mountOptions,omitempty"`
+	VolumeMode             *PersistentVolumeMode   `json:"volumeMode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
+	NodeAffinity           *VolumeNodeAffinity     `json:"nodeAffinity,omitempty"`
 }
 type VolumeNodeAffinity struct {
 	Required NodeSelector `json:"required,omitempty"`
@@ -47,10 +47,10 @@ const (
 )
 
 type PersistentVolumeSource struct {
-	GCPPD     GCPPD     `json:"gcpPd,omitempty"`
-	AWSEBS    AWSEBS    `json:"awsEbs,omitempty"`
-	AzureDisk AzureDisk `json:"azureDisk,omitempty"`
-	AzureFile AzureFile `json:"azureFile,omitempty"`
+	GCPPD     *GCPPD     `json:"gcpPd,omitempty"`
+	AWSEBS    *AWSEBS    `json:"awsEbs,omitempty"`
+	AzureDisk *AzureDisk `json:"azureDisk,omitempty"`
+	AzureFile *AzureFile `json:"azureFile,omitempty"`
 }
 
 type GCPPD struct {
