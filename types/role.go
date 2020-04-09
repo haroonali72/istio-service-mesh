@@ -19,6 +19,6 @@ type ServiceAttribute struct {
 type Rule struct {
 	Resources    []string `bson:"resources" json:"resources"`
 	Verbs        []string `bson:"verbs" json:"verbs"`
-	Api_group    []string `bson:"api_group" json:"api_group"`
-	ResourceName []string `bson:"resourceNames" json:"api_group"`
+	Api_group    []string `bson:"api_groups" json:"api_groups"`
+	ResourceName []string `bson:"resourceNames" json:"resourceNames"`
 }

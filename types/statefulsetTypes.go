@@ -18,7 +18,7 @@ type StatefulSetServiceAttribute struct {
 	Labels                        map[string]string              `json:"labels,omitempty"`
 	Annotations                   map[string]string              `json:"annotations,omitempty"`
 	LabelSelector                 *LabelSelectorObj              `json:"label_selector"`
-	Replicas                      *Replicas                      `json:"replicas,omitempty"`
+	Replicas                      int32                          `json:"replicas,omitempty"`
 	RevisionHistoryLimit          *RevisionHistoryLimit          `json:"revisionHistoryLimit,omitempty"`
 	UpdateStrategy                *StateFulSetUpdateStrategy     `json:"updateStrategy,omitempty"`
 	Containers                    map[string]ContainerAttribute  `json:"containers,omitempty"`

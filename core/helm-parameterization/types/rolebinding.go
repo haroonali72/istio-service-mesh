@@ -11,7 +11,7 @@ type RoleBindingTemplate struct {
 
 type Subject struct {
 	Kind      string      `json:"kind" yaml="kind"`
-	APIGroup  string      `json:"apiGroup yaml:"apiGroup"`
+	APIGroup  string      `json:"apiGroup" yaml:"apiGroup"`
 	Name      interface{} `json:"name" yaml:"name"`
 	Namespace interface{} `json:"namespace" yaml:"namespace"`
 }

@@ -24,6 +24,7 @@ func RoleBindingParameters(roleBinding *v1.RoleBinding) (roleBindingYaml []byte,
 	chartFile := new([]byte)
 	roleBindingRaw.Labels, _ = appendLabels(roleBinding.Labels, roleBinding.Name, tplFile)
 	roleBindingRaw.Name, _ = appendName(roleBinding.Name, tplFile)
+	roleBindingRaw.RoleRef.Name, _ = appendRoleRefName(roleBinding.RoleRef.Name)
 
 	dep, err := yaml.Marshal(roleBindingRaw)
 	if err != nil {

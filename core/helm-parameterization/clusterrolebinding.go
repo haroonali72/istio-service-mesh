@@ -24,6 +24,7 @@ func ClusterRoleBindingParameters(roleBinding *v1.ClusterRoleBinding) (roleBindi
 	chartFile := new(types.CoreComponentsChartValues)
 	roleBindingRaw.Labels, _ = appendLabels(roleBinding.Labels, roleBinding.Name, tplFile)
 	roleBindingRaw.Name, _ = appendName(roleBinding.Name, tplFile)
+	roleBindingRaw.RoleRef.Name, _ = appendRoleRefName(roleBinding.RoleRef.Name)
 
 	dep, err := yaml.Marshal(roleBindingRaw)
 	if err != nil {

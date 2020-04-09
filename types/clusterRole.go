@@ -16,12 +16,12 @@ type ClusterRole struct {
 }
 
 type ClusterRoleSvcAttr struct {
-	Rules []Rules `json:"rules" bson:"rules" binding:"required"`
+	Rules []Rules `json:"rules" bson:"rules"`
 }
 
 type Rules struct {
 	Resources    []string `bson:"resources" json:"resources"`
-	ResourceName []string `json:"resource_name" bson:"resource_name" binding:"required"`
+	ResourceName []string `json:"resource_name" bson:"resource_name"`
 	Verbs        []string `json:"verbs" bson:"verbs"`
 	ApiGroup     []string `json:"api_group" bson:"api_group"`
 }

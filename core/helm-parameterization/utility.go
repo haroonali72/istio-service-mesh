@@ -29,6 +29,14 @@ func appendServiceAccountName(actualName string, tplFile *[]byte) (string, error
 	return name, nil
 }
 
+func appendRoleRefName(actualName string) (string, error) {
+	name := strings.Replace(NameHelmParameter, "{{ .Name }}", actualName, -1)
+	var nameInterface interface{}
+	_ = json.Unmarshal([]byte(name), &nameInterface)
+	return name, nil
+
+}
+
 func appendLabels(labels map[string]string, name string, tplFile *[]byte) (string, error) {
 	rawLabels, err := yaml.Marshal(labels)
 	if err != nil {

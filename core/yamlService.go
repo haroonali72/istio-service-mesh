@@ -392,12 +392,15 @@ func ConvertClusterRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 

@@ -14,7 +14,7 @@ type RoleBinding struct {
 
 type ServiceAttributee struct {
 	Subjects []Subject     `bson:"subjects" json:"subjects"`
-	RoleRef  RoleReference `bson:"role_ref" json:"role_ref"`
+	RoleRef  RoleReference `bson:"reference" json:"reference"`
 	Hostname []string      `bson:"hostname" json:"hostname"`
 }
 type Subject struct {

@@ -29,7 +29,7 @@ type DeploymentServiceAttribute struct {
 	Affinity                     *Affinity                     `json:"affinity,omitempty"`
 	Strategy                     *DeploymentStrategy           `json:"strategy,omitempty"`
 	InitContainer                map[string]ContainerAttribute `json:"initContainers,omitempty"`
-	Replicas                     *Replicas                     `json:"replicas,omitempty"`
+	Replicas                     int32                         `json:"replicas,omitempty"`
 	ImagePullSecrets             []LocalObjectReference        `json:"imagePullSecrets,omitempty"`
 	ServiceAccountName           string                        `json:"serviceAccountName,omitempty"`
 	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automountServiceAccountToken,omitempty"`

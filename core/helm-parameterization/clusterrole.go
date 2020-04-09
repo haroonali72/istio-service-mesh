@@ -1,13 +1,13 @@
 package helm_parameterization
 
 import (
-	"gopkg.in/yaml.v2"
 	"istio-service-mesh/core/helm-parameterization/types"
 	v1 "k8s.io/api/rbac/v1"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
-func ClusterRoleParameters(role v1.ClusterRole) (roleYaml []byte, values []byte, functionsData []byte, err error) {
+func ClusterRoleParameters(role *v1.ClusterRole) (roleYaml []byte, values []byte, functionsData []byte, err error) {
 	result, err := yaml.Marshal(role)
 	if err != nil {
 		return nil, nil, nil, err

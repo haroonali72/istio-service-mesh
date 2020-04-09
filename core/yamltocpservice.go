@@ -483,8 +483,10 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 	deployment.Version = service.Labels["version"]
 
 	if service.Spec.Replicas != nil {
-		deployment.ServiceAttributes.Replicas = new(types.Replicas)
-		deployment.ServiceAttributes.Replicas.Value = *service.Spec.Replicas
+		deployment.ServiceAttributes.Replicas = *service.Spec.Replicas
+
+	} else {
+		deployment.ServiceAttributes.Replicas = 1
 	}
 
 	deployment.ServiceAttributes.Labels = make(map[string]string)
@@ -702,7 +704,9 @@ func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error)
 
 	//replicas
 	if service.Spec.Replicas != nil {
-		statefulSet.ServiceAttributes.Replicas = &types.Replicas{Value: *service.Spec.Replicas}
+		statefulSet.ServiceAttributes.Replicas = *service.Spec.Replicas
+	} else {
+		statefulSet.ServiceAttributes.Replicas = 1
 	}
 
 	if service.Spec.ServiceName != "" {
@@ -1365,7 +1369,7 @@ func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*types.RoleBindin
 	var rb = new(types.RoleBinding)
 	rb.Name = k8sRoleBinding.Name
 	rb.ServiceType = "k8s"
-	rb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
+	rb.ServiceSubType = meshConstants.RoleBindingServiceType
 	for _, each := range k8sRoleBinding.Subjects {
 		var subject = types.Subject{}
 		subject.Name = each.Name

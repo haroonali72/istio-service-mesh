@@ -249,12 +249,15 @@ func getServiceAccount(input *pb.ServiceAccountService) (*kb.ServiceAccount, err
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	kube.Labels = labels
-	for _, value := range input.ServiceAccountAttributes.Secrets {
-		kube.Secrets = append(kube.Secrets, kb.ObjectReference{Name: value})
+	if input.ServiceAccountAttributes != nil {
+		for _, value := range input.ServiceAccountAttributes.Secrets {
+			kube.Secrets = append(kube.Secrets, kb.ObjectReference{Name: value})
+		}
+		for _, value := range input.ServiceAccountAttributes.ImagePullSecretsName {
+			kube.ImagePullSecrets = append(kube.ImagePullSecrets, kb.LocalObjectReference{Name: value})
+		}
 	}
-	for _, value := range input.ServiceAccountAttributes.ImagePullSecretsName {
-		kube.ImagePullSecrets = append(kube.ImagePullSecrets, kb.LocalObjectReference{Name: value})
-	}
+
 	return kube, nil
 }
 func getRequestServiceAccountObject(req *pb.ServiceAccountService) (*kb.ServiceAccount, error) {
