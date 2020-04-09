@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package proto;
+
+import "service.proto";
+service Gateway {
+    rpc CreateGateway (GatewayService) returns (ServiceResponse) {}
+    rpc GetGateway (GatewayService) returns (ServiceResponse) {}
+    rpc DeleteGateway (GatewayService) returns (ServiceResponse) {}
+    rpc PatchGateway (GatewayService) returns (ServiceResponse) {}
+    rpc PutGateway (GatewayService) returns (ServiceResponse) {}
+}
+
+
+message GatewayService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string namespace = 7;
+    string token = 8;
+    string company_id = 9;
+    GatewayServiceAttributes service_attributes = 10;
+}
+message GatewayServiceResponse {
+    string error = 1;
+    GatewayService resp = 2;
+}
+message GatewayServiceAttributes {
+    map<string, string> selectors = 1;
+    repeated Server servers = 2;
+}
+
+message Server {
+    Port port = 1;
+    repeated string hosts = 2;
+    TlsConfig tls = 3;
+}
+message Port {
+    string name = 1;
+    uint32 number = 2;
+    Protocols protocol = 3;
+}
+message TlsConfig {
+    bool https_redirect = 1;
+    Mode mode = 2;
+    string server_certificate = 3;
+    string private_key = 4;
+    string ca_certificate = 5;
+    repeated string subject_alt_name = 6;
+    ProtocolVersion min_protocol_version = 7;
+    ProtocolVersion max_protocol_version = 8;
+}
+
+
+enum ProtocolVersion {
+    TLS_AUTO = 0;
+    TLSV1_0 = 1;
+    TLSV1_1 = 2;
+    TLSV1_2 = 3;
+    TLSV1_3 = 4;
+}
+
+enum Protocols {
+    HTTP = 0;
+    HTTPS = 1;
+    GRPC = 2;
+    HTTP2 = 3;
+    MONGO = 4;
+    TCP = 5;
+    TLS = 6;
+}
