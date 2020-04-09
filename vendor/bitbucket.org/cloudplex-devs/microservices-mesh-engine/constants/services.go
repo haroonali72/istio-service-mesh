@@ -28,7 +28,7 @@ const (
 
 	GatewayServiceType   = "gateway"
 	VirtualServiceType   = "virtual_service"
-	DestinationRulesType = "destination_rules"
+	DestinationRulesType = "destination_rule"
 	ServiceEntryType     = "service_entry"
 	PolicyType           = "policy"
 )

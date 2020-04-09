@@ -26,16 +26,16 @@ message StorageClassServiceResponse {
 }
 
 message StorageClassAttributes{
-    VolumeBindingMode volume_binding_mode =1;
-    string allow_volume_expansion  =2;
+    VolumeBindingMode volumeBindingMode =1;
+    string allowVolumeExpansion  =2;
     string  provisioner =3;
-    Parameters sc_parameters =4;
-    ReclaimPolicy reclaim_policy =5;
-    repeated string mount_options=6;
-    repeated TopologySelectorTerm allowed_topologies=7;
+    map<string,string> parameters =4;
+    ReclaimPolicy reclaimPolicy =5;
+    repeated string mountOptions=6;
+    repeated TopologySelectorTerm allowedTopologies=7;
 }
 message  TopologySelectorTerm{
-   repeated TopologySelectorLabelRequirement match_label_expressions=1;
+    repeated TopologySelectorLabelRequirement matchLabelExpressions=1;
 }
 message TopologySelectorLabelRequirement{
     string key=1;
@@ -49,11 +49,4 @@ enum VolumeBindingMode{
 enum ReclaimPolicy{
     Retain=0;
     Delete=1;
-}
-
-message Parameters{
-    map<string,string>  gcp_pd_sc_parm    =1;
-    map<string,string>  aws_ebs_sc_parm    =2;
-    map<string,string>  azure_disk_sc_parm    =3;
-    map<string,string>  azure_file_sc_parm  =4;
 }

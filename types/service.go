@@ -12,7 +12,7 @@ type Service struct {
 	ServiceAttributes     KubeServiceAttributes `bson:"service_attributes" json:"service_attributes",valid:"required"`
 }
 type KubeServiceAttributes struct {
-	Ports                 []KubePort        `bson:"kube_ports" json:"kube_ports"`
+	Ports                 []KubePort        `bson:"kube_ports,omitempty" json:"kube_ports"`
 	Selector              map[string]string `bson:"selector,omitempty" json:"selector"`
 	ClusterIP             string            `bson:"cluster_ip,omitempty" json:"cluster_ip"`
 	Type                  string            `bson:"type,omitempty" json:"type",valid:"required,in(ClusterIp|NodePort|LoadBalancer)"`

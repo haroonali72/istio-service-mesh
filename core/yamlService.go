@@ -125,6 +125,7 @@ func ConvertSCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -146,11 +147,17 @@ func ConvertPVCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
 	return nil
@@ -168,6 +175,7 @@ func ConvertPVToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
@@ -557,6 +565,7 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		utils.Error.Println(err)
 		return err
 	}
+
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
