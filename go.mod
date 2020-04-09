@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200406102106-7045f8f84475
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200408091709-f48bc26517e6
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200409054334-eab504ad7ce9
 	dmitri.shuralyov.com/gpu/mtl v0.0.0-20191203043605-d42048ed14fd // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
