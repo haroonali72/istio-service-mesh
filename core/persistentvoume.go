@@ -314,7 +314,7 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
 		pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
 		pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
-		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.ReadOnly
+		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.Readonly
 		if input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem != "" {
 			pv.Spec.GCEPersistentDisk.FSType = input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem
 		}
@@ -322,7 +322,7 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
 		pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
 		pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
-		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.ReadOnly
+		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Readonly
 		if input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem != "" {
 			pv.Spec.AWSElasticBlockStore.FSType = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem
 		}

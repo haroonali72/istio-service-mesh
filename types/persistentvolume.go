@@ -57,14 +57,14 @@ type GCPPD struct {
 	PdName     string `json:"pdName"`
 	Filesystem string `json:"fileSystem"`
 	Partition  int    `json:"partation"`
-	ReadOnly   bool   `json:"readOnly"`
+	ReadOnly   bool   `json:"readonly"`
 }
 
 type AWSEBS struct {
 	VolumeId   string `json:"volumeId"`
 	Filesystem string `json:"fileSystem"`
 	Partition  int    `json:"partation"`
-	ReadOnly   bool   `json:"readOnly"`
+	ReadOnly   bool   `json:"readonly"`
 }
 
 type AzureDisk struct {
