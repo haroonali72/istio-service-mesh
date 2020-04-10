@@ -30,7 +30,8 @@ message HpaSvcAttr {
     int64 min_replicas = 1;
 	int64 max_replicas = 2;
 	CrossObjectVersion cross_object_version = 3;
-	repeated MetricValue metric_values = 4;
+	//repeated MetricValue metric_values = 4;
+    int32 target_cpu_utilization = 4;
 }
 
 message CrossObjectVersion {
