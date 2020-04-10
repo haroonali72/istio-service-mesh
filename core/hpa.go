@@ -10,9 +10,7 @@ import (
 	"istio-service-mesh/constants"
 	"istio-service-mesh/utils"
 	"k8s.io/api/autoscaling/v2beta2"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"strconv"
 	"strings"
 )
 
@@ -296,7 +294,7 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 	minreplicas := int32(input.ServiceAttributes.MinReplicas)
 	hpaSvc.Spec.MinReplicas = &minreplicas
 
-	var metrics []v2beta2.MetricSpec
+	/*var metrics []v2beta2.MetricSpec
 	for _, metric := range input.ServiceAttributes.MetricValues {
 		met := v2beta2.MetricSpec{
 			Type: v2beta2.ResourceMetricSourceType,
@@ -338,7 +336,7 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 		met.Resource = &resource
 		metrics = append(metrics, met)
 	}
-	hpaSvc.Spec.Metrics = metrics
+	hpaSvc.Spec.Metrics = metrics*/
 	/*
 		var metrics []v2beta2.MetricSpec
 			for _, metric := range input.ServiceAttributes.MetricValues {
