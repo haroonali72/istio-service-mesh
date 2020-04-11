@@ -9,7 +9,7 @@ const (
 	DaemonSetServiceType          = "daemonset"
 	JobServiceType                = "job"
 	CronJobServiceType            = "cronjob"
-	KubernetesServiceType         = "kubernetes_service"
+	KubernetesServiceType         = "service"
 	RoleServiceType               = "role"
 	RoleBindingServiceType        = "role_binding"
 	ClusterRoleServiceType        = "cluster_role"
