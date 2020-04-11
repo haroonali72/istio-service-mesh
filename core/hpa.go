@@ -9,10 +9,8 @@ import (
 	"google.golang.org/grpc"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/utils"
-	"k8s.io/api/autoscaling/v2beta2"
-	"k8s.io/api/core/v1"
+	autoscaler "k8s.io/api/autoscaling/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"strconv"
 	"strings"
 )
 
@@ -248,15 +246,15 @@ func (s *Server) PutHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceResponse, 
 	return serviceResp, nil
 }
 
-func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
-	var hpaSvc = new(v2beta2.HorizontalPodAutoscaler)
+func getHpa(input *pb.HPA) (*autoscaler.HorizontalPodAutoscaler, error) {
+	var hpaSvc = new(autoscaler.HorizontalPodAutoscaler)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	hpaSvc.Kind = "HorizontalPodAutoscaler"
-	hpaSvc.APIVersion = "autoscaling/v2beta2"
+	hpaSvc.APIVersion = "autoscaling/v1"
 	if input.Name == "" {
-		return &v2beta2.HorizontalPodAutoscaler{}, errors.New("hpa name must not be empty")
+		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("hpa name must not be empty")
 	}
 	hpaSvc.Name = input.Name
 	hpaSvc.Labels = labels
@@ -271,14 +269,14 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 	} else if input.ServiceAttributes.CrossObjectVersion.Type == "StatefulSet" {
 		input.ServiceAttributes.CrossObjectVersion.Version = "batch/v1beta1"
 	} else if input.ServiceAttributes.CrossObjectVersion.Type == "" {
-		return &v2beta2.HorizontalPodAutoscaler{}, errors.New("target object type must not be empty")
+		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("target object type must not be empty")
 	}
 
 	if input.ServiceAttributes.CrossObjectVersion.Name == "" {
-		return &v2beta2.HorizontalPodAutoscaler{}, errors.New("target object name must not be empty")
+		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("target object name must not be empty")
 	}
 
-	targetOjb := v2beta2.CrossVersionObjectReference{
+	targetOjb := autoscaler.CrossVersionObjectReference{
 		Kind:       input.ServiceAttributes.CrossObjectVersion.Type,
 		Name:       input.ServiceAttributes.CrossObjectVersion.Name,
 		APIVersion: input.ServiceAttributes.CrossObjectVersion.Version,
@@ -286,7 +284,7 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 
 	hpaSvc.Spec.ScaleTargetRef = targetOjb
 	if input.ServiceAttributes.MaxReplicas == 0 {
-		return &v2beta2.HorizontalPodAutoscaler{}, errors.New("max replica value can not be zero")
+		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("max replica value can not be zero")
 	}
 	hpaSvc.Spec.MaxReplicas = int32(input.ServiceAttributes.MaxReplicas)
 
@@ -296,7 +294,12 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 	minreplicas := int32(input.ServiceAttributes.MinReplicas)
 	hpaSvc.Spec.MinReplicas = &minreplicas
 
-	var metrics []v2beta2.MetricSpec
+	//TODO: CpuAverageUtilizationCheck
+
+	if input.ServiceAttributes.TargetCpuUtilization != 0 {
+		hpaSvc.Spec.TargetCPUUtilizationPercentage = &input.ServiceAttributes.TargetCpuUtilization
+	}
+	/*var metrics []v2beta2.MetricSpec
 	for _, metric := range input.ServiceAttributes.MetricValues {
 		met := v2beta2.MetricSpec{
 			Type: v2beta2.ResourceMetricSourceType,
@@ -338,7 +341,7 @@ func getHpa(input *pb.HPA) (*v2beta2.HorizontalPodAutoscaler, error) {
 		met.Resource = &resource
 		metrics = append(metrics, met)
 	}
-	hpaSvc.Spec.Metrics = metrics
+	hpaSvc.Spec.Metrics = metrics*/
 	/*
 		var metrics []v2beta2.MetricSpec
 			for _, metric := range input.ServiceAttributes.MetricValues {

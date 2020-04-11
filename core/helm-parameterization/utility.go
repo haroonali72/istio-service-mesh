@@ -29,7 +29,7 @@ func appendServiceAccountName(actualName string, tplFile *[]byte) (string, error
 	return name, nil
 }
 
-func appendRoleRefName(actualName string) (string, error) {
+func appendRefName(actualName string) (string, error) {
 	name := strings.Replace(NameHelmParameter, "{{ .Name }}", actualName, -1)
 	var nameInterface interface{}
 	_ = json.Unmarshal([]byte(name), &nameInterface)
@@ -149,4 +149,19 @@ func appendIfStatements(str string, findStr, appStr string) string {
 	}
 	str = str + "\n" + "{{- end }}"
 	return str
+}
+
+func appendHpaMinReplicas(minReplicas int32, chartValues *types.HPAChartValues) string {
+	chartValues.MinReplicas = minReplicas
+	return HpaMinReplicas
+}
+
+func appendHpaMaxReplicas(maxReplicas int32, chartValues *types.HPAChartValues) string {
+	chartValues.MaxReplicas = maxReplicas
+	return HpaMaxReplicas
+}
+
+func appendCpuUtilization(cpu int32, chartValues *types.HPAChartValues) string {
+	chartValues.TargetCPUUtilizationPercentage = cpu
+	return HpaCpuUtilization
 }

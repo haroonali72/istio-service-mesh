@@ -15,21 +15,21 @@ type DaemonSetService struct {
 	ServiceAttributes *DaemonSetServiceAttribute `json:"service_attributes,omitempty"  bson:"company_id" binding:"required"`
 }
 type DaemonSetServiceAttribute struct {
-	Labels               map[string]string             `json:"labels,omitempty"`
-	Annotations          map[string]string             `json:"annotations,omitempty"`
-	LabelSelector        *LabelSelectorObj             `json:"label_selector"`
-	UpdateStrategy       *DaemonSetUpdateStrategy      `json:"updateStrategy,omitempty"`
-	MinReadySeconds      int32                         `json:"minReadySeconds,omitempty"`
-	RevisionHistoryLimit *RevisionHistoryLimit         `json:"revisionHistoryLimit,omitempty"`
-	Volumes              []Volume                      `json:"volumes,omitempty"`
-	Containers           map[string]ContainerAttribute `json:"containers,omitempty"`
-	InitContainers       map[string]ContainerAttribute `json:"initContainers,omitempty"`
-	NodeSelector         map[string]string             `json:"node_selector"`
-	MeshConfig           *IstioConfig                  `json:"istio_config,omitempty"`
-	Affinity             *Affinity                     `json:"affinity,omitempty"`
-	IsRbac               bool                          `json:"is_rbac_enabled"`
-	RbacRoles            []K8sRbacAttribute            `json:"roles,omitempty"`
-	IstioRoles           []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	Labels               map[string]string        `json:"labels,omitempty"`
+	Annotations          map[string]string        `json:"annotations,omitempty"`
+	LabelSelector        *LabelSelectorObj        `json:"label_selector"`
+	UpdateStrategy       *DaemonSetUpdateStrategy `json:"updateStrategy,omitempty"`
+	MinReadySeconds      int32                    `json:"minReadySeconds,omitempty"`
+	RevisionHistoryLimit *RevisionHistoryLimit    `json:"revisionHistoryLimit,omitempty"`
+	Volumes              []Volume                 `json:"volumes,omitempty"`
+	Containers           []*ContainerAttribute    `json:"containers,omitempty"`
+	InitContainers       []*ContainerAttribute    `json:"initContainers,omitempty"`
+	NodeSelector         map[string]string        `json:"node_selector"`
+	MeshConfig           *IstioConfig             `json:"istio_config,omitempty"`
+	Affinity             *Affinity                `json:"affinity,omitempty"`
+	IsRbac               bool                     `json:"is_rbac_enabled"`
+	RbacRoles            []K8sRbacAttribute       `json:"roles,omitempty"`
+	IstioRoles           []IstioRbacAttribute     `json:"istio_roles,omitempty"`
 }
 
 type RevisionHistoryLimit struct {

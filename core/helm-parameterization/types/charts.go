@@ -8,7 +8,6 @@ type CoreComponentsChartValues struct {
 	Ports         interface{} `json:"ports,omitempty" yaml:"ports,omitempty"`
 
 	CronExpression string `json:"cronExpression,omitempty"  yaml:"cronExpression,omitempty"`
-	RBAC           `json:"rbac,omitempty" yaml:"rbac,omitempty"`
 }
 
 type ImageInfo struct {
@@ -21,6 +20,21 @@ type Probe struct {
 	ReadinessProbe interface{} `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
 }
 
-type RBAC struct {
-	Create bool `json:"create,omitempty" yaml:"create,omitempty"`
+type ServiceAccountChart struct {
+	ServiceAccount `json:"serviceAccount,omitempty" yaml:"serviceAccount,omitempty"`
+}
+
+type ServiceAccount struct {
+	Create bool   `json:"create,omitempty" yaml:"create,omitempty"`
+	Name   string `json:"name,omitempty" yaml:"name,omitempty"`
+}
+
+type HPAChartValues struct {
+	AutoScalingInfo `json:"autoscaling,omitempty" yaml:"autoscaling,omitempty"`
+}
+
+type AutoScalingInfo struct {
+	MinReplicas                    int32 `json:"minReplicas,omitempty" yaml:"minReplicas,omitempty"`
+	MaxReplicas                    int32 `json:"maxReplicas,omitempty" yaml:"maxReplicas,omitempty"`
+	TargetCPUUtilizationPercentage int32 `json:"targetCPUUtilizationPercentage,omitempty" yaml:"targetCPUUtilizationPercentage,omitempty"`
 }

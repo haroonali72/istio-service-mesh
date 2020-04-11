@@ -12,7 +12,7 @@ import (
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
-	autoscale "k8s.io/api/autoscaling/v2beta2"
+	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
 	batchv1 "k8s.io/api/batch/v1beta1"

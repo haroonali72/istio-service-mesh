@@ -34,8 +34,12 @@ const (
 	CronExpressionParameter = "{{ .Values.cronExpression }}"
 	RulesParameters         = "{{ toYaml .Values.rules | nindent 8 }}"
 
-	KubernetesRBACIfCondition = "{{- if .Values.rbac.create }}"
-	ServiceAccountIfCondition = "{{- if .Values."
+	KubernetesRBACIfCondition = "{{- if .Values.rbac.create | default true }}"
+	HpaMinReplicas            = "{{ .Values.autoscaling.minReplicas | default 1 }}"
+	HpaMaxReplicas            = "{{ .Values.autoscaling.maxReplicas | default 5 }}"
+	HpaCpuUtilization         = "{{ .Values.autoscaling.targetCPUUtilizationPercentage  }}"
+	HpaIfCondition            = "{{- if .Values.autoscaling.enabled | default true }}"
+	ServiceAccountIfCondition = "{{- if .Values.serviceAccount.create }}"
 )
 
 const (

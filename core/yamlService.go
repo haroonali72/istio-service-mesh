@@ -378,13 +378,16 @@ func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.HPAParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 

@@ -3,9 +3,11 @@ package types
 import "time"
 
 type DestinationRules struct {
-	ServiceId             string             `bson:"service_id" json:"service_id",valid:"required"`
-	CompanyId             string             `bson:"company_id" json:"company_id",valid:"required"`
-	Name                  string             `bson:"name" json:"name",valid:"required"`
+	ServiceId string `bson:"service_id" json:"service_id",valid:"required"`
+	CompanyId string `bson:"company_id" json:"company_id",valid:"required"`
+	Name      string `bson:"name" json:"name",valid:"required"`
+	Version   string `json:"version"  bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~lowercase alphanumeric characters are allowed,required"`
+
 	ServiceType           string             `bson:"service_type" json:"service_type",valid:"required"`
 	ServiceSubType        string             `bson:"service_sub_type" json:"service_sub_type",valid:"required"`
 	ServiceDependencyInfo interface{}        `bson:"service_dependency_info" json:"service_dependency_info",valid:"required"`

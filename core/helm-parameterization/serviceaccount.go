@@ -21,8 +21,8 @@ func ServiceAccountParameters(svcAccount *v1.ServiceAccount) (svcYaml []byte, va
 	tplFile := new([]byte)
 	_ = tplFile
 
-	chartFile := new([]byte)
-
+	chartFile := new(types.ServiceAccountChart)
+	chartFile.Create = true
 	svcRaw.Labels, _ = appendLabels(svcAccount.Labels, svcAccount.Name, tplFile)
 	svcRaw.Name, _ = appendServiceAccountName(svcAccount.Name, tplFile)
 
@@ -38,7 +38,7 @@ func ServiceAccountParameters(svcAccount *v1.ServiceAccount) (svcYaml []byte, va
 
 	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
 	depString = strings.ReplaceAll(depString, "}}'", "}}")
-	depString = appendIfStatements(depString, "apiVersion", KubernetesRBACIfCondition)
+	depString = appendIfStatements(depString, "apiVersion", ServiceAccountIfCondition)
 
 	return []byte(depString), valuesYaml, *tplFile, nil
 
