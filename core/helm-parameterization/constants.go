@@ -32,6 +32,14 @@ const (
 	{{- end }}`
 
 	CronExpressionParameter = "{{ .Values.cronExpression }}"
+	RulesParameters         = "{{ toYaml .Values.rules | nindent 8 }}"
+
+	KubernetesRBACIfCondition = "{{- if .Values.rbac.create }}"
+	HpaMinReplicas            = "{{ .Values.autoscaling.minReplicas | default 1 }}"
+	HpaMaxReplicas            = "{{ .Values.autoscaling.maxReplicas }}"
+	HpaCpuUtilization         = "{{ .Values.autoscaling.targetCPUUtilizationPercentage }}"
+	HpaIfCondition            = "{{- if .Values.autoscaling.enabled }}"
+	ServiceAccountIfCondition = "{{- if .Values.serviceAccount.create }}"
 )
 
 const (
@@ -62,5 +70,32 @@ const (
 release: {{ .Release.Name }}
 heritage: {{ .Release.Service }}
 {{ .Labels }}{{- end -}}
+`
+	ServiceAccountNameFunction = `
+{{- define "{{ .Name }}.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "{{ .Name }}.fullname" .) .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+`
+
+	RBACNameFunction = `
+{{- define "{{ include }}.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- define "{{ .Name }}.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 `
 )

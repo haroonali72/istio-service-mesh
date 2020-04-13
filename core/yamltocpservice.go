@@ -13,7 +13,7 @@ import (
 	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
-	autoScalar "k8s.io/api/autoscaling/v2beta2"
+	autoScalar "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -483,8 +483,10 @@ func convertToCPDeployment(deploy interface{}) (*types.DeploymentService, error)
 	deployment.Version = service.Labels["version"]
 
 	if service.Spec.Replicas != nil {
-		deployment.ServiceAttributes.Replicas = new(types.Replicas)
-		deployment.ServiceAttributes.Replicas.Value = *service.Spec.Replicas
+		deployment.ServiceAttributes.Replicas = *service.Spec.Replicas
+
+	} else {
+		deployment.ServiceAttributes.Replicas = 1
 	}
 
 	deployment.ServiceAttributes.Labels = make(map[string]string)
@@ -702,7 +704,9 @@ func convertToCPStatefulSet(sset interface{}) (*types.StatefulSetService, error)
 
 	//replicas
 	if service.Spec.Replicas != nil {
-		statefulSet.ServiceAttributes.Replicas = &types.Replicas{Value: *service.Spec.Replicas}
+		statefulSet.ServiceAttributes.Replicas = *service.Spec.Replicas
+	} else {
+		statefulSet.ServiceAttributes.Replicas = 1
 	}
 
 	if service.Spec.ServiceName != "" {
@@ -1245,7 +1249,11 @@ func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error)
 	horizntalPodAutoscalar.Name = hpa.Name
 	horizntalPodAutoscalar.Namespace = hpa.Namespace
 	horizntalPodAutoscalar.ServiceType = "k8s"
+	if vr := hpa.Labels["version"]; vr != "" {
+		horizntalPodAutoscalar.Version = vr
+	}
 	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
+
 	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
 	if hpa.Spec.MinReplicas != nil {
 		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
@@ -1254,7 +1262,11 @@ func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error)
 	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
 	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
 
-	var metrics []types.MetricValue
+	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
+		horizntalPodAutoscalar.ServiceAttributes.TargetCpuUtilization = hpa.Spec.TargetCPUUtilizationPercentage
+	}
+
+	/*var metrics []types.MetricValue
 	for _, metric := range hpa.Spec.Metrics {
 		cpMetric := types.MetricValue{}
 		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
@@ -1284,7 +1296,7 @@ func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*types.HPA, error)
 		metrics = append(metrics, cpMetric)
 
 	}
-	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics
+	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics*/
 
 	return horizntalPodAutoscalar, nil
 }
@@ -1295,6 +1307,9 @@ func ConvertToCPRole(k8ROle *rbac.Role) (*types.Role, error) {
 	role.Namespace = k8ROle.Namespace
 	role.ServiceType = "k8s"
 	role.ServiceSubType = meshConstants.RoleServiceType
+	if vr := k8ROle.Labels["version"]; vr != "" {
+		role.Version = vr
+	}
 	for _, each := range k8ROle.Rules {
 		rolePolicy := types.Rule{}
 		for _, apigroup := range each.APIGroups {
@@ -1320,7 +1335,11 @@ func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*types.RoleBindin
 	var rb = new(types.RoleBinding)
 	rb.Name = k8sRoleBinding.Name
 	rb.ServiceType = "k8s"
-	rb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
+	rb.ServiceSubType = meshConstants.RoleBindingServiceType
+	if vr := k8sRoleBinding.Labels["version"]; vr != "" {
+		rb.Version = vr
+	}
+	rb.Namespace = k8sRoleBinding.Namespace
 	for _, each := range k8sRoleBinding.Subjects {
 		var subject = types.Subject{}
 		subject.Name = each.Name
@@ -1345,6 +1364,10 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 	crb.ServiceType = "k8s"
 	crb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
 	crb.ServiceAttributes.NameClusterRoleRef = k8sClusterRoleBinding.RoleRef.Name
+	if vr := k8sClusterRoleBinding.Labels["version"]; vr != "" {
+		crb.Version = vr
+	}
+	crb.Namespace = k8sClusterRoleBinding.Namespace
 	for _, each := range k8sClusterRoleBinding.Subjects {
 		var subject = types.Subject{}
 		subject.Name = each.Name
@@ -1366,6 +1389,10 @@ func ConvertToCPClusterRole(k8ROle *rbac.ClusterRole) (*types.ClusterRole, error
 	role.Name = k8ROle.Name
 	role.ServiceType = "k8s"
 	role.ServiceSubType = meshConstants.ClusterRoleServiceType
+	if vr := k8ROle.Labels["version"]; vr != "" {
+		role.Version = vr
+	}
+	role.Namespace = k8ROle.Namespace
 	for _, each := range k8ROle.Rules {
 		rolePolicy := types.Rules{}
 		for _, apigroup := range each.APIGroups {
@@ -1470,6 +1497,9 @@ func convertToCPServiceAccount(sa *v1.ServiceAccount) (*types.ServiceAccount, er
 	kube.ServiceType = "k8s"
 	kube.Name = sa.Name
 	kube.Namespace = sa.Namespace
+	if vr := sa.Labels["version"]; vr != "" {
+		kube.Version = vr
+	}
 	var CpSaAttr = new(types.ServiceAccountAttribute)
 	for _, value := range sa.Secrets {
 		CpSaAttr.Secrets = append(CpSaAttr.Secrets, value.Name)
@@ -1542,9 +1572,9 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*types.NodeSelector, erro
 
 }
 
-func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute, map[string]bool, error) {
+func getCPContainers(conts []v1.Container) ([]*types.ContainerAttribute, map[string]bool, error) {
 	volumeMountNames := make(map[string]bool)
-	containers := make(map[string]types.ContainerAttribute)
+	var containers []*types.ContainerAttribute
 
 	for _, container := range conts {
 		containerTemp := types.ContainerAttribute{}
@@ -1665,7 +1695,7 @@ func getCPContainers(conts []v1.Container) (map[string]types.ContainerAttribute,
 		containerTemp.EnvironmentVariables = environmentVariables
 		containerTemp.VolumeMounts = volumeMounts
 
-		containers[container.Name] = containerTemp
+		containers = append(containers, &containerTemp)
 	}
 	return containers, volumeMountNames, nil
 }

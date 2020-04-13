@@ -378,13 +378,16 @@ func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.HPAParameters(result)
+
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -400,12 +403,15 @@ func ConvertClusterRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -421,13 +427,15 @@ func ConvertRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRe
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.RoleParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -441,13 +449,15 @@ func ConvertRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.RoleBindingParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -462,12 +472,15 @@ func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleBindingParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -483,14 +496,17 @@ func ConvertServiceAccountToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yam
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
+	byteData, chartByteData, helperByteData, err := helm_parameterization.ServiceAccountParameters(result)
+	if err != nil {
 		utils.Error.Println(err)
 		return err
-	} else {
-		serviceResp.Service = byteData
-		serviceResp.Namespace = result.Namespace
 	}
+	serviceResp.Service = byteData
+	serviceResp.ChartFile = chartByteData
+	serviceResp.HelperFile = helperByteData
+	serviceResp.Namespace = result.Namespace
 	return nil
+
 }
 
 func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {

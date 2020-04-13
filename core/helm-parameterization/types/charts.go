@@ -19,3 +19,31 @@ type Probe struct {
 	LivenessProb   interface{} `json:"livenessProbe,omitempty" yaml:"livenessProbe,omitempty"`
 	ReadinessProbe interface{} `json:"readinessProbe,omitempty" yaml:"readinessProbe,omitempty"`
 }
+
+type ServiceAccountChart struct {
+	ServiceAccount `json:"serviceAccount,omitempty" yaml:"serviceAccount,omitempty"`
+}
+
+type ServiceAccount struct {
+	Create bool   `json:"create,omitempty" yaml:"create,omitempty"`
+	Name   string `json:"name,omitempty" yaml:"name,omitempty"`
+}
+
+type HPAChartValues struct {
+	AutoScalingInfo `json:"autoscaling,omitempty" yaml:"autoscaling,omitempty"`
+}
+
+type AutoScalingInfo struct {
+	MinReplicas                    int32 `json:"minReplicas,omitempty" yaml:"minReplicas,omitempty"`
+	MaxReplicas                    int32 `json:"maxReplicas,omitempty" yaml:"maxReplicas,omitempty"`
+	TargetCPUUtilizationPercentage int32 `json:"targetCPUUtilizationPercentage,omitempty" yaml:"targetCPUUtilizationPercentage,omitempty"`
+	Enabled                        bool  `json:"enabled" yaml:"enabled"`
+}
+
+type RBACChartValues struct {
+	RBACInfo `json:"rbac,omitempty" yaml:"rbac,omitempty"`
+}
+
+type RBACInfo struct {
+	Create bool `json:"create,omitempty" yaml:"create,omitempty"`
+}

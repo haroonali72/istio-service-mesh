@@ -15,23 +15,23 @@ type JobService struct {
 	ServiceAttributes *JobServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type JobServiceAttribute struct {
-	Parallelism             *Parallelism                  `json:"parallelism,omitempty"`
-	Completions             *Completions                  `json:"completions,omitempty"`
-	ActiveDeadlineSeconds   *ActiveDeadlineSeconds        `json:"activeDeadlineSeconds,omitempty"`
-	BackoffLimit            *BackoffLimit                 `json:"backoffLimit,omitempty"`
-	ManualSelector          *ManualSelector               `json:"manualSelector, omitempty"`
-	Affinity                *Affinity                     `json:"affinity,omitempty"`
-	TTLSecondsAfterFinished *TTLSecondsAfterFinished      `json:"ttlSecondsAfterFinished,omitempty"`
-	LabelSelector           *LabelSelectorObj             `json:"label_selector,omitempty"`
-	NodeSelector            map[string]string             `json:"node_selector"`
-	Labels                  map[string]string             `json:"labels,omitempty"`
-	Annotations             map[string]string             `json:"annotations,omitempty"`
-	IsRbac                  bool                          `json:"is_rbac_enabled"`
-	RbacRoles               []K8sRbacAttribute            `json:"roles,omitempty"`
-	IstioRoles              []IstioRbacAttribute          `json:"istio_roles,omitempty"`
-	Containers              map[string]ContainerAttribute `json:"containers,omitempty"`
-	InitContainers          map[string]ContainerAttribute `json:"initContainers,omitempty"`
-	Volumes                 []Volume                      `json:"volumes,omitempty"`
+	Parallelism             *Parallelism             `json:"parallelism,omitempty"`
+	Completions             *Completions             `json:"completions,omitempty"`
+	ActiveDeadlineSeconds   *ActiveDeadlineSeconds   `json:"activeDeadlineSeconds,omitempty"`
+	BackoffLimit            *BackoffLimit            `json:"backoffLimit,omitempty"`
+	ManualSelector          *ManualSelector          `json:"manualSelector, omitempty"`
+	Affinity                *Affinity                `json:"affinity,omitempty"`
+	TTLSecondsAfterFinished *TTLSecondsAfterFinished `json:"ttlSecondsAfterFinished,omitempty"`
+	LabelSelector           *LabelSelectorObj        `json:"label_selector,omitempty"`
+	NodeSelector            map[string]string        `json:"node_selector"`
+	Labels                  map[string]string        `json:"labels,omitempty"`
+	Annotations             map[string]string        `json:"annotations,omitempty"`
+	IsRbac                  bool                     `json:"is_rbac_enabled"`
+	RbacRoles               []K8sRbacAttribute       `json:"roles,omitempty"`
+	IstioRoles              []IstioRbacAttribute     `json:"istio_roles,omitempty"`
+	Containers              []*ContainerAttribute    `json:"containers,omitempty"`
+	InitContainers          []*ContainerAttribute    `json:"initContainers,omitempty"`
+	Volumes                 []Volume                 `json:"volumes,omitempty"`
 }
 
 type Parallelism struct {

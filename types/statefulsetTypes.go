@@ -18,11 +18,11 @@ type StatefulSetServiceAttribute struct {
 	Labels                        map[string]string              `json:"labels,omitempty"`
 	Annotations                   map[string]string              `json:"annotations,omitempty"`
 	LabelSelector                 *LabelSelectorObj              `json:"label_selector"`
-	Replicas                      *Replicas                      `json:"replicas,omitempty"`
+	Replicas                      int32                          `json:"replicas,omitempty"`
 	RevisionHistoryLimit          *RevisionHistoryLimit          `json:"revisionHistoryLimit,omitempty"`
 	UpdateStrategy                *StateFulSetUpdateStrategy     `json:"updateStrategy,omitempty"`
-	Containers                    map[string]ContainerAttribute  `json:"containers,omitempty"`
-	InitContainers                map[string]ContainerAttribute  `json:"initContainers,omitempty"`
+	Containers                    []*ContainerAttribute          `json:"containers,omitempty"`
+	InitContainers                []*ContainerAttribute          `json:"initContainers,omitempty"`
 	PodManagementPolicy           PodManagementPolicyType        `json:"podManagementPolicy,omitempty"`
 	MeshConfig                    *IstioConfig                   `json:"istio_config,omitempty"`
 	NodeSelector                  map[string]string              `json:"node_selector"`
