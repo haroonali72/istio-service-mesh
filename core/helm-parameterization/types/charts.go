@@ -37,4 +37,13 @@ type AutoScalingInfo struct {
 	MinReplicas                    int32 `json:"minReplicas,omitempty" yaml:"minReplicas,omitempty"`
 	MaxReplicas                    int32 `json:"maxReplicas,omitempty" yaml:"maxReplicas,omitempty"`
 	TargetCPUUtilizationPercentage int32 `json:"targetCPUUtilizationPercentage,omitempty" yaml:"targetCPUUtilizationPercentage,omitempty"`
+	Enabled                        bool  `json:"enabled" yaml:"enabled"`
+}
+
+type RBACChartValues struct {
+	RBACInfo `json:"rbac,omitempty" yaml:"rbac,omitempty"`
+}
+
+type RBACInfo struct {
+	Create bool `json:"create,omitempty" yaml:"create,omitempty"`
 }

@@ -20,10 +20,11 @@ func RoleParameters(role *v1.Role) ([]byte, []byte, []byte, error) {
 
 	tplFile := new([]byte)
 	_ = tplFile
-	chartFile := new([]byte)
+	chartFile := new(types.RBACChartValues)
 
 	roleRaw.Labels, _ = appendLabels(role.Labels, role.Name, tplFile)
 	roleRaw.Name, _ = appendName(role.Name, tplFile)
+	chartFile.Create = true
 	roleYaml, err := yaml.Marshal(roleRaw)
 	if err != nil {
 		return nil, nil, nil, err

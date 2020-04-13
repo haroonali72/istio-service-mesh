@@ -11,7 +11,7 @@ type HPATemplate struct {
 type HPASpecTemplate struct {
 	MinReplicas                    interface{}                         `json:"minReplicas,omitempty"`
 	MaxReplicas                    interface{}                         `json:"maxReplicas,omitempty"`
-	TargetCPUUtilizationPercentage interface{}                         `json:"targetCPUUtilizationPercentage,omitempty"`
+	TargetCPUUtilizationPercentage int32                               `json:"targetCPUUtilizationPercentage,omitempty"`
 	ScaleTargetRef                 CrossVersionObjectReferenceTemplate `json:"scaleTargetRef"`
 }
 

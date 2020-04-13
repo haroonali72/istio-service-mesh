@@ -21,9 +21,10 @@ func ClusterRoleParameters(role *v1.ClusterRole) (roleYaml []byte, values []byte
 	tplFile := new([]byte)
 	_ = tplFile
 
-	chartFile := new([]byte)
+	chartFile := new(types.RBACChartValues)
 	roleRaw.Labels, _ = appendLabels(role.Labels, role.Name, tplFile)
 	roleRaw.Name, _ = appendName(role.Name, tplFile)
+	chartFile.Create = true
 
 	dep, err := yaml.Marshal(roleRaw)
 	if err != nil {

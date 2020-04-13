@@ -21,7 +21,7 @@ func ClusterRoleBindingParameters(roleBinding *v1.ClusterRoleBinding) (roleBindi
 	tplFile := new([]byte)
 	_ = tplFile
 
-	chartFile := new(types.CoreComponentsChartValues)
+	chartFile := new([]byte)
 	roleBindingRaw.Labels, _ = appendLabels(roleBinding.Labels, roleBinding.Name, tplFile)
 	roleBindingRaw.Name, _ = appendName(roleBinding.Name, tplFile)
 	roleBindingRaw.RoleRef.Name, _ = appendRefName(roleBinding.RoleRef.Name)

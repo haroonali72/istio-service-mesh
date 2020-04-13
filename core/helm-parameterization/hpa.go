@@ -29,12 +29,12 @@ func HPAParameters(hpa *v1.HorizontalPodAutoscaler) (hpaYaml []byte, hpaParams [
 	hpaRaw.Spec.MaxReplicas = appendHpaMaxReplicas(hpa.Spec.MaxReplicas, chartFile)
 
 	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
-		hpaRaw.Spec.TargetCPUUtilizationPercentage = appendCpuUtilization(*hpa.Spec.TargetCPUUtilizationPercentage, chartFile)
+		hpaRaw.Spec.TargetCPUUtilizationPercentage = *hpa.Spec.TargetCPUUtilizationPercentage
 
 	}
 	hpaRaw.Spec.ScaleTargetRef.Name, _ = appendRefName(hpa.Spec.ScaleTargetRef.Name)
-
 	hpaRaw.Name, _ = appendName(hpa.Name, tplFile)
+	chartFile.Enabled = true
 
 	dep, err := yaml.Marshal(hpaRaw)
 	if err != nil {
