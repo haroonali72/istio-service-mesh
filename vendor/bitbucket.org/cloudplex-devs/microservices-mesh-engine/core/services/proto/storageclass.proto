@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package proto;
+import "service.proto";
+service StorageClass {
+    rpc CreateStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc GetStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc DeleteStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc PatchStorageClass (StorageClassService) returns (ServiceResponse) {}
+    rpc PutStorageClass (StorageClassService) returns (ServiceResponse) {}
+}
+message StorageClassService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string token = 7;
+    string company_id = 8;
+    StorageClassAttributes service_attributes = 9;
+}
+message StorageClassServiceResponse {
+    string error = 1;
+    StorageClassService resp = 2;
+}
+
+message StorageClassAttributes{
+    VolumeBindingMode volumeBindingMode =1;
+    string allowVolumeExpansion  =2;
+    string  provisioner =3;
+    map<string,string> parameters =4;
+    ReclaimPolicy reclaimPolicy =5;
+    repeated string mountOptions=6;
+    repeated TopologySelectorTerm allowedTopologies=7;
+}
+message  TopologySelectorTerm{
+    repeated TopologySelectorLabelRequirement matchLabelExpressions=1;
+}
+message TopologySelectorLabelRequirement{
+    string key=1;
+    repeated string values=2;
+}
+enum VolumeBindingMode{
+    Immediate=0;
+    WaitForFirstConsumer=1;
+}
+
+enum ReclaimPolicy{
+    Retain=0;
+    Delete=1;
+}

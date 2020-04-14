@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package proto;
+
+import "serviceresponse.proto";
+import "google/protobuf/any.proto";
+
+service Clusterrolebinding {
+   rpc CreateClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
+   rpc GetClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
+   rpc DeleteClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
+   rpc PatchClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
+   rpc PutClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
+}
+
+message ClusterRoleBinding {
+   string project_id = 1;
+   string service_id = 2;
+   string name = 3;
+   string service_type = 4;
+   string service_sub_type = 5;
+   string status = 6;
+   string token = 7;
+   google.protobuf.Any service_dependency_info = 8;
+   ClusterRoleBindingSvcAttr service_attributes = 9;
+   string company_id = 10;
+   string version = 11;
+   string namespace = 12;
+}
+
+message ClusterRoleBindingSvcAttr {
+   repeated Subject subjects = 1;
+   string name_cluster_role_ref = 2;
+}
+
+message Subject {
+   string kind = 1;
+   string name = 2;
+   string namespace = 3;
+}
+

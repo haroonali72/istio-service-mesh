@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+import "general.proto";
+import "service.proto";
+import "volume.proto";
+package proto;
+
+service Deployment {
+    rpc CreateDeployment (DeploymentService) returns (ServiceResponse) {}
+    rpc DeleteDeployment (DeploymentService) returns (ServiceResponse) {}
+    rpc GetDeployment (DeploymentService) returns (ServiceResponse) {}
+    rpc PatchDeployment (DeploymentService) returns (ServiceResponse) {}
+    rpc PutDeployment (DeploymentService) returns (ServiceResponse) {}
+}
+
+message DeploymentService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string namespace = 7;
+    string token = 8;
+    string company_id = 9;
+    DeploymentServiceAttributes service_attributes = 10;
+
+}
+
+message DeploymentServiceAttributes {
+    repeated  ContainerAttributes containers = 1;
+    IstioConfig istio_config = 2;
+    LabelSelectorObj label_selector = 3;
+    map<string, string> node_selector = 4;
+    map<string, string> labels = 5;
+    map<string, string> annotations = 6;
+    repeated K8sRbacAttribute roles= 8;
+    repeated IstioRbacAttribute istio_roles = 9;
+    DeploymentStrategy strategy = 10;
+    repeated Volume volumes = 11;
+    Affinity affinity = 12;
+    repeated ContainerAttributes init_containers = 13;
+    int32 replicas=14;
+    TerminationGracePeriodSeconds Termination_grace_period_seconds = 15;
+    repeated LocalObjectReference image_pull_secrets = 16;
+    string serviceAccountName = 17;
+    AutomountServiceAccountToken automount_service_account_token = 18;
+    bool is_rbac_enabled = 19;
+}
+
+message AutomountServiceAccountToken{
+    bool value = 1;
+}
+
