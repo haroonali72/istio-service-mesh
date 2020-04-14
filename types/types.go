@@ -187,15 +187,16 @@ type IstioObject struct {
 	Metadata   map[string]interface{} `json:"metadata"`
 	Spec       interface{}            `json:"spec"`
 }
-type ServiceDependency struct {
-	Name           string   `json:"name"`
-	DependencyType string   `json:"dependency_type"`
-	Hosts          []string `json:"hosts"`
-	Uri            []string `json:"uri"`
-	TimeOut        string   `json:"timeout"`
-	Routes         []Route  `json:"routes"`
-	Ports          []Port   `json:"ports"`
-}
+
+//type ServiceDependency struct {
+//	Name           string   `json:"name"`
+//	DependencyType string   `json:"dependency_type"`
+//	Hosts          []string `json:"hosts"`
+//	Uri            []string `json:"uri"`
+//	TimeOut        string   `json:"timeout"`
+//	Routes         []Route  `json:"routes"`
+//	Ports          []Port   `json:"ports"`
+//}
 
 /*
 type ServiceDependencyx struct {
