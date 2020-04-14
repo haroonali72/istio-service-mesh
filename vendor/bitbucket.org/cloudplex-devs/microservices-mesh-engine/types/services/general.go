@@ -43,7 +43,7 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             []Capabilities       `json:"capabilities"`
+	Capabilities             *Capabilities       `json:"capabilities"`
 	RunAsUser                *int64               `json:"run_as_user"`
 	RunAsGroup               *int64               `json:"run_as_group"`
 	RunAsNonRoot             bool                 `json:"run_as_non_root"`
@@ -166,19 +166,19 @@ type Probe struct {
 	// Defaults to 1 second. Minimum value is 1.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	// +optional
-	TimeoutSeconds *int32 `json:"timeout_seconds,omitempty" protobuf:"varint,3,opt,name=timeout_seconds"`
+	TimeoutSeconds int32 `json:"timeout_seconds,omitempty" protobuf:"varint,3,opt,name=timeout_seconds"`
 	// How often (in seconds) to perform the probe.
 	// Default to 10 seconds. Minimum value is 1.
 	// +optional
-	PeriodSeconds *int32 `json:"period_seconds,omitempty" protobuf:"varint,4,opt,name=period_seconds"`
+	PeriodSeconds int32 `json:"period_seconds,omitempty" protobuf:"varint,4,opt,name=period_seconds"`
 	// Minimum consecutive successes for the probe to be considered successful after having failed.
 	// Defaults to 1. Must be 1 for liveness. Minimum value is 1.
 	// +optional
-	SuccessThreshold *int32 `json:"success_threshold,omitempty" protobuf:"varint,5,opt,name=success_threshold"`
+	SuccessThreshold int32 `json:"success_threshold,omitempty" protobuf:"varint,5,opt,name=success_threshold"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
 	// Defaults to 3. Minimum value is 1.
 	// +optional
-	FailureThreshold *int32 `json:"failure_threshold,omitempty" protobuf:"varint,6,opt,name=failure_threshold"`
+	FailureThreshold int32 `json:"failure_threshold,omitempty" protobuf:"varint,6,opt,name=failure_threshold"`
 }
 
 type ContainerAttribute struct {

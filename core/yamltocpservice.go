@@ -532,7 +532,7 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 	var volumeMountNames1 = make(map[string]bool)
 	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
 		if len(containers) > 0 {
-			deployment.ServiceAttributes.Container = containers
+			deployment.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
 		} else {
 			utils.Error.Println("no containers exist")
@@ -546,7 +546,7 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 
 	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
 		if len(containersList) > 0 {
-			deployment.ServiceAttributes.InitContainer = containersList
+			deployment.ServiceAttributes.InitContainers = containersList
 		}
 		for k, v := range volumeMounts {
 			volumeMountNames1[k] = v
@@ -910,7 +910,7 @@ func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error)
 		return nil, err
 	} else {
 		if jobTemplate != nil {
-			cpJob.ServiceAttributes.JobServiceAttribute = jobTemplate
+			cpJob.ServiceAttributes.JobTemplate = jobTemplate
 		}
 	}
 
