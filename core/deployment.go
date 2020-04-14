@@ -1166,12 +1166,12 @@ func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 func configureSecurityContext(securityContext *pb.SecurityContextStruct) (*v2.SecurityContext, error) {
 	var context v2.SecurityContext
 	context.Capabilities = &v2.Capabilities{}
-	for _, capability := range securityContext.Capabilities {
-		for _, add := range capability.Add {
+	if securityContext.Capabilities != nil {
+		for _, add := range securityContext.Capabilities.Add {
 			context.Capabilities.Add = append(context.Capabilities.Add, v2.Capability(add))
 		}
-		for _, dropCapability := range capability.Drop {
-			context.Capabilities.Drop = append(context.Capabilities.Drop, v2.Capability(dropCapability))
+		for _, drop := range securityContext.Capabilities.Drop {
+			context.Capabilities.Drop = append(context.Capabilities.Drop, v2.Capability(drop))
 		}
 	}
 	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFilesystem

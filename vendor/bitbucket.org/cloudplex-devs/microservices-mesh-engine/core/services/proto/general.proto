@@ -128,7 +128,7 @@ message LabelSelectorRequirement {
     repeated string values = 3;
 }
 message SecurityContextStruct {
-    repeated Capabilities capabilities = 1;
+    Capabilities capabilities = 1;
     int64 run_as_user = 2;
     int64 run_as_group = 3;
     bool run_as_non_root = 4;
