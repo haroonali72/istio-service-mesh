@@ -37,7 +37,7 @@ message PersistentVolumeClaimAttributes {
     string storage_class_name=4;
     string request_quantity=5;
     string limit_quantity=6;
-    PersistentVolumeMode volume_mode=7;
+    string volume_mode=7;
     TypedLocalObjectReference data_source=8;
 }
 message  TypedLocalObjectReference  {

@@ -3,8 +3,8 @@ module istio-service-mesh
 go 1.12
 
 require (
-	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200406102106-7045f8f84475
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200410173724-912fff74c435
+	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200413141308-024c89b36e0b
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200414054241-588ecb82a727
 	github.com/astaxie/beego v1.12.1
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gogo/protobuf v1.3.1

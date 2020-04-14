@@ -33,7 +33,7 @@ message PersistentVolumeAttributes{
     PersistentVolumeSource persistent_volume_source=5;
    string storage_class_name =6;
     repeated string mount_options=7;
-    PersistentVolumeMode volume_mode=8;
+    string volume_mode=8;
     VolumeNodeAffinity node_affinity=9;
 }
 
@@ -78,11 +78,6 @@ enum AccessMode{
     ReadWriteOnce=0;
     ReadOnlyMany=1;
     ReadWriteMany=2;
-}
-
-enum PersistentVolumeMode{
-    Block=0;
-    Filesystem=1;
 }
 
 //enum AzureDataDiskCachingMode {

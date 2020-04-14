@@ -270,18 +270,17 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 	}
 	if input.ServiceAttributes.StorageClassName != "" {
 		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
-	} else if input.ServiceAttributes.VolumeName != "" {
+	} else {
 		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
+		if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
+			if ls != nil {
+				pvc.Spec.Selector = ls
+			}
 
-	}
-	//label selector applied
-	if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
-		if ls != nil {
-			pvc.Spec.Selector = ls
+		} else {
+			return nil, err
 		}
 
-	} else {
-		return nil, err
 	}
 	if input.ServiceAttributes.DataSource != nil {
 		pvc.Spec.DataSource = new(core.TypedLocalObjectReference)
@@ -292,10 +291,12 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 
 		}
 	}
-	if input.ServiceAttributes.String() == pb.PersistentVolumeMode_Filesystem.String() {
+	//pvm := core.PersistentVolumeFilesystem
+	//	pvc.Spec.VolumeMode = &pvm
+	if input.ServiceAttributes.VolumeMode == string(core.PersistentVolumeFilesystem) {
 		pvm := core.PersistentVolumeFilesystem
 		pvc.Spec.VolumeMode = &pvm
-	} else if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Block.String() {
+	} else if input.ServiceAttributes.VolumeMode == string(core.PersistentVolumeBlock) {
 		pvm := core.PersistentVolumeBlock
 		pvc.Spec.VolumeMode = &pvm
 	}
