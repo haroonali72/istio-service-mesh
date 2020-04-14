@@ -48,6 +48,6 @@ type FailedJobsHistoryLimit struct {
 
 type ConcurrencyPolicy string
 
-const ConcurrencyPolicyAllow ConcurrencyPolicy = "Allow"
-const ConcurrencyPolicyForbid ConcurrencyPolicy = "Forbid"
-const ConcurrencyPolicyReplace ConcurrencyPolicy = "Replace"
+const ConcurrencyPolicyAllow = "Allow"
+const ConcurrencyPolicyForbid = "Forbid"
+const ConcurrencyPolicyReplace = "Replace"

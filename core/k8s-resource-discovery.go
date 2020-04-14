@@ -15,7 +15,6 @@ import (
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
-	batchv1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
@@ -2671,36 +2670,36 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
-	case "CronJob":
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		var cronjob batchv1.CronJob
-		err = json.Unmarshal(bytes, &cronjob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		CpCronJob, err := convertToCPCronJob(&cronjob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-
-		bytes, err = json.Marshal(CpCronJob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		err = json.Unmarshal(bytes, &template)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
+	//case "CronJob":
+	//	bytes, err := json.Marshal(data)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	var cronjob batchv1.CronJob
+	//	err = json.Unmarshal(bytes, &cronjob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	CpCronJob, err := convertToCPCronJob(&cronjob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//
+	//	bytes, err = json.Marshal(CpCronJob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	err = json.Unmarshal(bytes, &template)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	id := strconv.Itoa(rand.Int())
+	//	template.ServiceId = &id
 	case "Job":
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2798,35 +2797,35 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
 		}
-	case "HorizontalPodAutoscaler":
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		var hpa autoscale.HorizontalPodAutoscaler
-		err = json.Unmarshal(bytes, &hpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		CpHpa, err := ConvertToCPHPA(&hpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		bytes, err = json.Marshal(CpHpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		err = json.Unmarshal(bytes, &template)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
+	//case "HorizontalPodAutoscaler":
+	//	bytes, err := json.Marshal(data)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	var hpa autoscale.HorizontalPodAutoscaler
+	//	err = json.Unmarshal(bytes, &hpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	CpHpa, err := ConvertToCPHPA(&hpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	bytes, err = json.Marshal(CpHpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	err = json.Unmarshal(bytes, &template)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	id := strconv.Itoa(rand.Int())
+	//	template.ServiceId = &id
 	case "ConfigMap":
 		bytes, err := json.Marshal(data)
 		if err != nil {
