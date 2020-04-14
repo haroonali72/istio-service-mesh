@@ -288,10 +288,10 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	for _, each := range input.ServiceAttributes.MountOptions {
 		pv.Spec.MountOptions = append(pv.Spec.MountOptions, each)
 	}
-	if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Filesystem.String() {
+	if input.ServiceAttributes.VolumeMode == string(core.PersistentVolumeFilesystem) {
 		pvm := core.PersistentVolumeFilesystem
 		pv.Spec.VolumeMode = &pvm
-	} else if input.ServiceAttributes.VolumeMode.String() == pb.PersistentVolumeMode_Block.String() {
+	} else if input.ServiceAttributes.VolumeMode == string(core.PersistentVolumeBlock) {
 		pvm := core.PersistentVolumeBlock
 		pv.Spec.VolumeMode = &pvm
 	}
