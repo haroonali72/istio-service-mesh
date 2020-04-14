@@ -82,6 +82,8 @@ func main() {
 	pb.RegisterStorageClassServer(srv, svc)
 	pb.RegisterYamlServiceServer(srv, svc)
 	pb.RegisterYamlToCPServiceServer(srv, svc)
+	pb.RegisterRoleServer(srv, svc)
+	pb.RegisterRoleBindingServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {
