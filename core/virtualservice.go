@@ -23,6 +23,7 @@ func (s *Server) CreateVirtualService(ctx context.Context, req *pb.VirtualServic
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
+
 	vsrvRequest, err := getVSRequestObject(req)
 
 	if err != nil {
