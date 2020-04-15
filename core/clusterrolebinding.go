@@ -283,9 +283,15 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
 	clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
-	clstrRolBindSvc.RoleRef.APIGroup = "rbac.authorization.k8s.io"
-	if input.ServiceAttributes.NameClusterRoleRef != "" {
-		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.NameClusterRoleRef
+
+	if input.ServiceAttributes.RoleReference != nil {
+		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
+		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRoleServiceType {
+			clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
+		} else {
+			clstrRolBindSvc.RoleRef.Kind = "Role"
+		}
+		clstrRolBindSvc.RoleRef.APIGroup = "rbac.authorization.k8s.io"
 	} else {
 		return nil, errors.New("can not find name in cluster role binding ref " + input.Name)
 	}

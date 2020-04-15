@@ -24,6 +24,7 @@ type Subject struct {
 }
 
 type RoleReference struct {
-	Kind string `bson:"kind" json:"kind"`
-	Name string `bson:"name" json:"name"`
+	Kind     string `bson:"kind" json:"kind"`
+	Name     string `bson:"name" json:"name"`
+	ApiGroup string `json:"api_group" bson:"api_group"`
 }

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-import "serviceresponse.proto";
+import "service.proto";
 
 service hpa {
    rpc CreateHPA (HPA) returns (ServiceResponse) {}

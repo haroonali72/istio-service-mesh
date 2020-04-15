@@ -2,6 +2,7 @@ package core
 
 import (
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
@@ -304,17 +305,20 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		}
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
-	if input.ServiceAttributes.Reference != nil {
-		if input.ServiceAttributes.Reference.Kind == "ClusterRole" || input.ServiceAttributes.Reference.Kind == "Role" {
-			roleBind.RoleRef.Kind = input.ServiceAttributes.Reference.Kind
-			roleBind.RoleRef.APIGroup = "rbac.authorization.k8s.io"
-			if input.ServiceAttributes.Reference.Name != "" {
-				roleBind.RoleRef.Name = input.ServiceAttributes.Reference.Name
-			} else {
-				return nil, errors.New("can not find Name in cluster role binding ref " + input.Name)
-			}
+	if input.ServiceAttributes.RoleReference != nil {
+		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRoleServiceType || input.ServiceAttributes.RoleReference.Kind == "Role" {
+			roleBind.RoleRef.Kind = "ClusterRole" //input.ServiceAttributes.Reference.Kind
+
+		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.RoleServiceType {
+			roleBind.RoleRef.Kind = "Role"
 		} else {
 			return nil, errors.New("invalid kind  role binding ref " + input.Name)
+		}
+		roleBind.RoleRef.APIGroup = "rbac.authorization.k8s.io"
+		if input.ServiceAttributes.RoleReference.Name != "" {
+			roleBind.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
+		} else {
+			return nil, errors.New("can not find Name in cluster role binding ref " + input.Name)
 		}
 	} else {
 		return nil, errors.New("can not find role ref in role binding" + input.Name)

@@ -19,8 +19,8 @@ type ClusterRoleBinding struct {
 }
 
 type ClusterRoleBindingSvcAttr struct {
-	Subjects           []Subject `json:"subjects" bson:"subjects"`
-	NameClusterRoleRef string    `json:"name_cluster_role_ref"`
+	Subjects []Subject     `json:"subjects" bson:"subjects"`
+	RoleRef  RoleReference `json:"role_reference" bson:"role_reference"`
 }
 
 //type Subject struct {

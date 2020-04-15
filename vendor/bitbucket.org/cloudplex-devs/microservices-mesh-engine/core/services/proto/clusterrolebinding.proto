@@ -2,8 +2,9 @@ syntax = "proto3";
 
 package proto;
 
-import "serviceresponse.proto";
+import "service.proto";
 import "google/protobuf/any.proto";
+import "rolebinding.proto";
 
 service Clusterrolebinding {
    rpc CreateClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
@@ -30,12 +31,6 @@ message ClusterRoleBinding {
 
 message ClusterRoleBindingSvcAttr {
    repeated Subject subjects = 1;
-   string name_cluster_role_ref = 2;
-}
-
-message Subject {
-   string kind = 1;
-   string name = 2;
-   string namespace = 3;
+   RoleReference role_reference=2;
 }
 

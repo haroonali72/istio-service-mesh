@@ -1364,7 +1364,12 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 	crb.Name = k8sClusterRoleBinding.Name
 	crb.ServiceType = "k8s"
 	crb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
-	crb.ServiceAttributes.NameClusterRoleRef = k8sClusterRoleBinding.RoleRef.Name
+	crb.ServiceAttributes.RoleRef.Name = k8sClusterRoleBinding.RoleRef.Name
+	if k8sClusterRoleBinding.RoleRef.Kind == "ClusterRole" {
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.ClusterRoleServiceType
+	} else {
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.RoleServiceType
+	}
 	if vr := k8sClusterRoleBinding.Labels["version"]; vr != "" {
 		crb.Version = vr
 	}
