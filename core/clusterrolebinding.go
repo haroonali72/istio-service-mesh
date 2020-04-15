@@ -2,6 +2,7 @@ package core
 
 import (
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
@@ -268,16 +269,16 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == "ServiceAccount" {
-			reqsub.Kind = subject.Kind
+		} else if subject.Kind == meshConstants.ServiceAccountServiceType {
+			reqsub.Kind = "ServiceAccount"
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
 			} else {
-				return nil, errors.New("can not find name space for service account" + reqsub.Name)
+				return nil, errors.New("can not find namespace for service account" + reqsub.Name)
 			}
 
 		} else {
-			return nil, errors.New("can not find name space for service account" + reqsub.Name)
+			return nil, errors.New("can not find namespace for service account" + reqsub.Name)
 		}
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
@@ -286,7 +287,7 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 	if input.ServiceAttributes.NameClusterRoleRef != "" {
 		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.NameClusterRoleRef
 	} else {
-		return nil, errors.New("can not find Name in cluster role binding ref " + input.Name)
+		return nil, errors.New("can not find name in cluster role binding ref " + input.Name)
 	}
 	return clstrRolBindSvc, nil
 }
