@@ -14,7 +14,6 @@ import (
 	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
-	autoScalar "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -221,17 +220,17 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	case *autoScalar.HorizontalPodAutoscaler:
-		pvc, err := ConvertToCPHPA(o)
-		if err != nil {
-			return nil, err
-		}
-		bytesData, err := json.Marshal(pvc)
-		if err != nil {
-			return nil, err
-		}
-		serviceResp.Service = bytesData
-		return serviceResp, nil
+	//case *autoScalar.HorizontalPodAutoscaler:
+	//	pvc, err := ConvertToCPHPA(o)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	bytesData, err := json.Marshal(pvc)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	serviceResp.Service = bytesData
+	//	return serviceResp, nil
 	case *rbac.Role:
 		pvc, err := ConvertToCPRole(o)
 		if err != nil {
@@ -331,17 +330,17 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	case *batchv1.CronJob:
-		ds, err := convertToCPCronJob(o)
-		if err != nil {
-			return nil, err
-		}
-		bytesData, err := json.Marshal(ds)
-		if err != nil {
-			return nil, err
-		}
-		serviceResp.Service = bytesData
-		return serviceResp, nil
+	//case *batchv1.CronJob:
+	//	ds, err := convertToCPCronJob(o)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	bytesData, err := json.Marshal(ds)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	serviceResp.Service = bytesData
+	//	return serviceResp, nil
 	case *v1alpha3.VirtualService:
 		vs, err := convertToCPVirtualService(o)
 		if err != nil {
@@ -886,69 +885,69 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	return cpJob, nil
 }
 
-func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error) {
-	cpJob := new(meshTypes.CronJobService)
-	cpJob.Name = job.Labels["app"]
-	cpJob.Version = job.Labels["version"]
-	cpJob.ServiceType = "k8s"
-	cpJob.ServiceSubType = meshConstants.CronJobServiceType
-
-	if job.Namespace == "" {
-		cpJob.Namespace = "default"
-	} else {
-		cpJob.Namespace = job.Namespace
-	}
-
-	cpJob.ServiceAttributes = new(meshTypes.CronJobServiceAttribute)
-
-	cpJob.ServiceAttributes.Labels = make(map[string]string)
-	cpJob.ServiceAttributes.Labels = job.Labels
-	cpJob.ServiceAttributes.Annotations = make(map[string]string)
-	cpJob.ServiceAttributes.Annotations = job.Annotations
-
-	if jobTemplate, err := getCPJobTemplateSpec(job.Spec.JobTemplate); err != nil {
-		return nil, err
-	} else {
-		if jobTemplate != nil {
-			cpJob.ServiceAttributes.JobTemplate = jobTemplate
-		}
-	}
-
-	if job.Spec.Schedule != "" {
-		cpJob.ServiceAttributes.CronJobScheduleString = job.Spec.Schedule
-	}
-	if job.Spec.StartingDeadlineSeconds != nil {
-		cpJob.ServiceAttributes.StartingDeadLineSeconds = &meshTypes.StartingDeadlineSeconds{
-			Value: *job.Spec.StartingDeadlineSeconds,
-		}
-	}
-
-	if job.Spec.FailedJobsHistoryLimit != nil {
-		cpJob.ServiceAttributes.FailedJobsHistoryLimit = &meshTypes.FailedJobsHistoryLimit{Value: *job.Spec.FailedJobsHistoryLimit}
-	}
-	if job.Spec.SuccessfulJobsHistoryLimit != nil {
-		cpJob.ServiceAttributes.SuccessfulJobsHistoryLimit = &meshTypes.SuccessfulJobsHistoryLimit{Value: *job.Spec.SuccessfulJobsHistoryLimit}
-	}
-	if job.Spec.Suspend != nil {
-		cpJob.ServiceAttributes.Suspend = &meshTypes.Suspend{Value: *job.Spec.Suspend}
-	}
-	if job.Spec.ConcurrencyPolicy != "" {
-		cpJob.ServiceAttributes.ConcurrencyPolicy = new(meshTypes.ConcurrencyPolicy)
-		if job.Spec.ConcurrencyPolicy == batchv1.AllowConcurrent {
-			value := meshTypes.ConcurrencyPolicyAllow
-			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-		} else if job.Spec.ConcurrencyPolicy == batchv1.ForbidConcurrent {
-			value := meshTypes.ConcurrencyPolicyForbid
-			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-		} else {
-			value := meshTypes.ConcurrencyPolicyReplace
-			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-		}
-	}
-
-	return cpJob, nil
-
-}
+//func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error) {
+//	cpJob := new(meshTypes.CronJobService)
+//	cpJob.Name = job.Labels["app"]
+//	cpJob.Version = job.Labels["version"]
+//	cpJob.ServiceType = "k8s"
+//	cpJob.ServiceSubType = meshConstants.CronJobServiceType
+//
+//	if job.Namespace == "" {
+//		cpJob.Namespace = "default"
+//	} else {
+//		cpJob.Namespace = job.Namespace
+//	}
+//
+//	cpJob.ServiceAttributes = new(meshTypes.CronJobServiceAttribute)
+//
+//	cpJob.ServiceAttributes.Labels = make(map[string]string)
+//	cpJob.ServiceAttributes.Labels = job.Labels
+//	cpJob.ServiceAttributes.Annotations = make(map[string]string)
+//	cpJob.ServiceAttributes.Annotations = job.Annotations
+//
+//	if jobTemplate, err := getCPJobTemplateSpec(job.Spec.JobTemplate); err != nil {
+//		return nil, err
+//	} else {
+//		if jobTemplate != nil {
+//			cpJob.ServiceAttributes.JobTemplate = jobTemplate
+//		}
+//	}
+//
+//	if job.Spec.Schedule != "" {
+//		cpJob.ServiceAttributes.CronJobScheduleString = job.Spec.Schedule
+//	}
+//	if job.Spec.StartingDeadlineSeconds != nil {
+//		cpJob.ServiceAttributes.StartingDeadLineSeconds = &meshTypes.StartingDeadlineSeconds{
+//			Value: *job.Spec.StartingDeadlineSeconds,
+//		}
+//	}
+//
+//	if job.Spec.FailedJobsHistoryLimit != nil {
+//		cpJob.ServiceAttributes.FailedJobsHistoryLimit = &meshTypes.FailedJobsHistoryLimit{Value: *job.Spec.FailedJobsHistoryLimit}
+//	}
+//	if job.Spec.SuccessfulJobsHistoryLimit != nil {
+//		cpJob.ServiceAttributes.SuccessfulJobsHistoryLimit = &meshTypes.SuccessfulJobsHistoryLimit{Value: *job.Spec.SuccessfulJobsHistoryLimit}
+//	}
+//	if job.Spec.Suspend != nil {
+//		cpJob.ServiceAttributes.Suspend = &meshTypes.Suspend{Value: *job.Spec.Suspend}
+//	}
+//	if job.Spec.ConcurrencyPolicy != "" {
+//		cpJob.ServiceAttributes.ConcurrencyPolicy = new(meshTypes.ConcurrencyPolicy)
+//		if job.Spec.ConcurrencyPolicy == batchv1.AllowConcurrent {
+//			value := meshTypes.ConcurrencyPolicyAllow
+//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+//		} else if job.Spec.ConcurrencyPolicy == batchv1.ForbidConcurrent {
+//			value := meshTypes.ConcurrencyPolicyForbid
+//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+//		} else {
+//			value := meshTypes.ConcurrencyPolicyReplace
+//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+//		}
+//	}
+//
+//	return cpJob, nil
+//
+//}
 
 func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAttribute, error) {
 	jobTemplate := new(meshTypes.JobServiceAttribute)
@@ -1245,62 +1244,62 @@ func ConvertToCPSecret(cm *v1.Secret) (*meshTypes.Secret, error) {
 	return secret, nil
 }
 
-func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*meshTypes.HPA, error) {
-	var horizntalPodAutoscalar = new(meshTypes.HPA)
-	horizntalPodAutoscalar.Name = hpa.Name
-	horizntalPodAutoscalar.Namespace = hpa.Namespace
-	horizntalPodAutoscalar.ServiceType = "k8s"
-	if vr := hpa.Labels["version"]; vr != "" {
-		horizntalPodAutoscalar.Version = vr
-	}
-	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
-
-	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
-	if hpa.Spec.MinReplicas != nil {
-		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
-	}
-	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
-	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
-	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
-
-	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
-		horizntalPodAutoscalar.ServiceAttributes.TargetCpuUtilization = hpa.Spec.TargetCPUUtilizationPercentage
-	}
-
-	/*var metrics []meshTypes.MetricValue
-	for _, metric := range hpa.Spec.Metrics {
-		cpMetric := meshTypes.MetricValue{}
-		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
-		if metric.Resource != nil {
-			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
-				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
-				cpMetric.TargetValue = metric.Resource.Target.Value.String()
-			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
-				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
-				if metric.Resource.Target.AverageUtilization != nil {
-					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
-				}
-			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
-				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
-				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
-			}
-
-			if metric.Resource.Name == v1.ResourceCPU {
-				cpMetric.ResourceKind = string(v1.ResourceCPU)
-			} else if metric.Resource.Name == v1.ResourceMemory {
-				cpMetric.ResourceKind = string(v1.ResourceMemory)
-			} else if metric.Resource.Name == v1.ResourceStorage {
-				cpMetric.ResourceKind = string(v1.ResourceStorage)
-			}
-		}
-
-		metrics = append(metrics, cpMetric)
-
-	}
-	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics*/
-
-	return horizntalPodAutoscalar, nil
-}
+//func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*meshTypes.HPA, error) {
+//	var horizntalPodAutoscalar = new(meshTypes.HPA)
+//	horizntalPodAutoscalar.Name = hpa.Name
+//	horizntalPodAutoscalar.Namespace = hpa.Namespace
+//	horizntalPodAutoscalar.ServiceType = "k8s"
+//	if vr := hpa.Labels["version"]; vr != "" {
+//		horizntalPodAutoscalar.Version = vr
+//	}
+//	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
+//
+//	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
+//	if hpa.Spec.MinReplicas != nil {
+//		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
+//	}
+//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
+//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
+//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
+//
+//	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
+//		horizntalPodAutoscalar.ServiceAttributes.TargetCpuUtilization = hpa.Spec.TargetCPUUtilizationPercentage
+//	}
+//
+//	/*var metrics []meshTypes.MetricValue
+//	for _, metric := range hpa.Spec.Metrics {
+//		cpMetric := meshTypes.MetricValue{}
+//		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
+//		if metric.Resource != nil {
+//			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
+//				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
+//				cpMetric.TargetValue = metric.Resource.Target.Value.String()
+//			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
+//				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
+//				if metric.Resource.Target.AverageUtilization != nil {
+//					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
+//				}
+//			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
+//				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
+//				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
+//			}
+//
+//			if metric.Resource.Name == v1.ResourceCPU {
+//				cpMetric.ResourceKind = string(v1.ResourceCPU)
+//			} else if metric.Resource.Name == v1.ResourceMemory {
+//				cpMetric.ResourceKind = string(v1.ResourceMemory)
+//			} else if metric.Resource.Name == v1.ResourceStorage {
+//				cpMetric.ResourceKind = string(v1.ResourceStorage)
+//			}
+//		}
+//
+//		metrics = append(metrics, cpMetric)
+//
+//	}
+//	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics*/
+//
+//	return horizntalPodAutoscalar, nil
+//}
 
 func ConvertToCPRole(k8ROle *rbac.Role) (*meshTypes.Role, error) {
 	var role = new(meshTypes.Role)
@@ -1704,72 +1703,72 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 	CpProbe := new(meshTypes.Probe)
 
-	CpProbe.FailureThreshold = prob.FailureThreshold
-	CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
-	CpProbe.SuccessThreshold = prob.SuccessThreshold
-	CpProbe.PeriodSeconds = prob.PeriodSeconds
-	CpProbe.TimeoutSeconds = prob.TimeoutSeconds
-
-	if prob.Handler.Exec != nil {
-		CpProbe.Handler = new(meshTypes.Handler)
-		CpProbe.Handler.Type = "Exec"
-		CpProbe.Handler.Exec = new(meshTypes.ExecAction)
-		for i := 0; i < len(prob.Handler.Exec.Command); i++ {
-			CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
-		}
-	} else if prob.HTTPGet != nil {
-		CpProbe.Handler = new(meshTypes.Handler)
-		CpProbe.Handler.Type = "http_get"
-		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
-		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
-			if prob.HTTPGet.Host == "" {
-				CpProbe.Handler.HTTPGet.Host = nil
-			} else {
-				CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
-			}
-			if prob.HTTPGet.Path == "" {
-				CpProbe.Handler.HTTPGet.Path = nil
-			} else {
-				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
-			}
-
-			if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
-					scheme := meshTypes.URISchemeHTTP
-					CpProbe.Handler.HTTPGet.Scheme = &scheme
-				} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-					scheme := meshTypes.URISchemeHTTPS
-					CpProbe.Handler.HTTPGet.Scheme = &scheme
-				}
-			} else if prob.HTTPGet.Scheme == "" {
-				CpProbe.Handler.HTTPGet.Scheme = nil
-			} else {
-				return nil, errors.New("invalid URI scheme")
-			}
-
-			for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
-				CpProbe.Handler.HTTPGet.HTTPHeaders[i].Name = &prob.HTTPGet.HTTPHeaders[i].Name
-				CpProbe.Handler.HTTPGet.HTTPHeaders[i].Value = &prob.HTTPGet.HTTPHeaders[i].Value
-			}
-			CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
-		} else {
-			return nil, errors.New("not a valid port number for http_get")
-		}
-
-	} else if prob.TCPSocket != nil {
-		CpProbe.Handler = new(meshTypes.Handler)
-		CpProbe.Handler.Type = "tcpSocket"
-		CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
-		if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
-			CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
-			CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
-		} else {
-			return nil, errors.New("not a valid port number for tcp socket")
-		}
-
-	} else {
-		return nil, errors.New("no handler found")
-	}
+	//CpProbe.FailureThreshold = prob.FailureThreshold
+	//CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
+	//CpProbe.SuccessThreshold = prob.SuccessThreshold
+	//CpProbe.PeriodSeconds = prob.PeriodSeconds
+	//CpProbe.TimeoutSeconds = prob.TimeoutSeconds
+	//
+	//if prob.Handler.Exec != nil {
+	//	CpProbe.Handler = new(meshTypes.Handler)
+	//	CpProbe.Handler.Type = "Exec"
+	//	CpProbe.Handler.Exec = new(meshTypes.ExecAction)
+	//	for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+	//		CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+	//	}
+	//} else if prob.HTTPGet != nil {
+	//	CpProbe.Handler = new(meshTypes.Handler)
+	//	CpProbe.Handler.Type = "http_get"
+	//	CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
+	//	if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
+	//		if prob.HTTPGet.Host == "" {
+	//			CpProbe.Handler.HTTPGet.Host = nil
+	//		} else {
+	//			CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
+	//		}
+	//		if prob.HTTPGet.Path == "" {
+	//			CpProbe.Handler.HTTPGet.Path = nil
+	//		} else {
+	//			CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+	//		}
+	//
+	//		if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+	//			if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+	//				scheme := meshTypes.URISchemeHTTP
+	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
+	//			} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+	//				scheme := meshTypes.URISchemeHTTPS
+	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
+	//			}
+	//		} else if prob.HTTPGet.Scheme == "" {
+	//			CpProbe.Handler.HTTPGet.Scheme = nil
+	//		} else {
+	//			return nil, errors.New("invalid URI scheme")
+	//		}
+	//
+	//		for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Name = &prob.HTTPGet.HTTPHeaders[i].Name
+	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Value = &prob.HTTPGet.HTTPHeaders[i].Value
+	//		}
+	//		CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
+	//	} else {
+	//		return nil, errors.New("not a valid port number for http_get")
+	//	}
+	//
+	//} else if prob.TCPSocket != nil {
+	//	CpProbe.Handler = new(meshTypes.Handler)
+	//	CpProbe.Handler.Type = "tcpSocket"
+	//	CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
+	//	if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
+	//		CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
+	//		CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
+	//	} else {
+	//		return nil, errors.New("not a valid port number for tcp socket")
+	//	}
+	//
+	//} else {
+	//	return nil, errors.New("no handler found")
+	//}
 	return CpProbe, nil
 
 }
@@ -1807,55 +1806,55 @@ func putCPResource(container *meshTypes.ContainerAttribute, limitResources map[v
 
 func getCPSecurityContext(securityContext *v1.SecurityContext) (*meshTypes.SecurityContextStruct, error) {
 	context := new(meshTypes.SecurityContextStruct)
-	if securityContext.Capabilities != nil {
-		context.Capabilities = new(meshTypes.Capabilities)
-		CpAdd := make([]meshTypes.Capability, len(securityContext.Capabilities.Add))
-		for index, kubeAdd := range securityContext.Capabilities.Add {
-			CpAdd[index] = meshTypes.Capability(kubeAdd)
-		}
-		context.Capabilities.Add = CpAdd
-
-		CpDrop := make([]meshTypes.Capability, len(securityContext.Capabilities.Drop))
-		for index, kubeDrop := range securityContext.Capabilities.Drop {
-			CpDrop[index] = meshTypes.Capability(kubeDrop)
-		}
-		context.Capabilities.Drop = CpDrop
-	}
-	if securityContext.AllowPrivilegeEscalation != nil {
-		context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
-	}
-	if securityContext.ReadOnlyRootFilesystem != nil && *securityContext.ReadOnlyRootFilesystem {
-		context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
-	}
-	if securityContext.Privileged != nil {
-		context.Privileged = *securityContext.Privileged
-	}
-	if securityContext.ReadOnlyRootFilesystem != nil {
-		context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
-	}
-
-	if securityContext.RunAsNonRoot != nil {
-
-	}
-	if securityContext.RunAsUser != nil {
-		context.RunAsUser = securityContext.RunAsUser
-
-	}
-
-	if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.DefaultProcMount {
-		context.ProcMount = meshTypes.DefaultProcMount
-	} else if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.UnmaskedProcMount {
-		context.ProcMount = meshTypes.UnmaskedProcMount
-	}
-
-	if securityContext.SELinuxOptions != nil {
-		context.SELinuxOptions = meshTypes.SELinuxOptionsStruct{
-			User:  securityContext.SELinuxOptions.User,
-			Role:  securityContext.SELinuxOptions.Role,
-			Type:  securityContext.SELinuxOptions.Type,
-			Level: securityContext.SELinuxOptions.Level,
-		}
-	}
+	//if securityContext.Capabilities != nil {
+	//	context.Capabilities = new(meshTypes.Capabilities)
+	//	CpAdd := make([]meshTypes.Capability, len(securityContext.Capabilities.Add))
+	//	for index, kubeAdd := range securityContext.Capabilities.Add {
+	//		CpAdd[index] = meshTypes.Capability(kubeAdd)
+	//	}
+	//	context.Capabilities.Add = CpAdd
+	//
+	//	CpDrop := make([]meshTypes.Capability, len(securityContext.Capabilities.Drop))
+	//	for index, kubeDrop := range securityContext.Capabilities.Drop {
+	//		CpDrop[index] = meshTypes.Capability(kubeDrop)
+	//	}
+	//	context.Capabilities.Drop = CpDrop
+	//}
+	//if securityContext.AllowPrivilegeEscalation != nil {
+	//	context.AllowPrivilegeEscalation = *securityContext.AllowPrivilegeEscalation
+	//}
+	//if securityContext.ReadOnlyRootFilesystem != nil && *securityContext.ReadOnlyRootFilesystem {
+	//	context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
+	//}
+	//if securityContext.Privileged != nil {
+	//	context.Privileged = *securityContext.Privileged
+	//}
+	//if securityContext.ReadOnlyRootFilesystem != nil {
+	//	context.ReadOnlyRootFileSystem = *securityContext.ReadOnlyRootFilesystem
+	//}
+	//
+	//if securityContext.RunAsNonRoot != nil {
+	//
+	//}
+	//if securityContext.RunAsUser != nil {
+	//	context.RunAsUser = securityContext.RunAsUser
+	//
+	//}
+	//
+	//if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.DefaultProcMount {
+	//	context.ProcMount = meshTypes.DefaultProcMount
+	//} else if securityContext.ProcMount != nil && *securityContext.ProcMount == v1.UnmaskedProcMount {
+	//	context.ProcMount = meshTypes.UnmaskedProcMount
+	//}
+	//
+	//if securityContext.SELinuxOptions != nil {
+	//	context.SELinuxOptions = meshTypes.SELinuxOptionsStruct{
+	//		User:  securityContext.SELinuxOptions.User,
+	//		Role:  securityContext.SELinuxOptions.Role,
+	//		Type:  securityContext.SELinuxOptions.Type,
+	//		Level: securityContext.SELinuxOptions.Level,
+	//	}
+	//}
 	return context, nil
 }
 

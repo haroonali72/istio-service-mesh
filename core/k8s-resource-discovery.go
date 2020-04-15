@@ -2,6 +2,7 @@ package core
 
 import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
+	meshTypes "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,7 +16,6 @@ import (
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
-	batchv1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
@@ -2671,36 +2671,36 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = &id
-	case "CronJob":
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		var cronjob batchv1.CronJob
-		err = json.Unmarshal(bytes, &cronjob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		CpCronJob, err := convertToCPCronJob(&cronjob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-
-		bytes, err = json.Marshal(CpCronJob)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		err = json.Unmarshal(bytes, &template)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
+	//case "CronJob":
+	//	bytes, err := json.Marshal(data)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	var cronjob batchv1.CronJob
+	//	err = json.Unmarshal(bytes, &cronjob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	CpCronJob, err := convertToCPCronJob(&cronjob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//
+	//	bytes, err = json.Marshal(CpCronJob)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	err = json.Unmarshal(bytes, &template)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	id := strconv.Itoa(rand.Int())
+	//	template.ServiceId = &id
 	case "Job":
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2798,35 +2798,35 @@ func getCpConvertedTemplate(data interface{}, kind string) (*types.ServiceTempla
 		if isAlreadyExist(template.NameSpace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.NameSpace, template.ServiceSubType, template.Name)
 		}
-	case "HorizontalPodAutoscaler":
-		bytes, err := json.Marshal(data)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		var hpa autoscale.HorizontalPodAutoscaler
-		err = json.Unmarshal(bytes, &hpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		CpHpa, err := ConvertToCPHPA(&hpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		bytes, err = json.Marshal(CpHpa)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		err = json.Unmarshal(bytes, &template)
-		if err != nil {
-			utils.Error.Println(err)
-			return nil, err
-		}
-		id := strconv.Itoa(rand.Int())
-		template.ServiceId = &id
+	//case "HorizontalPodAutoscaler":
+	//	bytes, err := json.Marshal(data)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	var hpa autoscale.HorizontalPodAutoscaler
+	//	err = json.Unmarshal(bytes, &hpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	CpHpa, err := ConvertToCPHPA(&hpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	bytes, err = json.Marshal(CpHpa)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	err = json.Unmarshal(bytes, &template)
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return nil, err
+	//	}
+	//	id := strconv.Itoa(rand.Int())
+	//	template.ServiceId = &id
 	case "ConfigMap":
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -3180,23 +3180,23 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 	}
 
 	if !isAlreadyExist(svcTemp.NameSpace, &VSSubType, svcTemp.Name) {
-		destRule := new(types.DestinationRules)
-		istioVS := new(types.VirtualService)
+		destRule := new(meshTypes.DestinationRules)
+		istioVS := new(meshTypes.VirtualService)
 		istioVS.Name = cpKubeService.Name
 		istioVS.Namespace = cpKubeService.Namespace
 		istioVS.Version = cpKubeService.Version
 		istioVS.ServiceType = "mesh"
 		istioVS.ServiceSubType = "virtual_service"
-		istioVS.ServiceAttributes = new(types.VSServiceAttribute)
+		istioVS.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			istioVS.ServiceAttributes.Hosts = []string{value}
 			for _, label := range labels {
 				if label == value {
 					continue
 				}
-				http := new(types.Http)
-				httpRoute := new(types.HttpRoute)
-				routeRule := new(types.RouteDestination)
+				http := new(meshTypes.Http)
+				httpRoute := new(meshTypes.HttpRoute)
+				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
 				routeRule.Subnet = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
@@ -3214,7 +3214,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			destRule.ServiceAttributes.Host = value
 			for key, label := range labels {
-				subset := new(types.Subset)
+				subset := new(meshTypes.Subset)
 				if label == value {
 					continue
 				} else {
@@ -3273,7 +3273,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
-		virtualServiceAttr := new(types.VSServiceAttribute)
+		virtualServiceAttr := new(meshTypes.VSServiceAttribute)
 		err = json.Unmarshal(bytes, &virtualServiceAttr)
 		if err != nil {
 			utils.Error.Println(err)
@@ -3285,7 +3285,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 				if label == value {
 					continue
 				}
-				routeRule := new(types.RouteDestination)
+				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
 				routeRule.Subnet = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
@@ -3310,7 +3310,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
-		var destRuleAttr types.DRServiceAttribute
+		var destRuleAttr meshTypes.DRServiceAttribute
 		err = json.Unmarshal(bytes, &destRuleAttr)
 		if err != nil {
 			utils.Error.Println(err)
@@ -3320,7 +3320,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			destRuleAttr.Host = value
 			for key, label := range labels {
-				subset := new(types.Subset)
+				subset := new(meshTypes.Subset)
 				if label == value {
 					continue
 				} else {
