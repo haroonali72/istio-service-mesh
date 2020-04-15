@@ -10,6 +10,7 @@ import (
 	"istio-service-mesh/constants"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/batch/v1"
+	v2 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -318,6 +319,37 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	}
 	if service.ServiceAttributes.ManualSelector != nil {
 		job.Spec.ManualSelector = &service.ServiceAttributes.ManualSelector.Value
+	}
+
+	if dockerSecret, exist := CreateDockerCfgSecret(service.ServiceAttributes.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+		job.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
+			Name: dockerSecret.Name,
+		}}
+		var ctx context.Context
+		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		defer conn.Close()
+
+		raw, err := json.Marshal(dockerSecret)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
+			ProjectId: service.ProjectId,
+			Service:   raw,
+			CompanyId: service.CompanyId,
+			Token:     service.Token,
+		})
+
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		utils.Info.Println(result.Service)
+
 	}
 
 	volumeMountNames1 := make(map[string]bool)
