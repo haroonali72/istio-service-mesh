@@ -4,9 +4,11 @@ import (
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
+	"io/ioutil"
 	"istio-service-mesh/constants"
 	"istio-service-mesh/types"
 	"istio-service-mesh/utils"
@@ -15,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"net/http"
 	"strings"
 )
 
@@ -309,12 +312,43 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 		deployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
 	}
 
-	for _, g := range service.ServiceAttributes.ImagePullSecrets {
-		if g != nil {
-			pullImageSecret := v2.LocalObjectReference{Name: g.Name}
-			deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, pullImageSecret)
+	if dockerSecret, exist := CreateDockerCfgSecret(service.ServiceAttributes.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+		deployment.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
+			Name: dockerSecret.Name,
+		}}
+		var ctx context.Context
+		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+		if err != nil {
+			utils.Error.Println(err)
 		}
+
+		defer conn.Close()
+
+		raw, err := json.Marshal(dockerSecret)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
+			ProjectId: service.ProjectId,
+			Service:   raw,
+			CompanyId: service.CompanyId,
+			Token:     service.Token,
+		})
+
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		utils.Info.Println(result.Service)
+
 	}
+
+	//for _, g := range service.ServiceAttributes.ImagePullSecrets {
+	//	if g != nil {
+	//		pullImageSecret := v2.LocalObjectReference{Name: g.Name}
+	//		deployment.Spec.Template.Spec.ImagePullSecrets = append(deployment.Spec.Template.Spec.ImagePullSecrets, pullImageSecret)
+	//	}
+	//}
 
 	if service.ServiceAttributes.ServiceAccountName != "" {
 		deployment.Spec.Template.Spec.ServiceAccountName = service.ServiceAttributes.ServiceAccountName
@@ -1166,12 +1200,12 @@ func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 func configureSecurityContext(securityContext *pb.SecurityContextStruct) (*v2.SecurityContext, error) {
 	var context v2.SecurityContext
 	context.Capabilities = &v2.Capabilities{}
-	for _, capability := range securityContext.Capabilities {
-		for _, add := range capability.Add {
+	if securityContext.Capabilities != nil {
+		for _, add := range securityContext.Capabilities.Add {
 			context.Capabilities.Add = append(context.Capabilities.Add, v2.Capability(add))
 		}
-		for _, dropCapability := range capability.Drop {
-			context.Capabilities.Drop = append(context.Capabilities.Drop, v2.Capability(dropCapability))
+		for _, drop := range securityContext.Capabilities.Drop {
+			context.Capabilities.Drop = append(context.Capabilities.Drop, v2.Capability(drop))
 		}
 	}
 	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFilesystem
@@ -1235,4 +1269,89 @@ func putLimitResource(container *v2.Container, limitResources map[string]string)
 
 	container.Resources.Limits = temp
 	return nil
+}
+
+func CreateDockerCfgSecret(container *pb.ContainerAttributes, token, namespace string) (*v2.Secret, bool) {
+	if container.ImageRepositoryConfigurations == nil {
+		return nil, false
+	}
+	if container.ImageRepositoryConfigurations.ProfileId != "" {
+		var vault types.VaultCredentialsConfigurations
+		url := constants.VaultURL + constants.VAULT_BACKEND + container.ImageRepositoryConfigurations.ProfileId
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, false
+		}
+		req.Header.Set("token", token)
+		reqClient := http.Client{}
+		res, err := reqClient.Do(req)
+		if err == nil {
+			result, err := ioutil.ReadAll(res.Body)
+			if err == nil {
+				err = json.Unmarshal(result, &vault)
+				if err == nil {
+					if vault.Credentials.Username != "" && vault.Credentials.Password != "" {
+						container.ImageRepositoryConfigurations.Credentials.Username = vault.Credentials.Username
+						container.ImageRepositoryConfigurations.Credentials.Password = vault.Credentials.Password
+					}
+				}
+			}
+
+		} else {
+			utils.Error.Println(err)
+			return nil, false
+		}
+
+	} else {
+		//typeArray := []string{"frontendLogging"}
+		//cpContext.SendLog("profile id empty ", "error", typeArray)
+
+	}
+	if container.ImageRepositoryConfigurations.Credentials.Username == "" || container.ImageRepositoryConfigurations.Credentials.Password == "" {
+		return nil, false
+	}
+	secret := new(v2.Secret)
+
+	typeMeta := metav1.TypeMeta{
+		Kind:       "Secret",
+		APIVersion: v2.SchemeGroupVersion.String(),
+	}
+	objectMeta := metav1.ObjectMeta{
+		Name:      container.ImageRepositoryConfigurations.ProfileId + "-cfg-secret",
+		Namespace: namespace,
+	}
+
+	username := container.ImageRepositoryConfigurations.Credentials.Username
+	password := container.ImageRepositoryConfigurations.Credentials.Password
+	email := "my-account-email@address.com"
+	server := container.ImageName
+
+	tokens := strings.Split(server, "/")
+	registry := tokens[0]
+	if strings.TrimSpace(registry) == "docker.io" {
+		registry = "https://index.docker.io/v1/"
+	}
+	dockerConf := map[string]map[string]map[string]string{
+		"auths": {
+			registry: {
+				"username": username,
+				"password": password,
+				"email":    email,
+				"auth":     base64.StdEncoding.EncodeToString([]byte(username + ":" + password)),
+			},
+		},
+	}
+
+	dockerConfMarshaled, _ := json.Marshal(dockerConf)
+
+	data := map[string][]byte{
+		".dockerconfigjson": dockerConfMarshaled,
+	}
+
+	secret.TypeMeta = typeMeta
+	secret.ObjectMeta = objectMeta
+	secret.Data = data
+	secret.Type = "kubernetes.io/dockerconfigjson"
+
+	return secret, true
 }

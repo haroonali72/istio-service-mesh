@@ -22,7 +22,7 @@ type HpaSvcAttr struct {
 	MinReplicas          int                `json:"min_replicas" bson:"min_replicas"`
 	MaxReplicas          int                `json:"max_replicas" bson:"max_replicas"`
 	CrossObjectVersion   CrossObjectVersion `json:"cross_object_version" bson:"cross_object_version"`
-	TargetCpuUtilization int32              `json:"target_cpu_utilization" bson:"target_cpu_utilization"`
+	TargetCpuUtilization *int32             `json:"target_cpu_utilization,omitempty" bson:"target_cpu_utilization"`
 }
 
 type CrossObjectVersion struct {
