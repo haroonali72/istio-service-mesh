@@ -29,7 +29,7 @@ message KubernetesService {
 
 }
 message KubeServiceAttributes{
-    repeated KubePort kube_ports = 1;
+    repeated KubePort ports = 1;
     map<string,string> selector = 2;
     string cluster_ip = 3;
     string type = 4;

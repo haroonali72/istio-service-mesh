@@ -256,7 +256,7 @@ func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	if input.KubeServiceAttributes == nil {
 		return nil, errors.New("can not find service attribute object in service")
 	}
-	for _, port := range input.KubeServiceAttributes.KubePorts {
+	for _, port := range input.KubeServiceAttributes.Ports {
 		spec := *new(kb.ServicePort)
 		if port.Name != "" {
 			spec.Name = port.Name
