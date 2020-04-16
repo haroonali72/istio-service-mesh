@@ -311,58 +311,61 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 	}
 	pv.Spec.Capacity = make(map[core.ResourceName]resource.Quantity)
 	pv.Spec.Capacity["storage"] = quantity
-	if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
-		pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
-		pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
-		pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.Readonly
-		if input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem != "" {
-			pv.Spec.GCEPersistentDisk.FSType = input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem
-		}
-		pv.Spec.GCEPersistentDisk.Partition = int32(input.ServiceAttributes.PersistentVolumeSource.GcpPd.Partation)
-	} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
-		pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
-		pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
-		pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Readonly
-		if input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem != "" {
-			pv.Spec.AWSElasticBlockStore.FSType = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem
-		}
-		pv.Spec.AWSElasticBlockStore.Partition = int32(input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Partation)
-	} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk != nil {
-		pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
-		pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName
-		pv.Spec.AzureDisk.DataDiskURI = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI
-		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
-			temp := core.AzureDataDiskCachingNone
-			pv.Spec.AzureDisk.CachingMode = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadOnly.String() {
-			temp := core.AzureDataDiskCachingReadOnly
-			pv.Spec.AzureDisk.CachingMode = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadWrite.String() {
-			temp := core.AzureDataDiskCachingReadWrite
-			pv.Spec.AzureDisk.CachingMode = &temp
-		}
-		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Shared.String() {
-			temp := core.AzureSharedBlobDisk
-			pv.Spec.AzureDisk.Kind = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Dedicated.String() {
-			temp := core.AzureDedicatedBlobDisk
-			pv.Spec.AzureDisk.Kind = &temp
-		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Managed.String() {
-			temp := core.AzureManagedDisk
-			pv.Spec.AzureDisk.Kind = &temp
-		}
-		pv.Spec.AzureDisk.ReadOnly = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly
-		if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.FileSystem != "" {
-			pv.Spec.AzureDisk.FSType = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.FileSystem
-		}
+	if input.ServiceAttributes.PersistentVolumeSource != nil {
 
-	} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile != nil {
-		pv.Spec.AzureFile = new(core.AzureFilePersistentVolumeSource)
-		pv.Spec.AzureFile.SecretName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName
-		pv.Spec.AzureFile.ShareName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName
-		pv.Spec.AzureFile.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly
-		if input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace != "" {
-			pv.Spec.AzureFile.SecretNamespace = &input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace
+		if input.ServiceAttributes.PersistentVolumeSource.GcpPd != nil {
+			pv.Spec.GCEPersistentDisk = new(core.GCEPersistentDiskVolumeSource)
+			pv.Spec.GCEPersistentDisk.PDName = input.ServiceAttributes.PersistentVolumeSource.GcpPd.PdName
+			pv.Spec.GCEPersistentDisk.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.GcpPd.Readonly
+			if input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem != "" {
+				pv.Spec.GCEPersistentDisk.FSType = input.ServiceAttributes.PersistentVolumeSource.GcpPd.FileSystem
+			}
+			pv.Spec.GCEPersistentDisk.Partition = int32(input.ServiceAttributes.PersistentVolumeSource.GcpPd.Partation)
+		} else if input.ServiceAttributes.PersistentVolumeSource.AwsEbs != nil {
+			pv.Spec.AWSElasticBlockStore = new(core.AWSElasticBlockStoreVolumeSource)
+			pv.Spec.AWSElasticBlockStore.VolumeID = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.VolumeId
+			pv.Spec.AWSElasticBlockStore.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Readonly
+			if input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem != "" {
+				pv.Spec.AWSElasticBlockStore.FSType = input.ServiceAttributes.PersistentVolumeSource.AwsEbs.FileSystem
+			}
+			pv.Spec.AWSElasticBlockStore.Partition = int32(input.ServiceAttributes.PersistentVolumeSource.AwsEbs.Partation)
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk != nil {
+			pv.Spec.AzureDisk = new(core.AzureDiskVolumeSource)
+			pv.Spec.AzureDisk.DiskName = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskName
+			pv.Spec.AzureDisk.DataDiskURI = input.ServiceAttributes.PersistentVolumeSource.AzureDisk.DiskURI
+			if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ModeNone.String() {
+				temp := core.AzureDataDiskCachingNone
+				pv.Spec.AzureDisk.CachingMode = &temp
+			} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadOnly.String() {
+				temp := core.AzureDataDiskCachingReadOnly
+				pv.Spec.AzureDisk.CachingMode = &temp
+			} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.CachingMode.String() == pb.AzureDataDiskCachingMode_ReadWrite.String() {
+				temp := core.AzureDataDiskCachingReadWrite
+				pv.Spec.AzureDisk.CachingMode = &temp
+			}
+			if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Shared.String() {
+				temp := core.AzureSharedBlobDisk
+				pv.Spec.AzureDisk.Kind = &temp
+			} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Dedicated.String() {
+				temp := core.AzureDedicatedBlobDisk
+				pv.Spec.AzureDisk.Kind = &temp
+			} else if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.Kind.String() == pb.AzureDataDiskKind_Managed.String() {
+				temp := core.AzureManagedDisk
+				pv.Spec.AzureDisk.Kind = &temp
+			}
+			pv.Spec.AzureDisk.ReadOnly = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.ReadOnly
+			if input.ServiceAttributes.PersistentVolumeSource.AzureDisk.FileSystem != "" {
+				pv.Spec.AzureDisk.FSType = &input.ServiceAttributes.PersistentVolumeSource.AzureDisk.FileSystem
+			}
+
+		} else if input.ServiceAttributes.PersistentVolumeSource.AzureFile != nil {
+			pv.Spec.AzureFile = new(core.AzureFilePersistentVolumeSource)
+			pv.Spec.AzureFile.SecretName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretName
+			pv.Spec.AzureFile.ShareName = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ShareName
+			pv.Spec.AzureFile.ReadOnly = input.ServiceAttributes.PersistentVolumeSource.AzureFile.ReadOnly
+			if input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace != "" {
+				pv.Spec.AzureFile.SecretNamespace = &input.ServiceAttributes.PersistentVolumeSource.AzureFile.SecretNamespace
+			}
 		}
 	}
 	return pv, nil
