@@ -306,7 +306,9 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 	deployment.Spec.Template.Spec.NodeSelector = make(map[string]string)
 	deployment.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
-	deployment.Spec.Replicas = &service.ServiceAttributes.Replicas
+	if service.ServiceAttributes.Replicas > 0 {
+		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas
+	}
 
 	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
 		deployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
