@@ -282,6 +282,9 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 		}
 
 	}
+	if len(input.ServiceAttributes.AccessMode) == 0 {
+		return nil, errors.New("pvc should atleast have an access mode ")
+	}
 	if input.ServiceAttributes.DataSource != nil {
 		pvc.Spec.DataSource = new(core.TypedLocalObjectReference)
 		pvc.Spec.DataSource.Kind = input.ServiceAttributes.DataSource.Kind
