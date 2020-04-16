@@ -14,4 +14,5 @@ message YamlServiceResponse {
 message YamlServiceRequest{
     string type =1;
     bytes service = 2;
+    bool isYaml=3;
 }
