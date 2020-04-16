@@ -1,4 +1,4 @@
-package types
+package services
 
 import "time"
 
@@ -98,7 +98,7 @@ type TlsMatchAttribute struct {
 	SniHosts           []string `json:"sni_hosts" bson:"sni_hosts"`
 	DestinationSubnets []string `json:"destination_subnets" bson:"destination_subnets"`
 	Port               int32    `json:"port" bson:"port"`
-	SourceSubnet       string   `json:"source_subnet" bson:"source_subnet" valid: "in(ipv4|ipv6)"`
+	SourceSubnet       string   `json:"source_subnet" bson:"source_subnet" valid:"in(ipv4|ipv6)"`
 	Gateways           []string `json:"gateways" bson:"gateways"`
 }
 

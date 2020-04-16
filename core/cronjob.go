@@ -11,6 +11,7 @@ import (
 	"istio-service-mesh/utils"
 	_ "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/batch/v1beta1"
+	v2 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -345,6 +346,37 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 		} else {
 			return nil, err
 		}
+	}
+
+	if dockerSecret, exist := CreateDockerCfgSecret(service.CronJobServiceAttribute.JobTemplate.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+		cjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
+			Name: dockerSecret.Name,
+		}}
+		var ctx context.Context
+		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		defer conn.Close()
+
+		raw, err := json.Marshal(dockerSecret)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
+			ProjectId: service.ProjectId,
+			Service:   raw,
+			CompanyId: service.CompanyId,
+			Token:     service.Token,
+		})
+
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		utils.Info.Println(result.Service)
+
 	}
 
 	if service.CronJobServiceAttribute.JobTemplate != nil {

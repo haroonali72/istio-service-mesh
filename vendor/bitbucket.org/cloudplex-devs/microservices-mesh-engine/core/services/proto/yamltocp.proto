@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package proto;
+
+service YamlToCPService {
+    rpc GetCPService (YamlToCPServiceRequest) returns (YamlToCPServiceResponse) {}
+}
+message YamlToCPServiceResponse {
+    bytes service = 1;
+}
+message YamlToCPServiceRequest{
+    bytes service = 1;
+}

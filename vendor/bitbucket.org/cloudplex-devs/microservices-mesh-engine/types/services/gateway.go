@@ -1,15 +1,15 @@
-package types
+package services
 
 import "time"
 
 type GatewayService struct {
 	Id                interface{}               `json:"_id,omitempty" bson:"_id" valid:"-"`
-	ServiceId         string                    `json:"service_id" bson:"service_id" binding:"required" "`
+	ServiceId         string                    `json:"service_id" bson:"service_id" binding:"required"`
 	Name              string                    `json:"name"  bson:"name" binding:"required" `
-	Version           string                    `json:"version"  bson:"version"  binding:"required" "`
+	Version           string                    `json:"version"  bson:"version"  binding:"required"`
 	ServiceType       string                    `json:"service_type"  bson:"service_type" valid:"-"`
 	ServiceSubType    string                    `json:"service_sub_type" bson:"service_type" valid:"-"`
-	Namespace         string                    `json:"namespace" bson:"namespace" "`
+	Namespace         string                    `json:"namespace" bson:"namespace"`
 	CompanyId         string                    `json:"company_id,omitempty" bson:"company_id"`
 	CreationDate      time.Time                 `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 	ServiceAttributes *GatewayServiceAttributes `json:"service_attributes"  bson:"company_id" binding:"required"`
@@ -40,26 +40,26 @@ type Port struct {
 }
 
 type TlsConfig struct {
-	HttpsRedirect bool `json:"httpsRedirect" bson:"httpsRedirect"`
+	HttpsRedirect bool `json:"https_redirect" bson:"https_redirect"`
 	//supported modes  PASSTHROUGH|SIMPLE|MUTUAL|AUTO_PASSTHROUGH|ISTIO_MUTUAL
 	Mode Mode `json:"mode,omitempty" bson:"mode,omitempty"`
 	// REQUIRED if mode is SIMPLE or MUTUAL. The path to the file
 	// holding the server-side TLS certificate to use.
-	ServerCertificate string `json:"serverCertificate,omitempty" bson:"serverCertificate,omitempty"`
+	ServerCertificate string `json:"server_certificate,omitempty" bson:"server_certificate,omitempty"`
 	// REQUIRED if mode is SIMPLE or MUTUAL. The path to the file
 	// holding the server's private key.
-	PrivateKey string `json:"privateKey,omitempty" bson:"privateKey,omitempty"`
+	PrivateKey string `json:"private_key,omitempty" bson:"private_key,omitempty"`
 	// REQUIRED if mode is MUTUAL. The path to a file containing
 	// certificate authority certificates to use in verifying a presented
 	// client side certificate.
-	CaCertificate string `json:"caCertificate,omitempty" bson:"caCertificate,omitempty"`
+	CaCertificate string `json:"ca_certificate,omitempty" bson:"ca_certificate,omitempty"`
 	// A list of alternate names to verify the subject identity in the
 	// certificate presented by the client.
-	SubjectAltName []string `json:"subjectAltName,omitempty" bson:"subjectAltName,omitempty"`
+	SubjectAltName []string `json:"subject_alt_name,omitempty" bson:"subject_alt_name,omitempty"`
 	//Minimum TLS protocol version. supported values  TLS_AUTO|TLSV1_0|TLSV1_1|TLSV1_2|TLSV1_3
-	MinProtocolVersion ProtocolVersion `json:"minProtocolVersion,omitempty" bson:"minProtocolVersion,omitempty"`
+	MinProtocolVersion ProtocolVersion `json:"min_protocol_version,omitempty" bson:"min_protocol_version,omitempty"`
 	//Maximum TLS protocol version. supported values  TLS_AUTO|TLSV1_0|TLSV1_1|TLSV1_2|TLSV1_3
-	MaxProtocolVersion ProtocolVersion `json:"maxProtocolVersion,omitempty" bson:"maxProtocolVersion,omitempty"`
+	MaxProtocolVersion ProtocolVersion `json:"max_protocol_Version,omitempty" bson:"max_protocol_version,omitempty"`
 }
 
 type Protocols string

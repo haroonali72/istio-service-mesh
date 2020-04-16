@@ -1,0 +1,50 @@
+syntax= "proto3";
+import "service.proto";
+import "google/protobuf/any.proto";
+import "networkpolicy.proto";
+package proto;
+
+
+service Kubernetes{
+    rpc CreateKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc GetKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc PutKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc PatchKubernetesService(KubernetesService) returns (ServiceResponse){}
+    rpc DeleteKubernetesService(KubernetesService) returns (ServiceResponse){}
+}
+
+message KubernetesService {
+    string service_id = 1;
+    string token = 2;
+    string project_id = 3;
+    string company_id = 4;
+    string name = 5;
+    string version = 6;
+    string service_type = 7;
+    string service_sub_type = 8;
+    google.protobuf.Any service_dependency_info = 9;
+    string namespace = 10;
+    KubeServiceAttributes kube_service_attributes = 11;
+
+
+}
+message KubeServiceAttributes{
+    repeated KubePort ports = 1;
+    map<string,string> selector = 2;
+    string cluster_ip = 3;
+    string type = 4;
+    string external_traffic_policy = 5;
+}
+message KubePort {
+    string name =1;
+    string protocol=2;
+    int32 port =3;
+    PortItntOrString target_port =4;
+    int32 node_port =5;
+}
+
+message KubeSelector{
+    string label1 =1;
+    string label2 =2;
+}
+

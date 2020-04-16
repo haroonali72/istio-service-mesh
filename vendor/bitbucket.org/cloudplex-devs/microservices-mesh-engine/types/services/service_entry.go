@@ -1,4 +1,4 @@
-package types
+package services
 
 import "time"
 
@@ -18,12 +18,12 @@ type ServiceEntry struct {
 type ServiceEntryAttributes struct {
 	Hosts           []string                `json:"hosts" bson:"hosts" binding:"required"`
 	Addresses       []string                `json:"addresses" bson:"addresses"`
-	Location        Location                `json:"location" bson:"location`
+	Location        Location                `json:"location" bson:"location"`
 	Resolution      Resolution              `json:"resolution" bson:"resolution" binding:"required"`
 	Ports           []*ServiceEntryPort     `json:"ports" bson:"ports" binding:"required"`
 	Endpoints       []*ServiceEntryEndpoint `json:"endpoints" bson:"endpoints"`
-	ExportTo        []string                `json:"exportTo" bson:"exportTo"`
-	SubjectAltNames []string                `json:"subjectAltNames" bson:"subjectAltNames"`
+	ExportTo        []string                `json:"export_to" bson:"export_to"`
+	SubjectAltNames []string                `json:"subject_alt_names" bson:"subject_alt_names"`
 }
 
 type ServiceEntryPort struct {

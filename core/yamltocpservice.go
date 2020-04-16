@@ -14,6 +14,7 @@ import (
 	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
+	autoScalar "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	batchv1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -220,17 +221,17 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	//case *autoScalar.HorizontalPodAutoscaler:
-	//	pvc, err := ConvertToCPHPA(o)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	bytesData, err := json.Marshal(pvc)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	serviceResp.Service = bytesData
-	//	return serviceResp, nil
+	case *autoScalar.HorizontalPodAutoscaler:
+		pvc, err := ConvertToCPHPA(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pvc)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *rbac.Role:
 		pvc, err := ConvertToCPRole(o)
 		if err != nil {
@@ -1244,62 +1245,62 @@ func ConvertToCPSecret(cm *v1.Secret) (*meshTypes.Secret, error) {
 	return secret, nil
 }
 
-//func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*meshTypes.HPA, error) {
-//	var horizntalPodAutoscalar = new(meshTypes.HPA)
-//	horizntalPodAutoscalar.Name = hpa.Name
-//	horizntalPodAutoscalar.Namespace = hpa.Namespace
-//	horizntalPodAutoscalar.ServiceType = "k8s"
-//	if vr := hpa.Labels["version"]; vr != "" {
-//		horizntalPodAutoscalar.Version = vr
-//	}
-//	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
-//
-//	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
-//	if hpa.Spec.MinReplicas != nil {
-//		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
-//	}
-//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
-//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
-//	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
-//
-//	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
-//		horizntalPodAutoscalar.ServiceAttributes.TargetCpuUtilization = hpa.Spec.TargetCPUUtilizationPercentage
-//	}
-//
-//	/*var metrics []meshTypes.MetricValue
-//	for _, metric := range hpa.Spec.Metrics {
-//		cpMetric := meshTypes.MetricValue{}
-//		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
-//		if metric.Resource != nil {
-//			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
-//				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
-//				cpMetric.TargetValue = metric.Resource.Target.Value.String()
-//			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
-//				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
-//				if metric.Resource.Target.AverageUtilization != nil {
-//					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
-//				}
-//			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
-//				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
-//				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
-//			}
-//
-//			if metric.Resource.Name == v1.ResourceCPU {
-//				cpMetric.ResourceKind = string(v1.ResourceCPU)
-//			} else if metric.Resource.Name == v1.ResourceMemory {
-//				cpMetric.ResourceKind = string(v1.ResourceMemory)
-//			} else if metric.Resource.Name == v1.ResourceStorage {
-//				cpMetric.ResourceKind = string(v1.ResourceStorage)
-//			}
-//		}
-//
-//		metrics = append(metrics, cpMetric)
-//
-//	}
-//	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics*/
-//
-//	return horizntalPodAutoscalar, nil
-//}
+func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*meshTypes.HPA, error) {
+	var horizntalPodAutoscalar = new(meshTypes.HPA)
+	horizntalPodAutoscalar.Name = hpa.Name
+	horizntalPodAutoscalar.Namespace = hpa.Namespace
+	horizntalPodAutoscalar.ServiceType = "k8s"
+	if vr := hpa.Labels["version"]; vr != "" {
+		horizntalPodAutoscalar.Version = vr
+	}
+	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
+
+	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
+	if hpa.Spec.MinReplicas != nil {
+		horizntalPodAutoscalar.ServiceAttributes.MinReplicas = int(*hpa.Spec.MinReplicas)
+	}
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Name = hpa.Spec.ScaleTargetRef.Name
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Type = hpa.Spec.ScaleTargetRef.Kind
+	horizntalPodAutoscalar.ServiceAttributes.CrossObjectVersion.Version = hpa.Spec.ScaleTargetRef.APIVersion
+
+	if hpa.Spec.TargetCPUUtilizationPercentage != nil {
+		horizntalPodAutoscalar.ServiceAttributes.TargetCpuUtilization = hpa.Spec.TargetCPUUtilizationPercentage
+	}
+
+	/*var metrics []meshTypes.MetricValue
+	for _, metric := range hpa.Spec.Metrics {
+		cpMetric := meshTypes.MetricValue{}
+		cpMetric.ResourceKind = string(autoScalar.ResourceMetricSourceType)
+		if metric.Resource != nil {
+			if metric.Resource.Target.Type == autoScalar.ValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.ValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.Value.String()
+			} else if metric.Resource.Target.Type == autoScalar.UtilizationMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.UtilizationMetricType)
+				if metric.Resource.Target.AverageUtilization != nil {
+					cpMetric.TargetValue = strconv.Itoa(int(*metric.Resource.Target.AverageUtilization))
+				}
+			} else if metric.Resource.Target.Type == autoScalar.AverageValueMetricType {
+				cpMetric.TargetValueKind = string(autoScalar.AverageValueMetricType)
+				cpMetric.TargetValue = metric.Resource.Target.AverageValue.String()
+			}
+
+			if metric.Resource.Name == v1.ResourceCPU {
+				cpMetric.ResourceKind = string(v1.ResourceCPU)
+			} else if metric.Resource.Name == v1.ResourceMemory {
+				cpMetric.ResourceKind = string(v1.ResourceMemory)
+			} else if metric.Resource.Name == v1.ResourceStorage {
+				cpMetric.ResourceKind = string(v1.ResourceStorage)
+			}
+		}
+
+		metrics = append(metrics, cpMetric)
+
+	}
+	horizntalPodAutoscalar.ServiceAttributes.MetricValues = metrics*/
+
+	return horizntalPodAutoscalar, nil
+}
 
 func ConvertToCPRole(k8ROle *rbac.Role) (*meshTypes.Role, error) {
 	var role = new(meshTypes.Role)
@@ -1363,7 +1364,12 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 	crb.Name = k8sClusterRoleBinding.Name
 	crb.ServiceType = "k8s"
 	crb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
-	crb.ServiceAttributes.NameClusterRoleRef = k8sClusterRoleBinding.RoleRef.Name
+	crb.ServiceAttributes.RoleRef.Name = k8sClusterRoleBinding.RoleRef.Name
+	if k8sClusterRoleBinding.RoleRef.Kind == "ClusterRole" {
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.ClusterRoleServiceType
+	} else {
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.RoleServiceType
+	}
 	if vr := k8sClusterRoleBinding.Labels["version"]; vr != "" {
 		crb.Version = vr
 	}

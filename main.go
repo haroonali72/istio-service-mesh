@@ -91,6 +91,8 @@ func main() {
 	pb.RegisterServiceAccountServer(srv, svc)
 	pb.RegisterSecretServer(srv, svc)
 	pb.RegisterRoleBindingServer(srv, svc)
+	//pb.RegisterClusterroleServer(srv, svc)
+	//pb.RegisterClusterrolebindingServer(srv, svc)
 	// Register reflection service on gRPC server.
 	reflection.Register(srv)
 	if err := srv.Serve(lis); err != nil {

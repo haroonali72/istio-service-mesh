@@ -3,7 +3,7 @@ package types
 import (
 	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v12 "k8s.io/api/apps/v1"
-	autoscaling "k8s.io/api/autoscaling/v2beta2"
+	autoscaling "k8s.io/api/autoscaling/v1"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	"k8s.io/api/core/v1"
@@ -187,15 +187,16 @@ type IstioObject struct {
 	Metadata   map[string]interface{} `json:"metadata"`
 	Spec       interface{}            `json:"spec"`
 }
-type ServiceDependency struct {
-	Name           string   `json:"name"`
-	DependencyType string   `json:"dependency_type"`
-	Hosts          []string `json:"hosts"`
-	Uri            []string `json:"uri"`
-	TimeOut        string   `json:"timeout"`
-	Routes         []Route  `json:"routes"`
-	Ports          []Port   `json:"ports"`
-}
+
+//type ServiceDependency struct {
+//	Name           string   `json:"name"`
+//	DependencyType string   `json:"dependency_type"`
+//	Hosts          []string `json:"hosts"`
+//	Uri            []string `json:"uri"`
+//	TimeOut        string   `json:"timeout"`
+//	Routes         []Route  `json:"routes"`
+//	Ports          []Port   `json:"ports"`
+//}
 
 /*
 type ServiceDependencyx struct {

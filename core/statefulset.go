@@ -322,6 +322,37 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		}
 	}
 
+	if dockerSecret, exist := CreateDockerCfgSecret(service.ServiceAttributes.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+		statefulSet.Spec.Template.Spec.ImagePullSecrets = []v12.LocalObjectReference{v12.LocalObjectReference{
+			Name: dockerSecret.Name,
+		}}
+		var ctx context.Context
+		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		defer conn.Close()
+
+		raw, err := json.Marshal(dockerSecret)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
+			ProjectId: service.ProjectId,
+			Service:   raw,
+			CompanyId: service.CompanyId,
+			Token:     service.Token,
+		})
+
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		utils.Info.Println(result.Service)
+
+	}
+
 	statefulSet.Spec.ServiceName = service.ServiceAttributes.ServiceName
 	if service.ServiceAttributes.PodManagementPolicy == pb.PodManagementPolicyType_OrderedReady {
 		statefulSet.Spec.PodManagementPolicy = v1.OrderedReadyPodManagement

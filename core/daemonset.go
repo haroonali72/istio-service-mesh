@@ -10,6 +10,7 @@ import (
 	"istio-service-mesh/constants"
 	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
+	v2 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -384,6 +385,37 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 		} else {
 			daemonSet.Spec.Template.Spec.Affinity = aa
 		}
+	}
+
+	if dockerSecret, exist := CreateDockerCfgSecret(service.ServiceAttributes.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+		daemonSet.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
+			Name: dockerSecret.Name,
+		}}
+		var ctx context.Context
+		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		defer conn.Close()
+
+		raw, err := json.Marshal(dockerSecret)
+		if err != nil {
+			utils.Error.Println(err)
+		}
+		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
+			ProjectId: service.ProjectId,
+			Service:   raw,
+			CompanyId: service.CompanyId,
+			Token:     service.Token,
+		})
+
+		if err != nil {
+			utils.Error.Println(err)
+		}
+
+		utils.Info.Println(result.Service)
+
 	}
 
 	return daemonSet, nil

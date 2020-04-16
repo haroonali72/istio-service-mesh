@@ -2,6 +2,7 @@ package core
 
 import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
+	meshTypes "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
 	"context"
 	"encoding/json"
 	"errors"
@@ -3179,23 +3180,23 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 	}
 
 	if !isAlreadyExist(svcTemp.NameSpace, &VSSubType, svcTemp.Name) {
-		destRule := new(types.DestinationRules)
-		istioVS := new(types.VirtualService)
+		destRule := new(meshTypes.DestinationRules)
+		istioVS := new(meshTypes.VirtualService)
 		istioVS.Name = cpKubeService.Name
 		istioVS.Namespace = cpKubeService.Namespace
 		istioVS.Version = cpKubeService.Version
 		istioVS.ServiceType = "mesh"
 		istioVS.ServiceSubType = "virtual_service"
-		istioVS.ServiceAttributes = new(types.VSServiceAttribute)
+		istioVS.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			istioVS.ServiceAttributes.Hosts = []string{value}
 			for _, label := range labels {
 				if label == value {
 					continue
 				}
-				http := new(types.Http)
-				httpRoute := new(types.HttpRoute)
-				routeRule := new(types.RouteDestination)
+				http := new(meshTypes.Http)
+				httpRoute := new(meshTypes.HttpRoute)
+				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
 				routeRule.Subnet = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
@@ -3213,7 +3214,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			destRule.ServiceAttributes.Host = value
 			for key, label := range labels {
-				subset := new(types.Subset)
+				subset := new(meshTypes.Subset)
 				if label == value {
 					continue
 				} else {
@@ -3272,7 +3273,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
-		virtualServiceAttr := new(types.VSServiceAttribute)
+		virtualServiceAttr := new(meshTypes.VSServiceAttribute)
 		err = json.Unmarshal(bytes, &virtualServiceAttr)
 		if err != nil {
 			utils.Error.Println(err)
@@ -3284,7 +3285,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 				if label == value {
 					continue
 				}
-				routeRule := new(types.RouteDestination)
+				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
 				routeRule.Subnet = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
@@ -3309,7 +3310,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 			utils.Error.Println(err)
 			return nil, err
 		}
-		var destRuleAttr types.DRServiceAttribute
+		var destRuleAttr meshTypes.DRServiceAttribute
 		err = json.Unmarshal(bytes, &destRuleAttr)
 		if err != nil {
 			utils.Error.Println(err)
@@ -3319,7 +3320,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			destRuleAttr.Host = value
 			for key, label := range labels {
-				subset := new(types.Subset)
+				subset := new(meshTypes.Subset)
 				if label == value {
 					continue
 				} else {
