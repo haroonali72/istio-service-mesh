@@ -125,12 +125,28 @@ func ConvertSCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
-
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+		}
 	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.StorageClassParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 	}
 	return nil
 }
@@ -148,18 +164,32 @@ func ConvertPVCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		return err
 	}
 
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
 	} else {
-		strdata := string(byteData)
-		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
-		res := re.ReplaceAllString(strdata, "")
-		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
-		res = re.ReplaceAllString(res, "")
-		serviceResp.Service = []byte(res)
+		byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 		serviceResp.Namespace = result.Namespace
 	}
+
 	return nil
 }
 
@@ -176,11 +206,28 @@ func ConvertPVToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		return err
 	}
 
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+		}
 	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 	}
 	return nil
 }
@@ -197,13 +244,31 @@ func ConvertDRToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+	//if req.IsYaml{
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
+	//}else {
+	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+	//
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return err
+	//	}
+	//	serviceResp.Service = byteData
+	//	serviceResp.ChartFile = chartByteData
+	//	serviceResp.HelperFile = helperByteData
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	return nil
 }
 
@@ -219,13 +284,31 @@ func ConvertVSToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 		utils.Error.Println(err)
 		return err
 	}
+	//if req.IsYaml{
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
+	//}else {
+	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+	//
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return err
+	//	}
+	//	serviceResp.Service = byteData
+	//	serviceResp.ChartFile = chartByteData
+	//	serviceResp.HelperFile = helperByteData
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	return nil
 }
 
@@ -241,13 +324,31 @@ func ConvertGatewayToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServic
 		utils.Error.Println(err)
 		return err
 	}
+	//if req.IsYaml{
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
+	//}else {
+	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+	//
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return err
+	//	}
+	//	serviceResp.Service = byteData
+	//	serviceResp.ChartFile = chartByteData
+	//	serviceResp.HelperFile = helperByteData
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	return nil
 }
 
@@ -263,13 +364,31 @@ func ConvertServiceEntryToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlS
 		utils.Error.Println(err)
 		return err
 	}
+	//if req.IsYaml{
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
+	//}else {
+	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+	//
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return err
+	//	}
+	//	serviceResp.Service = byteData
+	//	serviceResp.ChartFile = chartByteData
+	//	serviceResp.HelperFile = helperByteData
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	return nil
 }
 
@@ -285,11 +404,29 @@ func ConvertConfigMapToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServ
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
 	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.ConfigMapParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 		serviceResp.Namespace = result.Namespace
 	}
 	return nil
@@ -307,11 +444,29 @@ func ConvertSecretToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
 	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.SecretParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 		serviceResp.Namespace = result.Namespace
 	}
 	return nil
@@ -329,16 +484,31 @@ func ConvertDaemonSeToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.DaemonSetsParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.DaemonSetsParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -354,16 +524,31 @@ func ConvertDeploymentToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSer
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -378,16 +563,31 @@ func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.HPAParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.HPAParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -403,15 +603,29 @@ func ConvertClusterRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleParameters(result)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -427,15 +641,31 @@ func ConvertRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRe
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.RoleParameters(result)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.RoleParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -449,15 +679,31 @@ func ConvertRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.RoleBindingParameters(result)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.RoleBindingParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -472,15 +718,30 @@ func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleBindingParameters(result)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleBindingParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
+
 	return nil
 }
 
@@ -496,15 +757,32 @@ func ConvertServiceAccountToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yam
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.ServiceAccountParameters(result)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.ServiceAccountParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
+
 	return nil
 
 }
@@ -521,15 +799,32 @@ func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yaml
 		utils.Error.Println(err)
 		return err
 	}
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
 	} else {
-		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
-		byteData = re.ReplaceAll(byteData, []byte{})
+		byteData, chartByteData, helperByteData, err := helm_parameterization.NetworkPolicyParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 		serviceResp.Namespace = result.Namespace
 	}
+
 	return nil
 }
 
@@ -545,15 +840,31 @@ func ConvertPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 		utils.Error.Println(err)
 		return err
 	}
+	//if req.IsYaml{
 	if byteData, err := yaml.Marshal(result); err != nil {
 		utils.Error.Println(err)
 		return err
 	} else {
-		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
-		byteData = re.ReplaceAll(byteData, []byte{})
-		serviceResp.Service = byteData
+		strdata := string(byteData)
+		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+		res := re.ReplaceAllString(strdata, "")
+		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+		res = re.ReplaceAllString(res, "")
+		serviceResp.Service = []byte(res)
 		serviceResp.Namespace = result.Namespace
 	}
+	//}else {
+	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
+	//
+	//	if err != nil {
+	//		utils.Error.Println(err)
+	//		return err
+	//	}
+	//	serviceResp.Service = byteData
+	//	serviceResp.ChartFile = chartByteData
+	//	serviceResp.HelperFile = helperByteData
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	return nil
 }
 func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
@@ -569,18 +880,34 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 		return err
 	}
 
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*loadBalancer: {}*$")
+			byteData = re.ReplaceAll(byteData, []byte{})
+
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
 	} else {
-		re := regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
-		byteData = re.ReplaceAll(byteData, []byte{})
-		re = regexp.MustCompile("(?m)[\r\n]+^.*loadBalancer: {}*$")
-		byteData = re.ReplaceAll(byteData, []byte{})
-		//res := re.ReplaceAllString(strbyteData, "")
+		byteData, chartByteData, helperByteData, err := helm_parameterization.KubernetesServiceParameters(result)
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
 		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
 		serviceResp.Namespace = result.Namespace
 	}
+
 	return nil
 }
 
@@ -596,16 +923,31 @@ func ConvertStatefulToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.StatefulSetParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.StatefulSetParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -620,16 +962,31 @@ func ConvertJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.JobParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.JobParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 
@@ -644,16 +1001,31 @@ func ConvertCronJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServic
 		utils.Error.Println(err)
 		return err
 	}
-	byteData, chartByteData, helperByteData, err := helm_parameterization.CronJobParameters(result)
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		byteData, chartByteData, helperByteData, err := helm_parameterization.CronJobParameters(result)
 
-	if err != nil {
-		utils.Error.Println(err)
-		return err
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
-	serviceResp.Service = byteData
-	serviceResp.ChartFile = chartByteData
-	serviceResp.HelperFile = helperByteData
-	serviceResp.Namespace = result.Namespace
 	return nil
 }
 func ConvertVirtualServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
