@@ -560,7 +560,9 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 	for _, container := range conts {
 		var containerTemp v2.Container
 		//todo: change it and add containerName field
-		containerTemp.Name = "app-" + utils.RandStringRunes(4)
+		imageName := strings.Split(container.ImageName, "/")
+		name := strings.ToLower(strings.Split(imageName[len(imageName)-1], ":")[0])
+		containerTemp.Name = name
 		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			return nil, nil, err
 		}
