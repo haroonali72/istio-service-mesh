@@ -2,6 +2,7 @@ package core
 
 import (
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/base64"
@@ -662,9 +663,9 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 		}
 
 		var envVariables []v2.EnvVar
-		for key, envVariable := range container.EnvironmentVariables {
+		for _, envVariable := range container.EnvironmentVariables {
 			tempEnvVariable := v2.EnvVar{}
-			if strings.EqualFold(key, "ConfigMap") {
+			if strings.EqualFold(envVariable.Type, meshConstants.ConfigMapServiceType) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
@@ -672,7 +673,7 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 						Key:                  envVariableValue[1],
 					}}}
 
-			} else if strings.EqualFold(key, "Secret") {
+			} else if strings.EqualFold(envVariable.Type, meshConstants.SecretServiceType) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
