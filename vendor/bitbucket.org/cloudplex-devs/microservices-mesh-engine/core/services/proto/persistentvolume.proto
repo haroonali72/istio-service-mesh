@@ -29,7 +29,7 @@ message PersistentVolumeAttributes{
     map<string,string>  labels    =1;
     ReclaimPolicy reclaim_policy =2;
     repeated AccessMode access_mode =3;
-    string capcity =4;
+    string capacity =4;
     PersistentVolumeSource persistent_volume_source=5;
    string storage_class_name =6;
     repeated string mount_options=7;

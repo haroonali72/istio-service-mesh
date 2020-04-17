@@ -383,8 +383,9 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			vSer.Rewrite.Uri = http.HttpRewrite.Uri
 			vSer.Rewrite.Authority = http.HttpRewrite.Authority
 		}
-
-		vSer.Timeout = &types.Duration{Nanos: http.Timeout}
+		if http.Timeout != 0 {
+			vSer.Timeout = &types.Duration{Nanos: http.Timeout}
+		}
 
 		if http.FaultInjection != nil {
 			vSer.Fault = &v1alpha3.HTTPFaultInjection{}

@@ -205,6 +205,7 @@ type VolumeMount struct {
 	SubPath          string                `json:"sub_path,omitempty"`
 	MountPropagation *MountPropagationMode `json:"mount_propagation,omitempty"`
 	SubPathExpr      string                `json:"sub_path_expr,omitempty"`
+	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name"`
 }
 
 type MountPropagationMode string

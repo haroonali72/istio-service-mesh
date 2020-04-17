@@ -21,10 +21,10 @@ message ContainerAttributes{
 }
 message VolumeMount {
     string name = 1;
-    bool readOnly = 2;
-    string mountPath = 3;
-    string subPath = 4;
-    string subPathExpr = 5;
+    bool readonly = 2;
+    string mount_path = 3;
+    string sub_path = 4;
+    string sub_path_expr = 5;
     MountPropagationMode mount_propagation = 6;
 }
 
@@ -76,7 +76,7 @@ message PodAffinityTerm{
 
 message WeightedPodAffinityTerm{
     int32 weight = 1;
-    PodAffinityTerm podAffinityTerm = 2;
+    PodAffinityTerm pod_affinity_term = 2;
 }
 message PodAntiAffinity {
     repeated PodAffinityTerm req_during_scheduling_ign_during_exec = 1;
