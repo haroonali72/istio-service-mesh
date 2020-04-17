@@ -1,6 +1,6 @@
 # bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200413141308-024c89b36e0b
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200416180424-ef05c386ddbc
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7e72a5e9b8
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services
