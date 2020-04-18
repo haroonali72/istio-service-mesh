@@ -304,7 +304,7 @@ func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVol
 
 	}
 
-	quantity, err := resource.ParseQuantity(input.ServiceAttributes.Capcity)
+	quantity, err := resource.ParseQuantity(input.ServiceAttributes.Capacity)
 	if err != nil {
 		return nil, errors.New("invalid storage capacity ")
 	}
