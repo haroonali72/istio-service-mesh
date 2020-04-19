@@ -4,7 +4,6 @@ import (
 	"istio-service-mesh/core/helm-parameterization/types"
 	v1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 func DaemonSetsParameters(daemonset *v1.DaemonSet) (daemonsetYaml []byte, daemonsetParams []byte, functionsData []byte, err error) {
@@ -30,6 +29,7 @@ func DaemonSetsParameters(daemonset *v1.DaemonSet) (daemonsetYaml []byte, daemon
 	daemonsetRaw.Spec.Template.Spec.Containers[0].ImagePullPolicy, _ = appendImagePullPolicy(string(daemonset.Spec.Template.Spec.Containers[0].ImagePullPolicy), chartFile)
 	daemonsetRaw.Spec.Template.Spec.ImagePullSecrets, _ = appendImagePullSecret(daemonset.Spec.Template.Spec.ImagePullSecrets, chartFile)
 	daemonsetRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(daemonset.Spec.Template.Spec.Containers[0].Ports, chartFile)
+	daemonsetRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(daemonset.Spec.Template.Spec.Containers[0].Env, chartFile)
 
 	//add this at the end. This function will replace name with helm parameter
 	daemonsetRaw.Name, _ = appendName(daemonset.Name, tplFile)
@@ -44,12 +44,14 @@ func DaemonSetsParameters(daemonset *v1.DaemonSet) (daemonsetYaml []byte, daemon
 		return nil, nil, nil, err
 	}
 
-	daemonsetYamlStr := strings.ReplaceAll(string(daemonsetYaml), "'{{", "{{")
+	/*daemonsetYamlStr := strings.ReplaceAll(string(daemonsetYaml), "'{{", "{{")
 	daemonsetYamlStr = strings.ReplaceAll(daemonsetYamlStr, "}}'", "}}")
 
 	daemonsetYamlStr = appendExtraStatements(daemonsetYamlStr, "readinessProbe:", ReadinessProbIfCondition)
 	daemonsetYamlStr = appendExtraStatements(daemonsetYamlStr, "resources:", ResourcesIfCondition)
 	daemonsetYamlStr = appendExtraStatements(daemonsetYamlStr, "livenessProbe:", LivelinessProbIfCondition)
-	daemonsetYamlStr = appendExtraStatements(daemonsetYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)
+	daemonsetYamlStr = appendExtraStatements(daemonsetYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)*/
+
+	daemonsetYamlStr := extraParametersReplacement(daemonsetYaml, daemonset.Name)
 	return []byte(daemonsetYamlStr), chartRaw, *tplFile, nil
 }

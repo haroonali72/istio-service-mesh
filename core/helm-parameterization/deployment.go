@@ -4,7 +4,6 @@ import (
 	"istio-service-mesh/core/helm-parameterization/types"
 	v1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 type DeploymentStructs struct {
@@ -35,6 +34,7 @@ func DeploymentParameters(deployment *v1.Deployment) (deploymentYaml []byte, dep
 	deploymentRaw.Spec.Template.Spec.Containers[0].ImagePullPolicy, _ = appendImagePullPolicy(string(deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy), chartFile)
 	deploymentRaw.Spec.Template.Spec.ImagePullSecrets, _ = appendImagePullSecret(deployment.Spec.Template.Spec.ImagePullSecrets, chartFile)
 	deploymentRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(deployment.Spec.Template.Spec.Containers[0].Ports, chartFile)
+	deploymentRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(deployment.Spec.Template.Spec.Containers[0].Env, chartFile)
 
 	//add this at the end. This function will replace name with helm parameter
 	deploymentRaw.Name, _ = appendName(deployment.Name, tplFile)
@@ -49,12 +49,6 @@ func DeploymentParameters(deployment *v1.Deployment) (deploymentYaml []byte, dep
 		return nil, nil, nil, err
 	}
 
-	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
-	depString = strings.ReplaceAll(depString, "}}'", "}}")
-
-	depString = appendExtraStatements(depString, "readinessProbe:", ReadinessProbIfCondition)
-	depString = appendExtraStatements(depString, "resources:", ResourcesIfCondition)
-	depString = appendExtraStatements(depString, "livenessProbe:", LivelinessProbIfCondition)
-	depString = appendExtraStatements(depString, "imagePullSecrets:", ImagePullSecretIfCondition)
+	depString := extraParametersReplacement(dep, deployment.Name)
 	return []byte(depString), chartRaw, *tplFile, nil
 }

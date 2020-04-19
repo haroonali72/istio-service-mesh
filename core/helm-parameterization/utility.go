@@ -125,6 +125,10 @@ func appendPorts(ports []v12.ContainerPort, chartFile *types.CoreComponentsChart
 	chartFile.Ports = ports
 	return PortsParameters, nil
 }
+func appendEnvs(envs []v12.EnvVar, chartFile *types.CoreComponentsChartValues) (string, error) {
+	chartFile.Env = envs
+	return EnvParameters, nil
+}
 func appendExtraStatements(deployment string, findString, appendString string) string {
 	if index := strings.Index(deployment, "resources:"); index != -1 {
 
@@ -164,4 +168,15 @@ func appendHpaMaxReplicas(maxReplicas int32, chartValues *types.HPAChartValues) 
 func appendCpuUtilization(cpu int32, chartValues *types.HPAChartValues) string {
 	chartValues.TargetCPUUtilizationPercentage = cpu
 	return HpaCpuUtilization
+}
+
+func extraParametersReplacement(dep []byte, name string) string {
+	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
+	depString = strings.ReplaceAll(depString, "}}'", "}}")
+	depString = strings.ReplaceAll(depString, "{{ .Name }}", name)
+	depString = appendExtraStatements(depString, "readinessProbe:", ReadinessProbIfCondition)
+	depString = appendExtraStatements(depString, "resources:", ResourcesIfCondition)
+	depString = appendExtraStatements(depString, "livenessProbe:", LivelinessProbIfCondition)
+	depString = appendExtraStatements(depString, "imagePullSecrets:", ImagePullSecretIfCondition)
+	return depString
 }

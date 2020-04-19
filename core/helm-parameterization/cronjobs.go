@@ -4,7 +4,6 @@ import (
 	"istio-service-mesh/core/helm-parameterization/types"
 	"k8s.io/api/batch/v1beta1"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 func CronJobParameters(job *v1beta1.CronJob) (jobYaml []byte, jobParams []byte, functionsData []byte, err error) {
@@ -30,6 +29,7 @@ func CronJobParameters(job *v1beta1.CronJob) (jobYaml []byte, jobParams []byte, 
 	jobRaw.Spec.JobTemplate.Spec.Template.Spec.Containers[0].ImagePullPolicy, _ = appendImagePullPolicy(string(job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].ImagePullPolicy), chartFile)
 	jobRaw.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, _ = appendImagePullSecret(job.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets, chartFile)
 	jobRaw.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Ports, chartFile)
+	jobRaw.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Env, chartFile)
 	jobRaw.Spec.Schedule, _ = appendCronExpression(job.Spec.Schedule, chartFile)
 	//add this at the end. This function will replace name with helm parameter
 	jobRaw.Name, _ = appendName(job.Name, tplFile)
@@ -44,13 +44,15 @@ func CronJobParameters(job *v1beta1.CronJob) (jobYaml []byte, jobParams []byte, 
 		return nil, nil, nil, err
 	}
 
-	jobYamlStr := strings.ReplaceAll(string(jobYaml), "'{{", "{{")
-	jobYamlStr = strings.ReplaceAll(jobYamlStr, "}}'", "}}")
+	//jobYamlStr := strings.ReplaceAll(string(jobYaml), "'{{", "{{")
+	//jobYamlStr = strings.ReplaceAll(jobYamlStr, "}}'", "}}")
+	//
+	//jobYamlStr = appendExtraStatements(jobYamlStr, "readinessProbe:", ReadinessProbIfCondition)
+	//jobYamlStr = appendExtraStatements(jobYamlStr, "resources:", ResourcesIfCondition)
+	//jobYamlStr = appendExtraStatements(jobYamlStr, "livenessProbe:", LivelinessProbIfCondition)
+	//jobYamlStr = appendExtraStatements(jobYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)
 
-	jobYamlStr = appendExtraStatements(jobYamlStr, "readinessProbe:", ReadinessProbIfCondition)
-	jobYamlStr = appendExtraStatements(jobYamlStr, "resources:", ResourcesIfCondition)
-	jobYamlStr = appendExtraStatements(jobYamlStr, "livenessProbe:", LivelinessProbIfCondition)
-	jobYamlStr = appendExtraStatements(jobYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)
+	jobYamlStr := extraParametersReplacement(jobYaml, job.Name)
 	return []byte(jobYamlStr), chartRaw, *tplFile, nil
 }
 func appendCronExpression(schedule string, chartFile *types.CoreComponentsChartValues) (string, error) {

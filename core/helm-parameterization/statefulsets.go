@@ -4,7 +4,6 @@ import (
 	"istio-service-mesh/core/helm-parameterization/types"
 	v1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 func StatefulSetParameters(statefulset *v1.StatefulSet) (statefulSetYaml []byte, statefulSetParams []byte, functionsData []byte, err error) {
@@ -31,6 +30,7 @@ func StatefulSetParameters(statefulset *v1.StatefulSet) (statefulSetYaml []byte,
 	statefulsetRaw.Spec.Template.Spec.Containers[0].ImagePullPolicy, _ = appendImagePullPolicy(string(statefulset.Spec.Template.Spec.Containers[0].ImagePullPolicy), chartFile)
 	statefulsetRaw.Spec.Template.Spec.ImagePullSecrets, _ = appendImagePullSecret(statefulset.Spec.Template.Spec.ImagePullSecrets, chartFile)
 	statefulsetRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(statefulset.Spec.Template.Spec.Containers[0].Ports, chartFile)
+	statefulsetRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(statefulset.Spec.Template.Spec.Containers[0].Env, chartFile)
 
 	//add this at the end. This function will replace name with helm parameter
 	statefulsetRaw.Name, _ = appendName(statefulset.Name, tplFile)
@@ -45,12 +45,14 @@ func StatefulSetParameters(statefulset *v1.StatefulSet) (statefulSetYaml []byte,
 		return nil, nil, nil, err
 	}
 
-	statefulsetYamlStr := strings.ReplaceAll(string(statefulsetYaml), "'{{", "{{")
+	/*statefulsetYamlStr := strings.ReplaceAll(string(statefulsetYaml), "'{{", "{{")
 	statefulsetYamlStr = strings.ReplaceAll(statefulsetYamlStr, "}}'", "}}")
 
 	statefulsetYamlStr = appendExtraStatements(statefulsetYamlStr, "readinessProbe:", ReadinessProbIfCondition)
 	statefulsetYamlStr = appendExtraStatements(statefulsetYamlStr, "resources:", ResourcesIfCondition)
 	statefulsetYamlStr = appendExtraStatements(statefulsetYamlStr, "livenessProbe:", LivelinessProbIfCondition)
-	statefulsetYamlStr = appendExtraStatements(statefulsetYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)
+	statefulsetYamlStr = appendExtraStatements(statefulsetYamlStr, "imagePullSecrets:", ImagePullSecretIfCondition)*/
+
+	statefulsetYamlStr := extraParametersReplacement(statefulsetYaml, statefulset.Name)
 	return []byte(statefulsetYamlStr), chartRaw, *tplFile, nil
 }
