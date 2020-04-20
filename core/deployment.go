@@ -30,7 +30,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *pb.DeploymentService
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getDeploymentRequestObject(req)
+	ksdRequest, err := getDeploymentRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -77,7 +77,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *pb.DeploymentService) (
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getDeploymentRequestObject(req)
+	ksdRequest, err := getDeploymentRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -124,7 +124,7 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *pb.DeploymentService
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getDeploymentRequestObject(req)
+	ksdRequest, err := getDeploymentRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -171,7 +171,7 @@ func (s *Server) PatchDeployment(ctx context.Context, req *pb.DeploymentService)
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getDeploymentRequestObject(req)
+	ksdRequest, err := getDeploymentRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -218,7 +218,7 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getDeploymentRequestObject(req)
+	ksdRequest, err := getDeploymentRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -257,7 +257,7 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 	return serviceResp, nil
 }
 
-func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, error) {
+func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentService) (*v1.Deployment, error) {
 	var deployment = new(v1.Deployment)
 	if service.Name == "" {
 		return nil, errors.New("Service name not found")
@@ -319,7 +319,6 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 		deployment.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
 			Name: dockerSecret.Name,
 		}}
-		var ctx context.Context
 		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 		if err != nil {
 			utils.Error.Println(err)
@@ -340,6 +339,7 @@ func getDeploymentRequestObject(service *pb.DeploymentService) (*v1.Deployment, 
 
 		if err != nil {
 			utils.Error.Println(err)
+			return nil, err
 		}
 
 		utils.Info.Println(result.Service)

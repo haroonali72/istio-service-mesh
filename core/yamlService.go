@@ -68,7 +68,7 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 			return nil, err
 		}
 	case meshConstants.DeploymentServiceType:
-		if err := ConvertDeploymentToYaml(req, serviceResp); err != nil {
+		if err := ConvertDeploymentToYaml(ctx, req, serviceResp); err != nil {
 			return nil, err
 		}
 	case meshConstants.DaemonSetServiceType:
@@ -512,14 +512,14 @@ func ConvertDaemonSeToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 	return nil
 }
 
-func ConvertDeploymentToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+func ConvertDeploymentToYaml(ctx context.Context, req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
 
 	deploy := pb.DeploymentService{}
 	if err := json.Unmarshal(req.Service, &deploy); err != nil {
 		utils.Error.Println(err)
 		return err
 	}
-	result, err := getDeploymentRequestObject(&deploy)
+	result, err := getDeploymentRequestObject(ctx, &deploy)
 	if err != nil {
 		utils.Error.Println(err)
 		return err
