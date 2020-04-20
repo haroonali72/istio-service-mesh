@@ -53,6 +53,22 @@ func appendLabels(labels map[string]string, name string, tplFile *[]byte) (strin
 	return labelTemplate, nil
 }
 
+func appendAnnotations(labels map[string]string, name string, tplFile *[]byte) (string, error) {
+	rawLabels, err := yaml.Marshal(labels)
+	if err != nil {
+		return "", err
+	}
+	labelFunc := strings.ReplaceAll(AnnotationFunction, "{{ .Name }}", name)
+	labelFunc = strings.ReplaceAll(labelFunc, "{{ .Labels }}", string(rawLabels))
+
+	labelTemplate := strings.Replace(AnnotationParameter, "{{ .Name }}", name, -1)
+	labelTemplate = strings.Replace(labelTemplate, "{{ .Indent }}", "4", -1)
+	//deploymentRaw.Labels = labelTemplate
+
+	*tplFile = append(*tplFile, []byte(labelFunc)...)
+	return labelTemplate, nil
+}
+
 func appendMatchLabels(matchLabel map[string]string, name string, tplFile *[]byte) (string, error) {
 	rawLabels, err := yaml.Marshal(matchLabel)
 	if err != nil {

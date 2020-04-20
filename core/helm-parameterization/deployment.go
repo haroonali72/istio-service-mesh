@@ -25,6 +25,7 @@ func DeploymentParameters(deployment *v1.Deployment) (deploymentYaml []byte, dep
 	chartFile := new(types.CoreComponentsChartValues)
 
 	deploymentRaw.Labels, _ = appendLabels(deployment.Labels, deployment.Name, tplFile)
+
 	deploymentRaw.Spec.Selector.MatchLabels, _ = appendMatchLabels(deployment.Spec.Selector.MatchLabels, deployment.Name, tplFile)
 	deploymentRaw.Spec.Template.Labels, _ = appendPodLabels(deployment.Spec.Template.Labels, deployment.Name)
 	deploymentRaw.Spec.Replicas, _ = appendReplicasTemplate(*deployment.Spec.Replicas, chartFile)
@@ -36,6 +37,9 @@ func DeploymentParameters(deployment *v1.Deployment) (deploymentYaml []byte, dep
 	deploymentRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(deployment.Spec.Template.Spec.Containers[0].Ports, chartFile)
 	deploymentRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(deployment.Spec.Template.Spec.Containers[0].Env, chartFile)
 
+	if len(deployment.Annotations) > 1 {
+		deploymentRaw.Annotations, _ = appendAnnotations(deployment.Annotations, deployment.Name, tplFile)
+	}
 	//add this at the end. This function will replace name with helm parameter
 	deploymentRaw.Name, _ = appendName(deployment.Name, tplFile)
 

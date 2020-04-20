@@ -10,27 +10,27 @@ const (
 	PortsParameters   = `{{ toYaml .Values.ports | nindent 8 }}`
 
 	LabelParameter            = `{{- include "{{ .Name }}.labels" . | nindent {{ .Indent }} }}`
-	AnnotationParameter       = `{{- include "{{ .Name }}.annotation" . | nindent {{ .Indent }} }}`
+	AnnotationParameter       = `{{- include "{{ .Name }}.annotations" . | nindent {{ .Indent }} }}`
 	MatchSelectorParameter    = `{{- include "{{ .Name }}.matchLabels" . | nindent {{ .Indent }} }}`
-	LivelinessProbIfCondition = `{{- if .Values.prob.livenessProbe }}
+	LivelinessProbIfCondition = ` {{- if .Values.prob.livenessProbe }}
        `
 	LivelinessProbParameter  = `{{ toYaml .Values.prob.livenessProbe | nindent 8 }}`
-	ReadinessProbIfCondition = `{{- if .Values.prob.readinessProbe }}
+	ReadinessProbIfCondition = ` {{- if .Values.prob.readinessProbe }}
        `
 	ReadinessProbParameter = `{{ toYaml .Values.prob.readinessProbe | nindent 8 }}`
 
 	ResourcesParameter   = `{{ toYaml .Values.resource | nindent 10 }}`
-	ResourcesIfCondition = `{{- if .Values.resource }}
+	ResourcesIfCondition = ` {{- if .Values.resource }}
        `
 	ReplicasHelmParameter      = "{{ .Values.replicaCount | default 1 }}"
 	ImageHelmParameter         = "{{ .Values.image.image }}"
 	ImagePullPolicyParameter   = `{{ .Values.image.imagePullPolicy | default "IfNotPresent"}}`
-	ImagePullSecretIfCondition = `{{- if .Values.image.imagePullSecrets }}
+	ImagePullSecretIfCondition = `   {{- if .Values.image.imagePullSecrets }}
        `
 	ImagePullSecret = `{{ toYaml .Values.image.imagePullSecrets | nindent 8 }}`
 
 	EndParameter = `
-	{{- end }}`
+	  	{{- end }}`
 
 	CronExpressionParameter = "{{ .Values.cronExpression }}"
 	RulesParameters         = "{{ toYaml .Values.rules | nindent 8 }}"
@@ -72,6 +72,11 @@ release: {{ .Release.Name }}
 heritage: {{ .Release.Service }}
 {{ .Labels }}{{- end -}}
 `
+	AnnotationFunction = `
+{{- define "{{ .Name }}.annotations" -}}
+{{ .Labels }}{{- end -}}
+`
+
 	ServiceAccountNameFunction = `
 {{- define "{{ .Name }}.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}

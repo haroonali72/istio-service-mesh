@@ -31,6 +31,9 @@ func DaemonSetsParameters(daemonset *v1.DaemonSet) (daemonsetYaml []byte, daemon
 	daemonsetRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(daemonset.Spec.Template.Spec.Containers[0].Ports, chartFile)
 	daemonsetRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(daemonset.Spec.Template.Spec.Containers[0].Env, chartFile)
 
+	if len(daemonset.Annotations) > 1 {
+		daemonsetRaw.Annotations, _ = appendAnnotations(daemonset.Annotations, daemonset.Name, tplFile)
+	}
 	//add this at the end. This function will replace name with helm parameter
 	daemonsetRaw.Name, _ = appendName(daemonset.Name, tplFile)
 

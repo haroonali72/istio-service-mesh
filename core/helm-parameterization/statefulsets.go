@@ -32,6 +32,9 @@ func StatefulSetParameters(statefulset *v1.StatefulSet) (statefulSetYaml []byte,
 	statefulsetRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(statefulset.Spec.Template.Spec.Containers[0].Ports, chartFile)
 	statefulsetRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(statefulset.Spec.Template.Spec.Containers[0].Env, chartFile)
 
+	if len(statefulset.Annotations) > 1 {
+		statefulsetRaw.Annotations, _ = appendAnnotations(statefulset.Annotations, statefulset.Name, tplFile)
+	}
 	//add this at the end. This function will replace name with helm parameter
 	statefulsetRaw.Name, _ = appendName(statefulset.Name, tplFile)
 

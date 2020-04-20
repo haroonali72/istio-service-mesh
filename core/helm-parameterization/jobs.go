@@ -31,6 +31,10 @@ func JobParameters(job *v12.Job) (jobYaml []byte, jobParams []byte, functionsDat
 	jobRaw.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(job.Spec.Template.Spec.Containers[0].Ports, chartFile)
 	jobRaw.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(job.Spec.Template.Spec.Containers[0].Env, chartFile)
 
+	if len(job.Annotations) > 1 {
+		jobRaw.Annotations, _ = appendAnnotations(job.Annotations, job.Name, tplFile)
+	}
+
 	//add this at the end. This function will replace name with helm parameter
 	jobRaw.Name, _ = appendName(job.Name, tplFile)
 

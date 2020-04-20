@@ -31,6 +31,10 @@ func CronJobParameters(job *v1beta1.CronJob) (jobYaml []byte, jobParams []byte, 
 	jobRaw.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Ports, _ = appendPorts(job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Ports, chartFile)
 	jobRaw.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Env, _ = appendEnvs(job.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Env, chartFile)
 	jobRaw.Spec.Schedule, _ = appendCronExpression(job.Spec.Schedule, chartFile)
+
+	if len(job.Annotations) > 1 {
+		jobRaw.Annotations, _ = appendAnnotations(job.Annotations, job.Name, tplFile)
+	}
 	//add this at the end. This function will replace name with helm parameter
 	jobRaw.Name, _ = appendName(job.Name, tplFile)
 
