@@ -403,12 +403,6 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		}
 	}
 
-	for key, _ := range volumeMountNames1 {
-		if volumeMountNames1[key] == true {
-			return nil, errors.New("volume does not exist")
-		}
-	}
-
 	if volumes, err := getVolumes(service.ServiceAttributes.Volumes, volumeMountNames1); err == nil {
 		if len(volumes) > 0 {
 			statefulSet.Spec.Template.Spec.Volumes = volumes
@@ -416,6 +410,12 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 
 	} else {
 		return nil, err
+	}
+
+	for key, _ := range volumeMountNames1 {
+		if volumeMountNames1[key] == true {
+			return nil, errors.New("volume does not exist")
+		}
 	}
 
 	if service.ServiceAttributes.Affinity != nil {

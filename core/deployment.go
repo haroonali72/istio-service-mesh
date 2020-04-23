@@ -435,6 +435,11 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 		volumeMountNames[volume.Name] = false
 		tempVolume := v2.Volume{}
 		tempVolume.Name = volume.Name
+		if volume.VolumeSource.PersistentVolumeClaim != nil {
+			tempVolume.PersistentVolumeClaim = new(v2.PersistentVolumeClaimVolumeSource)
+			tempVolume.PersistentVolumeClaim.ClaimName = volume.VolumeSource.PersistentVolumeClaim.ClaimName
+			//tempVolume.PersistentVolumeClaim.ReadOnly = volume.VolumeSource.PersistentVolumeClaim.Readonly
+		}
 
 		if volume.VolumeSource.Secret != nil {
 			tempVolume.Secret = new(v2.SecretVolumeSource)
