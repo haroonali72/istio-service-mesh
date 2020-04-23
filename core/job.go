@@ -289,6 +289,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
 		job.Spec.Selector.MatchLabels[key] = value
 	}*/
+	job.Spec.Template.Labels = make(map[string]string)
 	job.Spec.Template.Labels["app"] = service.Name
 	job.Spec.Template.Labels["version"] = service.Version
 	for key, value := range service.ServiceAttributes.Labels {
