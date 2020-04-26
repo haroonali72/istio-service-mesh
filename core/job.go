@@ -299,6 +299,10 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	job.Spec.Template.Annotations = make(map[string]string)
 	job.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
 
+	manualSelector := true
+	job.Spec.ManualSelector = &manualSelector
+	job.Spec.Template.Spec.RestartPolicy = v2.RestartPolicyNever
+
 	if service.ServiceAttributes.Parallelism != nil {
 		job.Spec.Parallelism = &service.ServiceAttributes.Parallelism.Value
 	}
