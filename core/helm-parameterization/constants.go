@@ -6,8 +6,12 @@ const (
 
 	CommandParameters = `{{ toYaml .Values.command }}`
 	ArgsParameters    = `{{ toYaml .Values.args }}`
-	EnvParameters     = `{{ toYaml .Values.env| nindent 8 }}`
-	PortsParameters   = `{{ toYaml .Values.ports | nindent 8 }}`
+	EnvIfCondition    = ` {{- if .Values.env }}
+       `
+	EnvParameters    = `{{ toYaml .Values.env| nindent 8 }}`
+	PortsIfCondition = ` {{- if .Values.ports }}
+       `
+	PortsParameters = `{{ toYaml .Values.ports | nindent 8 }}`
 
 	LabelParameter            = `{{- include "{{ .Name }}.labels" . | nindent {{ .Indent }} }}`
 	AnnotationParameter       = `{{- include "{{ .Name }}.annotations" . | nindent {{ .Indent }} }}`

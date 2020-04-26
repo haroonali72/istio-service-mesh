@@ -190,6 +190,8 @@ func extraParametersReplacement(dep []byte, name string) string {
 	depString := strings.ReplaceAll(string(dep), "'{{", "{{")
 	depString = strings.ReplaceAll(depString, "}}'", "}}")
 	depString = strings.ReplaceAll(depString, "{{ .Name }}", name)
+	depString = appendExtraStatements(depString, "env:", EnvIfCondition)
+	depString = appendExtraStatements(depString, "ports:", PortsIfCondition)
 	depString = appendExtraStatements(depString, "readinessProbe:", ReadinessProbIfCondition)
 	depString = appendExtraStatements(depString, "resources:", ResourcesIfCondition)
 	depString = appendExtraStatements(depString, "livenessProbe:", LivelinessProbIfCondition)
