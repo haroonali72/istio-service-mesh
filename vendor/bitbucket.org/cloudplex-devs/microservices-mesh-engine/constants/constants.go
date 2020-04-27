@@ -139,6 +139,16 @@ const (
 	Rbac_List              = "/security/api/rbac/list?companyId={companyID}&resource_type={resourceType}"
 	Rbac_Evaluate          = "/security/api/rbac/evaluate"
 	Rbac_Subscription_Plan = "/security/api/rbac/company/plan?companyId={companyID}"
+
+	PROJECT_SECRET_POST_ENDPOINT   = "/api/v1/project/{projectId}/solution/{solutionId}/secrets/{serviceId}"
+	PROJECT_SECRET_GET_ENDPOINT    = PROJECT_SECRET_POST_ENDPOINT
+	PROJECT_SECRET_PUT_ENDPOINT    = PROJECT_SECRET_GET_ENDPOINT
+	PROJECT_SECRET_DELETE_ENDPOINT = PROJECT_SECRET_GET_ENDPOINT
+
+	TEMPLATE_SECRET_POST_ENDPOINT   = "/api/v1/solution/{solutionId}/secrets/{serviceId}"
+	TEMPLATE_SECRET_GET_ENDPOINT    = TEMPLATE_SECRET_POST_ENDPOINT
+	TEMPLATE_SECRET_PUT_ENDPOINT    = TEMPLATE_SECRET_GET_ENDPOINT
+	TEMPLATE_SECRET_DELETE_ENDPOINT = TEMPLATE_SECRET_GET_ENDPOINT
 )
 
 var ListOfIgnoredServicesInAppSize = []string{

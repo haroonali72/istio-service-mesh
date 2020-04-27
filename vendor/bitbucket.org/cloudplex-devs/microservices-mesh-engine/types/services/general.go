@@ -196,8 +196,54 @@ type ContainerAttribute struct {
 	ReadinessProbe                *Probe                         `json:"readiness_probe,omitempty"`
 	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
 	VolumeMounts                  []VolumeMount                  `json:"volume_mounts,omitempty"`
+	IsEnabledPipeline             bool                           `json:"is_enabled_pipeline,omitempty"`
+	DeploymentPipeline            *DeploymentPipeline            `json:"deployment_pipeline,omitempty"`
+	IsDeploymentPipeline          bool                           `json:"is_deployment_pipeline,omitempty"`
+	IsDirectDeployment            bool                           `json:"is_direct_deployment,omitempty"`
+}
+type DeploymentPipeline struct {
+	Name        string        `json:"name,omitempty"`
+	Description string        `json:"description,omitempty"`
+	Type        string        `json:"type,omitempty"`
+	Bluegreen   *Bluegreen    `json:"bluegreen,omitempty"`
+	Canary      *Canary       `json:"canary,omitempty"`
+	Duration    string        `json:"duration,omitempty"`
+	RunsHistory []RunsHistory `json:"runs_history,omitempty"`
+	TotalRuns   int           `json:"total_runs,omitempty"`
+	Status      string        `json:"status,omitempty"`
 }
 
+type RunsHistory struct {
+	ActivityType string      `json:"activity_type,omitempty"`
+	Tag          string      `json:"tag,omitempty"`
+	LastRun      interface{} `json:"last_run,omitempty"`
+}
+
+type Canary struct {
+	TotalStages  int      `json:"total_stages,omitempty"`
+	Stages       []*Stage `json:"stages,omitempty"`
+	CurrentStage int      `json:"current_stage,omitempty"`
+	Status       string   `json:"status,omitempty"`
+}
+
+type Stage struct {
+	Name                    string `json:"name,omitempty"`
+	AnalysisType            string `json:"analysis_type,omitempty"`
+	TrafficWeightCurrent    int    `json:"traffic_weight_current,omitempty"`
+	TrafficWeightBaseline   int    `json:"traffic_weight_baseline,omitempty"`
+	TrafficWeightCanary     int    `json:"traffic_weight_canary,omitempty"`
+	RequestSuccessThreshold int    `json:"request_success_threshold,omitempty"`
+	RequestLatencyThreshold int    `json:"request_latency_threshold,omitempty"`
+	CronExpression          string `json:"cron_expression,omitempty"`
+	Status                  string `json:"status,omitempty"`
+}
+
+type Bluegreen struct {
+	TrafficWeightBluegreen int    `json:"traffic_weight_bluegreen,omitempty"`
+	TrafficWeightCurrent   int    `json:"traffic_weight_current,omitempty"`
+	Status                 string `json:"status,omitempty"`
+	RollBack               bool   `json:"roll_back,omitempty"`
+}
 type VolumeMount struct {
 	Name             string                `json:"name"`
 	ReadOnly         bool                  `json:"readonly,omitempty"`

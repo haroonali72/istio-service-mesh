@@ -281,46 +281,23 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["app"] = service.Name
 	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["version"] = service.Version
 
-	if service.CronJobServiceAttribute.JobTemplate.LabelSelector != nil {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels
+	if service.CronJobServiceAttribute.LabelSelector != nil {
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.LabelSelector.MatchLabels
 	} else {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.JobTemplate.Labels
+		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.Labels
 	}
 	/*for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
 		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
 	}*/
 	cjob.Spec.JobTemplate.Labels["app"] = service.Name
 	cjob.Spec.JobTemplate.Labels["version"] = service.Version
-	for key, value := range service.CronJobServiceAttribute.JobTemplate.Labels {
+	for key, value := range service.CronJobServiceAttribute.Labels {
 		cjob.Spec.JobTemplate.Labels[key] = value
 	}
 
-	if service.CronJobServiceAttribute.JobTemplate.Parallelism != nil {
-		cjob.Spec.JobTemplate.Spec.Parallelism = &service.CronJobServiceAttribute.JobTemplate.Parallelism.Value
-	}
-
-	if service.CronJobServiceAttribute.JobTemplate.Completions != nil {
-		cjob.Spec.JobTemplate.Spec.Completions = &service.CronJobServiceAttribute.JobTemplate.Completions.Value
-	}
-
-	if service.CronJobServiceAttribute.JobTemplate.ActiveDeadlineSeconds != nil {
-		cjob.Spec.JobTemplate.Spec.ActiveDeadlineSeconds = &service.CronJobServiceAttribute.JobTemplate.ActiveDeadlineSeconds.Value
-	}
-
-	if service.CronJobServiceAttribute.JobTemplate.BackoffLimit != nil {
-		cjob.Spec.JobTemplate.Spec.BackoffLimit = &service.CronJobServiceAttribute.JobTemplate.BackoffLimit.Value
-	}
-
-	if service.CronJobServiceAttribute.JobTemplate.TtlSecondsAfterFinished != nil {
-		cjob.Spec.JobTemplate.Spec.TTLSecondsAfterFinished = &service.CronJobServiceAttribute.JobTemplate.TtlSecondsAfterFinished.Value
-	}
-	if service.CronJobServiceAttribute.JobTemplate.ManualSelector != nil {
-		cjob.Spec.JobTemplate.Spec.ManualSelector = &service.CronJobServiceAttribute.JobTemplate.ManualSelector.Value
-	}
-
 	volumeMountNames1 := make(map[string]bool)
-	if service.CronJobServiceAttribute.JobTemplate != nil {
-		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.JobTemplate.Containers); err == nil {
+	if service.CronJobServiceAttribute != nil {
+		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.Containers); err == nil {
 			if len(containersList) > 0 {
 				cjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containersList
 				volumeMountNames1 = volumeMounts
@@ -334,8 +311,8 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 
 	}
 
-	if service.CronJobServiceAttribute.JobTemplate != nil {
-		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.JobTemplate.InitContainers); err == nil {
+	if service.CronJobServiceAttribute != nil {
+		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.InitContainers); err == nil {
 			if len(containersList) > 0 {
 				cjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers = containersList
 				for k, v := range volumeMounts {
@@ -348,7 +325,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 		}
 	}
 
-	if dockerSecret, exist := CreateDockerCfgSecret(service.CronJobServiceAttribute.JobTemplate.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
+	if dockerSecret, exist := CreateDockerCfgSecret(service.CronJobServiceAttribute.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
 		cjob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
 			Name: dockerSecret.Name,
 		}}
@@ -379,8 +356,8 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 
 	}
 
-	if service.CronJobServiceAttribute.JobTemplate != nil {
-		if volumes, err := getVolumes(service.CronJobServiceAttribute.JobTemplate.Volumes, volumeMountNames1); err == nil {
+	if service.CronJobServiceAttribute != nil {
+		if volumes, err := getVolumes(service.CronJobServiceAttribute.Volumes, volumeMountNames1); err == nil {
 			if len(volumes) > 0 {
 				cjob.Spec.JobTemplate.Spec.Template.Spec.Volumes = volumes
 			}
@@ -390,15 +367,15 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 		}
 	}
 
-	if service.CronJobServiceAttribute.JobTemplate != nil {
-		if service.CronJobServiceAttribute.JobTemplate.Affinity != nil {
-			if aa, err := getAffinity(service.CronJobServiceAttribute.JobTemplate.Affinity); err != nil {
-				return nil, err
-			} else {
-				cjob.Spec.JobTemplate.Spec.Template.Spec.Affinity = aa
-			}
-		}
-	}
+	//if service.CronJobServiceAttribute != nil {
+	//	if service.CronJobServiceAttribute.Affinity != nil {
+	//		if aa, err := getAffinity(service.CronJobServiceAttribute.JobTemplate.Affinity); err != nil {
+	//			return nil, err
+	//		} else {
+	//			cjob.Spec.JobTemplate.Spec.Template.Spec.Affinity = aa
+	//		}
+	//	}
+	//}
 
 	return cjob, nil
 

@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200413141308-024c89b36e0b
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7e72a5e9b8
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200427064030-0701460c1bdf
 	github.com/astaxie/beego v1.12.1
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gogo/protobuf v1.3.1
@@ -18,7 +18,7 @@ require (
 	google.golang.org/grpc v1.28.1
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.2.8
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	istio.io/api v0.0.0-20200407171655-fb462ece86fb
 	istio.io/client-go v0.0.0-20200325170329-dc00bbff4229
 	k8s.io/api v0.18.1
