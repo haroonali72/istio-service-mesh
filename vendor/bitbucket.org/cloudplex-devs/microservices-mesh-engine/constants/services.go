@@ -16,7 +16,7 @@ const (
 	ClusterRoleBindingServiceType = "cluster_role_binding"
 	ServiceAccountServiceType     = "service_account"
 	Resources                     = "resources"
-	SecretServiceType             = "secret"
+	SecretServiceType             = "secrets"
 	ConfigMapServiceType          = "config_map"
 	PVCServiceType                = "persistent_volume_claim"
 	PVServiceType                 = "persistent_volume"

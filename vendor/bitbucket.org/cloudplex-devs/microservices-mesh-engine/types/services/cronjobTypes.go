@@ -30,7 +30,9 @@ type CronJobServiceAttribute struct {
 	Suspend                    *Suspend                    `json:"suspend,omitempty"`
 	FailedJobsHistoryLimit     *FailedJobsHistoryLimit     `json:"failed_jobs_history_limit,omitempty"`
 	SuccessfulJobsHistoryLimit *SuccessfulJobsHistoryLimit `json:"successfulJ_jobs_history_limit,omitempty"`
-	JobTemplate                *JobServiceAttribute        `json:"job_template,omitempty"`
+	Containers                 []*ContainerAttribute       `json:"containers,omitempty"`
+	InitContainers             []*ContainerAttribute       `json:"init_containers,omitempty"`
+	Volumes                    []Volume                    `json:"volumes,omitempty"`
 }
 
 type StartingDeadlineSeconds struct {
