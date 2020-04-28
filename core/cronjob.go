@@ -12,7 +12,6 @@ import (
 	_ "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (s *Server) CreateCronJob(ctx context.Context, req *pb.CronJobService) (*pb.ServiceResponse, error) {
@@ -256,18 +255,16 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	if service.Name == "" {
 		return nil, errors.New("service name not found")
 	}
-
 	if service.Namespace == "" {
 		cjob.ObjectMeta.Namespace = "default"
 	} else {
 		cjob.ObjectMeta.Namespace = service.Namespace
 	}
-
+	cjob.Name = service.Name + "-" + service.Version
 	cjob.APIVersion = "batch/v1beta1"
 	cjob.Kind = "CronJob"
 	cjob.Labels = make(map[string]string)
-	cjob.Labels["app"] = service.Name
-	cjob.Labels["version"] = service.Version
+	cjob.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.CronJobServiceAttribute.Labels {
 		cjob.Labels[key] = value
 	}
@@ -276,24 +273,25 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 
 	cjob.Spec.Schedule = service.CronJobServiceAttribute.Schedule
 
-	cjob.Spec.JobTemplate.Spec.Selector = new(metav1.LabelSelector)
-	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = make(map[string]string)
-	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["app"] = service.Name
-	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["version"] = service.Version
-
-	if service.CronJobServiceAttribute.LabelSelector != nil {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.LabelSelector.MatchLabels
-	} else {
-		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.Labels
-	}
+	//cjob.Spec.JobTemplate.Spec.Selector = new(metav1.LabelSelector)
+	//cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = make(map[string]string)
+	//cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["app"] = service.Name
+	//cjob.Spec.JobTemplate.Spec.Selector.MatchLabels["version"] = service.Version
+	//
+	//if service.CronJobServiceAttribute.LabelSelector != nil {
+	//	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.LabelSelector.MatchLabels
+	//} else {
+	//	cjob.Spec.JobTemplate.Spec.Selector.MatchLabels = service.CronJobServiceAttribute.Labels
+	//}
 	/*for key, value := range service.CronJobServiceAttribute.JobTemplate.LabelSelector.MatchLabels {
 		cjob.Spec.JobTemplate.Spec.Selector.MatchLabels[key] = value
 	}*/
-	cjob.Spec.JobTemplate.Labels["app"] = service.Name
-	cjob.Spec.JobTemplate.Labels["version"] = service.Version
-	for key, value := range service.CronJobServiceAttribute.Labels {
-		cjob.Spec.JobTemplate.Labels[key] = value
-	}
+	//cjob.Spec.JobTemplate.Labels = make(map[string]string)
+	//cjob.Spec.JobTemplate.Labels["app"] = service.Name
+	//cjob.Spec.JobTemplate.Labels["version"] = service.Version
+	//for key, value := range service.CronJobServiceAttribute.Labels {
+	//	cjob.Spec.JobTemplate.Labels[key] = value
+	//}
 
 	volumeMountNames1 := make(map[string]bool)
 	if service.CronJobServiceAttribute != nil {
@@ -366,6 +364,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 			return nil, err
 		}
 	}
+	cjob.Spec.JobTemplate.Spec.Template.Spec.RestartPolicy = v2.RestartPolicyOnFailure
 
 	//if service.CronJobServiceAttribute != nil {
 	//	if service.CronJobServiceAttribute.Affinity != nil {
