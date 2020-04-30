@@ -307,9 +307,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 	deployment.Spec.Template.Spec.NodeSelector = make(map[string]string)
 	deployment.Spec.Template.Spec.NodeSelector = service.ServiceAttributes.NodeSelector
 
-	if service.ServiceAttributes.Replicas > 0 {
-		deployment.Spec.Replicas = &service.ServiceAttributes.Replicas
-	}
+	deployment.Spec.Replicas = &service.ServiceAttributes.Replicas
 
 	if service.ServiceAttributes.TerminationGracePeriodSeconds != nil {
 		deployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &service.ServiceAttributes.TerminationGracePeriodSeconds.Value
@@ -1151,7 +1149,7 @@ func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
 				}
 
-			case "http_get":
+			case "httpGet":
 				if prob.Handler.HttpGet == nil {
 					return errors.New("there is no readiness handler of httpGet type")
 				}
@@ -1219,7 +1217,12 @@ func configureSecurityContext(securityContext *pb.SecurityContextStruct) (*v2.Se
 		}
 	}
 	context.ReadOnlyRootFilesystem = &securityContext.ReadOnlyRootFilesystem
-	context.Privileged = &securityContext.Privileged
+	if securityContext.Privileged == true {
+		context.Privileged = &securityContext.Privileged
+		trueFlag := true
+		context.AllowPrivilegeEscalation = &trueFlag
+	}
+
 	if securityContext.RunAsNonRoot && securityContext.RunAsUser == 0 {
 		return nil, errors.New("RunAsNonRoot is Set, but RunAsUser value not given!")
 	} else {

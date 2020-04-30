@@ -43,7 +43,7 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             []Capabilities       `json:"capabilities"`
+	Capabilities             *Capabilities       `json:"capabilities"`
 	RunAsUser                *int64               `json:"run_as_user"`
 	RunAsGroup               *int64               `json:"run_as_group"`
 	RunAsNonRoot             bool                 `json:"run_as_non_root"`
@@ -229,9 +229,9 @@ type Canary struct {
 type Stage struct {
 	Name                    string `json:"name,omitempty"`
 	AnalysisType            string `json:"analysis_type,omitempty"`
-	TrafficWeightCurrent    int    `json:"traffic_weight_current,omitempty"`
-	TrafficWeightBaseline   int    `json:"traffic_weight_baseline,omitempty"`
-	TrafficWeightCanary     int    `json:"traffic_weight_canary,omitempty"`
+	TrafficWeightCurrent    int32  `json:"traffic_weight_current,omitempty"`
+	TrafficWeightBaseline   int32  `json:"traffic_weight_baseline,omitempty"`
+	TrafficWeightCanary     int32  `json:"traffic_weight_canary,omitempty"`
 	RequestSuccessThreshold int    `json:"request_success_threshold,omitempty"`
 	RequestLatencyThreshold int    `json:"request_latency_threshold,omitempty"`
 	CronExpression          string `json:"cron_expression,omitempty"`
@@ -239,8 +239,8 @@ type Stage struct {
 }
 
 type Bluegreen struct {
-	TrafficWeightBluegreen int    `json:"traffic_weight_bluegreen,omitempty"`
-	TrafficWeightCurrent   int    `json:"traffic_weight_current,omitempty"`
+	TrafficWeightBluegreen int32  `json:"traffic_weight_bluegreen,omitempty"`
+	TrafficWeightCurrent   int32  `json:"traffic_weight_current,omitempty"`
 	Status                 string `json:"status,omitempty"`
 	RollBack               bool   `json:"roll_back,omitempty"`
 }
