@@ -109,7 +109,7 @@ type TlsRoute struct {
 
 type RouteDestination struct {
 	Host   string `json:"host" bson:"host"`
-	Subnet string `json:"subnet" bson:"subnet"`
+	Subset string `json:"subset" bson:"subset"`
 	Port   int32  `json:"port" bson:"port"`
 }
 

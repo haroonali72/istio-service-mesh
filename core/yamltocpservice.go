@@ -2243,7 +2243,7 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			if route.Destination != nil {
 				destRoute := new(meshTypes.RouteDestination)
 				destRoute.Host = route.Destination.Host
-				destRoute.Subnet = route.Destination.Subset
+				destRoute.Subset = route.Destination.Subset
 				if route.Destination.Port != nil {
 					destRoute.Port = int32(route.Destination.Port.Number)
 				}
@@ -2335,7 +2335,7 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 				if route.Destination.Port != nil {
 					r.RouteDestination.Port = int32(route.Destination.Port.Number)
 				}
-				r.RouteDestination.Subnet = route.Destination.Subset
+				r.RouteDestination.Subset = route.Destination.Subset
 				r.RouteDestination.Host = route.Destination.Host
 				tls.Route = append(tls.Route, r)
 			}
@@ -2367,7 +2367,7 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 				if route.Destination.Port != nil {
 					d.Destination.Port = int32(route.Destination.Port.Number)
 				}
-				d.Destination.Subnet = route.Destination.Subset
+				d.Destination.Subset = route.Destination.Subset
 				d.Destination.Host = route.Destination.Host
 			}
 			d.Weight = route.Weight

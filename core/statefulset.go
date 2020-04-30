@@ -296,9 +296,7 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	statefulSet.Spec.Template.Annotations = make(map[string]string)
 	statefulSet.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
 
-	if service.ServiceAttributes.Replicas > 0 {
-		statefulSet.Spec.Replicas = &service.ServiceAttributes.Replicas
-	}
+	statefulSet.Spec.Replicas = &service.ServiceAttributes.Replicas
 
 	if service.ServiceAttributes.RevisionHistoryLimit != nil {
 		statefulSet.Spec.RevisionHistoryLimit = &service.ServiceAttributes.RevisionHistoryLimit.Value
