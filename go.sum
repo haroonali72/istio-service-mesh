@@ -25,6 +25,8 @@ bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7e72a5e9b8/go.mod h1:6bd0pmtmXJeb4mHuKbeoYX/mmwzxTmMv6Zyk8K3H5Aw=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501092131-e8c610911494 h1:drP1W5i7WuBhhvRFqvINqkXpvuv+cAEO8OCDC7Ku/nU=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501092131-e8c610911494/go.mod h1:0815nbqU4DJ+RDe/aAZ5tmJcZIwLFpeZgR7tcQ3vZzA=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501101424-f0a701a342cb h1:X1/eEke5UKZJ58e+uwh9byxcIK1BvRkTMhel6EbCY+w=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501101424-f0a701a342cb/go.mod h1:0815nbqU4DJ+RDe/aAZ5tmJcZIwLFpeZgR7tcQ3vZzA=
 bitbucket.org/cloudplex-devs/woodpecker v0.0.0-20200130130714-b6df537e38c6/go.mod h1:BbcPoZMTVsFbwbcsNBu4qQFN2711UfYnZBlg1SG+dIk=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=

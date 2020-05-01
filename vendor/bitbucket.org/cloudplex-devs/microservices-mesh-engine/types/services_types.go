@@ -90,7 +90,7 @@ type ServiceBasicInfo struct {
 	// Cannot be updated.
 	// More info: http://kubernetes.io/docs/user-guide/namespaces
 	// +optional
-	NameSpace string `json:"namespace,omitempty" valid:"-" default:"default"`
+	Namespace string `json:"namespace,omitempty" valid:"-" default:"default"`
 	// NamespaceColor defines namespace color on Cloudplex UI
 	// +optional
 	NameSpaceColor string `json:"namespace_color,omitempty" bson:"namespace_color" valid:"-"`

@@ -29,7 +29,7 @@ require (
 )
 
 replace (
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501092131-e8c610911494
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501101424-f0a701a342cb
 	istio.io/api => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 	istio.io/client-go => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
 	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
