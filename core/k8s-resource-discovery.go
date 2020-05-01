@@ -3198,7 +3198,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 				httpRoute := new(meshTypes.HttpRoute)
 				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
-				routeRule.Subnet = label
+				routeRule.Subset = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
 				httpRoute.Routes = append(httpRoute.Routes, routeRule)
 				http.HttpRoute = append(http.HttpRoute, httpRoute)
@@ -3287,7 +3287,7 @@ func CreateIstioComponents(svcTemp *types.ServiceTemplate, labels map[string]str
 				}
 				routeRule := new(meshTypes.RouteDestination)
 				routeRule.Host = value
-				routeRule.Subnet = label
+				routeRule.Subset = label
 				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
 				virtualServiceAttr.Http[0].HttpRoute[0].Routes = append(virtualServiceAttr.Http[0].HttpRoute[0].Routes, routeRule)
 
