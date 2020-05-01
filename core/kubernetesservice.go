@@ -242,7 +242,7 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 
 func getKubernetesService(input *pb.KubernetesService) (*kb.Service, error) {
 	var kube = new(kb.Service)
-	kube.Kind = "Service"
+	kube.Kind = constants.Service.String() //"Service"
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	if input.Namespace != "" {

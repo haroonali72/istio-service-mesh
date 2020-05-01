@@ -266,7 +266,7 @@ func getIstioServiceEntry(input *pb.ServiceEntryTemplate) (*istioClient.ServiceE
 	labels["version"] = strings.ToLower(input.Version)
 	istioServ.Labels = labels
 	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Kind = "ServiceEntry"
+	istioServ.Kind = constants.ServiceEntry.String() //"ServiceEntry"
 	istioServ.Name = input.Name
 	istioServ.Namespace = input.Namespace
 	svcEntry := v1alpha3.ServiceEntry{}

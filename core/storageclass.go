@@ -260,7 +260,7 @@ func (s *Server) PutStorageClass(ctx context.Context, req *pb.StorageClassServic
 func getStorageClass(input *pb.StorageClassService) (*v1.StorageClass, error) {
 	var sc = new(v1.StorageClass)
 	sc.Name = input.Name
-	sc.TypeMeta.Kind = "StorageClass"
+	sc.TypeMeta.Kind = constants.StorageClass.String() //"StorageClass"
 	sc.TypeMeta.APIVersion = "storage.k8s.io/v1"
 	if input.ServiceAttributes == nil {
 		return nil, errors.New("not found")

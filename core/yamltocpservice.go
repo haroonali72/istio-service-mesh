@@ -1349,7 +1349,7 @@ func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*meshTypes.RoleBi
 		subject.Name = each.Name
 		if each.Kind == "User" || each.Kind == "Group" {
 			subject.Kind = each.Kind
-		} else if each.Kind == "ServiceAccount" {
+		} else if each.Kind == constants.ServiceAccount.String() {
 			subject.Kind = each.Kind
 			subject.Namespace = each.Namespace
 		} else {
@@ -1368,7 +1368,7 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 	crb.ServiceType = meshConstants.Kubernetes
 	crb.ServiceSubType = meshConstants.ClusterRoleBinding
 	crb.ServiceAttributes.RoleRef.Name = k8sClusterRoleBinding.RoleRef.Name
-	if k8sClusterRoleBinding.RoleRef.Kind == "ClusterRole" {
+	if k8sClusterRoleBinding.RoleRef.Kind == constants.ClusterRole.String() {
 		crb.ServiceAttributes.RoleRef.Kind = meshConstants.ClusterRole.String()
 	} else {
 		crb.ServiceAttributes.RoleRef.Kind = meshConstants.Role.String()
@@ -1382,7 +1382,7 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 		subject.Name = each.Name
 		if each.Kind == "User" || each.Kind == "Group" {
 			subject.Kind = each.Kind
-		} else if each.Kind == "ServiceAccount" {
+		} else if each.Kind == constants.ServiceAccount.String() {
 			subject.Kind = each.Kind
 			subject.Namespace = each.Namespace
 		} else {

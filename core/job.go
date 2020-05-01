@@ -256,7 +256,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	}
 
 	job.APIVersion = "batch/v1"
-	job.Kind = "Job"
+	job.Kind = constants.Job.String() //"Job"
 
 	if service.Namespace == "" {
 		job.ObjectMeta.Namespace = "default"

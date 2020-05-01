@@ -244,7 +244,7 @@ func getClusterRole(input *pb.ClusterRole) (*v1.ClusterRole, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	clstrRolSvc.Kind = "ClusterRole"
+	clstrRolSvc.Kind = constants.ClusterRole.String()
 	clstrRolSvc.APIVersion = "rbac.authorization.k8s.io/v1"
 	clstrRolSvc.Name = input.Name
 	clstrRolSvc.Labels = labels

@@ -2153,8 +2153,8 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 	for _, clstrrolebind := range clusterrolebindings.Items {
 		for _, sub := range clstrrolebind.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == k8svcAcc.Name {
-				if clstrrolebind.RoleRef.Kind == "ClusterRole" {
+			if sub.Kind == constants.ServiceAccount.String() && sub.Name == k8svcAcc.Name {
+				if clstrrolebind.RoleRef.Kind == constants.ClusterRole.String() {
 					clusterrolename := clstrrolebind.RoleRef.Name
 					clstrrole, err := conn.getClusterRole(ctx, clusterrolename)
 					if err != nil {
@@ -2199,8 +2199,8 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 	for _, rolebinding := range rolebindings.Items {
 		for _, sub := range rolebinding.Subjects {
-			if sub.Kind == "ServiceAccount" && sub.Name == k8svcAcc.Name {
-				if rolebinding.RoleRef.Kind == "Role" {
+			if sub.Kind == constants.ServiceAccount.String() && sub.Name == k8svcAcc.Name {
+				if rolebinding.RoleRef.Kind == constants.Role.String() {
 					rolename := rolebinding.RoleRef.Name
 					role, err := conn.getRole(ctx, rolename, namespace)
 					if err != nil {

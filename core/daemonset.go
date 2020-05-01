@@ -257,7 +257,7 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 	}
 
 	daemonSet.APIVersion = "apps/v1"
-	daemonSet.Kind = "DaemonSet"
+	daemonSet.Kind = constants.DaemonSet.String() //"DaemonSet"
 
 	if service.Namespace == "" {
 		daemonSet.ObjectMeta.Namespace = "default"

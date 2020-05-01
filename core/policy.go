@@ -252,7 +252,7 @@ func getPolicy(input *pb.PolicyService) (*istioClient.Policy, error) {
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	policyServ.Labels = labels
-	policyServ.Kind = "Policy"
+	policyServ.Kind = constants.MeshPolicy.String() //"Policy"
 	policyServ.APIVersion = "authentication.policy.io/v1alpha1"
 	policyServ.Name = input.Name
 	policyServ.Namespace = input.Namespace

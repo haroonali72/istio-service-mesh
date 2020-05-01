@@ -241,7 +241,7 @@ func (s *Server) PutServiceAccountService(ctx context.Context, req *pb.ServiceAc
 
 func getServiceAccount(input *pb.ServiceAccountService) (*kb.ServiceAccount, error) {
 	var kube = new(kb.ServiceAccount)
-	kube.Kind = "ServiceAccount"
+	kube.Kind = constants.ServiceAccount.String() //"ServiceAccount"
 	kube.APIVersion = "v1"
 	kube.ResourceVersion = "v1"
 	kube.Name = input.Name

@@ -278,7 +278,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	if input.Version != "" {
 		labels["version"] = strings.ToLower(input.Version)
 	}
-	roleBind.Kind = "RoleBinding"
+	roleBind.Kind = constants.RoleBinding.String() //"RoleBinding"
 	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
 
 	roleBind.Labels = labels
@@ -292,7 +292,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == "ServiceAccount" {
+		} else if subject.Kind == constants.ServiceAccount.String() {
 			reqsub.Kind = subject.Kind
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
@@ -307,10 +307,10 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	}
 	if input.ServiceAttributes.RoleReference != nil {
 		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
-			roleBind.RoleRef.Kind = "ClusterRole" //input.ServiceAttributes.Reference.Kind
+			roleBind.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole" //input.ServiceAttributes.Reference.Kind
 
 		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
-			roleBind.RoleRef.Kind = "Role"
+			roleBind.RoleRef.Kind = constants.Role.String() //"Role"
 		} else {
 			return nil, errors.New("invalid kind  role binding ref " + input.Name)
 		}

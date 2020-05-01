@@ -242,7 +242,7 @@ func (s *Server) PutSecretService(ctx context.Context, req *pb.SecretService) (*
 func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 
 	var kube = new(kb.Secret)
-	kube.Kind = "Secret"
+	kube.Kind = constants.Secret.String() //"Secret"
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace

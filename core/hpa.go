@@ -251,7 +251,7 @@ func getHpa(input *pb.HPA) (*autoscaler.HorizontalPodAutoscaler, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	hpaSvc.Kind = "HorizontalPodAutoscaler"
+	hpaSvc.Kind = constants.HPA.String() //"HorizontalPodAutoscaler"
 	hpaSvc.APIVersion = "autoscaling/v1"
 	if input.Name == "" {
 		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("hpa name must not be empty")

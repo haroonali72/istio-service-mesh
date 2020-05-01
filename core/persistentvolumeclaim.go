@@ -261,7 +261,7 @@ func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.PersistentVolumeClaim, error) {
 	var pvc = new(core.PersistentVolumeClaim)
 	pvc.Name = input.Name
-	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
+	pvc.TypeMeta.Kind = constants.PersistentVolumeClaim.String() //"PersistentVolumeClaim"
 	pvc.TypeMeta.APIVersion = "v1"
 	if input.Namespace == "" {
 		pvc.Namespace = "default"

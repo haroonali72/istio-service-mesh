@@ -255,7 +255,7 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		return nil, errors.New("service name not found")
 	}
 	statefulSet.APIVersion = "apps/v1"
-	statefulSet.Kind = "StatefulSet"
+	statefulSet.Kind = constants.StatefulSet.String() //"StatefulSet"
 
 	if service.Namespace == "" {
 		statefulSet.ObjectMeta.Namespace = "default"

@@ -245,7 +245,7 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	role.Kind = "Role"
+	role.Kind = constants.Role.String() //"Role"
 	role.APIVersion = "rbac.authorization.k8s.io/v1"
 	role.Name = input.Name
 	role.Namespace = input.Namespace

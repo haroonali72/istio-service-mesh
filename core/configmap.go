@@ -242,7 +242,7 @@ func (s *Server) PutConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 func getConfigMapService(input *pb.ConfigMapService) (*kb.ConfigMap, error) {
 
 	var config = new(kb.ConfigMap)
-	config.Kind = "ConfigMap"
+	config.Kind = constants.ConfigMap.String() //"ConfigMap"
 	config.APIVersion = "v1"
 	config.Name = input.Name
 	config.Namespace = input.Namespace

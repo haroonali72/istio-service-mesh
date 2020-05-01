@@ -262,7 +262,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	}
 	cjob.Name = service.Name + "-" + service.Version
 	cjob.APIVersion = "batch/v1beta1"
-	cjob.Kind = "CronJob"
+	cjob.Kind = constants.CronJob.String() //"CronJob"
 	cjob.Labels = make(map[string]string)
 	cjob.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.CronJobServiceAttribute.Labels {

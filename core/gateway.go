@@ -266,7 +266,7 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	istioServ.Labels = labels
-	istioServ.Kind = "Gateway"
+	istioServ.Kind = constants.Gateway.String() //"Gateway"
 	istioServ.APIVersion = "networking.istio.io/v1alpha3"
 	istioServ.Name = input.Name
 	istioServ.Namespace = input.Namespace

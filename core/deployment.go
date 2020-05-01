@@ -270,7 +270,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 	}
 	deployment.Name = service.Name + "-" + service.Version
 
-	deployment.TypeMeta.Kind = "Deployment"
+	deployment.TypeMeta.Kind = constants.Deployment.String() //"Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"
 
 	deployment.Labels = make(map[string]string)

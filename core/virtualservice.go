@@ -254,7 +254,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	vServ.Labels = labels
-	vServ.Kind = "VirtualService"
+	vServ.Kind = constants.VirtualService.String() //"VirtualService"
 	vServ.APIVersion = "networking.istio.io/v1alpha3"
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
