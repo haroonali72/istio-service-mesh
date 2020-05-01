@@ -197,7 +197,7 @@ func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
 }
 func (c *Context) InitializeLogger(requestURL, method, path, body string) {
 
-	c.Set("service_name", constants.SERVICE_NAME)
+	c.Set("service_name", constants.ServiceName)
 	c.Set("http_request", types.LoggingHttpRequest{
 		Url:       requestURL,
 		Method:    method,
@@ -247,7 +247,7 @@ func (c *Context) SendFrontendLogs(message interface{}, severity string) {
 
 	var data types.LoggingRequest
 	data.Id = c.GetString("project_id")
-	data.Service = constants.SERVICE_NAME
+	data.Service = constants.ServiceName
 	data.Level = severity
 	data.Message = message
 	data.Type = "Project"

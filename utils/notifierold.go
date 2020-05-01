@@ -15,7 +15,7 @@ func SendLog(msg, message_type, env_id string) (int, error) {
 	var data types.LoggingRequest
 
 	data.Id = env_id
-	data.Service = constants.SERVICE_NAME
+	data.Service = constants.ServiceName
 	data.Environment = "environment"
 	data.Level = message_type
 	data.Message = msg
