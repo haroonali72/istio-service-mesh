@@ -43,15 +43,15 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             *Capabilities       `json:"capabilities"`
-	RunAsUser                *int64               `json:"run_as_user"`
-	RunAsGroup               *int64               `json:"run_as_group"`
-	RunAsNonRoot             bool                 `json:"run_as_non_root"`
-	Privileged               bool                 `json:"privileged"`
-	ProcMount                ProcMountType        `json:"proc_mount"`
-	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation"`
-	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem"`
-	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options"`
+	Capabilities             *Capabilities        `json:"capabilities,omitempty"`
+	RunAsUser                *int64               `json:"run_as_user,omitempty"`
+	RunAsGroup               *int64               `json:"run_as_group,omitempty"`
+	RunAsNonRoot             bool                 `json:"run_as_non_root,omitempty"`
+	Privileged               bool                 `json:"privileged, omitempty"`
+	ProcMount                ProcMountType        `json:"proc_mount,omitempty"`
+	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation,omitempty"`
+	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem,omitempty"`
+	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options,omitempty"`
 }
 
 type ProcMountType string
@@ -71,8 +71,8 @@ type SELinuxOptionsStruct struct {
 type Capability string
 
 type Capabilities struct {
-	Add  []Capability `json:"add"`
-	Drop []Capability `json:"drop"`
+	Add  []Capability `json:"add,omitempty"`
+	Drop []Capability `json:"drop,omitempty"`
 }
 
 const (

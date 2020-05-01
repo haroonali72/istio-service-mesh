@@ -15,118 +15,118 @@ type VirtualService struct {
 }
 
 type VSServiceAttribute struct {
-	Hosts    []string `json:"hosts" bson:"hosts" `
-	Gateways []string `json:"gateways" bson:"gateways"`
-	Http     []*Http  `json:"http" bson:"http"`
-	Tls      []*Tls   `json:"tls" bson:"tls"`
-	Tcp      []*Tcp   `json:"tcp" bson:"tcp"`
+	Hosts    []string `json:"hosts,omitempty" bson:"hosts,omitempty"`
+	Gateways []string `json:"gateways,omitempty" bson:"gateways,omitempty"`
+	Http     []*Http  `json:"http,omitempty" bson:"http,omitempty"`
+	Tls      []*Tls   `json:"tls,omitempty" bson:"tls,omitempty"`
+	Tcp      []*Tcp   `json:"tcp,omitempty" bson:"tcp,omitempty"`
 }
 
 type Http struct {
-	Name         string              `json:"name" bson:"name"`
-	HttpMatch    []*HttpMatchRequest `json:"http_match" bson:"http_match"`
-	HttpRoute    []*HttpRoute        `json:"http_route" bson:"http_route"`
-	HttpRedirect *HttpRedirect       `json:"http_redirect" bson:"http_redirect"`
-	HttpRewrite  *HttpRewrite        `json:"http_rewrite" bson:"http_rewrite"`
+	Name         string              `json:"name,omitempty" bson:"name,omitempty"`
+	HttpMatch    []*HttpMatchRequest `json:"http_match,omitempty" bson:"http_match,omitempty"`
+	HttpRoute    []*HttpRoute        `json:"http_route,omitempty" bson:"http_route,omitempty"`
+	HttpRedirect *HttpRedirect       `json:"http_redirect,omitempty" bson:"http_redirect,omitempty"`
+	HttpRewrite  *HttpRewrite        `json:"http_rewrite,omitempty" bson:"http_rewrite,omitempty"`
 	//timeout in ms
-	Timeout        time.Duration       `json:"timeout" bson:"timeout"`
-	Retry          *HttpRetry          `json:"retry" bson:"retry"`
-	FaultInjection *HttpFaultInjection `json:"fault_injection" bson:"fault_injection"`
-	CorsPolicy     *HttpCorsPolicy     `json:"cors_policy" bson:"cors_policy"`
+	Timeout        time.Duration       `json:"timeout,omitempty" bson:"timeout,omitempty"`
+	Retry          *HttpRetry          `json:"retry,omitempty" bson:"retry,omitempty"`
+	FaultInjection *HttpFaultInjection `json:"fault_injection,omitempty" bson:"fault_injection,omitempty"`
+	CorsPolicy     *HttpCorsPolicy     `json:"cors_policy,omitempty" bson:"cors_policy,omitempty"`
 }
 
 type HttpMatchRequest struct {
-	Name      string     `json:"name" bson:"name"`
-	Uri       *HttpMatch `json:"uri" bson:"uri"`
-	Scheme    *HttpMatch `json:"scheme" bson:"scheme"`
-	Method    *HttpMatch `json:"method" bson:"method"`
-	Authority *HttpMatch `json:"authority" bson:"authority"`
+	Name      string     `json:"name,omitempty" bson:"name,omitempty"`
+	Uri       *HttpMatch `json:"uri,omitempty" bson:"uri,omitempty"`
+	Scheme    *HttpMatch `json:"scheme,omitempty" bson:"scheme,omitempty"`
+	Method    *HttpMatch `json:"method,omitempty" bson:"method,omitempty"`
+	Authority *HttpMatch `json:"authority,omitempty" bson:"authority,omitempty"`
 }
 
 type HttpMatch struct {
-	Type  string `json:"type" bson:"type"`
-	Value string `json:"value" bson:"value"`
+	Type  string `json:"type,omitempty" bson:"type,omitempty"`
+	Value string `json:"value,omitempty" bson:"value,omitempty"`
 }
 
 type HttpRoute struct {
-	Routes []*RouteDestination `json:"routes" bson:"routes"`
-	Weight int32               `json:"weight" bson:"weight"`
+	Routes []*RouteDestination `json:"routes,omitempty" bson:"routes,omitempty"`
+	Weight int32               `json:"weight,omitempty" bson:"weight,omitempty"`
 }
 
 type HttpRedirect struct {
-	Uri          string `json:"uri" bson:"uri"`
-	Authority    string `json:"authority" bson:"authority"`
-	RedirectCode int32  `json:"redirect_code" bson:"redirect_code"`
+	Uri          string `json:"uri,omitempty" bson:"uri,omitempty"`
+	Authority    string `json:"authority,omitempty" bson:"authority,omitempty"`
+	RedirectCode int32  `json:"redirect_code,omitempty" bson:"redirect_code,omitempty"`
 }
 
 type HttpRewrite struct {
-	Uri       string `json:"uri" bson:"uri"`
-	Authority string `json:"authority" bson:"authority"`
+	Uri       string `json:"uri,omitempty" bson:"uri,omitempty"`
+	Authority string `json:"authority,omitempty" bson:"authority,omitempty"`
 }
 
 type HttpRetry struct {
-	TotalAttempts int32  `json:"total_attempt" bson:"total_attempt"`
-	PerTryTimeOut int64  `json:"per_try_timeout" bson:"per_try_timeout"`
-	RetryOn       string `json:"retry_on" bson:"retry_on"`
+	TotalAttempts int32  `json:"total_attempt,omitempty" bson:"total_attempt,omitempty"`
+	PerTryTimeOut int64  `json:"per_try_timeout,omitempty" bson:"per_try_timeout,omitempty"`
+	RetryOn       string `json:"retry_on,omitempty" bson:"retry_on,omitempty"`
 }
 
 type HttpFaultInjection struct {
-	DelayType       string        `json:"delay_type" bson:"delay_type" valid:"in(FixedDelay|ExponentialDelay)"`
-	DelayValue      time.Duration `json:"delay_value" bson:"delay_value"`
-	FaultPercentage float32       `json:"fault_percentage" bson:"fault_percentage"`
-	AbortErrorType  string        `json:"abort_error_type" bson:"abort_error_type" valid:"in(HttpStatus|GrpcStatus|Http2Status)"`
-	AbortErrorValue string        `json:"abort_error_value" bson:"abort_error_value"`
-	AbortPercentage string        `json:"abort_percentage" bson:"abort_percentage"`
+	DelayType       string        `json:"delay_type,omitempty" bson:"delay_type" valid:"in(FixedDelay|ExponentialDelay),omitempty"`
+	DelayValue      time.Duration `json:"delay_value,omitempty" bson:"delay_value,omitempty"`
+	FaultPercentage float32       `json:"fault_percentage,omitempty" bson:"fault_percentage,omitempty"`
+	AbortErrorType  string        `json:"abort_error_type,omitempty" bson:"abort_error_type" valid:"in(HttpStatus|GrpcStatus|Http2Status),omitempty"`
+	AbortErrorValue string        `json:"abort_error_value,omitempty" bson:"abort_error_value,omitempty"`
+	AbortPercentage string        `json:"abort_percentage,omitempty" bson:"abort_percentage,omitempty"`
 }
 
 type HttpCorsPolicy struct {
-	AllowOrigin   []string `json:"allow_origin" bson:"allow_origin"`
-	AllowMethod   []string `json:"allow_method" bson:"allow_method"`
-	AllowHeaders  []string `json:"allow_headers" bson:"allow_headers"`
-	ExposeHeaders []string `json:"expose_headers" bson:"expose_headers"`
+	AllowOrigin   []string `json:"allow_origin,omitempty" bson:"allow_origin,omitempty"`
+	AllowMethod   []string `json:"allow_method,omitempty" bson:"allow_method,omitempty"`
+	AllowHeaders  []string `json:"allow_headers,omitempty" bson:"allow_headers,omitempty"`
+	ExposeHeaders []string `json:"expose_headers,omitempty" bson:"expose_headers,omitempty"`
 	//max age in ms
-	MaxAge           time.Duration `json:"max_age" bson:"max_age"`
-	AllowCredentials bool          `json:"allow_Credentials" bson:"allow_credentials"`
+	MaxAge           time.Duration `json:"max_age,omitempty" bson:"max_age,omitempty"`
+	AllowCredentials bool          `json:"allow_Credentials,omitempty" bson:"allow_credentials,omitempty"`
 }
 
 type Tls struct {
-	Match []*TlsMatchAttribute `json:"tls_match" bson:"tls_match"`
-	Route []*TlsRoute          `json:"tls_route" bson:"tls_route"`
+	Match []*TlsMatchAttribute `json:"tls_match,omitempty" bson:"tls_match,omitempty"`
+	Route []*TlsRoute          `json:"tls_route,omitempty" bson:"tls_route,omitempty"`
 }
 
 type TlsMatchAttribute struct {
-	SniHosts           []string `json:"sni_hosts" bson:"sni_hosts"`
-	DestinationSubnets []string `json:"destination_subnets" bson:"destination_subnets"`
-	Port               int32    `json:"port" bson:"port"`
-	SourceSubnet       string   `json:"source_subnet" bson:"source_subnet" valid:"in(ipv4|ipv6)"`
-	Gateways           []string `json:"gateways" bson:"gateways"`
+	SniHosts           []string `json:"sni_hosts,omitempty" bson:"sni_hosts,omitempty"`
+	DestinationSubnets []string `json:"destination_subnets,omitempty" bson:"destination_subnets,omitempty"`
+	Port               int32    `json:"port,omitempty" bson:"port,omitempty"`
+	SourceSubnet       string   `json:"source_subnet,omitempty" bson:"source_subnet" valid:"in(ipv4|ipv6),omitempty"`
+	Gateways           []string `json:"gateways,omitempty" bson:"gateways,omitempty"`
 }
 
 type TlsRoute struct {
-	RouteDestination *RouteDestination `json:"route_destination" bson:"route_destination"`
-	Weight           int32             `json:"weight" bson:"weight"`
+	RouteDestination *RouteDestination `json:"route_destination,omitempty" bson:"route_destination,omitempty"`
+	Weight           int32             `json:"weight,omitempty" bson:"weight,omitempty"`
 }
 
 type RouteDestination struct {
-	Host   string `json:"host" bson:"host"`
-	Subset string `json:"subset" bson:"subset"`
-	Port   int32  `json:"port" bson:"port"`
+	Host   string `json:"host,omitempty" bson:"host,omitempty"`
+	Subset string `json:"subset,omitempty" bson:"subset,omitempty"`
+	Port   int32  `json:"port,omitempty" bson:"port,omitempty"`
 }
 
 type Tcp struct {
-	Match  []*TcpMatchRequest `json:"tcp_match" bson:"tcp_match"`
-	Routes []*TcpRoutes       `json:"tcp_routes" bson:"tcp_routes"`
+	Match  []*TcpMatchRequest `json:"tcp_match,omitempty" bson:"tcp_match,omitempty"`
+	Routes []*TcpRoutes       `json:"tcp_routes,omitempty" bson:"tcp_routes,omitempty"`
 }
 
 type TcpMatchRequest struct {
-	DestinationSubnets []string           `json:"destination_subnets" bson:"destination_subnets"`
-	Port               int32              `json:"port" bson:"port"`
-	SourceSubnet       string             `json:"source_subnet" bson:"source_subnet"`
-	SourceLabels       *map[string]string `json:"source_labels" bson:"source_labels"`
-	Gateways           []string           `json:"gateways" bson:"gateways"`
+	DestinationSubnets []string           `json:"destination_subnets,omitempty" bson:"destination_subnets,omitempty"`
+	Port               int32              `json:"port,omitempty" bson:"port,omitempty"`
+	SourceSubnet       string             `json:"source_subnet,omitempty" bson:"source_subnet,omitempty"`
+	SourceLabels       *map[string]string `json:"source_labels,omitempty" bson:"source_labels,omitempty"`
+	Gateways           []string           `json:"gateways,omitempty" bson:"gateways,omitempty"`
 }
 
 type TcpRoutes struct {
-	Destination *RouteDestination `json:"destination" bson:"destination"`
-	Weight      int32             `json:"weight" bson:"weight"`
+	Destination *RouteDestination `json:"destination,omitempty" bson:"destination,omitempty"`
+	Weight      int32             `json:"weight,omitempty" bson:"weight,omitempty"`
 }
