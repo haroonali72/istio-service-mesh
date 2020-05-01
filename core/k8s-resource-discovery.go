@@ -1,6 +1,9 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	meshTypes "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
 	"context"
@@ -9,9 +12,6 @@ import (
 	"fmt"
 	"golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/types"
-	"istio-service-mesh/utils"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"

@@ -3,11 +3,11 @@ package core
 import (
 	//	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	//	"google.golang.org/grpc"
-	//	"istio-service-mesh/constants"
+	//	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"errors"
-	"istio-service-mesh/utils"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
 	"encoding/json"
 	"fmt"
-	"istio-service-mesh/types"
 	//v1 "k8s.io/api/core/v1"
 	//"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"

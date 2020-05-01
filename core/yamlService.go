@@ -1,12 +1,12 @@
 package core
 
 import (
+	helm_parameterization "bitbucket.org/cloudplex-devs/istio-service-mesh/core/helm-parameterization"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
-	helm_parameterization "istio-service-mesh/core/helm-parameterization"
-	"istio-service-mesh/utils"
 	"regexp"
 	"sigs.k8s.io/yaml"
 )

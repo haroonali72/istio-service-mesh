@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"github.com/urfave/cli/v2"
-	"istio-service-mesh/constants"
 	"log"
 	"os"
 )

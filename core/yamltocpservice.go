@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	meshTypes "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
@@ -9,8 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"istio-service-mesh/types"
-	"istio-service-mesh/utils"
 	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"

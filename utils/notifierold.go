@@ -1,11 +1,11 @@
 package utils
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
 	"bytes"
 	"encoding/json"
 	"gopkg.in/resty.v1"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/types"
 	"net/http"
 	"reflect"
 )
