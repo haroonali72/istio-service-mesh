@@ -306,10 +306,10 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
 	if input.ServiceAttributes.RoleReference != nil {
-		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRoleServiceType || input.ServiceAttributes.RoleReference.Kind == "Role" {
+		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
 			roleBind.RoleRef.Kind = "ClusterRole" //input.ServiceAttributes.Reference.Kind
 
-		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.RoleServiceType {
+		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
 			roleBind.RoleRef.Kind = "Role"
 		} else {
 			return nil, errors.New("invalid kind  role binding ref " + input.Name)

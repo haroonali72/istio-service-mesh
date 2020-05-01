@@ -13,98 +13,98 @@ import (
 
 func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest) (*pb.YamlServiceResponse, error) {
 	serviceResp := new(pb.YamlServiceResponse)
-	switch req.Type {
-	case meshConstants.StorageClassServiceType:
+	switch meshConstants.ServiceSubType(req.Type) {
+	case meshConstants.StorageClass:
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case meshConstants.PVCServiceType:
+	case meshConstants.PVC:
 		if err := ConvertPVCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.PVServiceType:
+	case meshConstants.PV:
 		if err := ConvertPVToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.GatewayServiceType:
+	case meshConstants.Gateway:
 		if err := ConvertGatewayToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.KubernetesServiceType:
+	case meshConstants.KubernetesService:
 		if err := ConvertKubernetesServiceToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.NetworkPolicyServiceType:
+	case meshConstants.NetworkPolicy:
 		if err := ConvertNetworkPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.RoleServiceType:
+	case meshConstants.Role:
 		if err := ConvertRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.PolicyType:
+	case meshConstants.MeshPolicy:
 		if err := ConvertPolicyToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.RoleBindingServiceType:
+	case meshConstants.RoleBinding:
 		if err := ConvertRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.ServiceAccountServiceType:
+	case meshConstants.ServiceAccount:
 		if err := ConvertServiceAccountToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.ClusterRoleServiceType:
+	case meshConstants.ClusterRole:
 		if err := ConvertClusterRoleToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.ClusterRoleBindingServiceType:
+	case meshConstants.ClusterRoleBinding:
 		if err := ConvertClusterRoleBindingToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.HpaServiceType:
+	case meshConstants.Hpa:
 		if err := ConvertHPAToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.DeploymentServiceType:
+	case meshConstants.Deployment:
 		if err := ConvertDeploymentToYaml(ctx, req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.DaemonSetServiceType:
+	case meshConstants.DaemonSet:
 		if err := ConvertDaemonSeToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.SecretServiceType:
+	case meshConstants.Secret:
 		if err := ConvertSecretToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.ConfigMapServiceType:
+	case meshConstants.ConfigMap:
 		if err := ConvertConfigMapToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.ServiceEntryType:
+	case meshConstants.ServiceEntry:
 		if err := ConvertServiceEntryToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.VirtualServiceType:
+	case meshConstants.VirtualService:
 		if err := ConvertVSToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
 
-	case meshConstants.DestinationRulesType:
+	case meshConstants.DestinationRule:
 		if err := ConvertDRToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.StatefulSetServiceType:
+	case meshConstants.StatefulSet:
 		if err := ConvertStatefulToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.JobServiceType:
+	case meshConstants.Job:
 		if err := ConvertJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.CronJobServiceType:
+	case meshConstants.CronJob:
 		if err := ConvertCronJobToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}

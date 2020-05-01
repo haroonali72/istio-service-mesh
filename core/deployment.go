@@ -668,7 +668,7 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 		var envVariables []v2.EnvVar
 		for _, envVariable := range container.EnvironmentVariables {
 			tempEnvVariable := v2.EnvVar{}
-			if strings.EqualFold(envVariable.Type, meshConstants.ConfigMapServiceType) {
+			if strings.EqualFold(envVariable.Type, meshConstants.ConfigMap.String()) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
@@ -676,7 +676,7 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 						Key:                  envVariableValue[1],
 					}}}
 
-			} else if strings.EqualFold(envVariable.Type, meshConstants.SecretServiceType) {
+			} else if strings.EqualFold(envVariable.Type, meshConstants.Secret.String()) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{
