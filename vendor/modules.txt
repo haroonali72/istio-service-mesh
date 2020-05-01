@@ -1,9 +1,10 @@
 # bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200413141308-024c89b36e0b
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7e72a5e9b8
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200417063520-1b7e72a5e9b8 => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501092131-e8c610911494
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services
+bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
 # github.com/astaxie/beego v1.12.1
 github.com/astaxie/beego
 github.com/astaxie/beego/config
@@ -168,12 +169,13 @@ google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/attributes
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
+# gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
+gopkg.in/mgo.v2/bson
+gopkg.in/mgo.v2/internal/json
 # gopkg.in/resty.v1 v1.12.0
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
-gopkg.in/yaml.v3
 # istio.io/api v0.0.0-20200407171655-fb462ece86fb => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 istio.io/api/authentication/v1alpha1
 istio.io/api/networking/v1alpha3

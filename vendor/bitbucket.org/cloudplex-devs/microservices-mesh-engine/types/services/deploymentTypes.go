@@ -1,38 +1,29 @@
 package services
 
-import "time"
+import "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types"
 
+//Id                interface{}                 `json:"_id,omitempty" bson:"_id" valid:"-"`
+//ServiceId         string                      `json:"service_id" bson:"service_id" binding:"required" valid:"alphanumspecial,length(4|30)~service_id must contain between 6 and 30 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
+//Name              string                      `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(3|30),lowercase~lowercase alphanumeric characters are allowed,required"`
+//Version           string                      `json:"version"  bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~lowercase alphanumeric characters are allowed,required"`
+//ServiceType       constants.ServiceType       `json:"service_type"  bson:"service_type" valid:"-"`
+//ServiceSubType    constants.ServiceSubType    `json:"service_sub_type" bson:"service_type" valid:"-"`
+//Namespace         string                      `json:"namespace" bson:"namespace" binding:"required" valid:"alphanumspecial,required"`
+//CompanyId         string                      `json:"company_id,omitempty" bson:"company_id"`
+//CreationDate      time.Time                   `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type DeploymentService struct {
-	Id                interface{}                 `json:"_id,omitempty" bson:"_id" valid:"-"`
-	ServiceId         string                      `json:"service_id" bson:"service_id" binding:"required" valid:"alphanumspecial,length(4|30)~service_id must contain between 6 and 30 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
-	Name              string                      `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(3|30),lowercase~lowercase alphanumeric characters are allowed,required"`
-	Version           string                      `json:"version"  bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~lowercase alphanumeric characters are allowed,required"`
-	ServiceType       string                      `json:"service_type"  bson:"service_type" valid:"-"`
-	ServiceSubType    string                      `json:"service_sub_type" bson:"service_type" valid:"-"`
-	Namespace         string                      `json:"namespace" bson:"namespace" binding:"required" valid:"alphanumspecial,required"`
-	CompanyId         string                      `json:"company_id,omitempty" bson:"company_id"`
-	CreationDate      time.Time                   `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
-	ServiceAttributes *DeploymentServiceAttribute `json:"service_attributes, omitempty"  bson:"company_id" binding:"required"`
+	types.ServiceBasicInfo `json:",inline" bson:",inline"`
+	ServiceAttributes      *DeploymentServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
 }
 type DeploymentServiceAttribute struct {
-	Containers     []*ContainerAttribute `json:"containers"`
-	InitContainers []*ContainerAttribute `json:"initContainers, omitempty"`
-	Volumes        []Volume              `json:"volumes,omitempty"`
-
-	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty"`
-	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty"`
-	NodeSelector                 map[string]string             `json:"node_selector,omitempty"`
-	Labels                       map[string]string             `json:"labels,omitempty"`
-	Annotations                  map[string]string             `json:"annotations,omitempty"`
-	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty"`
-	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty"`
-	IsRbac                       bool                          `json:"is_rbac_enabled"`
-	Affinity                     *Affinity                     `json:"affinity,omitempty"`
-	Strategy                     *DeploymentStrategy           `json:"strategy,omitempty"`
-	Replicas                     int32                         `json:"replicas,omitempty"`
-	ImagePullSecrets             []LocalObjectReference        `json:"image_pull_secrets,omitempty"`
-	ServiceAccountName           string                        `json:"service_account_name,omitempty"`
-	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automount_service_account_token,omitempty"`
+	// Number of desired pods. This is a pointer to distinguish between explicit
+	// zero and not specified. Defaults to 1.
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty" default:"1"`
+	// The deployment strategy to use to replace existing pods with new ones.
+	// +optional
+	Strategy                  *DeploymentStrategy `json:"strategy,omitempty"`
+	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty" `
 }
 
 type AutomountServiceAccountToken struct {

@@ -2,6 +2,46 @@ package services
 
 import "k8s.io/apimachinery/pkg/util/intstr"
 
+type CommonContainerAttributes struct {
+	IsInitContainerEnable bool `json:"enable_init,omitempty" bson:"enable_init,omitempty"`
+	// List of containers belonging to the pod.
+	// Containers cannot currently be added or removed.
+	// There must be at least one container in a Pod.
+	// Once Deployed cannot be updated.
+	// +mandatory
+	Containers []*ContainerAttribute `json:"containers" bson:"containers" jsonschema:"minItems=1"`
+	// List of initialization containers belonging to the pod.
+	// Init containers are executed in order prior to containers being started. If any
+	// init container fails, the pod is considered to have failed and is handled according
+	// to its restartPolicy. The name for an init container or normal container must be
+	// unique among all containers.
+	// Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes.
+	// The resourceRequirements of an init container are taken into account during scheduling
+	// by finding the highest request/limit for each resource type, and then using the max of
+	// of that value or the sum of the normal containers. Limits are applied to init containers
+	// in a similar fashion.
+	// Init containers cannot currently be added or removed.
+	// Once deployed cannot be updated.
+	// +optional
+	InitContainers []*ContainerAttribute `json:"initContainers,omitempty"`
+	// internal use only. Cloudplex automatically populated this array
+	// +optional
+	Volumes []Volume `json:"volumes,omitempty" bson:"volumes,omitempty"`
+	// this option is to show info on Frontend
+	// +optional
+	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty"`
+	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty"`
+	NodeSelector                 map[string]string             `json:"node_selector,omitempty"`
+	Labels                       map[string]string             `json:"labels,omitempty"`
+	Annotations                  map[string]string             `json:"annotations,omitempty"`
+	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty"`
+	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	IsRbac                       bool                          `json:"is_rbac_enabled,omitempty"`
+	Affinity                     *Affinity                     `json:"affinity,omitempty"`
+	ImagePullSecrets             []LocalObjectReference        `json:"image_pull_secrets,omitempty"`
+	ServiceAccountName           string                        `json:"service_account_name,omitempty"`
+	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automount_service_account_token,omitempty"`
+}
 type ImageRepositoryConfigurations struct {
 	Url         string               `json:"url,omitempty"`
 	Tag         string               `json:"tag,omitempty"`
@@ -17,7 +57,7 @@ type EnvironmentVariable struct {
 	Key     string `json:"key"`
 	Value   string `json:"value"`
 	Dynamic bool   `json:"dynamic"`
-	Type    string `json:"type"`
+	Type    string `json:"type,omitempty"`
 }
 type IstioConfig struct {
 	Enable_External_Traffic bool `json:"enable_external_traffic"`
@@ -43,15 +83,15 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             []Capabilities       `json:"capabilities"`
-	RunAsUser                *int64               `json:"run_as_user"`
-	RunAsGroup               *int64               `json:"run_as_group"`
-	RunAsNonRoot             bool                 `json:"run_as_non_root"`
-	Privileged               bool                 `json:"privileged"`
-	ProcMount                ProcMountType        `json:"proc_mount"`
-	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation"`
-	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem"`
-	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options"`
+	Capabilities             *Capabilities        `json:"capabilities,omitempty"`
+	RunAsUser                *int64               `json:"run_as_user,omitempty"`
+	RunAsGroup               *int64               `json:"run_as_group,omitempty"`
+	RunAsNonRoot             bool                 `json:"run_as_non_root,omitempty"`
+	Privileged               bool                 `json:"privileged, omitempty"`
+	ProcMount                ProcMountType        `json:"proc_mount,omitempty"`
+	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation,omitempty"`
+	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem,omitempty"`
+	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options,omitempty"`
 }
 
 type ProcMountType string
@@ -71,8 +111,8 @@ type SELinuxOptionsStruct struct {
 type Capability string
 
 type Capabilities struct {
-	Add  []Capability `json:"add"`
-	Drop []Capability `json:"drop"`
+	Add  []Capability `json:"add,omitempty"`
+	Drop []Capability `json:"drop,omitempty"`
 }
 
 const (
@@ -182,30 +222,76 @@ type Probe struct {
 }
 
 type ContainerAttribute struct {
-	EnvironmentVariables          map[string]EnvironmentVariable `json:"environment_variables,omitempty"`
-	ImageRepositoryConfigurations *ImageRepositoryConfigurations `json:"image_repository_configurations,omitempty" binding:"required"`
-	Ports                         map[string]ContainerPort       `json:"ports,omitempty"`
-	Tag                           string                         `json:"tag"`
-	ImagePrefix                   string                         `json:"image_prefix"`
-	ImageName                     string                         `json:"image_name,omitempty"`
-	Command                       []string                       `json:"command,omitempty"`
-	Args                          []string                       `json:"args,omitempty"`
-	LimitResources                map[string]string              `json:"limit_resources,omitempty"`
-	RequestResources              map[string]string              `json:"request_resources,omitempty"`
-	LivenessProbe                 *Probe                         `json:"liveness_probe,omitempty"`
-	ReadinessProbe                *Probe                         `json:"readiness_probe,omitempty"`
-	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty"`
-	VolumeMounts                  []VolumeMount                  `json:"volume_mounts,omitempty"`
+	EnvironmentVariables          map[string]EnvironmentVariable `json:"environment_variables,omitempty" bson:"environment_variables,omitempty"`
+	ImageRepositoryConfigurations *ImageRepositoryConfigurations `json:"image_repository_configurations,omitempty" bson:"image_repository_configurations,omitempty" binding:"-"`
+	Ports                         map[string]ContainerPort       `json:"ports,omitempty" bson:"ports,omitempty"`
+	Tag                           string                         `json:"tag" bson:"tag" binding:"required"`
+	ImagePrefix                   string                         `json:"image_prefix,omitempty" bson:"image_prefix,omitempty"`
+	ImageName                     string                         `json:"image_name" bson:"image_name" binding:"required"`
+	Command                       []string                       `json:"command,omitempty" bson:"command,omitempty"`
+	Args                          []string                       `json:"args,omitempty" bson:"args,omitempty"`
+	LimitResources                map[string]string              `json:"limit_resources,omitempty" bson:"limit_resources,omitempty" jsonschema:"maxProperties=2"`
+	RequestResources              map[string]string              `json:"request_resources,omitempty" bson:"request_resources,omitempty"  jsonschema:"maxProperties=2"`
+	LivenessProbe                 *Probe                         `json:"liveness_probe,omitempty" bson:"liveness_probe,omitempty"`
+	ReadinessProbe                *Probe                         `json:"readiness_probe,omitempty" bson:"readiness_probe,omitempty"`
+	SecurityContext               *SecurityContextStruct         `json:"security_context,omitempty" bson:"security_context,omitempty"`
+	VolumeMounts                  []VolumeMount                  `json:"volume_mounts,omitempty" bson:"volume_mounts,omitempty"`
+	IsEnabledPipeline             bool                           `json:"is_enabled_pipeline,omitempty" bson:"is_enabled_pipeline,omitempty"`
+	DeploymentPipeline            *DeploymentPipeline            `json:"deployment_pipeline,omitempty" bson:"deployment_pipeline,omitempty"`
+	IsDeploymentPipeline          bool                           `json:"is_deployment_pipeline,omitempty" bson:"is_deployment_pipeline,omitempty"`
+	IsDirectDeployment            bool                           `json:"is_direct_deployment,omitempty" bson:"is_direct_deployment,omitempty"`
+}
+type DeploymentPipeline struct {
+	Name        string        `json:"name,omitempty"`
+	Description string        `json:"description,omitempty"`
+	Type        string        `json:"type,omitempty"`
+	Bluegreen   *Bluegreen    `json:"bluegreen,omitempty"`
+	Canary      *Canary       `json:"canary,omitempty"`
+	Duration    string        `json:"duration,omitempty"`
+	RunsHistory []RunsHistory `json:"runs_history,omitempty"`
+	TotalRuns   int           `json:"total_runs,omitempty"`
+	Status      string        `json:"status,omitempty"`
 }
 
+type RunsHistory struct {
+	ActivityType string      `json:"activity_type,omitempty"`
+	Tag          string      `json:"tag,omitempty"`
+	LastRun      interface{} `json:"last_run,omitempty"`
+}
+
+type Canary struct {
+	TotalStages  int      `json:"total_stages,omitempty"`
+	Stages       []*Stage `json:"stages,omitempty"`
+	CurrentStage int      `json:"current_stage,omitempty"`
+	Status       string   `json:"status,omitempty"`
+}
+
+type Stage struct {
+	Name                    string `json:"name,omitempty"`
+	AnalysisType            string `json:"analysis_type,omitempty"`
+	TrafficWeightCurrent    int32  `json:"traffic_weight_current,omitempty"`
+	TrafficWeightBaseline   int32  `json:"traffic_weight_baseline,omitempty"`
+	TrafficWeightCanary     int32  `json:"traffic_weight_canary,omitempty"`
+	RequestSuccessThreshold int    `json:"request_success_threshold,omitempty"`
+	RequestLatencyThreshold int    `json:"request_latency_threshold,omitempty"`
+	CronExpression          string `json:"cron_expression,omitempty"`
+	Status                  string `json:"status,omitempty"`
+}
+
+type Bluegreen struct {
+	TrafficWeightBluegreen int32  `json:"traffic_weight_bluegreen,omitempty"`
+	TrafficWeightCurrent   int32  `json:"traffic_weight_current,omitempty"`
+	Status                 string `json:"status,omitempty"`
+	RollBack               bool   `json:"roll_back,omitempty"`
+}
 type VolumeMount struct {
-	Name             string                `json:"name"`
-	ReadOnly         bool                  `json:"readonly,omitempty"`
-	MountPath        string                `json:"mount_path,omitempty"`
-	SubPath          string                `json:"sub_path,omitempty"`
-	MountPropagation *MountPropagationMode `json:"mount_propagation,omitempty"`
-	SubPathExpr      string                `json:"sub_path_expr,omitempty"`
-	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name"`
+	Name             string                `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed,required"`
+	ReadOnly         bool                  `json:"readonly,omitempty" bson:"readonly,omitempty"`
+	MountPath        string                `json:"mount_path" bson:"mount_path"`
+	SubPath          string                `json:"sub_path,omitempty" bson:"sub_path,omitempty"`
+	MountPropagation *MountPropagationMode `json:"mount_propagation,omitempty" bson:"mount_propagation,omitempty"`
+	SubPathExpr      string                `json:"sub_path_expr,omitempty" bson:"sub_path_expr,omitempty"`
+	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name,omitempty"`
 }
 
 type MountPropagationMode string
@@ -215,6 +301,10 @@ const (
 	MountPropagationHostToContainer MountPropagationMode = "HostToContainer"
 	MountPropagationBidirectional   MountPropagationMode = "Bidirectional"
 )
+
+func (c *MountPropagationMode) String() string {
+	return string(*c)
+}
 
 type K8sRbacAttribute struct {
 	Resource string   `json:"resource"`
@@ -233,14 +323,14 @@ type ContainerPort struct {
 	// If HostNetwork is specified, this must match ContainerPort.
 	// Most containers do not need this.
 	// +optional
-	HostPort int32 `json:"host_port,omitempty"`
+	HostPort int32 `json:"host_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
 	// Number of port to expose on the pod's IP address.
 	// This must be a valid port number, 0 < x < 65536.
-	ContainerPort int32 `json:"container_port"`
+	ContainerPort int32 `json:"container_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
 	// Protocol for port. Must be UDP, TCP, or SCTP.
 	// Defaults to "TCP".
 	// +optional
-	Protocol Protocol `json:"protocol,omitempty"`
+	Protocol Protocol `json:"protocol,omitempty" jsonschema:"enum=TCP,enum=UDP,enum=SCTP,default=TCP" default:"TCP"`
 	// What host IP to bind the external port to.
 	// +optional
 	HostIP string `json:"host_ip,omitempty"`

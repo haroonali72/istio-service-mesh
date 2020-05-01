@@ -1,4 +1,4 @@
-module istio-service-mesh
+module bitbucket.org/cloudplex-devs/istio-service-mesh
 
 go 1.12
 
@@ -18,7 +18,7 @@ require (
 	google.golang.org/grpc v1.28.1
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.2.8
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	istio.io/api v0.0.0-20200407171655-fb462ece86fb
 	istio.io/client-go v0.0.0-20200325170329-dc00bbff4229
 	k8s.io/api v0.18.1
@@ -29,6 +29,7 @@ require (
 )
 
 replace (
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501092131-e8c610911494
 	istio.io/api => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 	istio.io/client-go => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
 	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
