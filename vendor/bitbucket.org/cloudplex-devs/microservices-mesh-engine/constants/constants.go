@@ -102,6 +102,7 @@ const (
 	HpaService                    = "hpa_service_template"
 	//////////////////////////////////////////////////////////////////
 	Deploymentservice            = "deployment_service"
+	Podservice                   = "pod_service"
 	Statefulsetservice           = "statefulset_service"
 	Daemonsetservice             = "daemonset_service"
 	Jobservice                   = "job_service"
