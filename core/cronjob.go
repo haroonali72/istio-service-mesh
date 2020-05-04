@@ -271,6 +271,10 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	cjob.Annotations = make(map[string]string)
 	cjob.Annotations = service.CronJobServiceAttribute.Annotations
 
+	cjob.Spec.JobTemplate.Spec.Template.Annotations = make(map[string]string)
+
+	cjob.Spec.JobTemplate.Spec.Template.Annotations["sidecar.istio.io/inject"] = "false"
+
 	cjob.Spec.Schedule = service.CronJobServiceAttribute.Schedule
 
 	//cjob.Spec.JobTemplate.Spec.Selector = new(metav1.LabelSelector)
