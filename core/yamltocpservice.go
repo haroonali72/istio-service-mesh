@@ -1,6 +1,9 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	meshTypes "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
@@ -9,8 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"istio-service-mesh/types"
-	"istio-service-mesh/utils"
 	v1alpha32 "istio.io/api/networking/v1alpha3"
 	"istio.io/client-go/pkg/apis/networking/v1alpha3"
 	apps "k8s.io/api/apps/v1"
@@ -42,7 +43,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		yamlService := types.Yamlservice{}
 		err := yaml.Unmarshal(req.Service, &yamlService)
 		if err == nil {
-			if yamlService.Kind == meshConstants.GatewayServiceType {
+			if yamlService.Kind == constants.Gateway.String() {
 				gateway := v1alpha3.Gateway{}
 				err = yaml2.Unmarshal(req.Service, &gateway)
 				if err != nil {
@@ -59,7 +60,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 				}
 				serviceResp.Service = bytesData
 				return serviceResp, nil
-			} else if yamlService.Kind == meshConstants.ServiceEntryType {
+			} else if yamlService.Kind == constants.ServiceEntry.String() {
 				se := v1alpha3.ServiceEntry{}
 				err = yaml2.Unmarshal(req.Service, &se)
 				if err != nil {
@@ -76,7 +77,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 				}
 				serviceResp.Service = bytesData
 				return serviceResp, nil
-			} else if yamlService.Kind == meshConstants.DestinationRulesType {
+			} else if yamlService.Kind == constants.DestinationRule.String() {
 				dr := v1alpha3.DestinationRule{}
 				err = yaml2.Unmarshal(req.Service, &dr)
 				if err != nil {
@@ -93,7 +94,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 				}
 				serviceResp.Service = bytesData
 				return serviceResp, nil
-			} else if yamlService.Kind == meshConstants.VirtualServiceType {
+			} else if yamlService.Kind == constants.VirtualService.String() {
 				vs := v1alpha3.VirtualService{}
 				err2 := yaml2.Unmarshal(req.Service, &vs)
 				//err2:= yaml.Unmarshal(bytes,&vs)
@@ -369,8 +370,8 @@ func convertToCPNetwokPolicy(np *net.NetworkPolicy) (*meshTypes.NetworkPolicySer
 	} else {
 		networkPolicy.Namespace = np.Namespace
 	}
-	networkPolicy.ServiceType = "K8s"
-	networkPolicy.ServiceSubType = meshConstants.NetworkPolicyServiceType
+	networkPolicy.ServiceType = meshConstants.Kubernetes
+	networkPolicy.ServiceSubType = meshConstants.NetworkPolicy
 	networkPolicy.ServiceAttributes = new(meshTypes.NetworkPolicyServiceAttribute)
 	networkPolicy.ServiceAttributes.PodSelector = getCPLabelSelector(&np.Spec.PodSelector)
 	for _, each := range np.Spec.Ingress {
@@ -479,15 +480,16 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 		deployment.Namespace = service.Namespace
 	}
 
-	deployment.ServiceType = "k8s"
-	deployment.ServiceSubType = meshConstants.DeploymentServiceType
+	deployment.ServiceType = meshConstants.Kubernetes
+	deployment.ServiceSubType = meshConstants.Deployment
 	deployment.Version = service.Labels["version"]
 
 	if service.Spec.Replicas != nil {
-		deployment.ServiceAttributes.Replicas = *service.Spec.Replicas
+		deployment.ServiceAttributes.Replicas = service.Spec.Replicas
 
 	} else {
-		deployment.ServiceAttributes.Replicas = 1
+		var a int32 = 1
+		deployment.ServiceAttributes.Replicas = &a
 	}
 
 	deployment.ServiceAttributes.Labels = make(map[string]string)
@@ -596,8 +598,8 @@ func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
 		daemonSet.Namespace = service.Namespace
 	}
 
-	daemonSet.ServiceType = "k8s"
-	daemonSet.ServiceSubType = meshConstants.DaemonSetServiceType
+	daemonSet.ServiceType = meshConstants.Kubernetes
+	daemonSet.ServiceSubType = meshConstants.DaemonSet
 	daemonSet.ServiceAttributes = new(meshTypes.DaemonSetServiceAttribute)
 	daemonSet.ServiceAttributes.Labels = make(map[string]string)
 	daemonSet.ServiceAttributes.Labels = service.Spec.Template.Labels
@@ -682,8 +684,8 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	statefulSet := new(meshTypes.StatefulSetService)
 
 	statefulSet.Name = service.Name
-	statefulSet.ServiceType = "k8s"
-	statefulSet.ServiceSubType = meshConstants.StatefulSetServiceType
+	statefulSet.ServiceType = meshConstants.Kubernetes
+	statefulSet.ServiceSubType = meshConstants.StatefulSet
 
 	if service.Namespace == "" {
 		statefulSet.Namespace = "default"
@@ -705,9 +707,10 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 
 	//replicas
 	if service.Spec.Replicas != nil {
-		statefulSet.ServiceAttributes.Replicas = *service.Spec.Replicas
+		statefulSet.ServiceAttributes.Replicas = service.Spec.Replicas
 	} else {
-		statefulSet.ServiceAttributes.Replicas = 1
+		var a int32 = 1
+		statefulSet.ServiceAttributes.Replicas = &a
 	}
 
 	if service.Spec.ServiceName != "" {
@@ -789,8 +792,8 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	cpJob := new(meshTypes.JobService)
 	cpJob.Name = job.Name
-	cpJob.ServiceType = "k8s"
-	cpJob.ServiceSubType = "job"
+	cpJob.ServiceType = meshConstants.Kubernetes
+	cpJob.ServiceSubType = meshConstants.Job
 	if job.Namespace == "" {
 		cpJob.Namespace = "default"
 	} else {
@@ -1014,8 +1017,8 @@ func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAtt
 func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes.PersistentVolumeClaimService, error) {
 	persistentVolume := new(meshTypes.PersistentVolumeClaimService)
 	persistentVolume.Name = pvc.Name
-	persistentVolume.ServiceType = "k8s"
-	persistentVolume.ServiceSubType = meshConstants.PVCServiceType
+	persistentVolume.ServiceType = meshConstants.Kubernetes
+	persistentVolume.ServiceSubType = meshConstants.PVC
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeClaimServiceAttribute)
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
@@ -1065,8 +1068,8 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes
 func convertToCPPersistentVolume(pv *v1.PersistentVolume) (*meshTypes.PersistentVolumeService, error) {
 	persistentVolume := new(meshTypes.PersistentVolumeService)
 	persistentVolume.Name = pv.Name
-	persistentVolume.ServiceType = "k8s"
-	persistentVolume.ServiceSubType = meshConstants.PVServiceType
+	persistentVolume.ServiceType = meshConstants.Kubernetes
+	persistentVolume.ServiceSubType = meshConstants.PV
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeServiceAttribute)
 	persistentVolume.ServiceAttributes.ReclaimPolicy = meshTypes.ReclaimPolicy(pv.Spec.PersistentVolumeReclaimPolicy)
 	qu := pv.Spec.Capacity[v1.ResourceStorage]
@@ -1169,8 +1172,8 @@ func convertToCPPersistentVolume(pv *v1.PersistentVolume) (*meshTypes.Persistent
 func convertToCPStorageClass(sc *storage.StorageClass) (*meshTypes.StorageClassService, error) {
 	storageClass := new(meshTypes.StorageClassService)
 	storageClass.Name = sc.Name
-	storageClass.ServiceType = "k8s"
-	storageClass.ServiceSubType = meshConstants.StorageClassServiceType
+	storageClass.ServiceType = meshConstants.Kubernetes
+	storageClass.ServiceSubType = meshConstants.StorageClass
 	storageClass.ServiceAttributes = new(meshTypes.StorageClassServiceAttribute)
 	if sc.ReclaimPolicy != nil {
 		storageClass.ServiceAttributes.ReclaimPolicy = meshTypes.ReclaimPolicy(*sc.ReclaimPolicy)
@@ -1224,8 +1227,8 @@ func ConvertToCPSecret(cm *v1.Secret) (*meshTypes.Secret, error) {
 	if vr := cm.Labels["version"]; vr != "" {
 		secret.Version = vr
 	}
-	secret.ServiceType = "k8s"
-	secret.ServiceSubType = meshConstants.SecretServiceType
+	secret.ServiceType = meshConstants.Kubernetes
+	secret.ServiceSubType = meshConstants.Secret
 	secret.ServiceAttributes = new(meshTypes.SecretServiceAttribute)
 	if len(cm.Data) > 0 {
 		secret.ServiceAttributes.Data = make(map[string][]byte)
@@ -1249,11 +1252,11 @@ func ConvertToCPHPA(hpa *autoScalar.HorizontalPodAutoscaler) (*meshTypes.HPA, er
 	var horizntalPodAutoscalar = new(meshTypes.HPA)
 	horizntalPodAutoscalar.Name = hpa.Name
 	horizntalPodAutoscalar.Namespace = hpa.Namespace
-	horizntalPodAutoscalar.ServiceType = "k8s"
+	horizntalPodAutoscalar.ServiceType = meshConstants.Kubernetes
 	if vr := hpa.Labels["version"]; vr != "" {
 		horizntalPodAutoscalar.Version = vr
 	}
-	horizntalPodAutoscalar.ServiceSubType = meshConstants.HpaServiceType
+	horizntalPodAutoscalar.ServiceSubType = meshConstants.Hpa
 
 	horizntalPodAutoscalar.ServiceAttributes.MaxReplicas = int(hpa.Spec.MaxReplicas)
 	if hpa.Spec.MinReplicas != nil {
@@ -1306,8 +1309,8 @@ func ConvertToCPRole(k8ROle *rbac.Role) (*meshTypes.Role, error) {
 	var role = new(meshTypes.Role)
 	role.Name = k8ROle.Name
 	role.Namespace = k8ROle.Namespace
-	role.ServiceType = "k8s"
-	role.ServiceSubType = meshConstants.RoleServiceType
+	role.ServiceType = meshConstants.Kubernetes
+	role.ServiceSubType = meshConstants.Role
 	if vr := k8ROle.Labels["version"]; vr != "" {
 		role.Version = vr
 	}
@@ -1335,8 +1338,8 @@ func ConvertToCPRole(k8ROle *rbac.Role) (*meshTypes.Role, error) {
 func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*meshTypes.RoleBinding, error) {
 	var rb = new(meshTypes.RoleBinding)
 	rb.Name = k8sRoleBinding.Name
-	rb.ServiceType = "k8s"
-	rb.ServiceSubType = meshConstants.RoleBindingServiceType
+	rb.ServiceType = meshConstants.Kubernetes
+	rb.ServiceSubType = meshConstants.RoleBinding
 	if vr := k8sRoleBinding.Labels["version"]; vr != "" {
 		rb.Version = vr
 	}
@@ -1346,7 +1349,7 @@ func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*meshTypes.RoleBi
 		subject.Name = each.Name
 		if each.Kind == "User" || each.Kind == "Group" {
 			subject.Kind = each.Kind
-		} else if each.Kind == "ServiceAccount" {
+		} else if each.Kind == constants.ServiceAccount.String() {
 			subject.Kind = each.Kind
 			subject.Namespace = each.Namespace
 		} else {
@@ -1362,13 +1365,13 @@ func ConvertToCPRoleBinding(k8sRoleBinding *rbac.RoleBinding) (*meshTypes.RoleBi
 func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBinding) (*meshTypes.ClusterRoleBinding, error) {
 	var crb = new(meshTypes.ClusterRoleBinding)
 	crb.Name = k8sClusterRoleBinding.Name
-	crb.ServiceType = "k8s"
-	crb.ServiceSubType = meshConstants.ClusterRoleBindingServiceType
+	crb.ServiceType = meshConstants.Kubernetes
+	crb.ServiceSubType = meshConstants.ClusterRoleBinding
 	crb.ServiceAttributes.RoleRef.Name = k8sClusterRoleBinding.RoleRef.Name
-	if k8sClusterRoleBinding.RoleRef.Kind == "ClusterRole" {
-		crb.ServiceAttributes.RoleRef.Kind = meshConstants.ClusterRoleServiceType
+	if k8sClusterRoleBinding.RoleRef.Kind == constants.ClusterRole.String() {
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.ClusterRole.String()
 	} else {
-		crb.ServiceAttributes.RoleRef.Kind = meshConstants.RoleServiceType
+		crb.ServiceAttributes.RoleRef.Kind = meshConstants.Role.String()
 	}
 	if vr := k8sClusterRoleBinding.Labels["version"]; vr != "" {
 		crb.Version = vr
@@ -1379,7 +1382,7 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 		subject.Name = each.Name
 		if each.Kind == "User" || each.Kind == "Group" {
 			subject.Kind = each.Kind
-		} else if each.Kind == "ServiceAccount" {
+		} else if each.Kind == constants.ServiceAccount.String() {
 			subject.Kind = each.Kind
 			subject.Namespace = each.Namespace
 		} else {
@@ -1393,8 +1396,8 @@ func ConvertToCPClusterRoleBinding(k8sClusterRoleBinding *rbac.ClusterRoleBindin
 func ConvertToCPClusterRole(k8ROle *rbac.ClusterRole) (*meshTypes.ClusterRole, error) {
 	var role = new(meshTypes.ClusterRole)
 	role.Name = k8ROle.Name
-	role.ServiceType = "k8s"
-	role.ServiceSubType = meshConstants.ClusterRoleServiceType
+	role.ServiceType = meshConstants.Kubernetes
+	role.ServiceSubType = meshConstants.ClusterRole
 	if vr := k8ROle.Labels["version"]; vr != "" {
 		role.Version = vr
 	}
@@ -1427,8 +1430,8 @@ func ConvertToCPConfigMap(cm *v1.ConfigMap) (*meshTypes.ConfigMap, error) {
 	if vr := cm.Labels["version"]; vr != "" {
 		configMap.Version = vr
 	}
-	configMap.ServiceType = "k8s"
-	configMap.ServiceSubType = meshConstants.ConfigMapServiceType
+	configMap.ServiceType = meshConstants.Kubernetes
+	configMap.ServiceSubType = meshConstants.ConfigMap
 	configMap.ServiceAttributes = new(meshTypes.ConfigMapServiceAttribute)
 	if len(cm.Data) > 0 {
 		configMap.ServiceAttributes.Data = make(map[string]string)
@@ -1446,8 +1449,8 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 	if vr := svc.Labels["version"]; vr != "" {
 		service.Version = vr
 	}
-	service.ServiceType = "k8s"
-	service.ServiceSubType = meshConstants.KubernetesServiceType
+	service.ServiceType = meshConstants.Kubernetes
+	service.ServiceSubType = meshConstants.KubernetesService
 	service.ServiceAttributes.Type = string(svc.Spec.Type)
 	if len(svc.Spec.Selector) > 0 {
 		service.ServiceAttributes.Selector = make(map[string]string)
@@ -1499,8 +1502,8 @@ func convertToCPDRStruct(gw *v1alpha3.DestinationRule) (*meshTypes.DestinationRu
 
 func convertToCPServiceAccount(sa *v1.ServiceAccount) (*meshTypes.ServiceAccount, error) {
 	var kube = new(meshTypes.ServiceAccount)
-	kube.ServiceSubType = meshConstants.ServiceAccountServiceType
-	kube.ServiceType = "k8s"
+	kube.ServiceSubType = meshConstants.ServiceAccount
+	kube.ServiceType = meshConstants.Kubernetes
 	kube.Name = sa.Name
 	kube.Namespace = sa.Namespace
 	if vr := sa.Labels["version"]; vr != "" {
@@ -2164,8 +2167,8 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 	} else {
 		vServ.Version = ""
 	}
-	vServ.ServiceType = "mesh"
-	vServ.ServiceSubType = meshConstants.VirtualServiceType
+	vServ.ServiceType = meshConstants.MeshType
+	vServ.ServiceSubType = meshConstants.VirtualService
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
 	vServ.ServiceAttributes = new(meshTypes.VSServiceAttribute)
@@ -2380,8 +2383,8 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 
 func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.DestinationRules, error) {
 	vServ := new(meshTypes.DestinationRules)
-	vServ.ServiceType = "mesh"
-	vServ.ServiceSubType = meshConstants.DestinationRulesType
+	vServ.ServiceType = meshConstants.MeshType
+	vServ.ServiceSubType = meshConstants.DestinationRule
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
 
@@ -2783,8 +2786,8 @@ func convertToCPGateway(input *v1alpha3.Gateway) (*meshTypes.GatewayService, err
 	} else {
 		gateway.Version = ""
 	}
-	gateway.ServiceType = "mesh"
-	gateway.ServiceSubType = meshConstants.GatewayServiceType
+	gateway.ServiceType = meshConstants.MeshType
+	gateway.ServiceSubType = meshConstants.Gateway
 	gateway.Namespace = input.Namespace
 
 	gateway.ServiceAttributes = new(meshTypes.GatewayServiceAttributes)
@@ -2809,7 +2812,7 @@ func convertToCPGateway(input *v1alpha3.Gateway) (*meshTypes.GatewayService, err
 		if serverInput.Port != nil {
 			server.Port = new(meshTypes.Port)
 			server.Port.Name = serverInput.Port.Name
-			server.Port.Nummber = serverInput.Port.Number
+			server.Port.Number = serverInput.Port.Number
 			server.Port.Protocol = meshTypes.Protocols(serverInput.Port.Protocol)
 		}
 		for _, host := range serverInput.Hosts {
@@ -2827,8 +2830,8 @@ func convertToCPServiceEntry(input *v1alpha3.ServiceEntry) (*meshTypes.ServiceEn
 	svcEntry := new(meshTypes.ServiceEntry)
 	svcEntry.Name = input.Name
 	svcEntry.Namespace = input.Namespace
-	svcEntry.ServiceType = "mesh"
-	svcEntry.ServiceSubType = meshConstants.ServiceEntryType
+	svcEntry.ServiceType = meshConstants.MeshType
+	svcEntry.ServiceSubType = meshConstants.ServiceEntry
 	if input.Labels["version"] != "" {
 		svcEntry.Version = input.Labels["version"]
 	}

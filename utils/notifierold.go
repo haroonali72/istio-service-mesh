@@ -1,11 +1,11 @@
 package utils
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
 	"bytes"
 	"encoding/json"
 	"gopkg.in/resty.v1"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/types"
 	"net/http"
 	"reflect"
 )
@@ -15,7 +15,7 @@ func SendLog(msg, message_type, env_id string) (int, error) {
 	var data types.LoggingRequest
 
 	data.Id = env_id
-	data.Service = constants.SERVICE_NAME
+	data.Service = constants.ServiceName
 	data.Environment = "environment"
 	data.Level = message_type
 	data.Message = msg

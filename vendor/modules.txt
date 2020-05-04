@@ -1,8 +1,9 @@
 # bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200501120452-a31e2ef8b654
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200502124754-7908a9af0d0a
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501120105-a184b768a8da => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200504074924-416086d04741
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
+bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services
 # github.com/astaxie/beego v1.12.1
 github.com/astaxie/beego
@@ -169,6 +170,9 @@ google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/attributes
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
+# gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
+gopkg.in/mgo.v2/bson
+gopkg.in/mgo.v2/internal/json
 # gopkg.in/resty.v1 v1.12.0
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.2.8
@@ -185,6 +189,8 @@ istio.io/gogo-genproto/googleapis/google/api
 k8s.io/api/core/v1
 k8s.io/api/rbac/v1
 k8s.io/api/apps/v1
+k8s.io/api/core/v1
+k8s.io/api/rbac/v1
 k8s.io/api/autoscaling/v1
 k8s.io/api/batch/v1
 k8s.io/api/batch/v1beta1

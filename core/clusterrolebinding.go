@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
@@ -8,8 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	v1 "k8s.io/api/rbac/v1"
 	"strings"
 )
@@ -254,7 +254,7 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 	if input.Version != "" {
 		labels["version"] = strings.ToLower(input.Version)
 	}
-	clstrRolBindSvc.Kind = "ClusterRoleBinding"
+	clstrRolBindSvc.Kind = constants.ClusterRoleBinding.String() //"ClusterRoleBinding"
 	clstrRolBindSvc.APIVersion = "rbac.authorization.k8s.io/v1"
 
 	clstrRolBindSvc.Labels = labels
@@ -269,8 +269,8 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == meshConstants.ServiceAccountServiceType {
-			reqsub.Kind = "ServiceAccount"
+		} else if subject.Kind == meshConstants.ServiceAccount.String() {
+			reqsub.Kind = constants.ServiceAccount.String()
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
 			} else {
@@ -282,14 +282,14 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		}
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
-	clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
+	clstrRolBindSvc.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole"
 
 	if input.ServiceAttributes.RoleReference != nil {
 		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
-		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRoleServiceType {
-			clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
+		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRole.String() {
+			clstrRolBindSvc.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole"
 		} else {
-			clstrRolBindSvc.RoleRef.Kind = "Role"
+			clstrRolBindSvc.RoleRef.Kind = constants.Role.String() //"Role"
 		}
 		clstrRolBindSvc.RoleRef.APIGroup = "rbac.authorization.k8s.io"
 	} else {
