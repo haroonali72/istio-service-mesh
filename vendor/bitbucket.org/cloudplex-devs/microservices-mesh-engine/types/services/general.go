@@ -43,7 +43,7 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             *Capabilities       `json:"capabilities"`
+	Capabilities             []Capabilities       `json:"capabilities"`
 	RunAsUser                *int64               `json:"run_as_user"`
 	RunAsGroup               *int64               `json:"run_as_group"`
 	RunAsNonRoot             bool                 `json:"run_as_non_root"`
