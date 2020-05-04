@@ -14,7 +14,7 @@ message ServiceStatus {
     repeated string status_individual = 4;
     string status = 5;
     string reason = 6;
-
+    bool isComplete=7;
 }
 
 message NameRequest {

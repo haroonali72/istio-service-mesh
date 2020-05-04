@@ -16,85 +16,85 @@ type DestinationRules struct {
 }
 
 type DRServiceAttribute struct {
-	Host          string         `json:"host" bson:"host"`
-	TrafficPolicy *TrafficPolicy `json:"traffic_policy" bson:"traffic_policy"`
-	Subsets       []*Subset      `json:"subsets" bson:"subsets"`
+	Host          string         `json:"host,omitempty" bson:"host,omitempty"`
+	TrafficPolicy *TrafficPolicy `json:"traffic_policy,omitempty" bson:"traffic_policy,omitempty"`
+	Subsets       []*Subset      `json:"subsets,omitempty" bson:"subsets,omitempty"`
 }
 type TrafficPolicy struct {
-	LoadBalancer      *LoadBalancer       `json:"load_balancer" bson:"load_balancer"`
-	PortLevelSettings []*PortLevelSetting `json:"port_level_settings" bson:"port_level_settings"`
-	ConnectionPool    *ConnectionPool     `json:"connection_pool" bson:"connection_pool"`
-	OutlierDetection  *OutlierDetection   `json:"outlier_detection" bson:"outlier_detection"`
-	DrTls             *DrTls              `json:"dr_tls" bson:"dr_tls"`
+	LoadBalancer      *LoadBalancer       `json:"load_balancer,omitempty" bson:"load_balancer,omitempty"`
+	PortLevelSettings []*PortLevelSetting `json:"port_level_settings,omitempty" bson:"port_level_settings,omitempty"`
+	ConnectionPool    *ConnectionPool     `json:"connection_pool,omitempty" bson:"connection_pool,omitempty"`
+	OutlierDetection  *OutlierDetection   `json:"outlier_detection,omitempty" bson:"outlier_detection,omitempty"`
+	DrTls             *DrTls              `json:"dr_tls,omitempty" bson:"dr_tls,omitempty"`
 }
 type LoadBalancer struct {
-	Simple         string          `json:"simple" bson:"simple"`
-	ConsistentHash *ConsistentHash `json:"consistent_hash" bson:"consistent_hash"`
+	Simple         string          `json:"simple,omitempty" bson:"simple,omitempty"`
+	ConsistentHash *ConsistentHash `json:"consistent_hash,omitempty" bson:"consistent_hash,omitempty"`
 }
 type ConsistentHash struct {
-	HTTPHeaderName  string      `json:"http_header_name" bson:"http_header_name"`
-	UseSourceIP     bool        `json:"use_source_ip" bson:"use_source_ip"`
-	MinimumRingSize string      `json:"minimum_ring_size" bson:"minimum_ring_size"`
-	HttpCookie      *HttpCookie `json:"http_cookie" bson:"http_cookie"`
+	HTTPHeaderName  string      `json:"http_header_name,omitempty" bson:"http_header_name,omitempty"`
+	UseSourceIP     bool        `json:"use_source_ip,omitempty" bson:"use_source_ip,omitempty"`
+	MinimumRingSize string      `json:"minimum_ring_size,omitempty" bson:"minimum_ring_size,omitempty"`
+	HttpCookie      *HttpCookie `json:"http_cookie,omitempty" bson:"http_cookie,omitempty"`
 }
 type HttpCookie struct {
-	Name string `json:"name" bson:"name"`
-	Path string `json:"path" bson:"path" `
-	Ttl  int64  `json:"ttl" bson:"ttl"`
+	Name string `json:"name,omitempty" bson:"name,omitempty"`
+	Path string `json:"path,omitempty" bson:"path,omitempty" `
+	Ttl  int64  `json:"ttl,omitempty" bson:"ttl,omitempty"`
 }
 type PortLevelSetting struct {
-	Port             *DrPort           `json:"dr_port" bson:"dr_port"`
-	LoadBalancer     *LoadBalancer     `json:"load_balancer" bson:"load_balancer"`
-	ConnectionPool   *ConnectionPool   `json:"connection_pool" bson:"connection_pool"`
-	OutlierDetection *OutlierDetection `json:"outlier_detection" bson:"outlier_detection"`
-	DrTls            *DrTls            `json:"dr_tls" bson:"dr_tls"`
+	Port             *DrPort           `json:"dr_port,omitempty" bson:"dr_port,omitempty"`
+	LoadBalancer     *LoadBalancer     `json:"load_balancer,omitempty" bson:"load_balancer,omitempty"`
+	ConnectionPool   *ConnectionPool   `json:"connection_pool,omitempty" bson:"connection_pool,omitempty"`
+	OutlierDetection *OutlierDetection `json:"outlier_detection,omitempty" bson:"outlier_detection,omitempty"`
+	DrTls            *DrTls            `json:"dr_tls,omitempty" bson:"dr_tls,omitempty"`
 }
 type DrPort struct {
-	Number int32 `json:"number" bson:"number"`
+	Number int32 `json:"number,omitempty" bson:"number,omitempty"`
 }
 type ConnectionPool struct {
-	Tcp  *DrTcp  `json:"dr_tcp" bson:"dr_tcp"`
-	Http *DrHttp `json:"dr_http" bson:"dr_http"`
+	Tcp  *DrTcp  `json:"dr_tcp,omitempty" bson:"dr_tcp,omitempty"`
+	Http *DrHttp `json:"dr_http,omitempty" bson:"dr_http,omitempty"`
 }
 type DrTcp struct {
-	MaxConnections int32          `json:"max_connections" bson:"max_connections"`
-	ConnectTimeout *time.Duration `json:"connect_timeout" bson:"connect_timeout"`
-	TcpKeepalive   *TcpKeepalive  `json:"tcp_keep_alive" bson:"tcp_keep_alive"`
+	MaxConnections int32          `json:"max_connections,omitempty" bson:"max_connections,omitempty"`
+	ConnectTimeout *time.Duration `json:"connect_timeout,omitempty" bson:"connect_timeout,omitempty"`
+	TcpKeepalive   *TcpKeepalive  `json:"tcp_keep_alive,omitempty" bson:"tcp_keep_alive,omitempty"`
 }
 type TcpKeepalive struct {
-	Time     *time.Duration `json:"time" bson:"time"`
-	Interval *time.Duration `json:"interval" bson:"interval"`
-	Probes   uint32         `json:"probes" bson:"probes"`
+	Time     *time.Duration `json:"time,omitempty" bson:"time,omitempty"`
+	Interval *time.Duration `json:"interval,omitempty" bson:"interval,omitempty"`
+	Probes   uint32         `json:"probes,omitempty" bson:"probes,omitempty"`
 }
 type DrHttp struct {
-	HTTP1MaxPendingRequests                           int32 `json:"http_1_max_pending_requests" bson:"http_1_max_pending_requests"`
-	HTTP2MaxRequests                                  int32 `json:"http_2_max_requests" bson:"http_2_max_requests"`
-	MaxRequestsPerConnection                          int32 `json:"max_requests_per_connection" bson:"max_requests_per_connection"`
-	MaxRetries                                        int32 `json:"max_retries" bson:"max_retries"`
-	IdleTimeout                                       int32 `json:"idle_timeout" bson:"idle_timeout"` //time
-	ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy int32 `json:"connection_pool_settings_http_settings_h2_upgrade_policy" bson:"connection_pool_settings_http_settings_h2_upgrade_policy"`
+	HTTP1MaxPendingRequests                           int32 `json:"http_1_max_pending_requests,omitempty" bson:"http_1_max_pending_requests,omitempty"`
+	HTTP2MaxRequests                                  int32 `json:"http_2_max_requests,omitempty" bson:"http_2_max_requests,omitempty"`
+	MaxRequestsPerConnection                          int32 `json:"max_requests_per_connection,omitempty" bson:"max_requests_per_connection,omitempty"`
+	MaxRetries                                        int32 `json:"max_retries,omitempty" bson:"max_retries,omitempty"`
+	IdleTimeout                                       int32 `json:"idle_timeout,omitempty" bson:"idle_timeout,omitempty"` //time
+	ConnectionPoolSettingsHTTPSettingsH2UpgradePolicy int32 `json:"connection_pool_settings_http_settings_h2_upgrade_policy,omitempty" bson:"connection_pool_settings_http_settings_h2_upgrade_policy,omitempty"`
 }
 
 type OutlierDetection struct {
-	ConsecutiveErrors  int32          `json:"consecutive_errors" bson:"consecutive_errors"`
-	Interval           *time.Duration `json:"interval" bson:"interval"`
-	BaseEjectionTime   *time.Duration `json:"base_ejection_time" bson:"base_ejection_time"`
-	MaxEjectionPercent int32          `json:"max_ejection_percent" bson:"max_ejection_percent"`
-	MinHealthPercent   int32          `json:"min_health_percent" bson:"min_health_percent"`
+	ConsecutiveErrors  int32          `json:"consecutive_errors,omitempty" bson:"consecutive_errors,omitempty"`
+	Interval           *time.Duration `json:"interval,omitempty" bson:"interval,omitempty"`
+	BaseEjectionTime   *time.Duration `json:"base_ejection_time,omitempty" bson:"base_ejection_time,omitempty"`
+	MaxEjectionPercent int32          `json:"max_ejection_percent,omitempty" bson:"max_ejection_percent,omitempty"`
+	MinHealthPercent   int32          `json:"min_health_percent,omitempty" bson:"min_health_percent,omitempty"`
 }
 type Subset struct {
-	Name          string             `json:"name" bson:"name"`
-	Labels        *map[string]string `json:"labels" bson:"labels"`
-	TrafficPolicy *TrafficPolicy     `json:"traffic_policy" bson:"traffic_policy" `
+	Name          string             `json:"name,omitempty" bson:"name,omitempty"`
+	Labels        *map[string]string `json:"labels,omitempty" bson:"labels,omitempty"`
+	TrafficPolicy *TrafficPolicy     `json:"traffic_policy,omitempty" bson:"traffic_policy,omitempty"`
 }
 type Label struct {
-	Version string `json:"version" bson:"version"`
+	Version string `json:"version,omitempty" bson:"version,omitempty"`
 }
 type DrTls struct {
-	Mode              string   `json:"mode" bson:"mode" valid:"in(ISTIO_MUTUAL|MUTUAL|DISABLE|SIMPLE)"`
-	ClientCertificate string   `json:"client_certificate" bson:"client_certificate"`
-	PrivateKey        string   `json:"private_key" bson:"private_key"`
-	CaCertificate     string   `json:"ca_certificate" bson:"ca_certificate"`
-	SubjectAltNames   string   `json:"subject_alt_names" bson:"subject_alt_names"`
-	Name              []string `json:"name" bson:"name"`
+	Mode              string   `json:"mode,omitempty" bson:"mode" valid:"in(ISTIO_MUTUAL|MUTUAL|DISABLE|SIMPLE),omitempty"`
+	ClientCertificate string   `json:"client_certificate,omitempty" bson:"client_certificate,omitempty"`
+	PrivateKey        string   `json:"private_key,omitempty" bson:"private_key,omitempty"`
+	CaCertificate     string   `json:"ca_certificate,omitempty" bson:"ca_certificate,omitempty"`
+	SubjectAltNames   string   `json:"subject_alt_names,omitempty" bson:"subject_alt_names,omitempty"`
+	Name              []string `json:"name,omitempty" bson:"name,omitempty"`
 }
