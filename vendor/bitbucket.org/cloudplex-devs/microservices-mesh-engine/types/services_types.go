@@ -20,6 +20,17 @@ type ServiceMeshRequest struct {
 	ServiceAttributes     interface{}          `json:"service_attributes"`
 	ServiceDependencyInfo []ServiceMeshRequest `json:"service_dependency_info"`
 }
+type HookConfiguration struct {
+	Weight        int    `json:"weight"`
+	ServiceID     string `json:"service_id"`
+	ServiceStatus string
+	PreInstall    bool `json:"pre_install"`
+	PreUpdate     bool `json:"pre_update"`
+	PostUpdate    bool `json:"post_update"`
+	PostInstall   bool `json:"post_install"`
+	PreDelete     bool `json:"pre_delete"`
+	PostDelete    bool `json:"post_delete"`
+}
 type ServiceBasicInfo struct {
 	// number of replicas of Deployment/StatefulSets
 	// +optional
@@ -178,6 +189,12 @@ type ServiceBasicInfo struct {
 	Angle int `json:"angle,omitempty" bson:"angle" valid:"-"`
 }
 type ServiceTemplate struct {
+	HookConfiguration *HookConfiguration
+	Hooks             []struct {
+		Weight     int      `json:"weight,omitempty" bson:"weight"`
+		ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
+		HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
+	} `json:"hooks,omitempty" bson:"hooks" valid:"-"`
 	ServiceBasicInfo `json:",inline" bson:",inline"`
 	// ServiceAttributes are the actual attributes required to deploy
 	// on Kubernetes Cluster

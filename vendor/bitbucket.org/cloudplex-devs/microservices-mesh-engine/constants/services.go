@@ -40,6 +40,7 @@ const (
 	NetworkPolicy      ServiceSubType = "network_policy"
 	Hpa                ServiceSubType = "hpa"
 	InitContainer      ServiceSubType = "init_container"
+	Pod                ServiceSubType = "pod"
 	// Istio service sub type
 
 	Gateway         ServiceSubType = "gateway"
@@ -127,6 +128,7 @@ var (
 		Hpa,
 		NetworkPolicy,
 		InitContainer,
+		Pod,
 	}
 	meshServicesSubTypes = []ServiceSubType{
 		Gateway,

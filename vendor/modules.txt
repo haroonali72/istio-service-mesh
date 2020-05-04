@@ -1,10 +1,10 @@
-# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200413141308-024c89b36e0b
+# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200501120452-a31e2ef8b654
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200428115732-69370418575d => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501101424-f0a701a342cb
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200501120105-a184b768a8da => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200504074924-416086d04741
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
-bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
+bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services
 # github.com/astaxie/beego v1.12.1
 github.com/astaxie/beego
 github.com/astaxie/beego/config
@@ -51,7 +51,7 @@ github.com/google/uuid
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/imdario/mergo v0.3.9
+# github.com/imdario/mergo v0.3.7
 github.com/imdario/mergo
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
@@ -87,7 +87,7 @@ go.opencensus.io/internal
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
 go.opencensus.io
-# golang.org/x/build v0.0.0-20200408230101-5bbd558901b3
+# golang.org/x/build v0.0.0-20200428202702-916311cec4e1
 golang.org/x/build/kubernetes/api
 # golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
@@ -126,7 +126,7 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 # google.golang.org/genproto v0.0.0-20200305110556-506484158171
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.28.1
+# google.golang.org/grpc v1.29.1
 google.golang.org/grpc
 google.golang.org/grpc/reflection
 google.golang.org/grpc/codes
@@ -162,6 +162,7 @@ google.golang.org/grpc/resolver
 google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/tap
 google.golang.org/grpc/reflection/grpc_reflection_v1alpha
+google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
@@ -176,15 +177,15 @@ gopkg.in/mgo.v2/internal/json
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20200407171655-fb462ece86fb => istio.io/api v0.0.0-20200208020912-9564cdd03c96
+# istio.io/api v0.0.0-20200430220031-f818d6294944 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 istio.io/api/authentication/v1alpha1
 istio.io/api/networking/v1alpha3
-# istio.io/client-go v0.0.0-20200325170329-dc00bbff4229 => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
+# istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4 => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
 istio.io/client-go/pkg/apis/authentication/v1alpha1
 istio.io/client-go/pkg/apis/networking/v1alpha3
 # istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9
 istio.io/gogo-genproto/googleapis/google/api
-# k8s.io/api v0.18.1 => k8s.io/api v0.16.4
+# k8s.io/api v0.18.2 => k8s.io/api v0.16.4
 k8s.io/api/apps/v1
 k8s.io/api/core/v1
 k8s.io/api/rbac/v1
@@ -223,7 +224,7 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.18.1 => k8s.io/apimachinery v0.16.4
+# k8s.io/apimachinery v0.18.2 => k8s.io/apimachinery v0.16.4
 k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/util/intstr
@@ -324,7 +325,7 @@ k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/keyutil
 # k8s.io/klog v0.4.0
 k8s.io/klog
-# k8s.io/utils v0.0.0-20200327001022-6496210b90e8
+# k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 k8s.io/utils/integer
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
