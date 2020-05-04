@@ -7,6 +7,7 @@ const (
 	DeploymentServiceType         = "deployment"
 	StatefulSetServiceType        = "statefulset"
 	DaemonSetServiceType          = "daemonset"
+	PodServiceType                = "pod"
 	JobServiceType                = "job"
 	CronJobServiceType            = "cronjob"
 	KubernetesServiceType         = "service"
