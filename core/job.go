@@ -102,6 +102,15 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
+	tjoob := new(v1.Job)
+	err = json.Unmarshal(result.Service, tjoob)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	serviceResp.Status.IsComplete = checkJobComplation(tjoob)
+
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
@@ -400,4 +409,10 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	}
 
 	return job, nil
+}
+func checkJobComplation(tjoob *v1.Job) bool {
+	if tjoob.Status.CompletionTime != nil {
+		return true
+	}
+	return false
 }
