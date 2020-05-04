@@ -296,8 +296,8 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 		job.Spec.Template.Labels[key] = value
 	}
 
-	//job.Spec.Template.Annotations = make(map[string]string)
-	//job.Spec.Template.Annotations["sidecar.istio.io/inject"] = "true"
+	job.Spec.Template.Annotations = make(map[string]string)
+	job.Spec.Template.Annotations["sidecar.istio.io/inject"] = "false"
 
 	manualSelector := true
 	job.Spec.ManualSelector = &manualSelector
