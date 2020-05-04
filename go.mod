@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200501120452-a31e2ef8b654
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200502124754-7908a9af0d0a
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200504141609-6e00cbe468b3
 	github.com/astaxie/beego v1.12.1
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gogo/protobuf v1.3.1
@@ -26,7 +26,6 @@ require (
 )
 
 replace (
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine => bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200504074924-416086d04741
 	istio.io/api => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 	istio.io/client-go => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
 	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
