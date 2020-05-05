@@ -323,7 +323,7 @@ func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, 
 	} else {
 		return nil, err
 	}
-	pod.Annotations["sidecar.istio.io/inject"] = "false"
+
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
 		if len(containersList) > 0 {
 			pod.Spec.InitContainers = containersList
@@ -352,7 +352,15 @@ func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, 
 			pod.Spec.Affinity = aa
 		}
 	}
-	pod.Spec.RestartPolicy = v1.RestartPolicy(service.ServiceAttributes.Restart_Policy)
+	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_Never{
+		pod.Annotations["sidecar.istio.io/inject"] = "false"
+		pod.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else 	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_OnFailure{
+		pod.Spec.RestartPolicy = v1.RestartPolicyOnFailure
+	}else 	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_Always{
+		pod.Spec.RestartPolicy = v1.RestartPolicyAlways
+	}
+
 
 	return pod, nil
 }

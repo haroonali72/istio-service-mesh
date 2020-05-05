@@ -18,25 +18,24 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.PodServiceType:
+	case meshConstants.Pod:
 		if err := ConvertPodToYaml(ctx, req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.PVCServiceType:
 
 	case meshConstants.PVC:
 		if err := ConvertPVCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.PVServiceType:
+	case meshConstants.PV:
 		if err := ConvertPVToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.GatewayServiceType:
+	case meshConstants.Gateway:
 		if err := ConvertGatewayToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-	case meshConstants.KubernetesServiceType:
+	case meshConstants.KubernetesService:
 		if err := ConvertKubernetesServiceToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
