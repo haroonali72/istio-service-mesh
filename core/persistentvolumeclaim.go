@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -261,7 +261,7 @@ func (s *Server) PutPersistentVolumeClaim(ctx context.Context, req *pb.Persisten
 func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.PersistentVolumeClaim, error) {
 	var pvc = new(core.PersistentVolumeClaim)
 	pvc.Name = input.Name
-	pvc.TypeMeta.Kind = "PersistentVolumeClaim"
+	pvc.TypeMeta.Kind = constants.PersistentVolumeClaim.String() //"PersistentVolumeClaim"
 	pvc.TypeMeta.APIVersion = "v1"
 	if input.Namespace == "" {
 		pvc.Namespace = "default"

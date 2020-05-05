@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"github.com/astaxie/beego"
 	"github.com/go-redis/redis"
-	"istio-service-mesh/constants"
 )
 
 var (

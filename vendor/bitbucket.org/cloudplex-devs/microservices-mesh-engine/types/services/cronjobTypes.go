@@ -22,41 +22,41 @@ type CronJobServiceAttribute struct {
 	// Optional deadline in seconds for starting the job if it misses scheduled
 	// time for any reason.  Missed jobs executions will be counted as failed ones.
 	// +optional
-	StartingDeadLineSeconds *StartingDeadlineSeconds `json:"starting_deadline_seconds,omitempty" bson:"starting_deadline_seconds,omitempty"`
+	StartingDeadLineSeconds *StartingDeadlineSeconds `json:"starting_deadline_seconds,omitempty"`
 	// Specifies how to treat concurrent executions of a Job.
 	// Valid values are:
 	// - "Allow" (default): allows CronJobs to run concurrently;
 	// - "Forbid": forbids concurrent runs, skipping next run if previous run hasn't finished yet;
 	// - "Replace": cancels currently running job and replaces it with a new one
 	// +optional
-	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty" bson:"concurrency_policy,omitempty"`
+	ConcurrencyPolicy *ConcurrencyPolicy `json:"concurrency_policy,omitempty"`
 	// This flag tells the controller to suspend subsequent executions, it does
 	// not apply to already started executions.  Defaults to false.
 	// +optional
-	Suspend *Suspend `json:"suspend,omitempty" bson:"suspend,omitempty"`
+	Suspend *Suspend `json:"suspend,omitempty"`
 	// The number of failed finished jobs to retain.
 	// This is a pointer to distinguish between explicit zero and not specified.
 	// Defaults to 1.
 	// +optional
-	FailedJobsHistoryLimit *FailedJobsHistoryLimit `json:"failed_jobs_history_limit,omitempty" bson:"failed_jobs_history_limit,omitempty" default:"1"`
+	FailedJobsHistoryLimit *FailedJobsHistoryLimit `json:"failed_jobs_history_limit,omitempty" default:"1"`
 	// The number of successful finished jobs to retain.
 	// This is a pointer to distinguish between explicit zero and not specified.
 	// Defaults to 3.
 	// +optional
-	SuccessfulJobsHistoryLimit *SuccessfulJobsHistoryLimit `json:"successfulJ_jobs_history_limit,omitempty"bjson:"successfulJ_jobs_history_limit,omitempty"  default:"3"`
+	SuccessfulJobsHistoryLimit *SuccessfulJobsHistoryLimit `json:"successfulJ_jobs_history_limit,omitempty" default:"3"`
 }
 
 type StartingDeadlineSeconds struct {
-	Value int64 `json:"value,omitempty" bson:"value,omitempty" `
+	Value int64 `json:"value,omitempty"`
 }
 type Suspend struct {
-	Value bool `json:"value,omitempty" bson:"value,omitempty"`
+	Value bool `json:"value,omitempty"`
 }
 type SuccessfulJobsHistoryLimit struct {
-	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 type FailedJobsHistoryLimit struct {
-	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 type ConcurrencyPolicy string

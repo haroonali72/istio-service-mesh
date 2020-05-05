@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"istio-service-mesh/constants"
 	"net/http"
 )
 

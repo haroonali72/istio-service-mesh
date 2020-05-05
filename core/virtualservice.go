@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	types "github.com/gogo/protobuf/types"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	"istio.io/api/networking/v1alpha3"
 	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	"strconv"
@@ -254,7 +254,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	vServ.Labels = labels
-	vServ.Kind = "VirtualService"
+	vServ.Kind = constants.VirtualService.String() //"VirtualService"
 	vServ.APIVersion = "networking.istio.io/v1alpha3"
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace

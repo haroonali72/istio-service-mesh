@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"fmt"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	kb "k8s.io/api/core/v1"
 	"strings"
 )
@@ -242,7 +242,7 @@ func (s *Server) PutSecretService(ctx context.Context, req *pb.SecretService) (*
 func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 
 	var kube = new(kb.Secret)
-	kube.Kind = "Secret"
+	kube.Kind = constants.Secret.String() //"Secret"
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace

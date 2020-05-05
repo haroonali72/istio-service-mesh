@@ -19,13 +19,13 @@ type DeploymentServiceAttribute struct {
 	// Number of desired pods. This is a pointer to distinguish between explicit
 	// zero and not specified. Defaults to 1.
 	// +optional
-	Replicas *int32 `json:"replicas,omitempty" bson:"replicas,omitempty" default:"1"`
+	Replicas *int32 `json:"replicas,omitempty" default:"1"`
 	// The deployment strategy to use to replace existing pods with new ones.
 	// +optional
-	Strategy                  *DeploymentStrategy `json:"strategy,omitempty" bson:"strategy,omitempty"`
-	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`
+	Strategy                  *DeploymentStrategy `json:"strategy,omitempty"`
+	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty" `
 }
 
 type AutomountServiceAccountToken struct {
-	Value bool `json:"value,omitempty" bson:"value,omitempty"`
+	Value bool `json:"value,omitempty"`
 }

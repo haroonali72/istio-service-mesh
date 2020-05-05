@@ -1,13 +1,13 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	v1 "k8s.io/api/rbac/v1"
 	"strings"
 )
@@ -244,7 +244,7 @@ func getClusterRole(input *pb.ClusterRole) (*v1.ClusterRole, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	clstrRolSvc.Kind = "ClusterRole"
+	clstrRolSvc.Kind = constants.ClusterRole.String()
 	clstrRolSvc.APIVersion = "rbac.authorization.k8s.io/v1"
 	clstrRolSvc.Name = input.Name
 	clstrRolSvc.Labels = labels

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	//	types "github.com/gogo/protobuf/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	"istio.io/api/networking/v1alpha3"
 	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	"strings"
@@ -256,7 +256,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	vServ.Labels = labels
-	vServ.Kind = "DestinationRule"
+	vServ.Kind = constants.DestinationRule.String() //"DestinationRule"
 	vServ.APIVersion = "networking.istio.io/v1alpha3"
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace

@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	_ "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
@@ -262,7 +262,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	}
 	cjob.Name = service.Name + "-" + service.Version
 	cjob.APIVersion = "batch/v1beta1"
-	cjob.Kind = "CronJob"
+	cjob.Kind = constants.CronJob.String() //"CronJob"
 	cjob.Labels = make(map[string]string)
 	cjob.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.CronJobServiceAttribute.Labels {
@@ -270,6 +270,10 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	}
 	cjob.Annotations = make(map[string]string)
 	cjob.Annotations = service.CronJobServiceAttribute.Annotations
+
+	cjob.Spec.JobTemplate.Spec.Template.Annotations = make(map[string]string)
+
+	cjob.Spec.JobTemplate.Spec.Template.Annotations["sidecar.istio.io/inject"] = "false"
 
 	cjob.Spec.Schedule = service.CronJobServiceAttribute.Schedule
 

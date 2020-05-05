@@ -1,12 +1,12 @@
 package types
 
 import (
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v12 "k8s.io/api/apps/v1"
 	autoscaling "k8s.io/api/autoscaling/v2beta2"
 	v13 "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v2alpha1"
 	v1 "k8s.io/api/core/v1"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 )
 
 type KSDResponse struct {
@@ -16,7 +16,7 @@ type OutputStruct struct {
 	Deployments  []DeploymentResp  `json:"deployment"`
 	Kubernetes   []KubernetesResp  `json:"kubernetes-service"`
 	Istio        []IstioResp       `json:"istio-component"`
-	Gateway  [] GatewayResp `json:"gateway"`
+	Gateway      []GatewayResp     `json:"gateway"`
 	Secrets      []interface{}     `json:"secrets"`
 	Nodes        []NodeResp        `json:"nodes"`
 	StatefulSets []StatefulSetResp `json:"statefulset"`
@@ -64,6 +64,6 @@ type IstioResp struct {
 }
 
 type GatewayResp struct {
-	Error string `json:"error"`
+	Error   string               `json:"error"`
 	Gateway *istioClient.Gateway `json:"data"`
 }

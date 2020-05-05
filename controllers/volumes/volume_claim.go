@@ -1,7 +1,5 @@
 package volumes
 
-import ()
-
 /*
 func ProvisionVolumeClaim(volume types.Volume) v1.PersistentVolumeClaim {
 	volumeClaim := v1.PersistentVolumeClaim{}

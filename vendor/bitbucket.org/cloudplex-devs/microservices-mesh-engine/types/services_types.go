@@ -187,14 +187,6 @@ type ServiceBasicInfo struct {
 	// required for Cloudplex Frontend
 	// +optional
 	Angle int `json:"angle,omitempty" bson:"angle" valid:"-"`
-	//required for Cloudplex Frontend visualization
-	// This key will tell to embed service or not
-	// +optional
-	IsEmbedded bool `json:"is_embedded,omitempty" bson:"is_embedded,omitempty"`
-	// required for Cloudplex Frontend visualization
-	// embeds contains list of service_ids which you want to group
-	// +optional
-	Embeds []string `json:"embeds,omitempty" bson:"embeds,omitempty"`
 }
 type ServiceTemplate struct {
 	HookConfiguration *HookConfiguration
@@ -202,7 +194,7 @@ type ServiceTemplate struct {
 		Weight     int      `json:"weight,omitempty" bson:"weight"`
 		ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
 		HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
-	} `json:"hooks,omitempty" bson:"hooks,omitempty" valid:"-"`
+	} `json:"hooks,omitempty" bson:"hooks" valid:"-"`
 	ServiceBasicInfo `json:",inline" bson:",inline"`
 	// ServiceAttributes are the actual attributes required to deploy
 	// on Kubernetes Cluster

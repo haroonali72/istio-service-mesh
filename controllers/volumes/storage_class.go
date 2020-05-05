@@ -1,7 +1,5 @@
 package volumes
 
-import ()
-
 /*
 func ProvisionStorageClass(volume types.Volume) v1.StorageClass {
 	storageClass := v1.StorageClass{}

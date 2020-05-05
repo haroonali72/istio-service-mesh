@@ -23,33 +23,30 @@ type CommonContainerAttributes struct {
 	// Init containers cannot currently be added or removed.
 	// Once deployed cannot be updated.
 	// +optional
-	InitContainers []*ContainerAttribute `json:"init_containers,omitempty" bson:"init_containers,omitempty"`
+	InitContainers []*ContainerAttribute `json:"initContainers,omitempty"`
 	// internal use only. Cloudplex automatically populated this array
 	// +optional
 	Volumes []Volume `json:"volumes,omitempty" bson:"volumes,omitempty"`
 	// this option is to show info on Frontend
 	// +optional
-	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty" bson:"istio_config,omitempty"`
-	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty" bson:"label_selector,omitempty"`
-	NodeSelector                 map[string]string             `json:"node_selector,omitempty" bson:"node_selector,omitempty"`
-	Labels                       map[string]string             `json:"labels,omitempty" bson:"labels,omitempty"`
-	Annotations                  map[string]string             `json:"annotations,omitempty" bson:"annotations,omitempty"`
-	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty" bson:"roles,omitempty"`
-	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty" bson:"istio_roles,omitempty"`
-	IsRbac                       bool                          `json:"is_rbac_enabled,omitempty" bson:"is_rbac_enabled,omitempty"`
-	Affinity                     *Affinity                     `json:"affinity,omitempty" bson:"affinity,omitempty"`
-	ImagePullSecrets             []LocalObjectReference        `json:"image_pull_secrets,omitempty" bson:"image_pull_secrets,omitempty"`
-	ServiceAccountName           string                        `json:"service_account_name,omitempty" bson:"service_account_name,omitempty"`
-	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automount_service_account_token,omitempty" bson:"automount_service_account_token,omitempty"`
-	// this option is a metadata to attach gateway with container service
-	// +optional
-	EnableExternalTraffic bool `json:"enable_external_traffic,omitempty" bson:"enable_external_traffic,omitempty"`
+	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty"`
+	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty"`
+	NodeSelector                 map[string]string             `json:"node_selector,omitempty"`
+	Labels                       map[string]string             `json:"labels,omitempty"`
+	Annotations                  map[string]string             `json:"annotations,omitempty"`
+	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty"`
+	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty"`
+	IsRbac                       bool                          `json:"is_rbac_enabled,omitempty"`
+	Affinity                     *Affinity                     `json:"affinity,omitempty"`
+	ImagePullSecrets             []LocalObjectReference        `json:"image_pull_secrets,omitempty"`
+	ServiceAccountName           string                        `json:"service_account_name,omitempty"`
+	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automount_service_account_token,omitempty"`
 }
 type ImageRepositoryConfigurations struct {
 	Url         string               `json:"url,omitempty"`
 	Tag         string               `json:"tag,omitempty"`
 	Credentials BasicAuthCredentials `json:"credentials,omitempty"`
-	Profile     string               `json:"profile_id,omitempty" bson:"profile_id,omitempty"`
+	Profile     string               `json:"profile_id,omitempty"`
 }
 
 type BasicAuthCredentials struct {
@@ -57,23 +54,23 @@ type BasicAuthCredentials struct {
 	Password string `json:"password,omitempty"`
 }
 type EnvironmentVariable struct {
-	Key     string `json:"key" bson:"key"`
-	Value   string `json:"value" bson:"value"`
-	Dynamic bool   `json:"dynamic" bson:"dynamic"`
-	Type    string `json:"type,omitempty" bson:"type,omitempty"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
+	Dynamic bool   `json:"dynamic"`
+	Type    string `json:"type,omitempty"`
 }
 type IstioConfig struct {
-	Enable_External_Traffic bool `json:"enable_external_traffic,omitempty" bson:"enable_external_traffic,omitempty"`
+	Enable_External_Traffic bool `json:"enable_external_traffic"`
 }
 
 type LabelSelectorObj struct {
-	MatchLabels      map[string]string          `json:"match_labels,omitempty" bson:"match_labels,omitempty"`
-	MatchExpressions []LabelSelectorRequirement `json:"match_expressions,omitempty" bson:"match_expressions,omitempty"`
+	MatchLabels      map[string]string          `json:"match_labels,omitempty"`
+	MatchExpressions []LabelSelectorRequirement `json:"match_expressions,omitempty"`
 }
 type LabelSelectorRequirement struct {
-	Key      string                `json:"key" bson:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
-	Operator LabelSelectorOperator `json:"operator" bson:"operator" protobuf:"bytes,2,opt,name=operator,casttype=LabelSelectorOperator"`
-	Values   []string              `json:"values,omitempty" bson:"values,omitempty" protobuf:"bytes,3,rep,name=values"`
+	Key      string                `json:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	Operator LabelSelectorOperator `json:"operator" protobuf:"bytes,2,opt,name=operator,casttype=LabelSelectorOperator"`
+	Values   []string              `json:"values,omitempty" protobuf:"bytes,3,rep,name=values"`
 }
 
 type LabelSelectorOperator string
@@ -86,15 +83,15 @@ const (
 )
 
 type SecurityContextStruct struct {
-	Capabilities             *Capabilities        `json:"capabilities,omitempty" bson:"capabilities,omitempty"`
-	RunAsUser                *int64               `json:"run_as_user,omitempty" bson:"run_as_user,omitempty"`
-	RunAsGroup               *int64               `json:"run_as_group,omitempty" bson:"run_as_group,omitempty"`
-	RunAsNonRoot             bool                 `json:"run_as_non_root,omitempty" bson:"run_as_non_root,omitempty"`
-	Privileged               bool                 `json:"privileged, omitempty" bson:"privileged, omitempty"`
-	ProcMount                ProcMountType        `json:"proc_mount,omitempty" bson:"proc_mount,omitempty" `
-	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation,omitempty" bson:"allow_privilege_escalation,omitempty"`
-	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem,omitempty" bson:"read_only_root_filesystem,omitempty"`
-	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options,omitempty" bson:"se_linux_options,omitempty"`
+	Capabilities             *Capabilities        `json:"capabilities,omitempty"`
+	RunAsUser                *int64               `json:"run_as_user,omitempty"`
+	RunAsGroup               *int64               `json:"run_as_group,omitempty"`
+	RunAsNonRoot             bool                 `json:"run_as_non_root,omitempty"`
+	Privileged               bool                 `json:"privileged, omitempty"`
+	ProcMount                ProcMountType        `json:"proc_mount,omitempty"`
+	AllowPrivilegeEscalation bool                 `json:"allow_privilege_escalation,omitempty"`
+	ReadOnlyRootFileSystem   bool                 `json:"read_only_root_filesystem,omitempty"`
+	SELinuxOptions           SELinuxOptionsStruct `json:"se_linux_options,omitempty"`
 }
 
 type ProcMountType string
@@ -105,17 +102,17 @@ const (
 )
 
 type SELinuxOptionsStruct struct {
-	User  string `json:"user,omitempty" bson:"user,omitempty"`
-	Role  string `json:"role,omitempty" bson:"role,omitempty"`
-	Type  string `json:"type,omitempty" bson:"type,omitempty"`
-	Level string `json:"level,omitempty" bson:"level,omitempty"`
+	User  string `json:"user,omitempty"`
+	Role  string `json:"role,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Level string `json:"level,omitempty"`
 }
 
 type Capability string
 
 type Capabilities struct {
-	Add  []Capability `json:"add,omitempty" bson:"add,omitempty"`
-	Drop []Capability `json:"drop,omitempty" bson:"drop,omitempty"`
+	Add  []Capability `json:"add,omitempty"`
+	Drop []Capability `json:"drop,omitempty"`
 }
 
 const (
@@ -137,13 +134,13 @@ type ExecAction struct {
 	// a shell, you need to explicitly call out to that shell.
 	// Exit status of 0 is treated as live/healthy and non-zero is unhealthy.
 	// +optional
-	Command []string `json:"command,omitempty" bson:"command,omitempty" protobuf:"bytes,1,rep,name=command"`
+	Command []string `json:"command,omitempty" protobuf:"bytes,1,rep,name=command"`
 }
 type HTTPHeader struct {
 	// The header field name
-	Name *string `json:"name" bson:"name" protobuf:"bytes,1,opt,name=name"`
+	Name *string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// The header field value
-	Value *string `json:"value" bson:"value" protobuf:"bytes,2,opt,name=value"`
+	Value *string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
 const (
@@ -156,72 +153,72 @@ const (
 type HTTPGetAction struct {
 	// Path to access on the HTTP server.
 	// +optional
-	Path *string `json:"path,omitempty" bson:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
+	Path *string `json:"path,omitempty" protobuf:"bytes,1,opt,name=path"`
 	// Name or number of the port to access on the container.
 	// Number must be in the range 1 to 65535.
 	// Name must be an IANA_SVC_NAME.
-	Port int `json:"port" bson:"port" protobuf:"bytes,2,opt,name=port" jsonschema:"minimum=1,maximum=65535"`
+	Port int `json:"port" protobuf:"bytes,2,opt,name=port"`
 	// Host name to connect to, defaults to the pod IP. You probably want to set
 	// "Host" in httpHeaders instead.
 	// +optional
-	Host *string `json:"host,omitempty" bson:"host,omitempty" protobuf:"bytes,3,opt,name=host"`
+	Host *string `json:"host,omitempty" protobuf:"bytes,3,opt,name=host"`
 	// Scheme to use for connecting to the host.
 	// Defaults to HTTP.
 	// +optional
-	Scheme *string `json:"scheme,omitempty" bson:"scheme,omitempty" protobuf:"bytes,4,opt,name=scheme,casttype=URIScheme"`
+	Scheme *string `json:"scheme,omitempty" protobuf:"bytes,4,opt,name=scheme,casttype=URIScheme"`
 	// Custom headers to set in the request. HTTP allows repeated headers.
 	// +optional
-	HTTPHeaders []HTTPHeader `json:"http_headers,omitempty" bson:"http_headers,omitempty" protobuf:"bytes,5,rep,name=http_headers"`
+	HTTPHeaders []HTTPHeader `json:"http_headers,omitempty" protobuf:"bytes,5,rep,name=http_headers"`
 }
 type TCPSocketAction struct {
 	// Number or name of the port to access on the container.
 	// Number must be in the range 1 to 65535.
 	// Name must be an IANA_SVC_NAME.
-	Port int `json:"port" bson:"port" protobuf:"bytes,1,opt,name=port" jsonschema:"minimum=1,maximum=65535"`
+	Port int `json:"port" protobuf:"bytes,1,opt,name=port"`
 	// Optional: Host name to connect to, defaults to the pod IP.
 	// +optional
-	Host *string `json:"host,omitempty" bson:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
+	Host *string `json:"host,omitempty" protobuf:"bytes,2,opt,name=host"`
 }
 type Handler struct {
-	Type string `json:"handler_type" bson:"handler_type"`
+	Type string `json:"handler_type"`
 
 	// One and only one of the following should be specified.
 	// Exec specifies the action to take.
 	// +optional
-	Exec *ExecAction `json:"exec,omitempty" bson:"exec,omitempty" protobuf:"bytes,1,opt,name=exec"`
+	Exec *ExecAction `json:"exec,omitempty" protobuf:"bytes,1,opt,name=exec"`
 	// HTTPGet specifies the http request to perform.
 	// +optional
-	HTTPGet *HTTPGetAction `json:"http_get,omitempty" bson:"http_get,omitempty" protobuf:"bytes,2,opt,name=http_get"`
+	HTTPGet *HTTPGetAction `json:"http_get,omitempty" protobuf:"bytes,2,opt,name=http_get"`
 	// TCPSocket specifies an action involving a TCP port.
 	// TCP hooks not yet supported
 	// +optional
-	TCPSocket *TCPSocketAction `json:"tcp_socket,omitempty"  bson:"tcp_socket,omitempty" protobuf:"bytes,3,opt,name=tcp_socket"`
+	TCPSocket *TCPSocketAction `json:"tcp_socket,omitempty" protobuf:"bytes,3,opt,name=tcp_socket"`
 }
 
 type Probe struct {
 	// The action taken to determine the health of a container
-	Handler *Handler `json:"handler,inline" bson:"handler,inline" protobuf:"bytes,1,opt,name=handler"`
+	Handler *Handler `json:"handler,inline" protobuf:"bytes,1,opt,name=handler"`
 	// Number of seconds after the container has started before liveness probes are initiated.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	// +optional
-	InitialDelaySeconds *int32 `json:"initial_delay_seconds,omitempty" bson:"initial_delay_seconds,omitempty" protobuf:"varint,2,opt,name=initial_delay_seconds"`
+	InitialDelaySeconds *int32 `json:"initial_delay_seconds,omitempty" protobuf:"varint,2,opt,name=initial_delay_seconds"`
 	// Number of seconds after which the probe times out.
 	// Defaults to 1 second. Minimum value is 1.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
 	// +optional
-	TimeoutSeconds *int32 `json:"timeout_seconds,omitempty" bson:"timeout_seconds,omitempty" protobuf:"varint,3,opt,name=timeout_seconds"`
+	TimeoutSeconds *int32 `json:"timeout_seconds,omitempty" protobuf:"varint,3,opt,name=timeout_seconds"`
 	// How often (in seconds) to perform the probe.
 	// Default to 10 seconds. Minimum value is 1.
 	// +optional
-	PeriodSeconds *int32 `json:"period_seconds,omitempty" bson:"period_seconds,omitempty" protobuf:"varint,4,opt,name=period_seconds"`
+	PeriodSeconds *int32 `json:"period_seconds,omitempty" protobuf:"varint,4,opt,name=period_seconds"`
 	// Minimum consecutive successes for the probe to be considered successful after having failed.
 	// Defaults to 1. Must be 1 for liveness. Minimum value is 1.
 	// +optional
-	SuccessThreshold *int32 `json:"success_threshold,omitempty"  bson:"success_threshold,omitempty" protobuf:"varint,5,opt,name=success_threshold"`
+	SuccessThreshold *int32 `json:"success_threshold,omitempty" protobuf:"varint,5,opt,name=success_threshold"`
 	// Minimum consecutive failures for the probe to be considered failed after having succeeded.
 	// Defaults to 3. Minimum value is 1.
 	// +optional
-	FailureThreshold *int32 `json:"failure_threshold,omitempty" bson:"failure_threshold,omitempty" protobuf:"varint,6,opt,name=failure_threshold"`
+	FailureThreshold *int32 `json:"failure_threshold,omitempty" protobuf:"varint,6,opt,name=failure_threshold"`
 }
 
 type ContainerAttribute struct {
@@ -245,47 +242,47 @@ type ContainerAttribute struct {
 	IsDirectDeployment            bool                           `json:"is_direct_deployment,omitempty" bson:"is_direct_deployment,omitempty"`
 }
 type DeploymentPipeline struct {
-	Name        string        `json:"name,omitempty" bson:"name,omitempty"`
-	Description string        `json:"description,omitempty" bson:"description,omitempty"`
-	Type        string        `json:"type,omitempty" bson:"type,omitempty"`
-	Bluegreen   *Bluegreen    `json:"bluegreen,omitempty" bson:"bluegreen,omitempty"`
-	Canary      *Canary       `json:"canary,omitempty" bson:"canary,omitempty"`
-	Duration    string        `json:"duration,omitempty" bson:"duration,omitempty"`
-	RunsHistory []RunsHistory `json:"runs_history,omitempty" bson:"runs_history,omitempty"`
-	TotalRuns   int           `json:"total_runs,omitempty" bson:"total_runs,omitempty"`
-	Status      string        `json:"status,omitempty" bson:"status,omitempty"`
+	Name        string        `json:"name,omitempty"`
+	Description string        `json:"description,omitempty"`
+	Type        string        `json:"type,omitempty"`
+	Bluegreen   *Bluegreen    `json:"bluegreen,omitempty"`
+	Canary      *Canary       `json:"canary,omitempty"`
+	Duration    string        `json:"duration,omitempty"`
+	RunsHistory []RunsHistory `json:"runs_history,omitempty"`
+	TotalRuns   int           `json:"total_runs,omitempty"`
+	Status      string        `json:"status,omitempty"`
 }
 
 type RunsHistory struct {
-	ActivityType string      `json:"activity_type,omitempty" bson:"activity_type,omitempty"`
-	Tag          string      `json:"tag,omitempty" bson:"tag,omitempty"`
-	LastRun      interface{} `json:"last_run,omitempty" bson:"last_run,omitempty"`
+	ActivityType string      `json:"activity_type,omitempty"`
+	Tag          string      `json:"tag,omitempty"`
+	LastRun      interface{} `json:"last_run,omitempty"`
 }
 
 type Canary struct {
-	TotalStages  int      `json:"total_stages,omitempty" bson:"total_stages,omitempty"`
-	Stages       []*Stage `json:"stages,omitempty" bson:"stages,omitempty"`
-	CurrentStage int      `json:"current_stage,omitempty" bson:"current_stage,omitempty"`
-	Status       string   `json:"status,omitempty" bson:"status,omitempty"`
+	TotalStages  int      `json:"total_stages,omitempty"`
+	Stages       []*Stage `json:"stages,omitempty"`
+	CurrentStage int      `json:"current_stage,omitempty"`
+	Status       string   `json:"status,omitempty"`
 }
 
 type Stage struct {
-	Name                    string `json:"name,omitempty" bson:"name,omitempty"`
-	AnalysisType            string `json:"analysis_type,omitempty" bson:"analysis_type,omitempty"`
-	TrafficWeightCurrent    int32  `json:"traffic_weight_current,omitempty" bson:"traffic_weight_current,omitempty"`
-	TrafficWeightBaseline   int32  `json:"traffic_weight_baseline,omitempty" bson:"traffic_weight_baseline,omitempty"`
-	TrafficWeightCanary     int32  `json:"traffic_weight_canary,omitempty" bson:"traffic_weight_canary,omitempty"`
-	RequestSuccessThreshold int    `json:"request_success_threshold,omitempty" bson:"request_success_threshold,omitempty"`
-	RequestLatencyThreshold int    `json:"request_latency_threshold,omitempty" bson:"request_latency_threshold,omitempty"`
-	CronExpression          string `json:"cron_expression,omitempty" bson:"cron_expression,omitempty"`
-	Status                  string `json:"status,omitempty" bson:"status,omitempty"`
+	Name                    string `json:"name,omitempty"`
+	AnalysisType            string `json:"analysis_type,omitempty"`
+	TrafficWeightCurrent    int32  `json:"traffic_weight_current,omitempty"`
+	TrafficWeightBaseline   int32  `json:"traffic_weight_baseline,omitempty"`
+	TrafficWeightCanary     int32  `json:"traffic_weight_canary,omitempty"`
+	RequestSuccessThreshold int    `json:"request_success_threshold,omitempty"`
+	RequestLatencyThreshold int    `json:"request_latency_threshold,omitempty"`
+	CronExpression          string `json:"cron_expression,omitempty"`
+	Status                  string `json:"status,omitempty"`
 }
 
 type Bluegreen struct {
-	TrafficWeightBluegreen int32  `json:"traffic_weight_bluegreen,omitempty" bson:"traffic_weight_bluegreen,omitempty"`
-	TrafficWeightCurrent   int32  `json:"traffic_weight_current,omitempty" bson:"traffic_weight_current,omitempty"`
-	Status                 string `json:"status,omitempty" bson:"status,omitempty"`
-	RollBack               bool   `json:"roll_back,omitempty" bson:"roll_back,omitempty"`
+	TrafficWeightBluegreen int32  `json:"traffic_weight_bluegreen,omitempty"`
+	TrafficWeightCurrent   int32  `json:"traffic_weight_current,omitempty"`
+	Status                 string `json:"status,omitempty"`
+	RollBack               bool   `json:"roll_back,omitempty"`
 }
 type VolumeMount struct {
 	Name             string                `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed,required"`
@@ -310,14 +307,14 @@ func (c *MountPropagationMode) String() string {
 }
 
 type K8sRbacAttribute struct {
-	Resource string   `json:"resource,omitempty" bson:"resource,omitempty"`
-	Verbs    []string `json:"verbs,omitempty" bson:"verbs,omitempty"`
-	ApiGroup []string `json:"api_group,omitempty" bson:"api_group,omitempty"`
+	Resource string   `json:"resource"`
+	Verbs    []string `json:"verbs"`
+	ApiGroup []string `json:"api_group"`
 }
 type IstioRbacAttribute struct {
-	Services []string `json:"services,omitempty" bson:"services,omitempty"`
-	Methods  []string `json:"methods,omitempty" bson:"methods,omitempty"`
-	Paths    []string `json:"paths,omitempty" bson:"paths,omitempty"`
+	Services []string `json:"services"`
+	Methods  []string `json:"methods"`
+	Paths    []string `json:"paths"`
 }
 
 type ContainerPort struct {
@@ -326,28 +323,28 @@ type ContainerPort struct {
 	// If HostNetwork is specified, this must match ContainerPort.
 	// Most containers do not need this.
 	// +optional
-	HostPort int32 `json:"host_port,omitempty" bson:"host_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
+	HostPort int32 `json:"host_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
 	// Number of port to expose on the pod's IP address.
 	// This must be a valid port number, 0 < x < 65536.
-	ContainerPort int32 `json:"container_port,omitempty" bson:"container_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
+	ContainerPort int32 `json:"container_port,omitempty" jsonschema:"minimum=0,maximum=65536"`
 	// Protocol for port. Must be UDP, TCP, or SCTP.
 	// Defaults to "TCP".
 	// +optional
-	Protocol Protocol `json:"protocol,omitempty" bson:"protocol,omitempty" jsonschema:"enum=TCP,enum=UDP,enum=SCTP,default=TCP" default:"TCP"`
+	Protocol Protocol `json:"protocol,omitempty" jsonschema:"enum=TCP,enum=UDP,enum=SCTP,default=TCP" default:"TCP"`
 	// What host IP to bind the external port to.
 	// +optional
-	HostIP string `json:"host_ip,omitempty" bson:"host_ip,omitempty"`
+	HostIP string `json:"host_ip,omitempty"`
 }
 
 type Affinity struct {
-	NodeAffinity    *NodeAffinity    `json:"node_Affinity,omitempty" bson:"node_Affinity,omitempty"`
-	PodAffinity     *PodAffinity     `json:"pod_Affinity,omitempty" bson:"pod_Affinity,omitempty"`
-	PodAntiAffinity *PodAntiAffinity `json:"pod_anti_affinity,omitempty" bson:"pod_anti_affinity,omitempty"`
+	NodeAffinity    *NodeAffinity    `json:"node_Affinity,omitempty"`
+	PodAffinity     *PodAffinity     `json:"pod_Affinity,omitempty"`
+	PodAntiAffinity *PodAntiAffinity `json:"pod_anti_affinity,omitempty"`
 }
 
 type NodeAffinity struct {
-	ReqDuringSchedulingIgnDuringExec *NodeSelector             `json:"req_during_scheduling_ign_during_exec,omitempty" bson:"req_during_scheduling_ign_during_exec,omitempty"`
-	PrefDuringIgnDuringExec          []PreferredSchedulingTerm `json:"pref_during_ign_during_exec,omitempty" bson:"pref_during_ign_during_exec,omitempty"`
+	ReqDuringSchedulingIgnDuringExec *NodeSelector             `json:"req_during_scheduling_ign_during_exec,omitempty"`
+	PrefDuringIgnDuringExec          []PreferredSchedulingTerm `json:"pref_during_ign_during_exec,omitempty"`
 }
 
 // A node selector represents the union of the results of one or more label queries
@@ -355,7 +352,7 @@ type NodeAffinity struct {
 // by the node selector terms.
 type NodeSelector struct {
 	//Required. A list of node selector terms. The terms are ORed.
-	NodeSelectorTerms []NodeSelectorTerm `json:"node_selector_terms,omitempty" bson:"node_selector_terms,omitempty"`
+	NodeSelectorTerms []NodeSelectorTerm `json:"node_selector_terms"`
 }
 
 // A null or empty node selector term matches no objects. The requirements of
@@ -364,27 +361,27 @@ type NodeSelector struct {
 type NodeSelectorTerm struct {
 	// A list of node selector requirements by node's labels.
 	// +optional
-	MatchExpressions []NodeSelectorRequirement `json:"match_expressions,omitempty" bson:"match_expressions,omitempty"`
+	MatchExpressions []NodeSelectorRequirement `json:"match_expressions,omitempty"`
 	// A list of node selector requirements by node's fields.
 	// +optional
-	MatchFields []NodeSelectorRequirement `json:"match_fields,omitempty" bson:"match_fields,omitempty"`
+	MatchFields []NodeSelectorRequirement `json:"match_fields,omitempty"`
 }
 
 // A node selector requirement is a selector that contains values, a key, and an operator
 // that relates the key and values.
 type NodeSelectorRequirement struct {
 	// The label key that the selector applies to.
-	Key string `json:"key" bson:"key"`
+	Key string `json:"key"`
 	// Represents a key's relationship to a set of values.
 	// Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-	Operator NodeSelectorOperator `json:"operator" bson:"operator"`
+	Operator NodeSelectorOperator `json:"operator"`
 	// An array of string values. If the operator is In or NotIn,
 	// the values array must be non-empty. If the operator is Exists or DoesNotExist,
 	// the values array must be empty. If the operator is Gt or Lt, the values
 	// array must have a single element, which will be interpreted as an integer.
 	// This array is replaced during a strategic merge patch.
 	// +optional
-	Values []string `json:"values,omitempty" bson:"values,omitempty"`
+	Values []string `json:"values,omitempty"`
 }
 
 // A node selector operator is the set of operators that can be used in
@@ -404,38 +401,38 @@ const (
 // (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).
 type PreferredSchedulingTerm struct {
 	// Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
-	Weight int32 `json:"weight" bson:"weight" jsonschema:"minimum=1,maximum=100"`
+	Weight int32 `json:"weight"`
 	// A node selector term, associated with the corresponding weight.
-	Preference NodeSelectorTerm `json:"preference" bson:"preference"`
+	Preference NodeSelectorTerm `json:"preference"`
 }
 
 type PodAffinity struct {
-	ReqDuringSchedulingIgnDuringExec []PodAffinityTerm         `json:"req_during_scheduling_ign_during_exec,omitempty" bson:"req_during_scheduling_ign_during_exec,omitempty"`
-	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"pref_during_ign_during_exec,omitempty" bson:"pref_during_ign_during_exec,omitempty"`
+	ReqDuringSchedulingIgnDuringExec []PodAffinityTerm         `json:"req_during_scheduling_ign_during_exec,omitempty"`
+	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"pref_during_ign_during_exec,omitempty"`
 }
 
 type PodAffinityTerm struct {
-	LabelSelector *LabelSelectorObj `json:"label_selector,omitempty" bson:"label_selector,omitempty"`
-	Namespaces    []string          `json:"namespaces,omitempty" bson:"namespaces,omitempty"`
-	TopologyKey   string            `json:"topology_key,omitempty" bson:"topology_key,omitempty"`
+	LabelSelector *LabelSelectorObj `json:"label_selector,omitempty"`
+	Namespaces    []string          `json:"namespaces,omitempty"`
+	TopologyKey   string            `json:"topology_key,omitempty"`
 }
 
 type WeightedPodAffinityTerm struct {
 	// weight associated with matching the corresponding podAffinityTerm,
 	// in the range 1-100.
-	Weight int32 `json:"weight" bson:"weight" jsonschema:"minimum=1,maximum=100"`
+	Weight int32 `json:"weight"`
 	// Required. A pod affinity term, associated with the corresponding weight.
-	PodAffinityTerm PodAffinityTerm `json:"pod_affinity_term" bson:"pod_affinity_term"`
+	PodAffinityTerm PodAffinityTerm `json:"pod_affinity_term"`
 }
 
 type PodAntiAffinity struct {
-	ReqDuringSchedulingIgnDuringExec []PodAffinityTerm         `json:"req_during_scheduling_ign_during_exec,omitempty" bson:"req_during_scheduling_ign_during_exec,omitempty"`
-	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"pref_during_ign_during_exec,omitempty" bson:"pref_during_ign_during_exec,omitempty"`
+	ReqDuringSchedulingIgnDuringExec []PodAffinityTerm         `json:"req_during_scheduling_ign_during_exec,omitempty"`
+	PrefDuringIgnDuringExec          []WeightedPodAffinityTerm `json:"pref_during_ign_during_exec,omitempty"`
 }
 
 type DeploymentStrategy struct {
-	Type          DeploymentStrategyType   `json:"type,omitempty" bson:"type,omitempty"`
-	RollingUpdate *RollingUpdateDeployment `json:"rolling_update,omitempty" bson:"rolling_update,omitempty"`
+	Type          DeploymentStrategyType   `json:"type,omitempty"`
+	RollingUpdate *RollingUpdateDeployment `json:"rolling_update,omitempty"`
 }
 
 type DeploymentStrategyType string
@@ -493,13 +490,13 @@ const (
 )
 
 type Replicas struct {
-	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 type TerminationGracePeriodSeconds struct {
-	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
+	Value int32 `json:"value,omitempty"`
 }
 
 type ActiveDeadlineSeconds struct {
-	Value int64 `json:"value,omitempty" bson:"value,omitempty"`
+	Value int64 `json:"value,omitempty"`
 }

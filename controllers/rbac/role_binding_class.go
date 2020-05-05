@@ -1,7 +1,7 @@
 package rbac
 
 import (
-	"istio-service-mesh/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
 	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -6,11 +6,11 @@ import (
 	v1 "k8s.io/api/rbac/v1"
 	"strings"
 
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 )
 
 func (s *Server) CreateRoleService(ctx context.Context, req *pb.RoleService) (*pb.ServiceResponse, error) {
@@ -245,7 +245,7 @@ func getRole(input *pb.RoleService) (*v1.Role, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	role.Kind = "Role"
+	role.Kind = constants.Role.String() //"Role"
 	role.APIVersion = "rbac.authorization.k8s.io/v1"
 	role.Name = input.Name
 	role.Namespace = input.Namespace
