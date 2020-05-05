@@ -18,7 +18,10 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
 			return nil, err
 		}
-
+	case meshConstants.PodServiceType:
+		if err := ConvertPodToYaml(ctx, req, serviceResp); err != nil {
+			return nil, err
+		}
 	case meshConstants.PVCServiceType:
 		if err := ConvertPVCToYaml(req, serviceResp); err != nil {
 			return nil, err
@@ -551,6 +554,47 @@ func ConvertDeploymentToYaml(ctx context.Context, req *pb.YamlServiceRequest, se
 	}
 	return nil
 }
+
+func ConvertPodToYaml(ctx context.Context, req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+
+	deploy := pb.PodService{}
+	if err := json.Unmarshal(req.Service, &deploy); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getPodRequestObject(ctx, &deploy)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		//byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
+		//
+		//if err != nil {
+		//	utils.Error.Println(err)
+		//	return err
+		//}
+		//serviceResp.Service = byteData
+		//serviceResp.ChartFile = chartByteData
+		//serviceResp.HelperFile = helperByteData
+		//serviceResp.Namespace = result.Namespace
+	}
+	return nil
+}
+
 func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
 
 	hpa := pb.HPA{}

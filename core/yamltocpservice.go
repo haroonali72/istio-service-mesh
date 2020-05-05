@@ -151,7 +151,17 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-
+	case *v1.Pod:
+		pod, err := convertToCPPod(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(pod)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *v1.PersistentVolumeClaim:
 		pvc, err := convertToCPPersistentVolumeClaim(o)
 		if err != nil {
@@ -576,6 +586,87 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 		}
 	}
 	return deployment, nil
+}
+
+func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
+	pod := new(meshTypes.PodService)
+	pod.ServiceAttributes = new(meshTypes.PodServiceAttribute)
+
+	if service.Name == "" {
+		return nil, errors.New("Service name not found")
+	} else {
+		pod.Name = service.Name
+	}
+
+	if service.Namespace == "" {
+		pod.Namespace = "default"
+	} else {
+		pod.Namespace = service.Namespace
+	}
+
+	pod.ServiceType = "k8s"
+	pod.ServiceSubType = meshConstants.PodServiceType
+	pod.Version = service.Labels["version"]
+
+	pod.ServiceAttributes.Labels = make(map[string]string)
+	pod.ServiceAttributes.Labels = service.Labels
+	pod.ServiceAttributes.Annotations = make(map[string]string)
+	pod.ServiceAttributes.Annotations = service.Annotations
+	pod.ServiceAttributes.NodeSelector = make(map[string]string)
+	pod.ServiceAttributes.NodeSelector = service.Spec.NodeSelector
+
+	for _, imageSecrets := range service.Spec.ImagePullSecrets {
+		tempImageSecrets := meshTypes.LocalObjectReference{Name: imageSecrets.Name}
+		pod.ServiceAttributes.ImagePullSecrets = append(pod.ServiceAttributes.ImagePullSecrets, tempImageSecrets)
+	}
+
+	var volumeMountNames1 = make(map[string]bool)
+	if containers, vm, err := getCPContainers(service.Spec.Containers); err == nil {
+		if len(containers) > 0 {
+			pod.ServiceAttributes.Containers = containers
+			volumeMountNames1 = vm
+		} else {
+			utils.Error.Println("no containers exist")
+			return nil, errors.New("no containers exist")
+		}
+
+	} else {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.InitContainers); err == nil {
+		if len(containersList) > 0 {
+			pod.ServiceAttributes.InitContainers = containersList
+		}
+		for k, v := range volumeMounts {
+			volumeMountNames1[k] = v
+		}
+
+	} else {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	if vols, err := getCPVolumes(service.Spec.Volumes, volumeMountNames1); err == nil {
+		if len(vols) > 0 {
+			pod.ServiceAttributes.Volumes = vols
+		}
+
+	} else {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	if service.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(service.Spec.Affinity); err == nil {
+			pod.ServiceAttributes.Affinity = affinity
+		} else {
+			utils.Error.Println(err)
+			return nil, err
+		}
+	}
+	return pod, nil
 }
 
 func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
@@ -1608,12 +1699,12 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 			return nil, nil, err
 		}
 
-		if err := putCPResource(&containerTemp, container.Resources.Limits); err != nil {
+		if err := putCPResource(&containerTemp, container.Resources.Limits, true); err != nil {
 			utils.Info.Println(err)
 			return nil, nil, err
 		}
 
-		if err := putCPResource(&containerTemp, container.Resources.Requests); err != nil {
+		if err := putCPResource(&containerTemp, container.Resources.Requests, false); err != nil {
 			utils.Info.Println(err)
 			return nil, nil, err
 		}
@@ -1794,7 +1885,7 @@ func putCPCommandAndArguments(container *meshTypes.ContainerAttribute, command, 
 	return nil
 }
 
-func putCPResource(container *meshTypes.ContainerAttribute, limitResources map[v1.ResourceName]resource.Quantity) error {
+func putCPResource(container *meshTypes.ContainerAttribute, limitResources map[v1.ResourceName]resource.Quantity, isLimit bool) error {
 	temp := make(map[string]string)
 	for t, v := range limitResources {
 		key := t.String()
@@ -1805,8 +1896,12 @@ func putCPResource(container *meshTypes.ContainerAttribute, limitResources map[v
 			return errors.New("Error Found: Invalid Request Resource Provided. Valid: 'cpu','memory'")
 		}
 	}
+	if isLimit {
+		container.LimitResources = temp
+	} else {
+		container.RequestResources = temp
+	}
 
-	container.LimitResources = temp
 	return nil
 }
 

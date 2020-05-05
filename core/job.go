@@ -109,7 +109,7 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	serviceResp.Status.IsComplete = checkJobComplation(tjoob)
+	serviceResp.Status.IsComplete = checkJobCompletion(tjoob)
 
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
@@ -410,7 +410,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 
 	return job, nil
 }
-func checkJobComplation(tjoob *v1.Job) bool {
+func checkJobCompletion(tjoob *v1.Job) bool {
 	if tjoob.Status.CompletionTime != nil {
 		return true
 	}
