@@ -3,7 +3,10 @@ syntax = "proto3";
 package proto;
 
 import "service.proto";
+import "general.proto";
 import "google/protobuf/any.proto";
+
+
 
 service Clusterrole {
    rpc CreateClusterRole (ClusterRole) returns (ServiceResponse) {}
@@ -26,6 +29,7 @@ message ClusterRole {
    string company_id = 10;
    string version = 11;
    string namespace = 12;
+   HookConfiguration hook_configuration=13;
 }
 
 message ClusterRoleSvcAttr {

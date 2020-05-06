@@ -25,7 +25,7 @@ message PodService {
     string token = 8;
     string company_id = 9;
     PodServiceServiceAttributes service_attributes = 10;
-
+    HookConfiguration hook_configuration=11;
 }
 
 message PodServiceServiceAttributes {

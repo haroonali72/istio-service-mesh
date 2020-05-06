@@ -23,6 +23,7 @@ message PersistentVolumeService {
     string token = 7;
     string company_id = 8;
     PersistentVolumeAttributes service_attributes = 9;
+    HookConfiguration hook_configuration=12;
 }
 
 message PersistentVolumeAttributes{

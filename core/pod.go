@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	"k8s.io/api/core/v1"
 )
 
@@ -352,15 +352,14 @@ func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, 
 			pod.Spec.Affinity = aa
 		}
 	}
-	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_Never{
+	if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_Never {
 		pod.Annotations["sidecar.istio.io/inject"] = "false"
 		pod.Spec.RestartPolicy = v1.RestartPolicyNever
-	} else 	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_OnFailure{
+	} else if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_OnFailure {
 		pod.Spec.RestartPolicy = v1.RestartPolicyOnFailure
-	}else 	if service.ServiceAttributes.Restart_Policy==pb.RestartPolicy_Always{
+	} else if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_Always {
 		pod.Spec.RestartPolicy = v1.RestartPolicyAlways
 	}
-
 
 	return pod, nil
 }

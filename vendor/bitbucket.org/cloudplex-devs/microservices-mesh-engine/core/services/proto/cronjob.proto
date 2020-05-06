@@ -25,6 +25,7 @@ message CronJobService {
     string token = 8;
     string company_id = 9;
     CronJobServiceAttribute CronJobServiceAttribute = 10;
+    HookConfiguration hook_configuration=12;
 }
 
 message CronJobServiceAttribute {

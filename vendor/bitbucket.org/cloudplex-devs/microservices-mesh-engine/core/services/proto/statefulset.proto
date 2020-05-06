@@ -25,6 +25,7 @@ message StatefulSetService {
     string token = 8;
     string company_id = 9;
     StatefulSetServiceAttributes service_attributes = 10;
+    HookConfiguration hook_configuration=12;
 }
 
 message StatefulSetServiceAttributes {

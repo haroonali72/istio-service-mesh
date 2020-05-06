@@ -607,7 +607,7 @@ func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
 	}
 
 	pod.ServiceType = "k8s"
-	pod.ServiceSubType = meshConstants.PodServiceType
+	pod.ServiceSubType = meshConstants.Pod
 	pod.Version = service.Labels["version"]
 
 	pod.ServiceAttributes.Labels = make(map[string]string)
@@ -668,6 +668,7 @@ func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
 			return nil, err
 		}
 	}
+	pod.ServiceAttributes.RestartPolicy = meshTypes.RestartPolicy(service.Spec.RestartPolicy)
 	return pod, nil
 }
 

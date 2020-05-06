@@ -24,17 +24,17 @@ type DaemonSetServiceAttribute struct {
 	// available. Defaults to 0 (pod will be considered available as soon as it
 	// is ready).
 	// +optional
-	MinReadySeconds int32 `json:"min_ready_seconds,omitempty" default:"0"`
+	MinReadySeconds int32 `json:"min_ready_seconds,omitempty" bson:"min_ready_seconds,omitempty" default:"0"`
 	// An update strategy to replace existing DaemonSet pods with new pods.
 	// +optional
-	UpdateStrategy *DaemonSetUpdateStrategy `json:"update_strategy,omitempty"`
+	UpdateStrategy *DaemonSetUpdateStrategy `json:"update_strategy,omitempty" bson:"update_strategy,omitempty"`
 	// The number of old history to retain to allow rollback.
 	// This is a pointer to distinguish between explicit zero and not specified.
 	// Defaults to 10.
 	// +optional
-	RevisionHistoryLimit *RevisionHistoryLimit `json:"revision_history_limit,omitempty" default:"10"`
+	RevisionHistoryLimit *RevisionHistoryLimit `json:"revision_history_limit,omitempty" bson:"revision_history_limit,omitempty"`
 }
 
 type RevisionHistoryLimit struct {
-	Value int32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty" bson:"value,omitempty" default:"10"`
 }

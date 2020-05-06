@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 import "service.proto";
-
+import "general.proto";
 service Virtual{
     rpc CreateVirtualService (VirtualService) returns (ServiceResponse) {}
     rpc GetVirtualService (VirtualService) returns (ServiceResponse) {}
@@ -23,6 +23,7 @@ message VirtualService {
     string                      token               =8;
     string                      company_id          =9;
     VSAttributes                service_attributes  =10;
+    HookConfiguration hook_configuration=11;
 }
 message VSAttributes {
     repeated        string      hosts	            =1;

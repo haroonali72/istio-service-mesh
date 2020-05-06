@@ -3,7 +3,7 @@ syntax = "proto3";
 package proto;
 
 import "service.proto";
-
+import "general.proto";
 service hpa {
    rpc CreateHPA (HPA) returns (ServiceResponse) {}
    rpc GetHPA (HPA) returns (ServiceResponse) {}
@@ -24,6 +24,7 @@ message HPA {
 	HpaSvcAttr service_attributes = 10;
 	string company_id = 11;
 	string version = 12;
+    HookConfiguration hook_configuration=13;
 }
 
 message HpaSvcAttr {

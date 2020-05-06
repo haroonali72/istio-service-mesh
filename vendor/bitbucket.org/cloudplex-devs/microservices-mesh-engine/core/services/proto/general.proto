@@ -297,3 +297,14 @@ enum StatefulSetUpdateStrategyType{
     StatefulSetOnDelete = 1;
 }
 
+message HookConfiguration {
+    int64    weight=1;
+    bool     pre_install=2;
+    bool     pre_update=3;
+    bool     post_update=4;
+    bool     post_install=5;
+    bool     pre_delete=6;
+    bool     post_delete=7;
+    bool     pre_rollback=8;
+    bool     post_rollback=9;
+}
