@@ -25,19 +25,18 @@ message PodService {
     string token = 8;
     string company_id = 9;
     PodServiceServiceAttributes service_attributes = 10;
-
+    HookConfiguration hook_configuration=11;
 }
 
 message PodServiceServiceAttributes {
     repeated  ContainerAttributes containers = 1;
     IstioConfig istio_config = 2;
-    LabelSelectorObj label_selector = 3;
     map<string, string> node_selector = 4;
     map<string, string> labels = 5;
     map<string, string> annotations = 6;
     repeated K8sRbacAttribute roles= 8;
     repeated IstioRbacAttribute istio_roles = 9;
-    string restart_Policy = 10;
+    RestartPolicy restart_Policy = 10;
     repeated Volume volumes = 11;
     Affinity affinity = 12;
     repeated ContainerAttributes init_containers = 13;

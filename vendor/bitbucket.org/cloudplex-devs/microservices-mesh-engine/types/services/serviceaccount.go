@@ -19,6 +19,6 @@ type ServiceAccount struct {
 }
 
 type ServiceAccountAttribute struct {
-	Secrets              []string `json:"secrets,omitempty"`
-	ImagePullSecretsName []string `json:"image_pull_secrets_name,omitempty"`
+	Secrets              []string `json:"secrets,omitempty" bson:"secrets,omitempty"`
+	ImagePullSecretsName []string `json:"image_pull_secrets_name,omitempty" bson:"image_pull_secrets_name,omitempty"`
 }

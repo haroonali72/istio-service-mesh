@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package proto;
 import "service.proto";
+import "general.proto";
 service StorageClass {
     rpc CreateStorageClass (StorageClassService) returns (ServiceResponse) {}
     rpc GetStorageClass (StorageClassService) returns (ServiceResponse) {}
@@ -19,6 +20,7 @@ message StorageClassService {
     string token = 7;
     string company_id = 8;
     StorageClassAttributes service_attributes = 9;
+    HookConfiguration hook_configuration=12;
 }
 message StorageClassServiceResponse {
     string error = 1;

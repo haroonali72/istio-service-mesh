@@ -26,5 +26,5 @@ type ClusterRoleSvcAttr struct {
 type Rules struct {
 	ResourceName []string `json:"resource_name" bson:"resource_name"`
 	Verbs        []string `json:"verbs" bson:"verbs"`
-	ApiGroup     []string `json:"api_group" bson:"api_group"`
+	ApiGroup     []string `json:"api_group,omitempty" bson:"api_group,omitempty"`
 }

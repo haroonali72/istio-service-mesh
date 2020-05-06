@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 import "service.proto";
-
+import "general.proto";
 service ServiceEntry {
     rpc CreateServiceEntry (ServiceEntryTemplate) returns (ServiceResponse) {}
     rpc GetServiceEntry (ServiceEntryTemplate) returns (ServiceResponse) {}
@@ -24,7 +24,7 @@ message ServiceEntryTemplate {
     string token = 8;
     string company_id = 9;
     ServiceEntryAttributes service_attributes = 10;
-
+    HookConfiguration hook_configuration=11;
 }
 
 message ServiceEntryAttributes {

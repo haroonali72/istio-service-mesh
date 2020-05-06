@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package proto;
 
+import "general.proto";
 import "service.proto";
 service Gateway {
     rpc CreateGateway (GatewayService) returns (ServiceResponse) {}
@@ -23,6 +24,8 @@ message GatewayService {
     string token = 8;
     string company_id = 9;
     GatewayServiceAttributes service_attributes = 10;
+    HookConfiguration hook_configuration=12;
+
 }
 message GatewayServiceResponse {
     string error = 1;

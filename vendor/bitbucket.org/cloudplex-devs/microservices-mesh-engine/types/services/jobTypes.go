@@ -25,7 +25,7 @@ type JobServiceAttribute struct {
 	// i.e. when the work left to do is less than max parallelism.
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 	// +optional
-	Parallelism *Parallelism `json:"parallelism,omitempty"`
+	Parallelism *Parallelism `json:"parallelism,omitempty" bson:"parallelism,omitempty"`
 	// Specifies the desired number of successfully finished pods the
 	// job should be run with.  Setting to nil means that the success of any
 	// pod signals the success of all pods, and allows parallelism to have any positive
@@ -33,35 +33,35 @@ type JobServiceAttribute struct {
 	// pod signals the success of the job.
 	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 	// +optional
-	Completions *Completions `json:"completions,omitempty"`
+	Completions *Completions `json:"completions,omitempty" bson:"completions,omitempty"`
 	// Specifies the duration in seconds relative to the startTime that the job may be active
 	// before the system tries to terminate it; value must be positive integer
 	// +optional
-	ActiveDeadlineSeconds *ActiveDeadlineSeconds `json:"active_deadline_seconds,omitempty"`
+	ActiveDeadlineSeconds *ActiveDeadlineSeconds `json:"active_deadline_seconds,omitempty" bson:"active_deadline_seconds,omitempty"`
 	// Specifies the number of retries before marking this job failed.
 	// Defaults to 6
 	// +optional
-	BackoffLimit            *BackoffLimit            `json:"backoff_limit,omitempty"`
-	ManualSelector          *ManualSelector          `json:"manual_selector, omitempty"`
-	TTLSecondsAfterFinished *TTLSecondsAfterFinished `json:"ttl_seconds_after_finished,omitempty"`
+	BackoffLimit            *BackoffLimit            `json:"backoff_limit,omitempty" bson:"backoff_limit,omitempty"`
+	ManualSelector          *ManualSelector          `json:"manual_selector, omitempty" bson:"manual_selector, omitempty"`
+	TTLSecondsAfterFinished *TTLSecondsAfterFinished `json:"ttl_seconds_after_finished,omitempty" bson:"ttl_seconds_after_finished,omitempty"`
 }
 
 type Parallelism struct {
-	Value int32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
 }
 
 type Completions struct {
-	Value int32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
 }
 
 type BackoffLimit struct {
-	Value int32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
 }
 
 type ManualSelector struct {
-	Value bool `json:"value,omitempty"`
+	Value bool `json:"value,omitempty" bson:"value,omitempty"`
 }
 
 type TTLSecondsAfterFinished struct {
-	Value int32 `json:"value,omitempty"`
+	Value int32 `json:"value,omitempty" bson:"value,omitempty"`
 }

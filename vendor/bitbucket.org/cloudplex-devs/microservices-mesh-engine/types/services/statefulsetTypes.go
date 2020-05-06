@@ -30,21 +30,21 @@ type StatefulSetServiceAttribute struct {
 	// consists of all revisions not represented by a currently applied
 	// StatefulSetSpec version. The default value is 10.
 	// +optional
-	RevisionHistoryLimit *RevisionHistoryLimit `json:"revision_history_limit,omitempty" bson:"revision_history_limit,omitempty" default:"10"`
+	RevisionHistoryLimit *RevisionHistoryLimit `json:"revision_history_limit,omitempty" bson:"revision_history_limit,omitempty"`
 	// updateStrategy indicates the StatefulSetUpdateStrategy that will be
 	// employed to update Pods in the StatefulSet when a revision is made to
 	// Template.
 	UpdateStrategy *StateFulSetUpdateStrategy `json:"update_Strategy,omitempty" bson:"update_Strategy,omitempty"`
 	// podManagementPolicy controls how pods are created during initial scale up,
 	// when replacing pods on nodes, or when scaling down. The default policy is
-	// `OrderedReady`, where pods are created in increasing order (pod-0, then
+	// "OrderedReady", where pods are created in increasing order (pod-0, then
 	// pod-1, etc) and the controller will wait until each pod is ready before
 	// continuing. When scaling down, the pods are removed in the opposite order.
-	// The alternative policy is `Parallel` which will create pods in parallel
+	// The alternative policy is "Parallel" which will create pods in parallel
 	// to match the desired scale without waiting, and on scale down will delete
 	// all pods at once.
 	// +optional
-	PodManagementPolicy PodManagementPolicyType `json:"pod_management_policy,omitempty" bson:"pod_management_policy,omitempty" default:"OrderedReady" swaggerType:"string"`
+	PodManagementPolicy PodManagementPolicyType `json:"pod_management_policy,omitempty"  bson:"pod_management_policy,omitempty" swaggerType:"string" default:"OrderedReady" swaggerType:"string"`
 	// serviceName is the name of the service that governs this StatefulSet.
 	// This service must exist before the StatefulSet, and is responsible for
 	// the network identity of the set. Pods get DNS/hostnames that follow the

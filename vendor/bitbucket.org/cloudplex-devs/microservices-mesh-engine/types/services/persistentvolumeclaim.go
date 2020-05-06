@@ -18,14 +18,14 @@ type PersistentVolumeClaimService struct {
 	ServiceAttributes      *PersistentVolumeClaimServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type PersistentVolumeClaimServiceAttribute struct {
-	LabelSelector    *LabelSelectorObj          `json:"label_selector,omitempty"`
-	VolumeName       string                     `json:"volume_name,omitempty"`
-	AccessMode       []AccessMode               `json:"access_mode,omitempty"`
-	StorageClassName string                     `json:"storage_class_name,omitempty"`
-	Request          string                     `json:"request_quantity,omitempty"`
-	Limit            string                     `json:"limit_quantity,omitempty"`
-	VolumeMode       *PersistentVolumeMode      `json:"volume_mode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
-	DataSource       *TypedLocalObjectReference `json:"data_source,omitempty" protobuf:"bytes,7,opt,name=dataSource"`
+	LabelSelector    *LabelSelectorObj          `json:"label_selector,omitempty" bson:"label_selector,omitempty"`
+	VolumeName       string                     `json:"volume_name,omitempty" bson:"volume_name,omitempty"`
+	AccessMode       []AccessMode               `json:"access_mode,omitempty" bson:"access_mode,omitempty"`
+	StorageClassName string                     `json:"storage_class_name,omitempty" bson:"storage_class_name,omitempty"`
+	Request          string                     `json:"request_quantity,omitempty" bson:"request_quantity,omitempty"`
+	Limit            string                     `json:"limit_quantity,omitempty" bson:"limit_quantity,omitempty"`
+	VolumeMode       *PersistentVolumeMode      `json:"volume_mode,omitempty" bson:"volume_mode,omitempty" protobuf:"bytes,8,opt,name=volumeMode,casttype=PersistentVolumeMode"`
+	DataSource       *TypedLocalObjectReference `json:"data_source,omitempty" bson:"data_source,omitempty" protobuf:"bytes,7,opt,name=dataSource"`
 }
 
 // TypedLocalObjectReference contains enough information to let you locate the
@@ -35,9 +35,9 @@ type TypedLocalObjectReference struct {
 	// If APIGroup is not specified, the specified Kind must be in the core API group.
 	// For any other third-party types, APIGroup is required.
 	// +optional
-	APIGroup *string `json:"api_group,omitempty" protobuf:"bytes,1,opt,name=apiGroup"`
+	APIGroup *string `json:"api_group,omitempty" bson:"api_group,omitempty" protobuf:"bytes,1,opt,name=apiGroup"`
 	// Kind is the type of resource being referenced
-	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
+	Kind string `json:"kind" bson:"kind" protobuf:"bytes,2,opt,name=kind"`
 	// Name is the name of resource being referenced
-	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
+	Name string `json:"name" bson:"name" protobuf:"bytes,3,opt,name=name"`
 }

@@ -64,20 +64,20 @@ type KubePort struct {
 	// All ports within a ServiceSpec must have unique names.
 	// prefix of name must be http-*, grpc-*,tcp-*,http2-*
 	// +mandatory
-	Name string `bson:"name," json:"name"`
+	Name string `bson:"name" json:"name"`
 	// The IP protocol for this port. Supports "TCP", "UDP", and "SCTP".
 	// Default is TCP.
 	// +optional
 	Protocol string `bson:"protocol" json:"protocol" jsonschema:"enum=TCP,enum=UDP,enum=SCTP,default=TCP" default:"TCP"`
 	// The port that will be exposed by this service.
-	Port int32 `bson:"port" json:"port"  jsonschema:"minimum=0,maximum=65536"`
+	Port int32 `bson:"port" json:"port"  jsonschema:"minimum=1,maximum=65535"`
 	// Number or name of the port to access on the pods targeted by the service.
 	// Number must be in the range 1 to 65535. Name must be an IANA_SVC_NAME.
 	// If this is a string, it will be looked up as a named port in the
 	// target Pod's container ports.
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service
 	// +optional
-	TargetPort PortItntOrString `bson:"target_port,omitempty" json:"target_port" `
+	TargetPort PortItntOrString `bson:"target_port,omitempty" json:"target_port,omitempty"jsonschema:"minimum=1,maximum=65535" `
 	// The port on each node on which this service is exposed when type=NodePort or LoadBalancer.
 	// Usually assigned by the system. If specified, it will be allocated to the service
 	// if unused or else creation of the service will fail.

@@ -7,8 +7,10 @@ import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"sigs.k8s.io/yaml"
+	"strconv"
 )
 
 func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest) (*pb.YamlServiceResponse, error) {
@@ -16,6 +18,10 @@ func (s *Server) GetYamlService(ctx context.Context, req *pb.YamlServiceRequest)
 	switch meshConstants.ServiceSubType(req.Type) {
 	case meshConstants.StorageClass:
 		if err := ConvertSCToYaml(req, serviceResp); err != nil {
+			return nil, err
+		}
+	case meshConstants.Pod:
+		if err := ConvertPodToYaml(ctx, req, serviceResp); err != nil {
 			return nil, err
 		}
 
@@ -138,6 +144,7 @@ func ConvertSCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 			serviceResp.Service = []byte(res)
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, sc.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.StorageClassParameters(result)
 
 		if err != nil {
@@ -178,6 +185,7 @@ func ConvertPVCToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, pvc.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
 
 		if err != nil {
@@ -219,6 +227,7 @@ func ConvertPVToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResp
 			serviceResp.Service = []byte(res)
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, pv.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeParameters(result)
 
 		if err != nil {
@@ -418,6 +427,7 @@ func ConvertConfigMapToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServ
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, cm.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.ConfigMapParameters(result)
 
 		if err != nil {
@@ -458,6 +468,7 @@ func ConvertSecretToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlService
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, secret.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.SecretParameters(result)
 
 		if err != nil {
@@ -498,6 +509,7 @@ func ConvertDaemonSeToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, ds.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.DaemonSetsParameters(result)
 
 		if err != nil {
@@ -538,6 +550,7 @@ func ConvertDeploymentToYaml(ctx context.Context, req *pb.YamlServiceRequest, se
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, deploy.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
 
 		if err != nil {
@@ -551,6 +564,48 @@ func ConvertDeploymentToYaml(ctx context.Context, req *pb.YamlServiceRequest, se
 	}
 	return nil
 }
+
+func ConvertPodToYaml(ctx context.Context, req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
+
+	deploy := pb.PodService{}
+	if err := json.Unmarshal(req.Service, &deploy); err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	result, err := getPodRequestObject(ctx, &deploy)
+	if err != nil {
+		utils.Error.Println(err)
+		return err
+	}
+	if req.IsYaml {
+		if byteData, err := yaml.Marshal(result); err != nil {
+			utils.Error.Println(err)
+			return err
+		} else {
+			strdata := string(byteData)
+			re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+			res := re.ReplaceAllString(strdata, "")
+			re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+			res = re.ReplaceAllString(res, "")
+			serviceResp.Service = []byte(res)
+			serviceResp.Namespace = result.Namespace
+		}
+	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, deploy.HookConfiguration)
+		//byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
+		//
+		//if err != nil {
+		//	utils.Error.Println(err)
+		//	return err
+		//}
+		//serviceResp.Service = byteData
+		//serviceResp.ChartFile = chartByteData
+		//serviceResp.HelperFile = helperByteData
+		//serviceResp.Namespace = result.Namespace
+	}
+	return nil
+}
+
 func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
 
 	hpa := pb.HPA{}
@@ -577,6 +632,7 @@ func ConvertHPAToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, hpa.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.HPAParameters(result)
 
 		if err != nil {
@@ -616,6 +672,7 @@ func ConvertClusterRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 			serviceResp.Service = []byte(res)
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, cr.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleParameters(result)
 
 		if err != nil {
@@ -655,6 +712,7 @@ func ConvertRoleToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRe
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, role.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.RoleParameters(result)
 
 		if err != nil {
@@ -693,6 +751,7 @@ func ConvertRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlSe
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, roleBinding.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.RoleBindingParameters(result)
 
 		if err != nil {
@@ -731,6 +790,7 @@ func ConvertClusterRoleBindingToYaml(req *pb.YamlServiceRequest, serviceResp *pb
 			serviceResp.Service = []byte(res)
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, crBinding.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.ClusterRoleBindingParameters(result)
 
 		if err != nil {
@@ -771,6 +831,7 @@ func ConvertServiceAccountToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yam
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, sa.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.ServiceAccountParameters(result)
 
 		if err != nil {
@@ -813,6 +874,7 @@ func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yaml
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, policy.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.NetworkPolicyParameters(result)
 
 		if err != nil {
@@ -897,6 +959,7 @@ func ConvertKubernetesServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, svc.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.KubernetesServiceParameters(result)
 		if err != nil {
 			utils.Error.Println(err)
@@ -937,6 +1000,7 @@ func ConvertStatefulToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServi
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, ds.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.StatefulSetParameters(result)
 
 		if err != nil {
@@ -976,6 +1040,7 @@ func ConvertJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceRes
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, ds.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.JobParameters(result)
 
 		if err != nil {
@@ -1015,6 +1080,7 @@ func ConvertCronJobToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServic
 			serviceResp.Namespace = result.Namespace
 		}
 	} else {
+		result.ObjectMeta = setHelmHooks(result.ObjectMeta, ds.HookConfiguration)
 		byteData, chartByteData, helperByteData, err := helm_parameterization.CronJobParameters(result)
 
 		if err != nil {
@@ -1048,4 +1114,80 @@ func ConvertVirtualServiceToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yam
 	}
 	return nil
 
+}
+
+func setHelmHooks(meta v1.ObjectMeta, configuration *pb.HookConfiguration) v1.ObjectMeta {
+	if configuration != nil {
+		if meta.Annotations == nil {
+			meta.Annotations = make(map[string]string)
+		}
+		meta.Annotations["helm.sh/hook-weight"] = strconv.FormatInt(configuration.Weight, 10)
+		if configuration.PreInstall {
+			meta.Annotations["helm.sh/hook"] = "pre-install"
+		}
+		if configuration.PostInstall {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",post-install"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "post-install"
+
+			}
+		}
+		if configuration.PostUpdate {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",post-upgrade"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "post-upgrade"
+
+			}
+		}
+		if configuration.PostRollback {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",post-rollback"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "post-rollback"
+
+			}
+		}
+		if configuration.PostDelete {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",post-delete"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "post-delete"
+
+			}
+		}
+		if configuration.PreDelete {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",pre-delete"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "pre-delete"
+
+			}
+		}
+		if configuration.PreUpdate {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",pre-upgrade"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "pre-upgrade"
+
+			}
+		}
+		if configuration.PreRollback {
+			value, ok := meta.Annotations["helm.sh/hook"]
+			if ok {
+				meta.Annotations["helm.sh/hook"] = value + ",pre-rollback"
+			} else {
+				meta.Annotations["helm.sh/hook"] = "pre-rollback"
+
+			}
+		}
+	}
+	return meta
 }

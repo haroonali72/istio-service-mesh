@@ -18,23 +18,8 @@ type PodService struct {
 	ServiceAttributes      *PodServiceAttribute `json:"service_attributes, omitempty"  bson:"company_id" binding:"required"`
 }
 type PodServiceAttribute struct {
-	Containers     []*ContainerAttribute `json:"containers"`
-	InitContainers []*ContainerAttribute `json:"initContainers, omitempty"`
-	Volumes        []Volume              `json:"volumes,omitempty"`
-
-	MeshConfig                   *IstioConfig                  `json:"istio_config,omitempty"`
-	LabelSelector                *LabelSelectorObj             `json:"label_selector,omitempty"`
-	NodeSelector                 map[string]string             `json:"node_selector,omitempty"`
-	Labels                       map[string]string             `json:"labels,omitempty"`
-	Annotations                  map[string]string             `json:"annotations,omitempty"`
-	RbacRoles                    []K8sRbacAttribute            `json:"roles,omitempty"`
-	IstioRoles                   []IstioRbacAttribute          `json:"istio_roles,omitempty"`
-	IsRbac                       bool                          `json:"is_rbac_enabled"`
-	Affinity                     *Affinity                     `json:"affinity,omitempty"`
-	RestartPolicy                RestartPolicy                 `json:"restart_policy,omitempty"`
-	ImagePullSecrets             []LocalObjectReference        `json:"image_pull_secrets,omitempty"`
-	ServiceAccountName           string                        `json:"service_account_name,omitempty"`
-	AutomountServiceAccountToken *AutomountServiceAccountToken `json:"automount_service_account_token,omitempty"`
+	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`
+	RestartPolicy             RestartPolicy `json:"restart_policy,omitempty" bson:"restart_policy,omitempty"`
 }
 
 type RestartPolicy string

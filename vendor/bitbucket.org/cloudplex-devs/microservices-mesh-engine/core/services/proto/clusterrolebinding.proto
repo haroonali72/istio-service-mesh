@@ -5,7 +5,7 @@ package proto;
 import "service.proto";
 import "google/protobuf/any.proto";
 import "rolebinding.proto";
-
+import "general.proto";
 service Clusterrolebinding {
    rpc CreateClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
    rpc GetClusterRoleBinding (ClusterRoleBinding) returns (ServiceResponse) {}
@@ -27,6 +27,7 @@ message ClusterRoleBinding {
    string company_id = 10;
    string version = 11;
    string namespace = 12;
+   HookConfiguration hook_configuration=13;
 }
 
 message ClusterRoleBindingSvcAttr {

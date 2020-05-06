@@ -9,12 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	v1 "k8s.io/api/batch/v1"
-	v2 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
 )
 
-func (s *Server) CreateJob(ctx context.Context, req *pb.JobService) (*pb.ServiceResponse, error) {
+func (s *Server) CreatePod(ctx context.Context, req *pb.PodService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -22,7 +20,7 @@ func (s *Server) CreateJob(ctx context.Context, req *pb.JobService) (*pb.Service
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getJobRequestObject(req)
+	ksdRequest, err := getPodRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -61,7 +59,7 @@ func (s *Server) CreateJob(ctx context.Context, req *pb.JobService) (*pb.Service
 	return serviceResp, nil
 }
 
-func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceResponse, error) {
+func (s *Server) GetPod(ctx context.Context, req *pb.PodService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -69,7 +67,7 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getJobRequestObject(req)
+	ksdRequest, err := getPodRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -101,23 +99,22 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	utils.Info.Println(result.Service)
-	tjoob := new(v1.Job)
-	err = json.Unmarshal(result.Service, tjoob)
+	pod := new(v1.Pod)
+	err = json.Unmarshal(result.Service, pod)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	serviceResp.Status.IsComplete = checkJobCompletion(tjoob)
-
+	serviceResp.Status.IsComplete = checkPodCompletion(pod)
+	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
 	return serviceResp, nil
 }
 
-func (s *Server) DeleteJob(ctx context.Context, req *pb.JobService) (*pb.ServiceResponse, error) {
+func (s *Server) DeletePod(ctx context.Context, req *pb.PodService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -125,7 +122,7 @@ func (s *Server) DeleteJob(ctx context.Context, req *pb.JobService) (*pb.Service
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getJobRequestObject(req)
+	ksdRequest, err := getPodRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -164,7 +161,7 @@ func (s *Server) DeleteJob(ctx context.Context, req *pb.JobService) (*pb.Service
 	return serviceResp, nil
 }
 
-func (s *Server) PutJob(ctx context.Context, req *pb.JobService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchPod(ctx context.Context, req *pb.PodService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -172,54 +169,7 @@ func (s *Server) PutJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getJobRequestObject(req)
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp, err)
-		return serviceResp, err
-	}
-	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp, err)
-		return serviceResp, err
-	}
-	defer conn.Close()
-
-	raw, err := json.Marshal(ksdRequest)
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp, err)
-		return serviceResp, err
-	}
-	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
-		Service:   raw,
-		CompanyId: req.CompanyId,
-		Token:     req.Token,
-	})
-
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp, err)
-		return serviceResp, err
-	}
-	utils.Info.Println(result.Service)
-	serviceResp.Status.Status = "successful"
-	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
-
-	return serviceResp, nil
-}
-
-func (s *Server) PatchJob(ctx context.Context, req *pb.JobService) (*pb.ServiceResponse, error) {
-	utils.Info.Println(ctx)
-	serviceResp := new(pb.ServiceResponse)
-	serviceResp.Status = &pb.ServiceStatus{
-		Id:        req.ServiceId,
-		ServiceId: req.ServiceId,
-		Name:      req.Name,
-	}
-	ksdRequest, err := getJobRequestObject(req)
+	ksdRequest, err := getPodRequestObject(ctx, req)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -258,88 +208,83 @@ func (s *Server) PatchJob(ctx context.Context, req *pb.JobService) (*pb.ServiceR
 	return serviceResp, nil
 }
 
-func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
-	job := new(v1.Job)
+func (s *Server) PutPod(ctx context.Context, req *pb.PodService) (*pb.ServiceResponse, error) {
+	utils.Info.Println(ctx)
+	serviceResp := new(pb.ServiceResponse)
+	serviceResp.Status = &pb.ServiceStatus{
+		Id:        req.ServiceId,
+		ServiceId: req.ServiceId,
+		Name:      req.Name,
+	}
+	ksdRequest, err := getPodRequestObject(ctx, req)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	defer conn.Close()
+
+	raw, err := json.Marshal(ksdRequest)
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
+		ProjectId: req.ProjectId,
+		Service:   raw,
+		CompanyId: req.CompanyId,
+		Token:     req.Token,
+	})
+
+	if err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	utils.Info.Println(result.Service)
+	serviceResp.Status.Status = "successful"
+	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
+
+	return serviceResp, nil
+}
+func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, error) {
+	pod := new(v1.Pod)
 	if service.Name == "" {
 		return nil, errors.New("service name not found")
 	}
 
-	job.APIVersion = "batch/v1"
-	job.Kind = constants.Job.String() //"Job"
+	pod.APIVersion = "v1"
+	pod.Kind = "Pod"
 
 	if service.Namespace == "" {
-		job.ObjectMeta.Namespace = "default"
+		pod.ObjectMeta.Namespace = "default"
 	} else {
-		job.ObjectMeta.Namespace = service.Namespace
+		pod.ObjectMeta.Namespace = service.Namespace
 	}
 
-	job.Name = service.Name
+	pod.Name = service.Name
 
-	job.Labels = make(map[string]string)
-	job.Labels["app"] = service.Name
-	job.Labels["version"] = service.Version
+	pod.Labels = make(map[string]string)
+	pod.Labels["app"] = service.Name
+	pod.Labels["version"] = service.Version
 	for key, value := range service.ServiceAttributes.Labels {
-		job.Labels[key] = value
+		pod.Labels[key] = value
 	}
 
-	job.Annotations = make(map[string]string)
-	job.Annotations = service.ServiceAttributes.Annotations
-
-	job.Spec.Selector = new(metav1.LabelSelector)
-	job.Spec.Selector.MatchLabels = make(map[string]string)
-	job.Spec.Selector.MatchLabels["app"] = service.Name
-	job.Spec.Selector.MatchLabels["version"] = service.Version
-	if service.ServiceAttributes.LabelSelector != nil {
-		job.Spec.Selector.MatchLabels = service.ServiceAttributes.LabelSelector.MatchLabels
-	} else {
-		job.Spec.Selector.MatchLabels = service.ServiceAttributes.Labels
-	}
-
-	/*for key, value := range service.ServiceAttributes.LabelSelector.MatchLabels {
-		job.Spec.Selector.MatchLabels[key] = value
-	}*/
-	job.Spec.Template.Labels = make(map[string]string)
-	job.Spec.Template.Labels["app"] = service.Name
-	job.Spec.Template.Labels["version"] = service.Version
-	for key, value := range service.ServiceAttributes.Labels {
-		job.Spec.Template.Labels[key] = value
-	}
-
-	job.Spec.Template.Annotations = make(map[string]string)
-	job.Spec.Template.Annotations["sidecar.istio.io/inject"] = "false"
-
-	manualSelector := true
-	job.Spec.ManualSelector = &manualSelector
-	job.Spec.Template.Spec.RestartPolicy = v2.RestartPolicyNever
-
-	if service.ServiceAttributes.Parallelism != nil {
-		job.Spec.Parallelism = &service.ServiceAttributes.Parallelism.Value
-	}
-
-	if service.ServiceAttributes.Completions != nil {
-		job.Spec.Completions = &service.ServiceAttributes.Completions.Value
-	}
-
-	if service.ServiceAttributes.ActiveDeadlineSeconds != nil {
-		job.Spec.ActiveDeadlineSeconds = &service.ServiceAttributes.ActiveDeadlineSeconds.Value
-	}
-
-	if service.ServiceAttributes.BackoffLimit != nil {
-		job.Spec.BackoffLimit = &service.ServiceAttributes.BackoffLimit.Value
-	}
-
-	if service.ServiceAttributes.TtlSecondsAfterFinished != nil {
-		job.Spec.TTLSecondsAfterFinished = &service.ServiceAttributes.TtlSecondsAfterFinished.Value
-	}
-	if service.ServiceAttributes.ManualSelector != nil {
-		job.Spec.ManualSelector = &service.ServiceAttributes.ManualSelector.Value
-	}
+	pod.Annotations = make(map[string]string)
+	pod.Annotations = service.ServiceAttributes.Annotations
 
 	if dockerSecret, exist := CreateDockerCfgSecret(service.ServiceAttributes.Containers[0], service.Token, service.Namespace); dockerSecret != nil && exist != false {
-		job.Spec.Template.Spec.ImagePullSecrets = []v2.LocalObjectReference{v2.LocalObjectReference{
+		pod.Spec.ImagePullSecrets = []v1.LocalObjectReference{v1.LocalObjectReference{
 			Name: dockerSecret.Name,
 		}}
-		var ctx context.Context
 		conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
 		if err != nil {
 			utils.Error.Println(err)
@@ -369,7 +314,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	volumeMountNames1 := make(map[string]bool)
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
 		if len(containersList) > 0 {
-			job.Spec.Template.Spec.Containers = containersList
+			pod.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
 		} else {
 			return nil, errors.New("no container exists")
@@ -381,7 +326,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 
 	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
 		if len(containersList) > 0 {
-			job.Spec.Template.Spec.InitContainers = containersList
+			pod.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {
 				volumeMountNames1[k] = v
 			}
@@ -393,7 +338,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 
 	if volumes, err := getVolumes(service.ServiceAttributes.Volumes, volumeMountNames1); err == nil {
 		if len(volumes) > 0 {
-			job.Spec.Template.Spec.Volumes = volumes
+			pod.Spec.Volumes = volumes
 		}
 
 	} else {
@@ -404,14 +349,22 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 		if aa, err := getAffinity(service.ServiceAttributes.Affinity); err != nil {
 			return nil, err
 		} else {
-			job.Spec.Template.Spec.Affinity = aa
+			pod.Spec.Affinity = aa
 		}
 	}
+	if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_Never {
+		pod.Annotations["sidecar.istio.io/inject"] = "false"
+		pod.Spec.RestartPolicy = v1.RestartPolicyNever
+	} else if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_OnFailure {
+		pod.Spec.RestartPolicy = v1.RestartPolicyOnFailure
+	} else if service.ServiceAttributes.Restart_Policy == pb.RestartPolicy_Always {
+		pod.Spec.RestartPolicy = v1.RestartPolicyAlways
+	}
 
-	return job, nil
+	return pod, nil
 }
-func checkJobCompletion(tjoob *v1.Job) bool {
-	if tjoob.Status.CompletionTime != nil {
+func checkPodCompletion(tjoob *v1.Pod) bool {
+	if tjoob.Status.Phase == v1.PodSucceeded {
 		return true
 	}
 	return false

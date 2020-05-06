@@ -24,6 +24,7 @@ message JobService {
     string token = 8;
     string company_id = 9;
     JobServiceAttribute service_attributes = 10;
+    HookConfiguration hook_configuration=11;
 }
 
 message JobServiceAttribute {

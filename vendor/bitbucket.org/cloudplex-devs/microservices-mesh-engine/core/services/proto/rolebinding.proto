@@ -1,6 +1,7 @@
 syntax= "proto3";
 
 package proto;
+import "general.proto";
 import "service.proto";
 import "google/protobuf/any.proto";
 service RoleBinding{
@@ -23,6 +24,7 @@ message RoleBindingService{
     string namespace =9;
     string version =10;
     RoleBServiceAttributee service_attributes =11;
+    HookConfiguration hook_configuration=12;
 }
 
 message RoleBServiceAttributee {

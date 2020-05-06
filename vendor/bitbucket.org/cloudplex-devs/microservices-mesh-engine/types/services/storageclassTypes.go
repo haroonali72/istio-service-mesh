@@ -17,21 +17,21 @@ type StorageClassService struct {
 	ServiceAttributes      *StorageClassServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type StorageClassServiceAttribute struct {
-	BindingMod           VolumeBindingMode      `json:"volume_binding_mode,omitempty"`
-	AllowVolumeExpansion string                 `json:"allow_volume_expansion,omitempty"`
-	Provisioner          string                 `json:"provisioner,omitempty"`
-	Parameters           map[string]string      `json:"parameters,omitempty"`
-	ReclaimPolicy        ReclaimPolicy          `json:"reclaim_policy,omitempty"`
-	MountOptions         []string               `json:"mount_options,omitempty"`
-	AllowedTopologies    []TopologySelectorTerm `json:"allowed_topologies,omitempty"`
+	BindingMod           VolumeBindingMode      `json:"volume_binding_mode,omitempty" bson:"volume_binding_mode,omitempty"`
+	AllowVolumeExpansion string                 `json:"allow_volume_expansion,omitempty" bson:"allow_volume_expansion,omitempty"`
+	Provisioner          string                 `json:"provisioner,omitempty" bson:"provisioner,omitempty"`
+	Parameters           map[string]string      `json:"parameters,omitempty" bson:"parameters,omitempty"`
+	ReclaimPolicy        ReclaimPolicy          `json:"reclaim_policy,omitempty" bson:"reclaim_policy,omitempty"`
+	MountOptions         []string               `json:"mount_options,omitempty" bson:"mount_options,omitempty"`
+	AllowedTopologies    []TopologySelectorTerm `json:"allowed_topologies,omitempty" bson:"allowed_topologies,omitempty"`
 }
 
 type TopologySelectorTerm struct {
-	MatchLabelExpressions []TopologySelectorLabelRequirement `json:"match_label_expressions,omitempty"`
+	MatchLabelExpressions []TopologySelectorLabelRequirement `json:"match_label_expressions,omitempty" bson:"match_label_expressions,omitempty"`
 }
 type TopologySelectorLabelRequirement struct {
-	Key    string   `json:"key,omitempty"`
-	Values []string `json:"values,omitempty"`
+	Key    string   `json:"key,omitempty" bson:"key,omitempty"`
+	Values []string `json:"values,omitempty" bson:"values,omitempty"`
 }
 type VolumeBindingMode string
 

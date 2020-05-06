@@ -20,13 +20,13 @@ type ServiceEntry struct {
 
 type ServiceEntryAttributes struct {
 	Hosts           []string                `json:"hosts" bson:"hosts" binding:"required"`
-	Addresses       []string                `json:"addresses" bson:"addresses"`
-	Location        Location                `json:"location" bson:"location"`
+	Addresses       []string                `json:"addresses,omitempty" bson:"addresses,omitempty"`
+	Location        Location                `json:"location,omitempty" bson:"location,omitempty"`
 	Resolution      Resolution              `json:"resolution" bson:"resolution" binding:"required"`
 	Ports           []*ServiceEntryPort     `json:"ports" bson:"ports" binding:"required"`
-	Endpoints       []*ServiceEntryEndpoint `json:"endpoints" bson:"endpoints"`
-	ExportTo        []string                `json:"export_to" bson:"export_to"`
-	SubjectAltNames []string                `json:"subject_alt_names" bson:"subject_alt_names"`
+	Endpoints       []*ServiceEntryEndpoint `json:"endpoints,omitempty" bson:"endpoints,omitempty"`
+	ExportTo        []string                `json:"export_to,omitempty" bson:"export_to,omitempty"`
+	SubjectAltNames []string                `json:"subject_alt_names,omitempty" bson:"subject_alt_names,omitempty"`
 }
 
 type ServiceEntryPort struct {
@@ -37,11 +37,11 @@ type ServiceEntryPort struct {
 
 type ServiceEntryEndpoint struct {
 	Address  string            `json:"address" bson:"address" binding:"required" `
-	Ports    map[string]uint32 `json:"ports" bson:"ports"`
-	Labels   map[string]string `json:"labels" bson:"labels"`
-	Network  string            `json:"network" bson:"network"`
-	Weight   string            `json:"weight" bson:"weight"`
-	Locality string            `json:"locality" bson:"locality"`
+	Ports    map[string]uint32 `json:"ports,omitempty" bson:"ports,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty" bson:"labels,omitempty"`
+	Network  string            `json:"network,omitempty" bson:"network,omitempty"`
+	Weight   string            `json:"weight,omitempty" bson:"weight,omitempty"`
+	Locality string            `json:"locality,omitempty" bson:"locality,omitempty"`
 }
 
 type Location string

@@ -78,3 +78,23 @@ type SolutionTemplate struct {
 	// +optional
 	CompanyID *string `json:"company_id" bson:"company_id" valid:"-"`
 }
+
+type SolutionMetadataByProject struct {
+	// Name Used to link with application/project
+	// Cannot be updated.
+	// valid regex is ^[ A-Za-z0-9_-]*$
+	// valid length is 5-30 character
+	// +mandatory
+	Name *string `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30)~Solution name must contain between 4 and 30 characters,required~Solution Name is missing in request"`
+	// SolutionId used to link with application/project
+	// Cannot be updated.
+	// valid regex is ^[ A-Za-z0-9_-]*$
+	// valid length is 6-30 character
+	// +mandatory
+	SolutionId *string `json:"solution_id" bson:"solution_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~lowercase alphanumeric characters are allowed,required~Solution Id is missing in request"`
+	// Overall Status of the Solution
+	// Status will give you status of solution
+	// Valid Status list Deployed/ Deployment Failed/ New
+	// +optional
+	Status *string `json:"status" bson:"status" valid:"-" default:"new"`
+}

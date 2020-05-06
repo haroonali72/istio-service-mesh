@@ -21,7 +21,7 @@ type ServiceMeshRequest struct {
 	ServiceDependencyInfo []ServiceMeshRequest `json:"service_dependency_info"`
 }
 type HookConfiguration struct {
-	Weight        int    `json:"weight"`
+	Weight        int64  `json:"weight"`
 	ServiceID     string `json:"service_id"`
 	ServiceStatus string
 	PreInstall    bool `json:"pre_install"`
@@ -30,6 +30,8 @@ type HookConfiguration struct {
 	PostInstall   bool `json:"post_install"`
 	PreDelete     bool `json:"pre_delete"`
 	PostDelete    bool `json:"post_delete"`
+	PreRollBack   bool `json:"pre_rollback"`
+	PostRollBack  bool `json:"post_rollback"`
 }
 type ServiceBasicInfo struct {
 	// number of replicas of Deployment/StatefulSets
@@ -187,14 +189,22 @@ type ServiceBasicInfo struct {
 	// required for Cloudplex Frontend
 	// +optional
 	Angle int `json:"angle,omitempty" bson:"angle" valid:"-"`
+	//required for Cloudplex Frontend visualization
+	// This key will tell to embed service or not
+	// +optional
+	IsEmbedded bool `json:"is_embedded,omitempty" bson:"is_embedded,omitempty"`
+	// required for Cloudplex Frontend visualization
+	// embeds contains list of service_ids which you want to group
+	// +optional
+	Embeds []string `json:"embeds,omitempty" bson:"embeds,omitempty"`
 }
 type ServiceTemplate struct {
-	HookConfiguration *HookConfiguration
+	HookConfiguration *HookConfiguration `json:"hook_configuration,omitempty"`
 	Hooks             []struct {
-		Weight     int      `json:"weight,omitempty" bson:"weight"`
+		Weight     int64    `json:"weight" bson:"weight"`
 		ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
 		HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
-	} `json:"hooks,omitempty" bson:"hooks" valid:"-"`
+	} `json:"hooks,omitempty" bson:"hooks,omitempty" valid:"-"`
 	ServiceBasicInfo `json:",inline" bson:",inline"`
 	// ServiceAttributes are the actual attributes required to deploy
 	// on Kubernetes Cluster
