@@ -1638,11 +1638,14 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 			temp.SubPathExpr = volumeMount.SubPathExpr
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {
-					*temp.MountPropagation = meshTypes.MountPropagationNone
+					none := meshTypes.MountPropagationNone
+					temp.MountPropagation = &none
 				} else if *volumeMount.MountPropagation == v1.MountPropagationBidirectional {
-					*temp.MountPropagation = meshTypes.MountPropagationBidirectional
+					bi := meshTypes.MountPropagationBidirectional
+					temp.MountPropagation = &bi
 				} else if *volumeMount.MountPropagation == v1.MountPropagationHostToContainer {
-					*temp.MountPropagation = meshTypes.MountPropagationHostToContainer
+					cont := meshTypes.MountPropagationHostToContainer
+					temp.MountPropagation = &cont
 				}
 
 			}
