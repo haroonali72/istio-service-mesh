@@ -3158,6 +3158,7 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 	cpKubeService.ServiceId = svcTemp.ServiceId
 	cpKubeService.ServiceType = svcTemp.ServiceType
 	cpKubeService.ServiceSubType = svcTemp.ServiceSubType
+	cpKubeService.Version = svcTemp.Version
 	if svcTemp.Namespace != "" {
 		cpKubeService.Namespace = svcTemp.Namespace
 	} else {
