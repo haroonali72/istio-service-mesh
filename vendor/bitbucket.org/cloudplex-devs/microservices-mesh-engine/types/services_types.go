@@ -48,7 +48,7 @@ type ServiceBasicInfo struct {
 	// valid length is 6-100 character
 	// cannot update if deployed
 	// +mandatory
-	ServiceId string `json:"service_id" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
+	ServiceId string `json:"service_id" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~service_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required~service_id is missing in request"`
 	// Name is required when creating resources on Kubernetes,
 	// Name is primarily intended for creation idempotence and configuration
 	// definition.
@@ -56,7 +56,7 @@ type ServiceBasicInfo struct {
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 5-30 character
 	// +mandatory
-	Name string `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed,required"`
+	Name string `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~service name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required"`
 	// Version is required for versioning purpose
 	// Version will be concatinated with name for container services,
 	// Cannot be updated.
@@ -64,17 +64,17 @@ type ServiceBasicInfo struct {
 	// valid length is 1-10 character
 	// default=v1
 	// +mandatory
-	Version string `json:"version" bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~lowercase alphanumeric characters are allowed,required" default:"v1"`
+	Version string `json:"version" bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~service version is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required" default:"v1"`
 	// ServiceType is used to categorize score and objects.
 	// Refer Documentation for more details
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// +mandatory
-	ServiceType constants.ServiceType `json:"service_type" bson:"service_type"  binding:"required" valid:"alphanumspecial,lowercase~lowercase alphabets are allowed,required" swaggertype:"string" `
+	ServiceType constants.ServiceType `json:"service_type" bson:"service_type"  binding:"required" valid:"alphanumspecial,lowercase~service_type is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required" swaggertype:"string" `
 	// ServiceSubType is used to categorize score and objects.
 	// Refer Documentation for more details
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// +mandatory
-	ServiceSubType constants.ServiceSubType `json:"service_sub_type" bson:"service_sub_type" binding:"required" valid:"alphanumspecial,lowercase~lowercase alphabets are allowed,required" swaggertype:"string"`
+	ServiceSubType constants.ServiceSubType `json:"service_sub_type" bson:"service_sub_type" binding:"required" valid:"alphanumspecial,lowercase~service_sub_type is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required" swaggertype:"string"`
 	// GroupId is used to group container type services
 	// if you are grouping services then name of the services
 	// must be same and version  must be different
@@ -198,14 +198,15 @@ type ServiceBasicInfo struct {
 	// +optional
 	Embeds []string `json:"embeds,omitempty" bson:"embeds,omitempty"`
 }
+type HookMain struct {
+	Weight     int64    `json:"weight" bson:"weight"`
+	ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
+	HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
+}
 type ServiceTemplate struct {
 	HookConfiguration *HookConfiguration `json:"hook_configuration,omitempty"`
-	Hooks             []struct {
-		Weight     int64    `json:"weight" bson:"weight"`
-		ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
-		HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
-	} `json:"hooks,omitempty" bson:"hooks,omitempty" valid:"-"`
-	ServiceBasicInfo `json:",inline" bson:",inline"`
+	Hooks             []HookMain         `json:"hooks,omitempty" bson:"hooks,omitempty" valid:"-"`
+	ServiceBasicInfo  `json:",inline" bson:",inline"`
 	// ServiceAttributes are the actual attributes required to deploy
 	// on Kubernetes Cluster
 	// +mandatory

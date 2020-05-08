@@ -54,5 +54,5 @@ type StatefulSetServiceAttribute struct {
 	ServiceName string `json:"service_name,omitempty" json:"service_name,omitempty"`
 	// volumeClaimTemplates is a list of claims that pods are allowed to reference.
 	// +optional
-	VolumeClaimTemplates []PersistentVolumeClaimService `json:"volume_claim_templates, omitempty" bson:"volume_claim_templates,omitempty"`
+	VolumeClaimTemplates []PersistentVolumeClaimService `json:"volume_claim_templates,omitempty" bson:"volume_claim_templates,omitempty"`
 }

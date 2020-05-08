@@ -2,6 +2,8 @@ bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-2020050112045
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200501120452-a31e2ef8b654/go.mod h1:HmO/Mci6gxSHnumTNm+DVRmoBv+VVqtsIIWo5Xk7uuw=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200505152723-bfc58392a922 h1:yGc82WhAyUJdvwJF8Z1xxP/hv49FXStdgFk3D0q6trk=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200505152723-bfc58392a922/go.mod h1:dKpzQYhq/mtDJ9rfdzJNT6NcUG9vn4qEdAmwBrNuOow=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200508055509-c0678178ec27 h1:A8ihttd3dOR20pZFYvdj/IWLjhAO7i9dF1/u0YwhUfw=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200508055509-c0678178ec27/go.mod h1:VPBHO1LS4JAFdhXzRQJV/6X9lXnJqlLlg6RouPRtOis=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
