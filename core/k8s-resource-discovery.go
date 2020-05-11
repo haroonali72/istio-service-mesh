@@ -2150,6 +2150,7 @@ func (conn *GrpcConn) discoverIstioServiceEntries(ctx context.Context, namespace
 		}
 		serviceTemplates = append(serviceTemplates, svcEntryTemp)
 	}
+	return nil
 }
 
 func (conn *GrpcConn) discoverIstioDestinationRules(ctx context.Context, svcTemp *svcTypes.ServiceTemplate, namespace string) error {
