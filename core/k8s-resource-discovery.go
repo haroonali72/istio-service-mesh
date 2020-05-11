@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"golang.org/x/build/kubernetes/api"
 	"google.golang.org/grpc"
+	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	v1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
@@ -1831,16 +1832,27 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 						utils.Error.Println(err)
 						return
 					}
-					//istio components creation
-					istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
-					if err != nil {
-						utils.Error.Println(err)
-						return
+
+					if conn.isIstioEnabled(ctx) {
+						//Istio components discovery
+						err = conn.discoverIstioComponents(ctx, k8serviceTemp, namespace)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+					} else {
+						//istio components creation
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
+						//istio components creation
 					}
-					for _, istioSvc := range istioSvcTemps {
-						serviceTemplates = append(serviceTemplates, istioSvc)
-					}
-					//istio components creation
+
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &depTemp.ServiceId)
 						depTemp.AfterServices = append(depTemp.AfterServices, &k8serviceTemp.ServiceId)
@@ -2105,6 +2117,212 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	}
 
 	serviceTemplates = append(serviceTemplates, depTemp)
+}
+
+func (conn *GrpcConn) discoverIstioComponents(ctx context.Context, svcTemp *svcTypes.ServiceTemplate, namespace string) error {
+	err := conn.discoverIstioDestinationRules(ctx, svcTemp, namespace)
+	if err != nil {
+		return err
+	}
+
+	err = conn.discoverIstioVirtualServices(ctx, svcTemp, namespace)
+	if err != nil {
+		return err
+	}
+
+	err = conn.discoverIstioServiceEntries(ctx, namespace)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (conn *GrpcConn) discoverIstioServiceEntries(ctx context.Context, namespace string) error {
+	svcEntryList, err := conn.getAllServiceEntries(ctx, namespace)
+	if err != nil {
+		return err
+	}
+	for _, svcEntry := range svcEntryList.Items {
+		svcEntryTemp, err := getCpConvertedTemplate(svcEntry, svcEntry.Kind)
+		if err != nil {
+			return err
+		}
+		serviceTemplates = append(serviceTemplates, svcEntryTemp)
+	}
+}
+
+func (conn *GrpcConn) discoverIstioDestinationRules(ctx context.Context, svcTemp *svcTypes.ServiceTemplate, namespace string) error {
+
+	drList, err := conn.getAllDestinationRules(ctx, namespace)
+	if err != nil {
+		return err
+	}
+	for _, dr := range drList.Items {
+		if dr.Spec.Host == svcTemp.Name {
+			drTemp, err := getCpConvertedTemplate(dr, dr.Kind)
+			if err != nil {
+				return err
+			}
+			drTemp.BeforeServices = append(drTemp.BeforeServices, &svcTemp.ServiceId)
+			svcTemp.AfterServices = append(svcTemp.AfterServices, &drTemp.ServiceId)
+			serviceTemplates = append(serviceTemplates, drTemp)
+			break
+		}
+	}
+
+	return nil
+}
+
+func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp *svcTypes.ServiceTemplate, namespace string) error {
+
+	vsList, err := conn.getAllVirtualServices(ctx, namespace)
+	if err != nil {
+		return err
+	}
+	for _, vs := range vsList.Items {
+		vsTemp, err := getCpConvertedTemplate(vs, vs.Kind)
+		if err != nil {
+			return err
+		}
+		for _, http := range vs.Spec.Http {
+			for _, route := range http.Route {
+				if !isAlreadyExist(vsTemp.Namespace, vsTemp.ServiceSubType, vsTemp.Name) && route.Destination.Host == svcTemp.Name {
+					vsTemp.BeforeServices = append(vsTemp.BeforeServices, &svcTemp.ServiceId)
+					svcTemp.AfterServices = append(svcTemp.AfterServices, &vsTemp.ServiceId)
+					serviceTemplates = append(serviceTemplates, vsTemp)
+					break
+				}
+			}
+		}
+
+		//istio gateway discovery
+		for _, gateway := range vs.Spec.Gateways {
+			istioGateway, err := conn.getIstioGateway(ctx, gateway, namespace)
+			if err != nil {
+				return err
+			}
+
+			gatewayTemp, err := getCpConvertedTemplate(istioGateway, istioGateway.Kind)
+			if err != nil {
+				return err
+			}
+
+			gatewayTemp.BeforeServices = append(gatewayTemp.BeforeServices, &vsTemp.ServiceId)
+			vsTemp.AfterServices = append(vsTemp.AfterServices, &gatewayTemp.ServiceId)
+			serviceTemplates = append(serviceTemplates, gatewayTemp)
+		}
+	}
+
+	return nil
+}
+
+func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string) (*istioClient.ServiceEntryList, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "serviceentry", "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	var serviceEntryList *istioClient.ServiceEntryList
+	err = json.Unmarshal(response.Resource, &serviceEntryList)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return serviceEntryList, nil
+}
+
+func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespace string) (*istioClient.Gateway, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "gateway", gatewayName, "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	var istioGateway *istioClient.Gateway
+	err = json.Unmarshal(response.Resource, &istioGateway)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return istioGateway, nil
+}
+
+func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace string) (*istioClient.DestinationRuleList, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "dr", "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	var destinationRuleList *istioClient.DestinationRuleList
+	err = json.Unmarshal(response.Resource, &destinationRuleList)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return destinationRuleList, nil
+}
+
+func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace string) (*istioClient.VirtualServiceList, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "vs", "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	var virtualServiceList *istioClient.VirtualServiceList
+	err = json.Unmarshal(response.Resource, &virtualServiceList)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
+	}
+
+	return virtualServiceList, nil
+}
+
+func (conn *GrpcConn) isIstioEnabled(ctx context.Context) bool {
+	_, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "ns", "istio-system"},
+	})
+	if err != nil {
+		utils.Error.Println(err)
+		return false
+	}
+
+	return true
 }
 
 func GetExistingService(namespace string, svcsubtype meshConstants.ServiceSubType, name string) *svcTypes.ServiceTemplate {
@@ -3126,6 +3344,140 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpStorageClass)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
+	default:
+		utils.Info.Println("Kind does not exist in defined switch cases")
+		return nil, errors.New("type does not exit")
+	}
+
+	switch constants.MeshKind(kind) {
+	case constants.DestinationRule:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var dr istioClient.DestinationRule
+		err = json.Unmarshal(bytes, &dr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpDr, err := convertToCPDestinationRule(&dr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpDr)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
+	case constants.VirtualService:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var vs istioClient.VirtualService
+		err = json.Unmarshal(bytes, &vs)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpVs, err := convertToCPVirtualService(&vs)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpVs)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
+	case constants.Gateway:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var gateway istioClient.Gateway
+		err = json.Unmarshal(bytes, &gateway)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpGateway, err := convertToCPGateway(&gateway)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpGateway)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
+	case constants.ServiceEntry:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var svcEntry istioClient.ServiceEntry
+		err = json.Unmarshal(bytes, &svcEntry)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpSvcEntry, err := convertToCPServiceEntry(&svcEntry)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpSvcEntry)
 		if err != nil {
 			utils.Error.Println(err)
 			return nil, err
