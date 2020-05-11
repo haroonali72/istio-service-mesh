@@ -1,0 +1,41 @@
+syntax= "proto3";
+
+package proto;
+import "general.proto";
+import "service.proto";
+import "google/protobuf/any.proto";
+
+service Role{
+    rpc CreateRoleService(RoleService) returns (ServiceResponse){}
+    rpc GetRoleService(RoleService) returns (ServiceResponse){}
+    rpc PutRoleService(RoleService) returns (ServiceResponse){}
+    rpc PatchRoleService(RoleService) returns (ServiceResponse){}
+    rpc DeleteRoleService(RoleService) returns (ServiceResponse){}
+}
+
+message RoleService {
+    string service_id = 1;
+    string token=2;
+    string project_id=3;
+    string company_id = 4;
+    string name = 5;
+    string service_type= 6;
+    string service_sub_type =7;
+    google.protobuf.Any service_dependency_info=8;
+    string namespace =9;
+    string version =10;
+    RoleServiceAttributes service_attribute =11;
+    HookConfiguration hook_configuration=12;
+}
+
+message RoleServiceAttributes {
+    repeated RoleRule rules=1;
+}
+
+message RoleRule{
+    repeated string resources =1;
+    repeated string verbs =2;
+    repeated string api_groups=3;
+    repeated string resource_names=4;
+}
+

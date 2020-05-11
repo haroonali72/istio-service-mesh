@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package proto;
+import "persistentvolume.proto";
+import "service.proto";
+import "general.proto";
+
+service PersistentVolumeClaim {
+    rpc CreatePersistentVolumeClaim (PersistentVolumeClaimService) returns (ServiceResponse) {}
+    rpc GetPersistentVolumeClaim (PersistentVolumeClaimService) returns (ServiceResponse) {}
+    rpc DeletePersistentVolumeClaim (PersistentVolumeClaimService) returns (ServiceResponse) {}
+    rpc PatchPersistentVolumeClaim (PersistentVolumeClaimService) returns (ServiceResponse) {}
+    rpc PutPersistentVolumeClaim (PersistentVolumeClaimService) returns (ServiceResponse) {}
+}
+
+message PersistentVolumeClaimService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string token = 7;
+    string company_id = 8;
+    PersistentVolumeClaimAttributes service_attributes = 9;
+    string namespace = 10;
+    HookConfiguration hook_configuration=11;
+}
+message PersistentVolumeClaimServiceResponse {
+    string error = 1;
+    PersistentVolumeClaimService resp = 2;
+}
+message PersistentVolumeClaimAttributes {
+    LabelSelectorObj   label_selector =1;
+    string volume_name=2;
+    repeated AccessMode access_mode=3;
+    string storage_class_name=4;
+    string request_quantity=5;
+    string limit_quantity=6;
+    string volume_mode=7;
+    TypedLocalObjectReference data_source=8;
+}
+message  TypedLocalObjectReference  {
+ string api_group=1;
+ string kind=2;
+string name=3;
+}

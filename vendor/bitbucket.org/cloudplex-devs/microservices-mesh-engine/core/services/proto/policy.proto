@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package proto;
+import "general.proto";
+import "service.proto";
+service Policy {
+    rpc CreatePolicy (PolicyService) returns (ServiceResponse) {}
+    rpc GetPolicy (PolicyService) returns (ServiceResponse) {}
+    rpc DeletePolicy (PolicyService) returns (ServiceResponse) {}
+    rpc PatchPolicy (PolicyService) returns (ServiceResponse) {}
+    rpc PutPolicy (PolicyService) returns (ServiceResponse) {}
+}
+
+
+message PolicyService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string namespace = 7;
+    string token = 8;
+    string company_id = 9;
+    PolicyServiceAttributes service_attributes = 10;
+    HookConfiguration hook_configuration=11;
+}
+message PolicyServiceResponse {
+    string error = 1;
+    PolicyService resp = 2;
+}
+message PolicyServiceAttributes {
+    repeated PeersAuthenticationMethod peers = 1;
+    repeated TargetSelector target = 2;
+    bool peer_is_optional =3;
+    repeated OriginAuthenticationMethod origin =4;
+    bool origin_is_optional =5;
+    Binding principal_binding =6;
+}
+message PeersAuthenticationMethod {
+    MutualTls mtls =1;
+    Jwt jwt=2;
+}
+message MutualTls {
+    bool allow_tls =1;
+    PMode  mode=2;
+}
+
+message Jwt{
+    string issuer =1;
+    repeated string audiences =2;
+    string jwks_uri =3;
+    string jwks =4;
+    repeated string jwt_header =5;
+    repeated string jwt_params =6;
+    repeated JwtTriggerRule trigger_rules =7;
+}
+
+message JwtTriggerRule{
+    repeated ExcludedPath excluded_path =1;
+    repeated IncludedPath included_path =2;
+}
+
+message IncludedPath {
+    string type =1;
+    string value=2;
+}
+
+message ExcludedPath {
+    string type =1;
+    string value=2;
+}
+
+message OriginAuthenticationMethod{
+    Jwt jwt =1;
+}
+message PrincipalBinding {
+    PrincipalBinding binding =1;
+}
+
+message TargetSelector {
+    string name=1;
+    repeated PortSelector ports=2;
+}
+message PortSelector {
+    int32 number=1;
+    string name=2;
+}
+
+enum PMode{
+    STRICT =0;
+    PERMISSIVE=1;
+}
+
+enum Binding{
+    USE_PEER=  0;
+    USE_ORIGIN= 1;
+}

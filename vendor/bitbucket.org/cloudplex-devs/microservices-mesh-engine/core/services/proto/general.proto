@@ -1,0 +1,310 @@
+syntax = "proto3";
+package proto;
+
+
+message ContainerAttributes{
+    map<string,EnvironmentVariable> environment_variables = 1;
+    ImageRepositoryConfigurations image_repository_configurations = 2;
+    map<string, ContainerPort> ports = 3;
+    string tag = 4;
+    string image_prefix = 5;
+    string image_name = 6;
+    repeated string command = 7;
+    repeated string args = 8;
+    map<string, string> limit_resources = 9;
+    map<string, string> request_resources = 10;
+    Probe liveness_probe = 11;
+    Probe readiness_probe = 12;
+    SecurityContextStruct security_context = 13;
+    repeated VolumeMount volume_mounts = 14;
+
+}
+message VolumeMount {
+    string name = 1;
+    bool readonly = 2;
+    string mount_path = 3;
+    string sub_path = 4;
+    string sub_path_expr = 5;
+    MountPropagationMode mount_propagation = 6;
+}
+
+message Affinity{
+    NodeAffinity node_affinity = 1;
+    PodAffinity pod_affinity = 2;
+    PodAntiAffinity pod_anti_affinity = 3;
+
+}
+
+message NodeAffinity{
+    NodeSelector req_during_scheduling_ign_during_exec = 1;
+    repeated PreferredSchedulingTerm pref_during_ign_during_exec = 2;
+
+}
+
+message NodeSelector {
+    repeated NodeSelectorTerm node_selector_terms = 1;
+
+}
+
+message NodeSelectorTerm{
+    repeated NodeSelectorRequirement match_expressions = 1;
+    repeated NodeSelectorRequirement match_fields = 2;
+}
+
+message NodeSelectorRequirement{
+    string key = 1;
+    NodeSelectorOperator operator = 2;
+    repeated string values = 3;
+}
+
+message PreferredSchedulingTerm{
+    int32 weight = 1;
+    NodeSelectorTerm preference = 2;
+}
+
+message PodAffinity{
+    repeated PodAffinityTerm req_during_scheduling_ign_during_exec = 1;
+    repeated WeightedPodAffinityTerm pref_during_ign_during_exec = 2;
+}
+
+message PodAffinityTerm{
+    LabelSelectorObj label_selector = 1;
+    repeated string namespaces = 2;
+    string topology_key = 3;
+
+}
+
+message WeightedPodAffinityTerm{
+    int32 weight = 1;
+    PodAffinityTerm pod_affinity_term = 2;
+}
+message PodAntiAffinity {
+    repeated PodAffinityTerm req_during_scheduling_ign_during_exec = 1;
+    repeated WeightedPodAffinityTerm pref_during_ign_during_exec = 2;
+}
+
+message EnvironmentVariable {
+    string key = 1;
+    string value = 2;
+    bool dynamic = 3;
+    string type = 4;
+}
+
+
+message ImageRepositoryConfigurations {
+    string url = 1;
+    string tag = 2;
+    BasicAuthCredentials credentials = 3;
+    string profile_id = 4;
+}
+
+message BasicAuthCredentials {
+    string username = 1;
+    string password = 2;
+}
+
+message ContainerPort {
+    string name = 1;
+    int32 host_port = 2;
+    int32 container_port = 3;
+    string protocol = 4;
+    string host_ip = 5;
+}
+
+message IstioConfig {
+    bool enable_external_traffic = 1;
+
+}
+
+message LabelSelectorObj {
+    map<string, string> match_labels = 1;
+    repeated LabelSelectorRequirement match_expressions = 2;
+
+}
+
+message LabelSelectorRequirement {
+    string key = 1;
+    LabelSelectorOperator operator = 2;
+    repeated string values = 3;
+}
+message SecurityContextStruct {
+    Capabilities capabilities = 1;
+    int64 run_as_user = 2;
+    int64 run_as_group = 3;
+    bool run_as_non_root = 4;
+    bool privileged = 5;
+    ProcMountType proc_mount = 6;
+    bool allow_privilege_escalation = 7;
+    bool read_only_root_filesystem = 8;
+    SELinuxOptionsStruct se_linux_options = 9;
+
+}
+
+message SELinuxOptionsStruct {
+    string user = 1;
+    string role = 2;
+    string type = 3;
+    string level = 4;
+}
+
+message Capabilities {
+    repeated string add = 1;
+    repeated string drop = 2;
+}
+
+message Probe {
+    Handler handler = 1;
+    int32 initial_delay_seconds = 2;
+    int32 timeout_seconds = 3;
+    int32 period_seconds = 4;
+    int32 success_threshold = 5;
+    int32 failure_threshold = 6;
+
+
+}
+
+message Handler {
+    string handler_type = 1;
+    ExecAction exec = 2;
+    HTTPGetAction http_get = 3;
+    TCPSocketAction tcp_socket = 4;
+}
+message HTTPGetAction {
+    string path = 1;
+    int32 port = 2;
+    string host = 3;
+    string scheme = 4;
+    repeated HTTPHeader http_headers = 5;
+
+
+}
+
+message HTTPHeader {
+    string name = 1;
+    string value = 2;
+}
+
+message TCPSocketAction {
+    int32 port = 1;
+    string host = 2;
+}
+
+message ExecAction {
+    repeated string command = 1;
+}
+
+message K8sRbacAttribute {
+    string resource = 1;
+    repeated string verbs = 2;
+    repeated string api_group = 3;
+}
+
+message IstioRbacAttribute {
+    repeated string services = 1;
+    repeated string methods = 2;
+    repeated string paths = 3;
+
+
+}
+
+message DeploymentStrategy {
+    DeploymentStrategyType type = 1;
+    RollingUpdateDeployment rolling_update = 2;
+}
+
+message RollingUpdateDeployment {
+    int32 max_unavailable = 1;
+    int32  max_surge = 2;
+}
+message DaemonSetUpdateStrategy {
+    DaemonSetUpdateStrategyType type = 1;
+    RollingUpdateDaemonSet rolling_update = 2;
+}
+message RollingUpdateDaemonSet{
+    oneof maxUnavailable{
+        int32 intVal = 1;
+        string strVal = 2;
+    }
+}
+
+message StateFulSetUpdateStrategy{
+    StatefulSetUpdateStrategyType type = 1;
+    RollingUpdateStatefulSetStrategy rolling_update = 2;
+}
+
+message RollingUpdateStatefulSetStrategy{
+    Partition partition = 1;
+}
+
+message Partition{
+    int32 Value = 1;
+}
+
+message Replicas{
+    int32 value = 1;
+}
+
+message RevisionHistoryLimit {
+    int32 value = 1;
+}
+message TerminationGracePeriodSeconds{
+    int64 value = 1;
+}
+
+message ActiveDeadlineSeconds{
+    int64 value = 1;
+}
+
+enum DaemonSetUpdateStrategyType{
+    DaemonSetOnDelete = 0;
+    DaemonSetRollingUpdate = 1;
+}
+enum DeploymentStrategyType {
+    Recreate = 0;
+    RollingUpdate = 1;
+}
+
+enum LabelSelectorOperator {
+    In = 0;
+    NotIn = 1;
+    Exists = 2;
+    DoesNotExist = 3;
+}
+
+enum ProcMountType {
+    Default = 0;
+    Unmasked = 1;
+}
+
+enum MountPropagationMode {
+    None = 0;
+    HostToContainer = 1;
+    Bidirectional = 2;
+}
+
+enum NodeSelectorOperator{
+    NodeSelectorOpIn = 0;
+    NodeSelectorOpNotIn = 1;
+    NodeSelectorOpExists = 2;
+    NodeSelectorOpDoesNotExist = 3;
+    NodeSelectorOpGt = 4;
+    NodeSelectorOpLt = 5;
+
+}
+
+enum StatefulSetUpdateStrategyType{
+    StatefulSetRollingUpdate = 0;
+    StatefulSetOnDelete = 1;
+}
+
+message HookConfiguration {
+    int64    weight=1;
+    bool     pre_install=2;
+    bool     pre_update=3;
+    bool     post_update=4;
+    bool     post_install=5;
+    bool     pre_delete=6;
+    bool     post_delete=7;
+    bool     pre_rollback=8;
+    bool     post_rollback=9;
+}
