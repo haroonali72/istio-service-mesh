@@ -388,14 +388,16 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		}
 
 		if http.FaultInjection != nil {
-			vSer.Fault = &v1alpha3.HTTPFaultInjection{}
+
 			if http.FaultInjection.DelayType == "FixedDelay" {
+				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
 						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
 					},
 				}
 			} else if http.FaultInjection.DelayType == "ExponentialDelay" {
+				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
 						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
