@@ -169,6 +169,8 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					jobTemp.BeforeServices = append(jobTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &jobTemp.ServiceId)
+					jobTemp.Embeds = append(jobTemp.Embeds, rbacTemp.ServiceId)
+
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -176,6 +178,8 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			jobTemp.BeforeServices = append(jobTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &jobTemp.ServiceId)
+			jobTemp.Embeds = append(jobTemp.Embeds, service.ServiceId)
+
 		}
 	}
 
@@ -269,6 +273,10 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &jobTemp.ServiceId)
 						jobTemp.AfterServices = append(jobTemp.AfterServices, &k8serviceTemp.ServiceId)
+						for _, key := range k8serviceTemp.AfterServices {
+							jobTemp.Embeds = append(jobTemp.Embeds, *key)
+						}
+						jobTemp.Embeds = append(jobTemp.Embeds, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
 					} else {
 						isSameJob := false
@@ -281,6 +289,10 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 						if !isSameJob {
 							k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &jobTemp.ServiceId)
 							jobTemp.AfterServices = append(jobTemp.AfterServices, &k8serviceTemp.ServiceId)
+							for _, key := range k8serviceTemp.AfterServices {
+								jobTemp.Embeds = append(jobTemp.Embeds, *key)
+							}
+							jobTemp.Embeds = append(jobTemp.Embeds, k8serviceTemp.ServiceId)
 						}
 					}
 				}
@@ -556,6 +568,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &cronjobTemp.ServiceId)
+					cronjobTemp.Embeds = append(cronjobTemp.Embeds, rbacTemp.ServiceId)
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -563,6 +576,8 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			cronjobTemp.BeforeServices = append(cronjobTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &cronjobTemp.ServiceId)
+			cronjobTemp.Embeds = append(cronjobTemp.Embeds, service.ServiceId)
+
 		}
 	}
 
@@ -655,6 +670,10 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &cronjobTemp.ServiceId)
 						cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, &k8serviceTemp.ServiceId)
+						for _, key := range k8serviceTemp.AfterServices {
+							cronjobTemp.Embeds = append(cronjobTemp.Embeds, *key)
+						}
+						cronjobTemp.Embeds = append(cronjobTemp.Embeds, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
 					} else {
 						isSameCronJob := false
@@ -667,6 +686,11 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 						if !isSameCronJob {
 							k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &cronjobTemp.ServiceId)
 							cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, &k8serviceTemp.ServiceId)
+							for _, key := range k8serviceTemp.AfterServices {
+								cronjobTemp.Embeds = append(cronjobTemp.Embeds, *key)
+							}
+							cronjobTemp.Embeds = append(cronjobTemp.Embeds, k8serviceTemp.ServiceId)
+
 						}
 					}
 				}
@@ -962,6 +986,8 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &daemonsetTemp.ServiceId)
+					daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, rbacTemp.ServiceId)
+
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -969,6 +995,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			daemonsetTemp.BeforeServices = append(daemonsetTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &daemonsetTemp.ServiceId)
+			daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, service.ServiceId)
 		}
 	}
 
@@ -1042,6 +1069,10 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &daemonsetTemp.ServiceId)
 						daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, &k8serviceTemp.ServiceId)
+						for _, key := range k8serviceTemp.AfterServices {
+							daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, *key)
+						}
+						daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
 					} else {
 						isSameDaemonSet := false
@@ -1054,6 +1085,10 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 						if !isSameDaemonSet {
 							k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &daemonsetTemp.ServiceId)
 							daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, &k8serviceTemp.ServiceId)
+							for _, key := range k8serviceTemp.AfterServices {
+								daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, *key)
+							}
+							daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, k8serviceTemp.ServiceId)
 						}
 					}
 				}
@@ -1329,6 +1364,8 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					stsTemp.BeforeServices = append(stsTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &stsTemp.ServiceId)
+					stsTemp.Embeds = append(stsTemp.Embeds, rbacTemp.ServiceId)
+
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -1336,6 +1373,8 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			stsTemp.BeforeServices = append(stsTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &stsTemp.ServiceId)
+			stsTemp.Embeds = append(stsTemp.Embeds, service.ServiceId)
+
 		}
 	}
 
@@ -1429,6 +1468,10 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &stsTemp.ServiceId)
 						stsTemp.AfterServices = append(stsTemp.AfterServices, &k8serviceTemp.ServiceId)
+						for _, key := range k8serviceTemp.AfterServices {
+							stsTemp.Embeds = append(stsTemp.Embeds, *key)
+						}
+						stsTemp.Embeds = append(stsTemp.Embeds, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
 					} else {
 						isSameStatefulSet := false
@@ -1441,6 +1484,10 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 						if !isSameStatefulSet {
 							k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &stsTemp.ServiceId)
 							stsTemp.AfterServices = append(stsTemp.AfterServices, &k8serviceTemp.ServiceId)
+							for _, key := range k8serviceTemp.AfterServices {
+								stsTemp.Embeds = append(stsTemp.Embeds, *key)
+							}
+							stsTemp.Embeds = append(stsTemp.Embeds, k8serviceTemp.ServiceId)
 						}
 					}
 				}
@@ -1742,6 +1789,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					depTemp.BeforeServices = append(depTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &depTemp.ServiceId)
+					depTemp.Embeds = append(depTemp.Embeds, rbacTemp.ServiceId)
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -1749,6 +1797,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			depTemp.BeforeServices = append(depTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &depTemp.ServiceId)
+			depTemp.Embeds = append(depTemp.Embeds, service.ServiceId)
 		}
 
 	}
@@ -1844,6 +1893,10 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &depTemp.ServiceId)
 						depTemp.AfterServices = append(depTemp.AfterServices, &k8serviceTemp.ServiceId)
+						for _, key := range k8serviceTemp.AfterServices {
+							depTemp.Embeds = append(depTemp.Embeds, *key)
+						}
+						depTemp.Embeds = append(depTemp.Embeds, k8serviceTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, k8serviceTemp)
 					} else {
 						isSameDeployment := false
@@ -1856,6 +1909,10 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 						if !isSameDeployment {
 							k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &depTemp.ServiceId)
 							depTemp.AfterServices = append(depTemp.AfterServices, &k8serviceTemp.ServiceId)
+							for _, key := range k8serviceTemp.AfterServices {
+								depTemp.Embeds = append(depTemp.Embeds, *key)
+							}
+							depTemp.Embeds = append(depTemp.Embeds, k8serviceTemp.ServiceId)
 						}
 					}
 				}
@@ -2177,12 +2234,15 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 
 								rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
 								rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
 							} else {
 								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 							}
 						}
 					}
@@ -2222,12 +2282,15 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
 
 								rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
 								rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
 							} else {
 								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
+								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 							}
 						}
 					}
@@ -3158,6 +3221,7 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 	cpKubeService.ServiceId = svcTemp.ServiceId
 	cpKubeService.ServiceType = svcTemp.ServiceType
 	cpKubeService.ServiceSubType = svcTemp.ServiceSubType
+	cpKubeService.Version = svcTemp.Version
 	if svcTemp.Namespace != "" {
 		cpKubeService.Namespace = svcTemp.Namespace
 	} else {
