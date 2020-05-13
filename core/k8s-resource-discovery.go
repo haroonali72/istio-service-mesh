@@ -257,16 +257,27 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 						utils.Error.Println(err)
 						return
 					}
-					//istio components creation
-					istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
-					if err != nil {
-						utils.Error.Println(err)
-						return
+
+					if conn.isIstioEnabled(ctx) {
+						//Istio components discovery
+						err = conn.discoverIstioComponents(ctx, k8serviceTemp, namespace)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+					} else {
+						//istio components creation
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
+						//istio components creation
 					}
-					for _, istioSvc := range istioSvcTemps {
-						serviceTemplates = append(serviceTemplates, istioSvc)
-					}
-					//istio components creation
+
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &jobTemp.ServiceId)
 						jobTemp.AfterServices = append(jobTemp.AfterServices, &k8serviceTemp.ServiceId)
@@ -643,16 +654,27 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 						utils.Error.Println(err)
 						return
 					}
-					//istio components creation
-					istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
-					if err != nil {
-						utils.Error.Println(err)
-						return
+
+					if conn.isIstioEnabled(ctx) {
+						//Istio components discovery
+						err = conn.discoverIstioComponents(ctx, k8serviceTemp, namespace)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+					} else {
+						//istio components creation
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
+						//istio components creation
 					}
-					for _, istioSvc := range istioSvcTemps {
-						serviceTemplates = append(serviceTemplates, istioSvc)
-					}
-					//istio components creation
+
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &cronjobTemp.ServiceId)
 						cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, &k8serviceTemp.ServiceId)
@@ -1030,16 +1052,27 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 						utils.Error.Println(err)
 						return
 					}
-					//istio components creation
-					istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
-					if err != nil {
-						utils.Error.Println(err)
-						return
+
+					if conn.isIstioEnabled(ctx) {
+						//Istio components discovery
+						err = conn.discoverIstioComponents(ctx, k8serviceTemp, namespace)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+					} else {
+						//istio components creation
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
+						//istio components creation
 					}
-					for _, istioSvc := range istioSvcTemps {
-						serviceTemplates = append(serviceTemplates, istioSvc)
-					}
-					//istio components creation
+
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &daemonsetTemp.ServiceId)
 						daemonsetTemp.AfterServices = append(daemonsetTemp.AfterServices, &k8serviceTemp.ServiceId)
@@ -1417,16 +1450,27 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 						utils.Error.Println(err)
 						return
 					}
-					//istio components creation
-					istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
-					if err != nil {
-						utils.Error.Println(err)
-						return
+
+					if conn.isIstioEnabled(ctx) {
+						//Istio components discovery
+						err = conn.discoverIstioComponents(ctx, k8serviceTemp, namespace)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+					} else {
+						//istio components creation
+						istioSvcTemps, err := CreateIstioComponents(k8serviceTemp, labels)
+						if err != nil {
+							utils.Error.Println(err)
+							return
+						}
+						for _, istioSvc := range istioSvcTemps {
+							serviceTemplates = append(serviceTemplates, istioSvc)
+						}
+						//istio components creation
 					}
-					for _, istioSvc := range istioSvcTemps {
-						serviceTemplates = append(serviceTemplates, istioSvc)
-					}
-					//istio components creation
+
 					if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 						k8serviceTemp.BeforeServices = append(k8serviceTemp.BeforeServices, &stsTemp.ServiceId)
 						stsTemp.AfterServices = append(stsTemp.AfterServices, &k8serviceTemp.ServiceId)
