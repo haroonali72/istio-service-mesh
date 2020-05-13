@@ -2,6 +2,7 @@ package core
 
 import (
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
@@ -23,7 +24,6 @@ import (
 	storage "k8s.io/api/storage/v1"
 	"math/rand"
 	"reflect"
-	"sigs.k8s.io/yaml"
 	"strconv"
 	"strings"
 	"sync"
@@ -1710,10 +1710,14 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	if dep.Name == "antelope" {
 		fmt.Println("hello from antelope")
 	}
-	utils.Info.Printf("Resolving dependencies of deployment :%v within namespace : %v", dep.Name, dep.Namespace)
+	utils.Info.Printf("Resolving dependency :%v", types.AppDiscoveryLog{
+		ServiceType:  string(constants.Deployment),
+		ServiceName:  dep.Name,
+		Namespace:    dep.Namespace,
+		ErrorMessage: "",
+	})
 	depTemp, err := getCpConvertedTemplate(dep, dep.Kind)
 	if err != nil {
-		utils.Error.Println(err)
 		return
 	}
 
@@ -2117,6 +2121,12 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	}
 
 	serviceTemplates = append(serviceTemplates, depTemp)
+	utils.Info.Printf("Resolved dependency :%v", types.AppDiscoveryLog{
+		ServiceType:  string(constants.Deployment),
+		ServiceName:  dep.Name,
+		Namespace:    dep.Namespace,
+		ErrorMessage: "",
+	})
 }
 
 func (conn *GrpcConn) discoverIstioComponents(ctx context.Context, svcTemp *svcTypes.ServiceTemplate, namespace string) error {
@@ -2515,14 +2525,26 @@ func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) 
 		Args:      []string{"get", "statefulsets", "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.StatefulSet),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var statefulsetList *v1.StatefulSetList
 	err = json.Unmarshal(response.Resource, &statefulsetList)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.StatefulSet),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2538,14 +2560,26 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 		Args:      []string{"get", "deployments", "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Deployment),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var deploymentList *v1.DeploymentList
-	err = yaml.Unmarshal(response.Resource, &deploymentList)
+	err = json.Unmarshal(response.Resource, &deploymentList)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Deployment),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2561,14 +2595,26 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string) (*batch.
 		Args:      []string{"get", "job", "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Job),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var jobList *batch.JobList
 	err = json.Unmarshal(response.Resource, &jobList)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Job),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2584,14 +2630,26 @@ func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autosc
 		Args:      []string{"get", "hpa", "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.HPA),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var hpaList *autoscale.HorizontalPodAutoscalerList
 	err = json.Unmarshal(response.Resource, &hpaList)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.HPA),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2607,14 +2665,28 @@ func (conn *GrpcConn) getStorageClass(ctx context.Context, storgaClassName, name
 		Args:      []string{"get", "storageclass", storgaClassName, "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.StorageClass),
+			ServiceName:  storgaClassName,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var storageClass *storage.StorageClass
 	err = json.Unmarshal(response.Resource, &storageClass)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.StorageClass),
+			ServiceName:  storgaClassName,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2631,14 +2703,26 @@ func (conn *GrpcConn) getKubernetesServices(ctx context.Context, key, value, nam
 		Args:      []string{"get", "svc", "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Service),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var kubeServiceList *v2.ServiceList
 	err = json.Unmarshal(response.Resource, &kubeServiceList)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Service),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2663,14 +2747,28 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 		Args:      []string{"get", "roles", rolename, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Role),
+			ServiceName:  rolename,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var role *rbac.Role
-	err = yaml.Unmarshal(response.Resource, &role)
+	err = json.Unmarshal(response.Resource, &role)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Role),
+			ServiceName:  rolename,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2686,14 +2784,26 @@ func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) 
 		Args:      []string{"get", "rolebindings", "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.RoleBinding),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var rolebindings *rbac.RoleBindingList
 	err = json.Unmarshal(response.Resource, &rolebindings)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.RoleBinding),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2709,14 +2819,28 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 		Args:      []string{"get", "pvc", pvcname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			ServiceName:  pvcname,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var pvc *v2.PersistentVolumeClaim
-	err = yaml.Unmarshal(response.Resource, &pvc)
+	err = json.Unmarshal(response.Resource, &pvc)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			ServiceName:  pvcname,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2732,14 +2856,28 @@ func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace
 		Args:      []string{"get", "configmaps", configmapname, "-n", namespace, "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ConfigMap),
+			ServiceName:  configmapname,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var configmap *v2.ConfigMap
 	err = json.Unmarshal(response.Resource, &configmap)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ConfigMap),
+			ServiceName:  configmapname,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2755,14 +2893,28 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 		Args:      []string{"get", "sa", svcname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ServiceAccount),
+			ServiceName:  svcname,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var svcAcc *api.ServiceAccount
-	err = yaml.Unmarshal(response.Resource, &svcAcc)
+	err = json.Unmarshal(response.Resource, &svcAcc)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ServiceAccount),
+			ServiceName:  svcname,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2778,14 +2930,28 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 		Args:      []string{"get", "secrets", secretname, "-n", namespace, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Secret),
+			ServiceName:  secretname,
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var scrt *v2.Secret
-	err = yaml.Unmarshal(response.Resource, &scrt)
+	err = json.Unmarshal(response.Resource, &scrt)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.Secret),
+			ServiceName:  secretname,
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2801,14 +2967,24 @@ func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.Clus
 		Args:      []string{"get", "clusterrolebindings", "-o", "json"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ClusterRoleBinding),
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var clusterrolebindings *rbac.ClusterRoleBindingList
 	err = json.Unmarshal(response.Resource, &clusterrolebindings)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting list :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ClusterRoleBinding),
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2824,14 +3000,26 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 		Args:      []string{"get", "clusterrole", clusterrolename, "-o", "yaml"},
 	})
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ClusterRole),
+			ServiceName:  clusterrolename,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		})
+
 		return nil, errors.New("error from grpc server :" + err.Error())
 	}
 
 	var clusterrole *rbac.ClusterRole
-	err = yaml.Unmarshal(response.Resource, &clusterrole)
+	err = json.Unmarshal(response.Resource, &clusterrole)
 	if err != nil {
-		utils.Error.Println(err)
+
+		utils.Error.Printf("Error while getting service :%v", types.AppDiscoveryLog{
+			ServiceType:  string(constants.ClusterRole),
+			ServiceName:  clusterrolename,
+			ErrorMessage: err.Error(),
+		})
+
 		return nil, err
 	}
 
@@ -2870,18 +3058,42 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Deployment:
 		CpDeployment, err := convertToCPDeployment(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDep := data.(v1.Deployment)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Deployment),
+				ServiceName:  ErrDep.Name,
+				Namespace:    ErrDep.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err := json.Marshal(CpDeployment)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDep := data.(v1.Deployment)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Deployment),
+				ServiceName:  ErrDep.Name,
+				Namespace:    ErrDep.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDep := data.(v1.Deployment)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Deployment),
+				ServiceName:  ErrDep.Name,
+				Namespace:    ErrDep.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -2919,28 +3131,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Job:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrJob := data.(batch.Job)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Job),
+				ServiceName:  ErrJob.Name,
+				Namespace:    ErrJob.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var job batch.Job
 		err = json.Unmarshal(bytes, &job)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrJob := data.(batch.Job)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Job),
+				ServiceName:  ErrJob.Name,
+				Namespace:    ErrJob.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpJob, err := convertToCPJob(&job)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrJob := data.(batch.Job)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Job),
+				ServiceName:  ErrJob.Name,
+				Namespace:    ErrJob.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpJob)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrJob := data.(batch.Job)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Job),
+				ServiceName:  ErrJob.Name,
+				Namespace:    ErrJob.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrJob := data.(batch.Job)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Job),
+				ServiceName:  ErrJob.Name,
+				Namespace:    ErrJob.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -2948,17 +3200,41 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.DaemonSet:
 		CpDaemonset, err := convertToCPDaemonSet(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDmSet := data.(v1.DaemonSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DaemonSet),
+				ServiceName:  ErrDmSet.Name,
+				Namespace:    ErrDmSet.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err := json.Marshal(CpDaemonset)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDmSet := data.(v1.DaemonSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DaemonSet),
+				ServiceName:  ErrDmSet.Name,
+				Namespace:    ErrDmSet.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDmSet := data.(v1.DaemonSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DaemonSet),
+				ServiceName:  ErrDmSet.Name,
+				Namespace:    ErrDmSet.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -2966,17 +3242,41 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.StatefulSet:
 		CpStatefuleSet, err := convertToCPStatefulSet(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSts := data.(v1.StatefulSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StatefulSet),
+				ServiceName:  ErrSts.Name,
+				Namespace:    ErrSts.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err := json.Marshal(CpStatefuleSet)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSts := data.(v1.StatefulSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StatefulSet),
+				ServiceName:  ErrSts.Name,
+				Namespace:    ErrSts.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSts := data.(v1.StatefulSet)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StatefulSet),
+				ServiceName:  ErrSts.Name,
+				Namespace:    ErrSts.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -2984,28 +3284,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Service:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrKubeSvc := data.(v2.Service)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Service),
+				ServiceName:  ErrKubeSvc.Name,
+				Namespace:    ErrKubeSvc.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var k8Service v2.Service
 		err = json.Unmarshal(bytes, &k8Service)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrKubeSvc := data.(v2.Service)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Service),
+				ServiceName:  ErrKubeSvc.Name,
+				Namespace:    ErrKubeSvc.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpKubeService, err := convertToCPKubernetesService(&k8Service)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrKubeSvc := data.(v2.Service)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Service),
+				ServiceName:  ErrKubeSvc.Name,
+				Namespace:    ErrKubeSvc.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpKubeService)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrKubeSvc := data.(v2.Service)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Service),
+				ServiceName:  ErrKubeSvc.Name,
+				Namespace:    ErrKubeSvc.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrKubeSvc := data.(v2.Service)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Service),
+				ServiceName:  ErrKubeSvc.Name,
+				Namespace:    ErrKubeSvc.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3045,28 +3385,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.ConfigMap:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrConfigMap := data.(v2.ConfigMap)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ConfigMap),
+				ServiceName:  ErrConfigMap.Name,
+				Namespace:    ErrConfigMap.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var configmap v2.ConfigMap
 		err = json.Unmarshal(bytes, &configmap)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrConfigMap := data.(v2.ConfigMap)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ConfigMap),
+				ServiceName:  ErrConfigMap.Name,
+				Namespace:    ErrConfigMap.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpConfigMap, err := ConvertToCPConfigMap(&configmap)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrConfigMap := data.(v2.ConfigMap)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ConfigMap),
+				ServiceName:  ErrConfigMap.Name,
+				Namespace:    ErrConfigMap.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpConfigMap)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrConfigMap := data.(v2.ConfigMap)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ConfigMap),
+				ServiceName:  ErrConfigMap.Name,
+				Namespace:    ErrConfigMap.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrConfigMap := data.(v2.ConfigMap)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ConfigMap),
+				ServiceName:  ErrConfigMap.Name,
+				Namespace:    ErrConfigMap.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3077,28 +3457,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Secret:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSecret := data.(v2.Secret)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Secret),
+				ServiceName:  ErrSecret.Name,
+				Namespace:    ErrSecret.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var secret v2.Secret
 		err = json.Unmarshal(bytes, &secret)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSecret := data.(v2.Secret)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Secret),
+				ServiceName:  ErrSecret.Name,
+				Namespace:    ErrSecret.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpSecret, err := ConvertToCPSecret(&secret)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSecret := data.(v2.Secret)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Secret),
+				ServiceName:  ErrSecret.Name,
+				Namespace:    ErrSecret.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpSecret)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSecret := data.(v2.Secret)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Secret),
+				ServiceName:  ErrSecret.Name,
+				Namespace:    ErrSecret.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSecret := data.(v2.Secret)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Secret),
+				ServiceName:  ErrSecret.Name,
+				Namespace:    ErrSecret.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3109,28 +3529,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.ServiceAccount:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcAcc := data.(v2.ServiceAccount)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceAccount),
+				ServiceName:  ErrSvcAcc.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var serviceaccount v2.ServiceAccount
 		err = json.Unmarshal(bytes, &serviceaccount)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcAcc := data.(v2.ServiceAccount)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceAccount),
+				ServiceName:  ErrSvcAcc.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpServiceAccount, err := convertToCPServiceAccount(&serviceaccount)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcAcc := data.(v2.ServiceAccount)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceAccount),
+				ServiceName:  ErrSvcAcc.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpServiceAccount)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcAcc := data.(v2.ServiceAccount)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceAccount),
+				ServiceName:  ErrSvcAcc.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcAcc := data.(v2.ServiceAccount)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceAccount),
+				ServiceName:  ErrSvcAcc.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3141,28 +3596,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Role:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRole := data.(rbac.Role)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Role),
+				ServiceName:  ErrRole.Name,
+				Namespace:    ErrRole.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var role rbac.Role
 		err = json.Unmarshal(bytes, &role)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRole := data.(rbac.Role)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Role),
+				ServiceName:  ErrRole.Name,
+				Namespace:    ErrRole.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpRole, err := ConvertToCPRole(&role)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRole := data.(rbac.Role)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Role),
+				ServiceName:  ErrRole.Name,
+				Namespace:    ErrRole.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpRole)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRole := data.(rbac.Role)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Role),
+				ServiceName:  ErrRole.Name,
+				Namespace:    ErrRole.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRole := data.(rbac.Role)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Role),
+				ServiceName:  ErrRole.Name,
+				Namespace:    ErrRole.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3173,28 +3668,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.RoleBinding:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRoleBinding := data.(rbac.RoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.RoleBinding),
+				ServiceName:  ErrRoleBinding.Name,
+				Namespace:    ErrRoleBinding.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var roleBinding rbac.RoleBinding
 		err = json.Unmarshal(bytes, &roleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRoleBinding := data.(rbac.RoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.RoleBinding),
+				ServiceName:  ErrRoleBinding.Name,
+				Namespace:    ErrRoleBinding.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpRoleBinding, err := ConvertToCPRoleBinding(&roleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRoleBinding := data.(rbac.RoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.RoleBinding),
+				ServiceName:  ErrRoleBinding.Name,
+				Namespace:    ErrRoleBinding.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpRoleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRoleBinding := data.(rbac.RoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.RoleBinding),
+				ServiceName:  ErrRoleBinding.Name,
+				Namespace:    ErrRoleBinding.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrRoleBinding := data.(rbac.RoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.RoleBinding),
+				ServiceName:  ErrRoleBinding.Name,
+				Namespace:    ErrRoleBinding.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3205,28 +3740,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.ClusterRole:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRole := data.(rbac.ClusterRole)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRole),
+				ServiceName:  ErrClusterRole.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var clusterRole rbac.ClusterRole
 		err = json.Unmarshal(bytes, &clusterRole)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRole := data.(rbac.ClusterRole)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRole),
+				ServiceName:  ErrClusterRole.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpClusterRole, err := ConvertToCPClusterRole(&clusterRole)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRole := data.(rbac.ClusterRole)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRole),
+				ServiceName:  ErrClusterRole.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpClusterRole)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRole := data.(rbac.ClusterRole)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRole),
+				ServiceName:  ErrClusterRole.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRole := data.(rbac.ClusterRole)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRole),
+				ServiceName:  ErrClusterRole.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3237,28 +3807,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.ClusterRoleBinding:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRoleBinding),
+				ServiceName:  ErrClusterRoleBind.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var clusterRoleBinding rbac.ClusterRoleBinding
 		err = json.Unmarshal(bytes, &clusterRoleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRoleBinding),
+				ServiceName:  ErrClusterRoleBind.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpClusterRoleBinding, err := ConvertToCPClusterRoleBinding(&clusterRoleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRoleBinding),
+				ServiceName:  ErrClusterRoleBind.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpClusterRoleBinding)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRoleBinding),
+				ServiceName:  ErrClusterRoleBind.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ClusterRoleBinding),
+				ServiceName:  ErrClusterRoleBind.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3269,28 +3874,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.PersistentVolume:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPv := data.(v2.PersistentVolume)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolume),
+				ServiceName:  ErrPv.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var persistenVolume v2.PersistentVolume
 		err = json.Unmarshal(bytes, &persistenVolume)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPv := data.(v2.PersistentVolume)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolume),
+				ServiceName:  ErrPv.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpPersistentVolume, err := convertToCPPersistentVolume(&persistenVolume)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPv := data.(v2.PersistentVolume)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolume),
+				ServiceName:  ErrPv.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpPersistentVolume)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPv := data.(v2.PersistentVolume)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolume),
+				ServiceName:  ErrPv.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPv := data.(v2.PersistentVolume)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolume),
+				ServiceName:  ErrPv.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3298,28 +3938,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPVC := data.(v2.PersistentVolumeClaim)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolumeClaim),
+				ServiceName:  ErrPVC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var persistenVolumeClaim v2.PersistentVolumeClaim
 		err = json.Unmarshal(bytes, &persistenVolumeClaim)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPVC := data.(v2.PersistentVolumeClaim)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolumeClaim),
+				ServiceName:  ErrPVC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpPVC, err := convertToCPPersistentVolumeClaim(&persistenVolumeClaim)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPVC := data.(v2.PersistentVolumeClaim)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolumeClaim),
+				ServiceName:  ErrPVC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpPVC)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPVC := data.(v2.PersistentVolumeClaim)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolumeClaim),
+				ServiceName:  ErrPVC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrPVC := data.(v2.PersistentVolumeClaim)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.PersistentVolumeClaim),
+				ServiceName:  ErrPVC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3330,28 +4005,63 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.StorageClass:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSC := data.(storage.StorageClass)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StorageClass),
+				ServiceName:  ErrSC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var storageClass storage.StorageClass
 		err = json.Unmarshal(bytes, &storageClass)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSC := data.(storage.StorageClass)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StorageClass),
+				ServiceName:  ErrSC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpStorageClass, err := convertToCPStorageClass(&storageClass)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSC := data.(storage.StorageClass)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StorageClass),
+				ServiceName:  ErrSC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpStorageClass)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSC := data.(storage.StorageClass)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StorageClass),
+				ServiceName:  ErrSC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSC := data.(storage.StorageClass)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.StorageClass),
+				ServiceName:  ErrSC.Name,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3360,7 +4070,7 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
 	default:
-		utils.Info.Println("Kind does not exist in defined switch cases")
+		utils.Error.Printf("Kind does not exist in defined switch cases :%v", kind)
 		return nil, errors.New("type does not exit")
 	}
 
@@ -3368,28 +4078,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.DestinationRule:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDR := data.(istioClient.DestinationRule)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DestinationRule),
+				ServiceName:  ErrDR.Name,
+				Namespace:    ErrDR.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var dr istioClient.DestinationRule
 		err = json.Unmarshal(bytes, &dr)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDR := data.(istioClient.DestinationRule)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DestinationRule),
+				ServiceName:  ErrDR.Name,
+				Namespace:    ErrDR.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpDr, err := convertToCPDestinationRule(&dr)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDR := data.(istioClient.DestinationRule)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DestinationRule),
+				ServiceName:  ErrDR.Name,
+				Namespace:    ErrDR.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpDr)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDR := data.(istioClient.DestinationRule)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DestinationRule),
+				ServiceName:  ErrDR.Name,
+				Namespace:    ErrDR.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrDR := data.(istioClient.DestinationRule)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.DestinationRule),
+				ServiceName:  ErrDR.Name,
+				Namespace:    ErrDR.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3400,28 +4150,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.VirtualService:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrVS := data.(istioClient.VirtualService)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.VirtualService),
+				ServiceName:  ErrVS.Name,
+				Namespace:    ErrVS.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var vs istioClient.VirtualService
 		err = json.Unmarshal(bytes, &vs)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrVS := data.(istioClient.VirtualService)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.VirtualService),
+				ServiceName:  ErrVS.Name,
+				Namespace:    ErrVS.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpVs, err := convertToCPVirtualService(&vs)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrVS := data.(istioClient.VirtualService)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.VirtualService),
+				ServiceName:  ErrVS.Name,
+				Namespace:    ErrVS.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpVs)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrVS := data.(istioClient.VirtualService)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.VirtualService),
+				ServiceName:  ErrVS.Name,
+				Namespace:    ErrVS.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrVS := data.(istioClient.VirtualService)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.VirtualService),
+				ServiceName:  ErrVS.Name,
+				Namespace:    ErrVS.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3432,28 +4222,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.Gateway:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrGTW := data.(istioClient.Gateway)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Gateway),
+				ServiceName:  ErrGTW.Name,
+				Namespace:    ErrGTW.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var gateway istioClient.Gateway
 		err = json.Unmarshal(bytes, &gateway)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrGTW := data.(istioClient.Gateway)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Gateway),
+				ServiceName:  ErrGTW.Name,
+				Namespace:    ErrGTW.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpGateway, err := convertToCPGateway(&gateway)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrGTW := data.(istioClient.Gateway)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Gateway),
+				ServiceName:  ErrGTW.Name,
+				Namespace:    ErrGTW.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpGateway)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrGTW := data.(istioClient.Gateway)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Gateway),
+				ServiceName:  ErrGTW.Name,
+				Namespace:    ErrGTW.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrGTW := data.(istioClient.Gateway)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.Gateway),
+				ServiceName:  ErrGTW.Name,
+				Namespace:    ErrGTW.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3464,28 +4294,68 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 	case constants.ServiceEntry:
 		bytes, err := json.Marshal(data)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcEntry := data.(istioClient.ServiceEntry)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceEntry),
+				ServiceName:  ErrSvcEntry.Name,
+				Namespace:    ErrSvcEntry.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		var svcEntry istioClient.ServiceEntry
 		err = json.Unmarshal(bytes, &svcEntry)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcEntry := data.(istioClient.ServiceEntry)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceEntry),
+				ServiceName:  ErrSvcEntry.Name,
+				Namespace:    ErrSvcEntry.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		CpSvcEntry, err := convertToCPServiceEntry(&svcEntry)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcEntry := data.(istioClient.ServiceEntry)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceEntry),
+				ServiceName:  ErrSvcEntry.Name,
+				Namespace:    ErrSvcEntry.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		bytes, err = json.Marshal(CpSvcEntry)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcEntry := data.(istioClient.ServiceEntry)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceEntry),
+				ServiceName:  ErrSvcEntry.Name,
+				Namespace:    ErrSvcEntry.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		err = json.Unmarshal(bytes, &template)
 		if err != nil {
-			utils.Error.Println(err)
+
+			ErrSvcEntry := data.(istioClient.ServiceEntry)
+			utils.Error.Printf("Error while CP conversion : %v", types.AppDiscoveryLog{
+				ServiceType:  string(constants.ServiceEntry),
+				ServiceName:  ErrSvcEntry.Name,
+				Namespace:    ErrSvcEntry.Namespace,
+				ErrorMessage: err.Error(),
+			})
+
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
@@ -3494,7 +4364,7 @@ func getCpConvertedTemplate(data interface{}, kind string) (*svcTypes.ServiceTem
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
 	default:
-		utils.Info.Println("Kind does not exist in defined switch cases")
+		utils.Error.Printf("Kind does not exist in defined switch cases :%v", kind)
 		return nil, errors.New("type does not exit")
 	}
 
