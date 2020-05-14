@@ -229,6 +229,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 				}
 				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &jobTemp.ServiceId)
 				jobTemp.AfterServices = append(jobTemp.AfterServices, &hpaTemplate.ServiceId)
+				jobTemp.Embeds = append(jobTemp.Embeds, hpaTemplate.ServiceId)
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
@@ -626,6 +627,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 				}
 				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &cronjobTemp.ServiceId)
 				cronjobTemp.AfterServices = append(cronjobTemp.AfterServices, &hpaTemplate.ServiceId)
+				cronjobTemp.Embeds = append(cronjobTemp.Embeds, hpaTemplate.ServiceId)
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
@@ -1424,6 +1426,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 				}
 				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &stsTemp.ServiceId)
 				stsTemp.AfterServices = append(stsTemp.AfterServices, &hpaTemplate.ServiceId)
+				stsTemp.Embeds = append(stsTemp.Embeds, hpaTemplate.ServiceId)
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
@@ -1848,6 +1851,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				}
 				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &depTemp.ServiceId)
 				depTemp.AfterServices = append(depTemp.AfterServices, &hpaTemplate.ServiceId)
+				depTemp.Embeds = append(depTemp.Embeds, hpaTemplate.ServiceId)
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
