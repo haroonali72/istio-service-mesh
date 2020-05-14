@@ -26,7 +26,7 @@ const (
 	VirtualService  MeshKind = "VirtualService"
 	DestinationRule MeshKind = "DestinationRule"
 	MeshPolicy      MeshKind = "Policy"
-	ServiceEntry    MeshKind = "ServiceEntr"
+	ServiceEntry    MeshKind = "ServiceEntry"
 )
 
 var (
