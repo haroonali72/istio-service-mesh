@@ -178,6 +178,11 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 					jobTemp.BeforeServices = append(jobTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &jobTemp.ServiceId)
 					jobTemp.Embeds = append(jobTemp.Embeds, rbacTemp.ServiceId)
+					jobTemp.Embeds = append(jobTemp.Embeds, rbacTemp.ServiceId)
+					rbacTemp.Deleted = true
+					if len(rbacTemp.Embeds) > 0 {
+						rbacTemp.IsEmbedded = true
+					}
 
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
@@ -857,7 +862,6 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			return
 		}
 	}
-
 	//volume dependency finding
 	for _, vol := range daemonset.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -1159,7 +1163,6 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			return
 		}
 	}
-
 	//volume dependency finding
 	for _, vol := range statefulset.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -1397,13 +1400,16 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				return
 			}
 
-			var strpointer = new(string)
-			*strpointer = "serviceaccount"
 			for _, rbacTemp := range rbacDependencies {
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
 					depTemp.BeforeServices = append(depTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &depTemp.ServiceId)
 					depTemp.Embeds = append(depTemp.Embeds, rbacTemp.ServiceId)
+					rbacTemp.Deleted = true
+					if len(rbacTemp.Embeds) > 0 {
+						rbacTemp.IsEmbedded = true
+					}
+
 				}
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
@@ -1411,7 +1417,6 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			service := GetExistingService(svcAccTemp.Namespace, svcAccTemp.ServiceSubType, svcAccTemp.Name)
 			depTemp.BeforeServices = append(depTemp.BeforeServices, &service.ServiceId)
 			service.AfterServices = append(service.AfterServices, &depTemp.ServiceId)
-			depTemp.Embeds = append(depTemp.Embeds, service.ServiceId)
 		}
 
 	}
@@ -1430,6 +1435,8 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 		if !isAlreadyExist(secretTemp.Namespace, secretTemp.ServiceSubType, secretTemp.Name) {
 			depTemp.BeforeServices = append(depTemp.BeforeServices, &secretTemp.ServiceId)
 			secretTemp.AfterServices = append(secretTemp.AfterServices, &depTemp.ServiceId)
+			secretTemp.Deleted = true
+			depTemp.Embeds = append(depTemp.Embeds, secretTemp.ServiceId)
 			serviceTemplates = append(serviceTemplates, secretTemp)
 		} else {
 			isSameDeployment := false
@@ -1460,6 +1467,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &depTemp.ServiceId)
 				depTemp.AfterServices = append(depTemp.AfterServices, &hpaTemplate.ServiceId)
 				depTemp.Embeds = append(depTemp.Embeds, hpaTemplate.ServiceId)
+				hpaTemplate.Deleted = true
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
@@ -1710,6 +1718,7 @@ func (conn *GrpcConn) discoverIstioDestinationRules(ctx context.Context, svcTemp
 			}
 			drTemp.AfterServices = append(drTemp.AfterServices, &svcTemp.ServiceId)
 			svcTemp.BeforeServices = append(svcTemp.BeforeServices, &drTemp.ServiceId)
+			drTemp.Deleted = true
 			serviceTemplates = append(serviceTemplates, drTemp)
 			break
 		}
@@ -1729,11 +1738,14 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 		if err != nil {
 			return err
 		}
+		var hostname string
 		for _, http := range vs.Spec.Http {
 			for _, route := range http.Route {
 				if !isAlreadyExist(vsTemp.Namespace, vsTemp.ServiceSubType, vsTemp.Name) && route.Destination.Host == kubesvcTemp.Name {
+					hostname = route.Destination.Host
 					vsTemp.AfterServices = append(vsTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &vsTemp.ServiceId)
+					vsTemp.Deleted = true
 					serviceTemplates = append(serviceTemplates, vsTemp)
 					break
 				}
@@ -1752,9 +1764,10 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 				return err
 			}
 
-			if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) {
+			if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) && hostname == kubesvcTemp.Name {
 				gatewayTemp.AfterServices = append(gatewayTemp.AfterServices, &svcTemp.ServiceId)
 				svcTemp.BeforeServices = append(svcTemp.BeforeServices, &gatewayTemp.ServiceId)
+				gatewayTemp.Deleted = true
 				serviceTemplates = append(serviceTemplates, gatewayTemp)
 			}
 		}
@@ -1975,13 +1988,14 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
 								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
 								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
+								clstrroleTemp.Deleted = true
+								clstrrolebindTemp.Deleted = true
 
 								rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
 								rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
 							} else {
 								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 							}
 						}
 					}
@@ -2021,13 +2035,15 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
 								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 								svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
+								roleTemp.Deleted = true
+								rolebindTemp.Deleted = true
 
 								rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
 								rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
 							} else {
 								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
+
 							}
 						}
 					}
@@ -4153,8 +4169,10 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		}
 		id := strconv.Itoa(rand.Int())
 		VStemplate.ServiceId = id
-		svcTemp.AfterServices = append(svcTemp.AfterServices, &VStemplate.ServiceId)
-		VStemplate.BeforeServices = append(VStemplate.BeforeServices, &svcTemp.ServiceId)
+
+		VStemplate.Deleted = true
+		//svcTemp.AfterServices = append(svcTemp.AfterServices, &VStemplate.ServiceId)
+		//VStemplate.BeforeServices = append(VStemplate.BeforeServices, &svcTemp.ServiceId)
 
 		var DStemplate *svcTypes.ServiceTemplate
 		bytes, err = json.Marshal(destRule)
@@ -4169,8 +4187,9 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		}
 		id = strconv.Itoa(rand.Int())
 		DStemplate.ServiceId = id
-		svcTemp.AfterServices = append(svcTemp.AfterServices, &DStemplate.ServiceId)
-		DStemplate.BeforeServices = append(DStemplate.BeforeServices, &svcTemp.ServiceId)
+		DStemplate.Deleted = true
+		//svcTemp.AfterServices = append(svcTemp.AfterServices, &DStemplate.ServiceId)
+		//DStemplate.BeforeServices = append(DStemplate.BeforeServices, &svcTemp.ServiceId)
 
 		//svcComponents = append(svcComponents, svcTemp)
 		svcComponents = append(svcComponents, VStemplate)
@@ -4314,6 +4333,9 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 						return err
 					}
 					for _, istioSvc := range istioSvcTemps {
+						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &istioSvc.ServiceId)
+						svcTemp.Embeds = append(svcTemp.Embeds, istioSvc.ServiceId)
+						istioSvc.AfterServices = append(istioSvc.AfterServices, &svcTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, istioSvc)
 					}
 					//istio components creation
@@ -4322,10 +4344,10 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 				if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
 					k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
-					for _, key := range k8serviceTemp.AfterServices {
+					k8serviceTemp.Deleted = true
+					for _, key := range svcTemp.BeforeServices {
 						svcTemp.Embeds = append(svcTemp.Embeds, *key)
 					}
-					svcTemp.Embeds = append(svcTemp.Embeds, k8serviceTemp.ServiceId)
 					serviceTemplates = append(serviceTemplates, k8serviceTemp)
 				} else {
 					isSameService := false
@@ -4338,10 +4360,6 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					if !isSameService {
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
-						for _, key := range k8serviceTemp.AfterServices {
-							svcTemp.Embeds = append(svcTemp.Embeds, *key)
-						}
-						svcTemp.Embeds = append(svcTemp.Embeds, k8serviceTemp.ServiceId)
 					}
 				}
 			}
