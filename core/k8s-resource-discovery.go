@@ -63,13 +63,14 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	namespaces := request.Namespaces
 
 	var wg sync.WaitGroup
+	var m sync.Mutex
 	for _, namespace := range namespaces {
 		//deployments
 		deploymentList, err := grpcConn.getAllDeployments(ctx, namespace)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
-		err = grpcConn.deploymentk8sToCp(ctx, deploymentList.Items, &wg)
+		err = grpcConn.deploymentk8sToCp(ctx, deploymentList.Items, &wg, m)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
@@ -1353,16 +1354,16 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 }
 
-func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment, wg *sync.WaitGroup) error {
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment, wg *sync.WaitGroup, m sync.Mutex) error {
 
 	for _, dep := range deployments {
 		wg.Add(1)
-		go conn.ResolveDeploymentDependencies(dep, wg, ctx)
+		go conn.ResolveDeploymentDependencies(dep, wg, ctx, m)
 	}
 	return nil
 }
 
-func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context) {
+func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context, m sync.Mutex) {
 	defer wg.Done()
 	if dep.Name == "antelope" {
 		fmt.Println("hello from antelope")
@@ -1382,6 +1383,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	namespace := dep.Namespace
 	//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 	if dep.Spec.Template.Spec.ServiceAccountName != "" {
+
 		svcname := dep.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -1753,6 +1755,9 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 			}
 
 			if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) {
+				if svcTemp.Name == "reviews-v3" {
+					fmt.Println("hello from debuggin")
+				}
 				gatewayTemp.AfterServices = append(gatewayTemp.AfterServices, &svcTemp.ServiceId)
 				svcTemp.BeforeServices = append(svcTemp.BeforeServices, &gatewayTemp.ServiceId)
 				serviceTemplates = append(serviceTemplates, gatewayTemp)
