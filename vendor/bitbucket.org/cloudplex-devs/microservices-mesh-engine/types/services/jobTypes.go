@@ -42,7 +42,7 @@ type JobServiceAttribute struct {
 	// Defaults to 6
 	// +optional
 	BackoffLimit            *BackoffLimit            `json:"backoff_limit,omitempty" bson:"backoff_limit,omitempty"`
-	ManualSelector          *ManualSelector          `json:"manual_selector, omitempty" bson:"manual_selector, omitempty"`
+	ManualSelector          *ManualSelector          `json:"manual_selector,omitempty" bson:"manual_selector,omitempty"`
 	TTLSecondsAfterFinished *TTLSecondsAfterFinished `json:"ttl_seconds_after_finished,omitempty" bson:"ttl_seconds_after_finished,omitempty"`
 }
 

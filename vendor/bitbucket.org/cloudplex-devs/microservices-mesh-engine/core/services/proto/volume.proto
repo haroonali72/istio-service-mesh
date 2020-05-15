@@ -62,7 +62,7 @@ message AzureFileVolumeSource{
 }
 
 message ConfigMapVolumeSource{
-    LocalObjectReference local_object_reference = 1;
+    string name = 1;
     repeated KeyToPath items = 2;
     int32 default_mode = 3;
     bool optional = 4;
