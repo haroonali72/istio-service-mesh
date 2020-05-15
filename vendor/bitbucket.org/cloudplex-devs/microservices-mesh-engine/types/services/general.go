@@ -393,8 +393,22 @@ type VolumeMount struct {
 	MountPropagation *MountPropagationMode `json:"mount_propagation,omitempty" bson:"mount_propagation,omitempty"`
 	SubPathExpr      string                `json:"sub_path_expr,omitempty" bson:"sub_path_expr,omitempty"`
 	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name,omitempty"`
+	ConfigMap        *struct {
+		ConfigMapName string     `json:"name"`
+		Optional      bool       `json:"optional"`
+		Items         []KeyItems `json:"items"`
+	} `json:"configmap,omitempty"`
+	Secret *struct {
+		SecretName string     `json:"name"`
+		Optional   bool       `json:"optional"`
+		Items      []KeyItems `json:"items"`
+	} `json:"secrets,omitempty"`
 }
 
+type KeyItems struct {
+	Key  string `json:"key"`
+	Path string `json:"path"`
+}
 type MountPropagationMode string
 
 const (

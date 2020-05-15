@@ -456,7 +456,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 		}
 		if volume.VolumeSource.ConfigMap != nil {
 			tempVolume.ConfigMap = new(v2.ConfigMapVolumeSource)
-			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.LocalObjectReference.Name
+			tempVolume.ConfigMap.Name = volume.VolumeSource.ConfigMap.Name
 
 			tempVolume.ConfigMap.DefaultMode = &volume.VolumeSource.ConfigMap.DefaultMode
 			var configMapItems []v2.KeyToPath

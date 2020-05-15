@@ -36,7 +36,7 @@ type Server struct {
 	// specified namespace (e.g.,prod/*).
 	//
 	// +optional
-	Hosts []string `json:"hosts" bson:" hosts" `
+	Hosts []string `json:"hosts" bson:"hosts" `
 	// Set of TLS related options that govern the server's behavior. Use
 	// these options to control if all http requests should be redirected to
 	// https, and the TLS modes to use.

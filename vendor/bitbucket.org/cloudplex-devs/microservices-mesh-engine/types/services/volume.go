@@ -92,10 +92,10 @@ type AzureFileVolumeSource struct {
 // the items element is populated with specific mappings of keys to paths.
 // ConfigMap volumes support ownership management and SELinux relabeling.
 type ConfigMapVolumeSource struct {
-	LocalObjectReference `json:",inline" bson:",inline" protobuf:"bytes,1,opt,name=localObjectReference"`
-	Items                []KeyToPath `json:"items,omitempty" bson:"items,omitempty"  protobuf:"bytes,2,rep,name=items"`
-	DefaultMode          *int32      `json:"default_mode,omitempty" bson:"default_mode,omitempty" protobuf:"varint,3,opt,name=defaultMode"`
-	Optional             *bool       `json:"optional,omitempty" bson:"optional,omitempty" protobuf:"varint,4,opt,name=optional"`
+	Name        string      `json:"name,omitempty" bson:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	Items       []KeyToPath `json:"items,omitempty" bson:"items,omitempty"  protobuf:"bytes,2,rep,name=items"`
+	DefaultMode *int32      `json:"default_mode,omitempty" bson:"default_mode,omitempty" protobuf:"varint,3,opt,name=defaultMode"`
+	Optional    *bool       `json:"optional,omitempty" bson:"optional,omitempty" protobuf:"varint,4,opt,name=optional"`
 }
 
 const (
