@@ -232,7 +232,7 @@ func (c *Context) SendBackendLogs(message interface{}, severity string) {
 		c.Set("severity", severity)
 		c.Set("message", message)
 		c.Set("resource_name", "solution")
-		_,_, err := utils.Post(url, c.Keys, map[string]string{"Content-Type": "application/json"})
+		_, _, err := utils.Post(url, c.Keys, map[string]string{"Content-Type": "application/json"})
 		if err != nil {
 			utils.Error.Println(err)
 		}
@@ -253,7 +253,7 @@ func (c *Context) SendFrontendLogs(message interface{}, severity string) {
 	data.Type = "Project"
 	data.CompanyId = c.GetString("company_id")
 
-	_,_, err := utils.Post(url, data, map[string]string{"Content-Type": "application/json"})
+	_, _, err := utils.Post(url, data, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		utils.Error.Println(err)
 	}
