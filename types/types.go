@@ -389,3 +389,11 @@ type LoggingHttpRequest struct {
 	//status code of service
 	Status int `json:"status"`
 }
+
+type AppDiscoveryLog struct {
+	ProjectId    string `json:"project_id"`
+	ServiceType  string `json:"service_type"`
+	ServiceName  string `json:"service_name"`
+	Namespace    string `json:"namespace"`
+	ErrorMessage string `json:"error_message"`
+}
