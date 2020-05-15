@@ -306,8 +306,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 			}
 		}
 		if input.ServiceAttribute.TrafficPolicy.ConnectionPool != nil {
-			vService.TrafficPolicy.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
+
 			if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp != nil {
+				vService.TrafficPolicy.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
 				vService.TrafficPolicy.ConnectionPool.Tcp = &v1alpha3.ConnectionPoolSettings_TCPSettings{}
 				vService.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.ConnectTimeout}
 				vService.TrafficPolicy.ConnectionPool.Tcp.MaxConnections = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.MaxConnections
@@ -319,6 +320,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 				}
 			}
 			if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp != nil {
+				vService.TrafficPolicy.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
 				vService.TrafficPolicy.ConnectionPool.Http = &v1alpha3.ConnectionPoolSettings_HTTPSettings{}
 				vService.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy = v1alpha3.ConnectionPoolSettings_HTTPSettings_H2UpgradePolicy(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.ConnectionPoolSettingsHttpSettingsH2UpgradePolicy)
 				vService.TrafficPolicy.ConnectionPool.Http.Http1MaxPendingRequests = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.Http_1MaxPendingRequests

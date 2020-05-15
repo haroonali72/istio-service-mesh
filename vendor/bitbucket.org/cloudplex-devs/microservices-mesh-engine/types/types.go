@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+type HelmHookImport struct {
+	MetaData struct {
+		Annotations struct {
+			Type   *string `yaml:"helm.sh/hook,omitempty"`
+			Weight string  `yaml:"helm.sh/hook-weight,omitempty"`
+		} `yaml:"annotations"`
+	} `yaml:"metadata"`
+}
+
 type APIError struct {
 	ErrorCode    int
 	ErrorMessage string

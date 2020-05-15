@@ -1,6 +1,6 @@
-# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200501120452-a31e2ef8b654
+# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200507175720-6940251ff5c9
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200505152723-bfc58392a922
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v0.0.0-20200508115732-32406ad41151
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
@@ -87,7 +87,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# golang.org/x/build v0.0.0-20200428202702-916311cec4e1
+# golang.org/x/build v0.0.0-20200508193432-bf27e2732389
 golang.org/x/build/kubernetes/api
 # golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
 golang.org/x/crypto/acme

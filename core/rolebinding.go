@@ -4,7 +4,6 @@ import (
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
-	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
@@ -306,10 +305,10 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
 	if input.ServiceAttributes.RoleReference != nil {
-		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
+		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
 			roleBind.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole" //input.ServiceAttributes.Reference.Kind
 
-		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.Role.String() {
+		} else if input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
 			roleBind.RoleRef.Kind = constants.Role.String() //"Role"
 		} else {
 			return nil, errors.New("invalid kind  role binding ref " + input.Name)

@@ -592,16 +592,16 @@ func ConvertPodToYaml(ctx context.Context, req *pb.YamlServiceRequest, serviceRe
 		}
 	} else {
 		result.ObjectMeta = setHelmHooks(result.ObjectMeta, deploy.HookConfiguration)
-		//byteData, chartByteData, helperByteData, err := helm_parameterization.DeploymentParameters(result)
-		//
-		//if err != nil {
-		//	utils.Error.Println(err)
-		//	return err
-		//}
-		//serviceResp.Service = byteData
-		//serviceResp.ChartFile = chartByteData
-		//serviceResp.HelperFile = helperByteData
-		//serviceResp.Namespace = result.Namespace
+		byteData, chartByteData, helperByteData, err := helm_parameterization.PodParameters(result)
+
+		if err != nil {
+			utils.Error.Println(err)
+			return err
+		}
+		serviceResp.Service = byteData
+		serviceResp.ChartFile = chartByteData
+		serviceResp.HelperFile = helperByteData
+		serviceResp.Namespace = result.Namespace
 	}
 	return nil
 }

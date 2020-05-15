@@ -342,17 +342,17 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		}
 		serviceResp.Service = bytesData
 		return serviceResp, nil
-	//case *batchv1.CronJob:
-	//	ds, err := convertToCPCronJob(o)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	bytesData, err := json.Marshal(ds)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	serviceResp.Service = bytesData
-	//	return serviceResp, nil
+	case *batchv1.CronJob:
+		ds, err := convertToCPCronJob(o)
+		if err != nil {
+			return nil, err
+		}
+		bytesData, err := json.Marshal(ds)
+		if err != nil {
+			return nil, err
+		}
+		serviceResp.Service = bytesData
+		return serviceResp, nil
 	case *v1alpha3.VirtualService:
 		vs, err := convertToCPVirtualService(o)
 		if err != nil {
@@ -492,7 +492,9 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 
 	deployment.ServiceType = meshConstants.Kubernetes
 	deployment.ServiceSubType = meshConstants.Deployment
-	deployment.Version = service.Labels["version"]
+	if service.Labels["version"] != "" {
+		deployment.Version = service.Labels["version"]
+	}
 
 	if service.Spec.Replicas != nil {
 		deployment.ServiceAttributes.Replicas = service.Spec.Replicas
@@ -608,7 +610,9 @@ func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
 
 	pod.ServiceType = "k8s"
 	pod.ServiceSubType = meshConstants.Pod
-	pod.Version = service.Labels["version"]
+	if service.Labels["version"] != "" {
+		pod.Version = service.Labels["version"]
+	}
 
 	pod.ServiceAttributes.Labels = make(map[string]string)
 	pod.ServiceAttributes.Labels = service.Labels
@@ -688,6 +692,9 @@ func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
 		daemonSet.Namespace = "default"
 	} else {
 		daemonSet.Namespace = service.Namespace
+	}
+	if service.Labels["version"] != "" {
+		daemonSet.Version = service.Labels["version"]
 	}
 
 	daemonSet.ServiceType = meshConstants.Kubernetes
@@ -775,9 +782,17 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	json.Unmarshal(byteData, &service)
 	statefulSet := new(meshTypes.StatefulSetService)
 
+	if service.Name == "" {
+		return nil, errors.New("service name not found")
+	} else {
+		statefulSet.Name = service.Name
+	}
 	statefulSet.Name = service.Name
 	statefulSet.ServiceType = meshConstants.Kubernetes
 	statefulSet.ServiceSubType = meshConstants.StatefulSet
+	if service.Labels["version"] != "" {
+		statefulSet.Version = service.Labels["version"]
+	}
 
 	if service.Namespace == "" {
 		statefulSet.Namespace = "default"
@@ -883,6 +898,11 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 
 func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	cpJob := new(meshTypes.JobService)
+	if job.Name == "" {
+		return nil, errors.New("service name not found")
+	} else {
+		cpJob.Name = job.Name
+	}
 	cpJob.Name = job.Name
 	cpJob.ServiceType = meshConstants.Kubernetes
 	cpJob.ServiceSubType = meshConstants.Job
@@ -890,6 +910,9 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 		cpJob.Namespace = "default"
 	} else {
 		cpJob.Namespace = job.Namespace
+	}
+	if job.Labels["version"] != "" {
+		cpJob.Version = job.Labels["version"]
 	}
 
 	var CpJobAttr = new(meshTypes.JobServiceAttribute)
@@ -981,89 +1004,37 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	return cpJob, nil
 }
 
-//func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error) {
-//	cpJob := new(meshTypes.CronJobService)
-//	cpJob.Name = job.Labels["app"]
-//	cpJob.Version = job.Labels["version"]
-//	cpJob.ServiceType = "k8s"
-//	cpJob.ServiceSubType = meshConstants.CronJobServiceType
-//
-//	if job.Namespace == "" {
-//		cpJob.Namespace = "default"
-//	} else {
-//		cpJob.Namespace = job.Namespace
-//	}
-//
-//	cpJob.ServiceAttributes = new(meshTypes.CronJobServiceAttribute)
-//
-//	cpJob.ServiceAttributes.Labels = make(map[string]string)
-//	cpJob.ServiceAttributes.Labels = job.Labels
-//	cpJob.ServiceAttributes.Annotations = make(map[string]string)
-//	cpJob.ServiceAttributes.Annotations = job.Annotations
-//
-//	if jobTemplate, err := getCPJobTemplateSpec(job.Spec.JobTemplate); err != nil {
-//		return nil, err
-//	} else {
-//		if jobTemplate != nil {
-//			cpJob.ServiceAttributes.JobTemplate = jobTemplate
-//		}
-//	}
-//
-//	if job.Spec.Schedule != "" {
-//		cpJob.ServiceAttributes.CronJobScheduleString = job.Spec.Schedule
-//	}
-//	if job.Spec.StartingDeadlineSeconds != nil {
-//		cpJob.ServiceAttributes.StartingDeadLineSeconds = &meshTypes.StartingDeadlineSeconds{
-//			Value: *job.Spec.StartingDeadlineSeconds,
-//		}
-//	}
-//
-//	if job.Spec.FailedJobsHistoryLimit != nil {
-//		cpJob.ServiceAttributes.FailedJobsHistoryLimit = &meshTypes.FailedJobsHistoryLimit{Value: *job.Spec.FailedJobsHistoryLimit}
-//	}
-//	if job.Spec.SuccessfulJobsHistoryLimit != nil {
-//		cpJob.ServiceAttributes.SuccessfulJobsHistoryLimit = &meshTypes.SuccessfulJobsHistoryLimit{Value: *job.Spec.SuccessfulJobsHistoryLimit}
-//	}
-//	if job.Spec.Suspend != nil {
-//		cpJob.ServiceAttributes.Suspend = &meshTypes.Suspend{Value: *job.Spec.Suspend}
-//	}
-//	if job.Spec.ConcurrencyPolicy != "" {
-//		cpJob.ServiceAttributes.ConcurrencyPolicy = new(meshTypes.ConcurrencyPolicy)
-//		if job.Spec.ConcurrencyPolicy == batchv1.AllowConcurrent {
-//			value := meshTypes.ConcurrencyPolicyAllow
-//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-//		} else if job.Spec.ConcurrencyPolicy == batchv1.ForbidConcurrent {
-//			value := meshTypes.ConcurrencyPolicyForbid
-//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-//		} else {
-//			value := meshTypes.ConcurrencyPolicyReplace
-//			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
-//		}
-//	}
-//
-//	return cpJob, nil
-//
-//}
-
-func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAttribute, error) {
-	jobTemplate := new(meshTypes.JobServiceAttribute)
-	jobTemplate.Labels = make(map[string]string)
-	jobTemplate.Labels = job.Labels
-
-	jobTemplate.Annotations = make(map[string]string)
-	jobTemplate.Annotations = job.Spec.Template.Annotations
-	jobTemplate.LabelSelector = new(meshTypes.LabelSelectorObj)
-	jobTemplate.LabelSelector.MatchLabels = make(map[string]string)
-	if job.Spec.Selector != nil {
-		jobTemplate.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error) {
+	cpJob := new(meshTypes.CronJobService)
+	if job.Name == "" {
+		return nil, errors.New("service name not found")
+	} else {
+		cpJob.Name = job.Name
 	}
-	jobTemplate.NodeSelector = make(map[string]string)
-	jobTemplate.NodeSelector = job.Spec.Template.Spec.NodeSelector
+	if job.Labels["version"] != "" {
+		cpJob.Version = job.Labels["version"]
+	}
+
+	cpJob.ServiceType = meshConstants.Kubernetes
+	cpJob.ServiceSubType = meshConstants.CronJob
+
+	if job.Namespace == "" {
+		cpJob.Namespace = "default"
+	} else {
+		cpJob.Namespace = job.Namespace
+	}
+
+	cpJob.ServiceAttributes = new(meshTypes.CronJobServiceAttribute)
+
+	cpJob.ServiceAttributes.Labels = make(map[string]string)
+	cpJob.ServiceAttributes.Labels = job.Labels
+	cpJob.ServiceAttributes.Annotations = make(map[string]string)
+	cpJob.ServiceAttributes.Annotations = job.Annotations
 
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.Containers); err == nil {
 		if len(containers) > 0 {
-			jobTemplate.Containers = containers
+			cpJob.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
 		} else {
 			return nil, errors.New("no containers exist")
@@ -1074,9 +1045,9 @@ func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAtt
 	}
 
 	//init containers
-	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.InitContainers); err == nil {
 		if len(containersList) > 0 {
-			jobTemplate.InitContainers = containersList
+			cpJob.ServiceAttributes.InitContainers = containersList
 		}
 		for k, v := range volumeMounts {
 			volumeMountNames1[k] = v
@@ -1086,31 +1057,130 @@ func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAtt
 		return nil, err
 	}
 
-	if job.Spec.Template.Spec.Affinity != nil {
-		if affinity, err := getCPAffinity(job.Spec.Template.Spec.Affinity); err == nil {
-			jobTemplate.Affinity = affinity
-		} else {
-			return nil, err
-		}
-	}
-
 	//volumes
-	if vols, err := getCPVolumes(job.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+	if vols, err := getCPVolumes(job.Spec.JobTemplate.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
 		if len(vols) > 0 {
-			jobTemplate.Volumes = vols
+			cpJob.ServiceAttributes.Volumes = vols
 		}
 
 	} else {
 		return nil, err
 	}
-	return jobTemplate, nil
+
+	if job.Spec.JobTemplate.Spec.Template.Spec.Affinity != nil {
+		if affinity, err := getCPAffinity(job.Spec.JobTemplate.Spec.Template.Spec.Affinity); err == nil {
+			cpJob.ServiceAttributes.Affinity = affinity
+		} else {
+			return nil, err
+		}
+	}
+
+	if job.Spec.Schedule != "" {
+		cpJob.ServiceAttributes.CronJobScheduleString = job.Spec.Schedule
+	}
+	if job.Spec.StartingDeadlineSeconds != nil {
+		cpJob.ServiceAttributes.StartingDeadLineSeconds = &meshTypes.StartingDeadlineSeconds{
+			Value: *job.Spec.StartingDeadlineSeconds,
+		}
+	}
+
+	if job.Spec.FailedJobsHistoryLimit != nil {
+		cpJob.ServiceAttributes.FailedJobsHistoryLimit = &meshTypes.FailedJobsHistoryLimit{Value: *job.Spec.FailedJobsHistoryLimit}
+	}
+	if job.Spec.SuccessfulJobsHistoryLimit != nil {
+		cpJob.ServiceAttributes.SuccessfulJobsHistoryLimit = &meshTypes.SuccessfulJobsHistoryLimit{Value: *job.Spec.SuccessfulJobsHistoryLimit}
+	}
+	if job.Spec.Suspend != nil {
+		cpJob.ServiceAttributes.Suspend = &meshTypes.Suspend{Value: *job.Spec.Suspend}
+	}
+	if job.Spec.ConcurrencyPolicy != "" {
+		cpJob.ServiceAttributes.ConcurrencyPolicy = new(meshTypes.ConcurrencyPolicy)
+		if job.Spec.ConcurrencyPolicy == batchv1.AllowConcurrent {
+			value := meshTypes.ConcurrencyPolicyAllow
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		} else if job.Spec.ConcurrencyPolicy == batchv1.ForbidConcurrent {
+			value := meshTypes.ConcurrencyPolicyForbid
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		} else {
+			value := meshTypes.ConcurrencyPolicyReplace
+			cpJob.ServiceAttributes.ConcurrencyPolicy = &value
+		}
+	}
+
+	return cpJob, nil
+
 }
+
+//func getCPJobTemplateSpec(job batchv1.JobTemplateSpec) (*meshTypes.JobServiceAttribute, error) {
+//	jobTemplate := new(meshTypes.JobServiceAttribute)
+//	jobTemplate.Labels = make(map[string]string)
+//	jobTemplate.Labels = job.Labels
+//
+//	jobTemplate.Annotations = make(map[string]string)
+//	jobTemplate.Annotations = job.Spec.Template.Annotations
+//	jobTemplate.LabelSelector = new(meshTypes.LabelSelectorObj)
+//	jobTemplate.LabelSelector.MatchLabels = make(map[string]string)
+//	if job.Spec.Selector != nil {
+//		jobTemplate.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+//	}
+//	jobTemplate.NodeSelector = make(map[string]string)
+//	jobTemplate.NodeSelector = job.Spec.Template.Spec.NodeSelector
+//
+//	var volumeMountNames1 = make(map[string]bool)
+//
+//	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
+//		if len(containers) > 0 {
+//			jobTemplate.Containers = containers
+//			volumeMountNames1 = vm
+//		} else {
+//			return nil, errors.New("no containers exist")
+//		}
+//
+//	} else {
+//		return nil, err
+//	}
+//
+//	//init containers
+//	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
+//		if len(containersList) > 0 {
+//			jobTemplate.InitContainers = containersList
+//		}
+//		for k, v := range volumeMounts {
+//			volumeMountNames1[k] = v
+//		}
+//
+//	} else {
+//		return nil, err
+//	}
+//
+//	if job.Spec.Template.Spec.Affinity != nil {
+//		if affinity, err := getCPAffinity(job.Spec.Template.Spec.Affinity); err == nil {
+//			jobTemplate.Affinity = affinity
+//		} else {
+//			return nil, err
+//		}
+//	}
+//
+//	//volumes
+//	if vols, err := getCPVolumes(job.Spec.Template.Spec.Volumes, volumeMountNames1); err == nil {
+//		if len(vols) > 0 {
+//			jobTemplate.Volumes = vols
+//		}
+//
+//	} else {
+//		return nil, err
+//	}
+//	return jobTemplate, nil
+//}
 
 func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes.PersistentVolumeClaimService, error) {
 	persistentVolume := new(meshTypes.PersistentVolumeClaimService)
 	persistentVolume.Name = pvc.Name
 	persistentVolume.ServiceType = meshConstants.Kubernetes
 	persistentVolume.ServiceSubType = meshConstants.PVC
+	if pvc.Labels["version"] != "" {
+		persistentVolume.Version = pvc.Labels["version"]
+	}
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeClaimServiceAttribute)
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
@@ -1162,6 +1232,9 @@ func convertToCPPersistentVolume(pv *v1.PersistentVolume) (*meshTypes.Persistent
 	persistentVolume.Name = pv.Name
 	persistentVolume.ServiceType = meshConstants.Kubernetes
 	persistentVolume.ServiceSubType = meshConstants.PV
+	if pv.Labels["version"] != "" {
+		persistentVolume.Version = pv.Labels["version"]
+	}
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeServiceAttribute)
 	persistentVolume.ServiceAttributes.ReclaimPolicy = meshTypes.ReclaimPolicy(pv.Spec.PersistentVolumeReclaimPolicy)
 	qu := pv.Spec.Capacity[v1.ResourceStorage]
@@ -1267,6 +1340,9 @@ func convertToCPStorageClass(sc *storage.StorageClass) (*meshTypes.StorageClassS
 	storageClass.ServiceType = meshConstants.Kubernetes
 	storageClass.ServiceSubType = meshConstants.StorageClass
 	storageClass.ServiceAttributes = new(meshTypes.StorageClassServiceAttribute)
+	if sc.Labels["version"] != "" {
+		storageClass.Version = sc.Labels["version"]
+	}
 	if sc.ReclaimPolicy != nil {
 		storageClass.ServiceAttributes.ReclaimPolicy = meshTypes.ReclaimPolicy(*sc.ReclaimPolicy)
 	}
@@ -1721,7 +1797,16 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 				return nil, nil, err
 			}
 		}
-		containerTemp.ImageName = container.Image
+		imgInfo := strings.Split(container.Image, ":")
+		if len(imgInfo) == 2 {
+			containerTemp.ImageName = imgInfo[0]
+			if imgInfo[1] != "" {
+				containerTemp.Tag = imgInfo[1]
+			}
+
+		} else {
+			containerTemp.ImageName = container.Image
+		}
 
 		var volumeMounts []meshTypes.VolumeMount
 		for _, volumeMount := range container.VolumeMounts {
@@ -1733,11 +1818,14 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 			temp.SubPathExpr = volumeMount.SubPathExpr
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {
-					*temp.MountPropagation = meshTypes.MountPropagationNone
+					none := meshTypes.MountPropagationNone
+					temp.MountPropagation = &none
 				} else if *volumeMount.MountPropagation == v1.MountPropagationBidirectional {
-					*temp.MountPropagation = meshTypes.MountPropagationBidirectional
+					bi := meshTypes.MountPropagationBidirectional
+					temp.MountPropagation = &bi
 				} else if *volumeMount.MountPropagation == v1.MountPropagationHostToContainer {
-					*temp.MountPropagation = meshTypes.MountPropagationHostToContainer
+					cont := meshTypes.MountPropagationHostToContainer
+					temp.MountPropagation = &cont
 				}
 
 			}
@@ -2267,6 +2355,9 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 	vServ.ServiceSubType = meshConstants.VirtualService
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
+	if vr := input.Labels["version"]; vr != "" {
+		vServ.Version = vr
+	}
 	vServ.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 	vServ.ServiceAttributes.Hosts = input.Spec.Hosts
 	vServ.ServiceAttributes.Gateways = input.Spec.Gateways
@@ -2483,6 +2574,9 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 	vServ.ServiceSubType = meshConstants.DestinationRule
 	vServ.Name = input.Name
 	vServ.Namespace = input.Namespace
+	if vr := input.Labels["version"]; vr != "" {
+		vServ.Version = vr
+	}
 
 	vServ.ServiceAttributes.Host = input.Spec.Host
 	if input.Spec.TrafficPolicy != nil {
@@ -2885,6 +2979,9 @@ func convertToCPGateway(input *v1alpha3.Gateway) (*meshTypes.GatewayService, err
 	gateway.ServiceType = meshConstants.MeshType
 	gateway.ServiceSubType = meshConstants.Gateway
 	gateway.Namespace = input.Namespace
+	if vr := input.Labels["version"]; vr != "" {
+		gateway.Version = vr
+	}
 
 	gateway.ServiceAttributes = new(meshTypes.GatewayServiceAttributes)
 	gateway.ServiceAttributes.Selectors = make(map[string]string)
