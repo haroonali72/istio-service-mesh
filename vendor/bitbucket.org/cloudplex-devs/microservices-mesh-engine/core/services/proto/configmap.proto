@@ -3,7 +3,7 @@ syntax= "proto3";
 package proto;
 import "service.proto";
 import "google/protobuf/any.proto";
-
+import "general.proto";
 service ConfigMap{
     rpc CreateConfigMapService(ConfigMapService) returns (ServiceResponse){}
     rpc GetConfigMapService(ConfigMapService) returns (ServiceResponse){}
@@ -24,6 +24,7 @@ message ConfigMapService {
     string namespace =9;
     string version =10;
     ConfigMapServiceAttributes service_attribute =11;
+    HookConfiguration hook_configuration=12;
 }
 
 message ConfigMapServiceAttributes {

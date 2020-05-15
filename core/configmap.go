@@ -1,13 +1,13 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	kb "k8s.io/api/core/v1"
 	"strings"
 )
@@ -242,7 +242,7 @@ func (s *Server) PutConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 func getConfigMapService(input *pb.ConfigMapService) (*kb.ConfigMap, error) {
 
 	var config = new(kb.ConfigMap)
-	config.Kind = "ConfigMap"
+	config.Kind = constants.ConfigMap.String() //"ConfigMap"
 	config.APIVersion = "v1"
 	config.Name = input.Name
 	config.Namespace = input.Namespace

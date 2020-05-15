@@ -1,7 +1,9 @@
 syntax= "proto3";
+
 import "service.proto";
 import "google/protobuf/any.proto";
 import "networkpolicy.proto";
+import "general.proto";
 package proto;
 
 
@@ -25,7 +27,7 @@ message KubernetesService {
     google.protobuf.Any service_dependency_info = 9;
     string namespace = 10;
     KubeServiceAttributes kube_service_attributes = 11;
-
+    HookConfiguration hook_configuration=12;
 
 }
 message KubeServiceAttributes{

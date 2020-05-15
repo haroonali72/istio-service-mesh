@@ -1,15 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
-	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	v1 "k8s.io/api/rbac/v1"
 	"strings"
 )
@@ -278,7 +277,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	if input.Version != "" {
 		labels["version"] = strings.ToLower(input.Version)
 	}
-	roleBind.Kind = "RoleBinding"
+	roleBind.Kind = constants.RoleBinding.String() //"RoleBinding"
 	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
 
 	roleBind.Labels = labels
@@ -292,7 +291,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == "ServiceAccount" {
+		} else if subject.Kind == constants.ServiceAccount.String() {
 			reqsub.Kind = subject.Kind
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
@@ -306,11 +305,11 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
 	if input.ServiceAttributes.RoleReference != nil {
-		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRoleServiceType || input.ServiceAttributes.RoleReference.Kind == "Role" {
-			roleBind.RoleRef.Kind = "ClusterRole" //input.ServiceAttributes.Reference.Kind
+		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
+			roleBind.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole" //input.ServiceAttributes.Reference.Kind
 
-		} else if input.ServiceAttributes.RoleReference.Kind == meshConstants.RoleServiceType {
-			roleBind.RoleRef.Kind = "Role"
+		} else if input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
+			roleBind.RoleRef.Kind = constants.Role.String() //"Role"
 		} else {
 			return nil, errors.New("invalid kind  role binding ref " + input.Name)
 		}

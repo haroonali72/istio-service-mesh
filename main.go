@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/core"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"fmt"
@@ -8,9 +11,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"io/ioutil"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/core"
-	"istio-service-mesh/utils"
 	"log"
 	"net"
 	"os"
@@ -95,6 +95,7 @@ func main() {
 	pb.RegisterServiceAccountServer(srv, svc)
 	pb.RegisterSecretServer(srv, svc)
 	pb.RegisterRoleBindingServer(srv, svc)
+	pb.RegisterPodServer(srv, svc)
 	//pb.RegisterClusterroleServer(srv, svc)
 	//pb.RegisterClusterrolebindingServer(srv, svc)
 	// Register reflection service on gRPC server.

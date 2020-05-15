@@ -1,8 +1,8 @@
 package helm_parameterization
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/core/helm-parameterization/types"
 	"encoding/json"
-	"istio-service-mesh/core/helm-parameterization/types"
 	v12 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 	"strings"

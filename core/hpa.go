@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	autoscaler "k8s.io/api/autoscaling/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"strings"
@@ -251,7 +251,7 @@ func getHpa(input *pb.HPA) (*autoscaler.HorizontalPodAutoscaler, error) {
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	hpaSvc.Kind = "HorizontalPodAutoscaler"
+	hpaSvc.Kind = constants.HPA.String() //"HorizontalPodAutoscaler"
 	hpaSvc.APIVersion = "autoscaling/v1"
 	if input.Name == "" {
 		return &autoscaler.HorizontalPodAutoscaler{}, errors.New("hpa name must not be empty")

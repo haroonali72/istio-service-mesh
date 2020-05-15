@@ -1,13 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	//	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	//	"google.golang.org/grpc"
-	//	"istio-service-mesh/constants"
+	//	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"errors"
-	"istio-service-mesh/utils"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -259,7 +260,7 @@ func (s *Server) PutPersistentVolume(ctx context.Context, req *pb.PersistentVolu
 func getPersistentVolume(input *pb.PersistentVolumeService) (*core.PersistentVolume, error) {
 	var pv = new(core.PersistentVolume)
 	pv.Name = input.Name
-	pv.TypeMeta.Kind = "PersistentVolume"
+	pv.TypeMeta.Kind = constants.PersistentVolume.String() //"PersistentVolume"
 	pv.TypeMeta.APIVersion = "v1"
 	if len(input.ServiceAttributes.Labels) > 0 {
 		pv.Labels = make(map[string]string)

@@ -24,7 +24,7 @@ message PersistentVolumeClaimService {
     string company_id = 8;
     PersistentVolumeClaimAttributes service_attributes = 9;
     string namespace = 10;
-
+    HookConfiguration hook_configuration=11;
 }
 message PersistentVolumeClaimServiceResponse {
     string error = 1;

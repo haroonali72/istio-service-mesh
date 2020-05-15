@@ -1,6 +1,9 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/types"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
@@ -10,9 +13,6 @@ import (
 	"errors"
 	"google.golang.org/grpc"
 	"io/ioutil"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/types"
-	"istio-service-mesh/utils"
 	"k8s.io/api/apps/v1"
 	v2 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -270,7 +270,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 	}
 	deployment.Name = service.Name + "-" + service.Version
 
-	deployment.TypeMeta.Kind = "Deployment"
+	deployment.TypeMeta.Kind = constants.Deployment.String() //"Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"
 
 	deployment.Labels = make(map[string]string)
@@ -668,7 +668,7 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 		var envVariables []v2.EnvVar
 		for _, envVariable := range container.EnvironmentVariables {
 			tempEnvVariable := v2.EnvVar{}
-			if strings.EqualFold(envVariable.Type, meshConstants.ConfigMapServiceType) {
+			if strings.EqualFold(envVariable.Type, meshConstants.ConfigMap.String()) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
@@ -676,7 +676,7 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 						Key:                  envVariableValue[1],
 					}}}
 
-			} else if strings.EqualFold(envVariable.Type, meshConstants.SecretServiceType) {
+			} else if strings.EqualFold(envVariable.Type, meshConstants.Secret.String()) {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{

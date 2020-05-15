@@ -1,14 +1,14 @@
 package core
 
 import (
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
+	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
 	"errors"
 	"google.golang.org/grpc"
-	"istio-service-mesh/constants"
-	"istio-service-mesh/utils"
 	v1 "k8s.io/api/batch/v1"
 	v2 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -109,7 +109,7 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
-	serviceResp.Status.IsComplete = checkJobComplation(tjoob)
+	serviceResp.Status.IsComplete = checkJobCompletion(tjoob)
 
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
@@ -265,7 +265,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	}
 
 	job.APIVersion = "batch/v1"
-	job.Kind = "Job"
+	job.Kind = constants.Job.String() //"Job"
 
 	if service.Namespace == "" {
 		job.ObjectMeta.Namespace = "default"
@@ -410,7 +410,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 
 	return job, nil
 }
-func checkJobComplation(tjoob *v1.Job) bool {
+func checkJobCompletion(tjoob *v1.Job) bool {
 	if tjoob.Status.CompletionTime != nil {
 		return true
 	}

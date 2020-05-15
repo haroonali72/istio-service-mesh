@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package proto;
+import "general.proto";
 import "service.proto";
 service Policy {
     rpc CreatePolicy (PolicyService) returns (ServiceResponse) {}
@@ -22,6 +23,7 @@ message PolicyService {
     string token = 8;
     string company_id = 9;
     PolicyServiceAttributes service_attributes = 10;
+    HookConfiguration hook_configuration=11;
 }
 message PolicyServiceResponse {
     string error = 1;
