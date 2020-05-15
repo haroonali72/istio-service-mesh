@@ -180,7 +180,7 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 }
 
 func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
-	token := r.Header.Get("token")
+	token := r.Header.Get("X-Auth-Token")
 	if len(token) <= 0 {
 		return errors.New("invalid token")
 	}
@@ -193,6 +193,7 @@ func (c *Context) ReadLoggingParameters(r *http.Request) (err error) {
 	c.Set("user", user)
 	c.Set("user_id", user)
 	c.Set("token", token)
+	c.Set("X-Auth-Token", token)
 	return nil
 }
 func (c *Context) InitializeLogger(requestURL, method, path, body string) {
