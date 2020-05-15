@@ -92,6 +92,12 @@ const (
 
 	//Build Service SubType
 	BuildService ServiceSubType = "build"
+
+	//Docker Registries
+	AWSDockerRegistry   ServiceSubType = "aws_registry"
+	AzureDockerRegistry ServiceSubType = "azure_registry"
+	GCPDockerRegistry   ServiceSubType = "gcp_registry"
+	DockerRegistry      ServiceSubType = "docker_registry"
 )
 
 var (
@@ -129,6 +135,11 @@ var (
 		NetworkPolicy,
 		InitContainer,
 		Pod,
+		//registries
+		AWSDockerRegistry,
+		AzureDockerRegistry,
+		GCPDockerRegistry,
+		DockerRegistry,
 	}
 	meshServicesSubTypes = []ServiceSubType{
 		Gateway,
@@ -181,6 +192,7 @@ var (
 	buildServiceSubTypes = []ServiceSubType{
 		BuildService,
 	}
+
 	supportedServiceSubTypes []ServiceSubType
 
 	mappedServices = map[ServiceType][]ServiceSubType{

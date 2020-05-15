@@ -192,7 +192,7 @@ type ServiceBasicInfo struct {
 	//required for Cloudplex Frontend visualization
 	// This key will tell to embed service or not
 	// +optional
-	IsEmbedded bool `json:"is_embedded,omitempty" bson:"is_embedded,omitempty"`
+	IsEmbedded bool `json:"is_embeded,omitempty" bson:"is_embeded,omitempty"`
 	// required for Cloudplex Frontend visualization
 	// embeds contains list of service_ids which you want to group
 	// +optional
