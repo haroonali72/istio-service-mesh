@@ -529,8 +529,10 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 				deployment.ServiceAttributes.Strategy.RollingUpdate = new(meshTypes.RollingUpdateDeployment)
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge = new(intstr.IntOrString)
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.Type = service.Spec.Strategy.RollingUpdate.MaxSurge.Type
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.Type = service.Spec.Strategy.RollingUpdate.MaxUnavailable.Type
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
 			}

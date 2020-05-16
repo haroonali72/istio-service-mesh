@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 type GrpcConn struct {
@@ -38,6 +37,7 @@ type GrpcConn struct {
 }
 
 var serviceTemplates []*svcTypes.ServiceTemplate
+var mutex sync.Mutex
 
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
@@ -64,14 +64,13 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	namespaces := request.Namespaces
 
 	var wg sync.WaitGroup
-	var m sync.Mutex
 	for _, namespace := range namespaces {
 		//deployments
 		deploymentList, err := grpcConn.getAllDeployments(ctx, namespace)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
-		err = grpcConn.deploymentk8sToCp(ctx, deploymentList.Items, &wg, m)
+		err = grpcConn.deploymentk8sToCp(ctx, deploymentList.Items, &wg)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
@@ -158,6 +157,8 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	}
 	namespace := job.Namespace
 	if job.Spec.Template.Spec.ServiceAccountName != "" {
+
+		mutex.Lock()
 		svcname := job.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -191,6 +192,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			jobTemp.Embeds = append(jobTemp.Embeds, service.ServiceId)
 
 		}
+		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -460,6 +462,8 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	}
 	namespace := cronjob.Namespace
 	if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
+
+		mutex.Lock()
 		svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -492,6 +496,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			cronjobTemp.Embeds = append(cronjobTemp.Embeds, service.ServiceId)
 
 		}
+		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -777,6 +782,8 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	}
 	namespace := daemonset.Namespace
 	if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
+
+		mutex.Lock()
 		svcname := daemonset.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -812,6 +819,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			service.AfterServices = append(service.AfterServices, &daemonsetTemp.ServiceId)
 			daemonsetTemp.Embeds = append(daemonsetTemp.Embeds, service.ServiceId)
 		}
+		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -1060,6 +1068,8 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	}
 	namespace := statefulset.Namespace
 	if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
+
+		mutex.Lock()
 		svcname := statefulset.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -1093,6 +1103,8 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			stsTemp.Embeds = append(stsTemp.Embeds, service.ServiceId)
 
 		}
+		mutex.Unlock()
+
 	}
 
 	//image pull secrets
@@ -1355,19 +1367,18 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 }
 
-func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment, wg *sync.WaitGroup, m sync.Mutex) error {
+func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment, wg *sync.WaitGroup) error {
 
-	for i, dep := range deployments {
+	for _, dep := range deployments {
 		wg.Add(1)
-		go conn.ResolveDeploymentDependencies(dep, wg, ctx, m, int32(i))
+		go conn.ResolveDeploymentDependencies(dep, wg, ctx)
 	}
 	return nil
 }
 
-func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context, m sync.Mutex, second int32) {
+func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context) {
 	defer wg.Done()
 
-	time.Sleep(time.Duration(rand.Int31n(second+10)) * time.Second)
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
 		ProjectId:   conn.ProjectId,
 		ServiceType: string(constants.Deployment),
@@ -1384,6 +1395,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 	if dep.Spec.Template.Spec.ServiceAccountName != "" {
 
+		mutex.Lock()
 		svcname := dep.Spec.Template.Spec.ServiceAccountName
 		svcaccount, err := conn.getSvcAccount(ctx, svcname, namespace)
 		if err != nil {
@@ -1399,14 +1411,20 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				return
 			}
 
-			var strpointer = new(string)
-			*strpointer = "serviceaccount"
 			for _, rbacTemp := range rbacDependencies {
 				if rbacTemp.ServiceSubType == meshConstants.ServiceAccount {
+					//resolving service account dependency with deployment
 					depTemp.BeforeServices = append(depTemp.BeforeServices, &rbacTemp.ServiceId)
 					rbacTemp.AfterServices = append(rbacTemp.AfterServices, &depTemp.ServiceId)
 					depTemp.Embeds = append(depTemp.Embeds, rbacTemp.ServiceId)
 				}
+
+				if rbacTemp.ServiceSubType == meshConstants.Role {
+					addRbacConfigurations(depTemp, rbacTemp)
+				} else if rbacTemp.ServiceSubType == meshConstants.ClusterRole {
+					addRbacConfigurations(depTemp, rbacTemp)
+				}
+
 				serviceTemplates = append(serviceTemplates, rbacTemp)
 			}
 		} else {
@@ -1415,6 +1433,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			service.AfterServices = append(service.AfterServices, &depTemp.ServiceId)
 			depTemp.Embeds = append(depTemp.Embeds, service.ServiceId)
 		}
+		mutex.Unlock()
 
 	}
 
@@ -1459,17 +1478,17 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 				if err != nil {
 					return
 				}
-				hpaTemplate.BeforeServices = append(hpaTemplate.BeforeServices, &depTemp.ServiceId)
-				depTemp.AfterServices = append(depTemp.AfterServices, &hpaTemplate.ServiceId)
+
+				addScalingConfigurations(depTemp, hpaTemplate)
+
+				hpaTemplate.AfterServices = append(hpaTemplate.AfterServices, &depTemp.ServiceId)
+				depTemp.BeforeServices = append(depTemp.BeforeServices, &hpaTemplate.ServiceId)
 				depTemp.Embeds = append(depTemp.Embeds, hpaTemplate.ServiceId)
 				serviceTemplates = append(serviceTemplates, hpaTemplate)
 			}
 		}
 	}
 
-	if depTemp.Name == "frontend" {
-		fmt.Println("for debuggin")
-	}
 	//finding kubernetes service
 	labels := getLabels(dep, dep.Kind) //it is better to write get label function
 	kubeSvcList, err := conn.getKubernetesServices(ctx, labels, namespace)
@@ -1751,6 +1770,9 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 						}
 
 						if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) {
+
+							addIngressConfigurations(svcTemp, vsTemp)
+
 							gatewayTemp.AfterServices = append(gatewayTemp.AfterServices, &svcTemp.ServiceId)
 							svcTemp.BeforeServices = append(svcTemp.BeforeServices, &gatewayTemp.ServiceId)
 							serviceTemplates = append(serviceTemplates, gatewayTemp)
@@ -1959,33 +1981,32 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 					clstrrole, err := conn.getClusterRole(ctx, clusterrolename)
 					if err != nil {
 						return nil, err
+					}
+
+					clstrroleTemp, err := conn.getCpConvertedTemplate(clstrrole, clstrrole.Kind)
+					if err != nil {
+						return nil, err
+					}
+
+					clstrrolebindTemp, err := conn.getCpConvertedTemplate(clstrrolebind, clstrrolebind.Kind)
+					if err != nil {
+						return nil, err
+					}
+					if !isAlreadyExist(clstrrolebindTemp.Namespace, clstrrolebindTemp.ServiceSubType, clstrrolebindTemp.Name) {
+						clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &clstrroleTemp.ServiceId)
+						clstrroleTemp.AfterServices = append(clstrroleTemp.AfterServices, &clstrrolebindTemp.ServiceId)
+
+						clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
+						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
+
+						rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
+						rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
 					} else {
-						clstrroleTemp, err := conn.getCpConvertedTemplate(clstrrole, clstrrole.Kind)
-						if err != nil {
-							return nil, err
-						} else {
-
-							clstrrolebindTemp, err := conn.getCpConvertedTemplate(clstrrolebind, clstrrolebind.Kind)
-							if err != nil {
-								return nil, err
-							}
-							if !isAlreadyExist(clstrrolebindTemp.Namespace, clstrrolebindTemp.ServiceSubType, clstrrolebindTemp.Name) {
-								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &clstrroleTemp.ServiceId)
-								clstrroleTemp.AfterServices = append(clstrroleTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-
-								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
-								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
-
-								rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
-								rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
-							} else {
-								clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
-								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
-							}
-						}
+						clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
+						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -2006,32 +2027,32 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 					role, err := conn.getRole(ctx, rolename, namespace)
 					if err != nil {
 						return nil, err
+					}
+
+					roleTemp, err := conn.getCpConvertedTemplate(role, role.Kind)
+					if err != nil {
+						return nil, err
+					}
+
+					rolebindTemp, err := conn.getCpConvertedTemplate(rolebinding, rolebinding.Kind)
+					if err != nil {
+						return nil, err
+					}
+					if !isAlreadyExist(rolebindTemp.Namespace, rolebindTemp.ServiceSubType, rolebindTemp.Name) {
+						rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &roleTemp.ServiceId)
+						roleTemp.AfterServices = append(roleTemp.AfterServices, &rolebindTemp.ServiceId)
+
+						rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
+						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
+
+						rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
+						rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
 					} else {
-						roleTemp, err := conn.getCpConvertedTemplate(role, role.Kind)
-						if err != nil {
-							return nil, err
-						} else {
-							rolebindTemp, err := conn.getCpConvertedTemplate(rolebinding, rolebinding.Kind)
-							if err != nil {
-								return nil, err
-							}
-							if !isAlreadyExist(rolebindTemp.Namespace, rolebindTemp.ServiceSubType, rolebindTemp.Name) {
-								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &roleTemp.ServiceId)
-								roleTemp.AfterServices = append(roleTemp.AfterServices, &rolebindTemp.ServiceId)
-
-								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
-								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
-
-								rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
-								rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
-							} else {
-								rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
-								svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
-								svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
-							}
-						}
+						rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
+						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
+						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -2738,6 +2759,15 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
+			template.Replicas = int(replicas.(float64))
+		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if _, ok := svcAttr["strategy"]; ok {
+			svcAttr["strategy"] = struct{}{}
+		}
+		template.ServiceAttributes = svcAttr
 		template.ServiceId = id
 		template.Version = "v1"
 	//case constants.CronJob:
@@ -2812,6 +2842,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			}))
 
 			return nil, err
+		}
+		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
+			template.Replicas = int(replicas.(float64))
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
@@ -2905,6 +2938,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			return nil, err
 		}
+		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
+			template.Replicas = int(replicas.(float64))
+		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
 		template.Version = "v1"
@@ -2981,41 +3017,52 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			return nil, err
 		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if svcType, ok := svcAttr["type"]; ok {
+			if svcType.(string) == "ClusterIP" {
+				svcAttr["external_traffic_policy"] = "Local"
+			} else {
+				svcAttr["external_traffic_policy"] = "Cluster"
+			}
+		}
+		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
-	//case constants.HPA:
-	//	bytes, err := json.Marshal(data)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	var hpa autoscale.HorizontalPodAutoscaler
-	//	err = json.Unmarshal(bytes, &hpa)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	CpHpa, err := ConvertToCPHPA(&hpa)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	bytes, err = json.Marshal(CpHpa)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	err = json.Unmarshal(bytes, &template)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	id := strconv.Itoa(rand.Int())
-	//	template.ServiceId = id
+	case constants.HPA:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var hpa autoscale.HorizontalPodAutoscaler
+		err = json.Unmarshal(bytes, &hpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpHpa, err := ConvertToCPHPA(&hpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		bytes, err = json.Marshal(CpHpa)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.Version = "v1"
+		template.ServiceId = id
 	case constants.ConfigMap:
 
 		CpConfigMap, err := ConvertToCPConfigMap(data.(*v2.ConfigMap))
@@ -4322,6 +4369,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 				}
 
 				if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
+					addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 					k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					for _, key := range k8serviceTemp.AfterServices {
@@ -4410,4 +4458,96 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 	}
 
 	return nil
+}
+
+func addRbacConfigurations(svcTemp *svcTypes.ServiceTemplate, rbacBindingTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	svcAttr["is_rbac_enabled"] = true
+	role := make(map[string]interface{})
+	role["resource"] = rbacBindingTemp.Name
+	role["type"] = rbacBindingTemp.ServiceSubType
+	role["service_id"] = rbacBindingTemp.ServiceId
+	svcAttr["role"] = role
+	svcTemp.ServiceAttributes = svcAttr
+}
+
+func addScalingConfigurations(svcTemp *svcTypes.ServiceTemplate, hpaTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	hpaAttr := hpaTemp.ServiceAttributes.(map[string]interface{})
+
+	svcAttr["enable_scaling"] = true
+
+	hpaConfigurations := make(map[string]interface{})
+	hpaConfigurations["type"] = "new"
+	if minRelicas, ok := hpaAttr["min_replicas"]; ok {
+		hpaConfigurations["min_replicas"] = minRelicas
+	}
+	if maxRelicas, ok := hpaAttr["max_replicas"]; ok {
+		hpaConfigurations["max_replicas"] = maxRelicas
+	}
+
+	var metrics []interface{}
+	metric := make(map[string]interface{})
+	metric["target_value_kind"] = "value"
+	if cpuValue, ok := hpaAttr["target_cpu_utilization"]; ok {
+		metric["target_value"] = cpuValue
+	}
+	metric["resource_kind"] = "cpu"
+	metrics = append(metrics, metric)
+
+	hpaConfigurations["metrics_values"] = metrics
+
+	svcAttr["hpa_configurations"] = hpaConfigurations
+	svcTemp.ServiceAttributes = svcAttr
+
+}
+
+func addIngressConfigurations(svcTemp *svcTypes.ServiceTemplate, vsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	vsAttr := vsTemp.ServiceAttributes.(map[string]interface{})
+
+	svcAttr["enable_external_traffic"] = true
+
+	var URIs []string
+	if httpArr, ok := vsAttr["http"].([]interface{}); ok {
+		for _, http := range httpArr {
+			if httpMatchArr, ok := http.(map[string]interface{})["http_match"].([]interface{}); ok {
+				for _, httpMatch := range httpMatchArr {
+					if uriInterface, ok := httpMatch.(map[string]interface{})["uri"]; ok {
+						uri := uriInterface.(map[string]interface{})
+						if uri["type"].(string) == "exact" && uri["value"].(string) != "" {
+							fmt.Println(uri["value"].(string))
+							URIs = append(URIs, uri["value"].(string))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	svcAttr["uri"] = URIs
+	svcTemp.ServiceAttributes = svcAttr
+}
+
+func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeSvcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	kubeSvcAttr := kubeSvcTemp.ServiceAttributes.(map[string]interface{})
+
+	if svcPortArry, ok := kubeSvcAttr["ports"].([]interface{}); ok {
+		for _, v := range svcPortArry {
+			if port, ok := v.(map[string]interface{})["target_port"].(map[string]interface{})["port_number"].(float64); ok {
+				for index, _ := range svcAttr["containers"].([]interface{}) {
+					if c, ok := svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]; ok {
+						svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})["http-"+svcTemp.Name] = svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]
+						delete(svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{}), "")
+						fmt.Println(c, port)
+					} else {
+						fmt.Println("port key exists")
+					}
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
 }
