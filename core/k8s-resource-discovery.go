@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type GrpcConn struct {
@@ -1356,18 +1357,17 @@ func (conn *GrpcConn) statefulsetsK8sToCp(ctx context.Context, statefulsets []v1
 
 func (conn *GrpcConn) deploymentk8sToCp(ctx context.Context, deployments []v1.Deployment, wg *sync.WaitGroup, m sync.Mutex) error {
 
-	for _, dep := range deployments {
+	for i, dep := range deployments {
 		wg.Add(1)
-		go conn.ResolveDeploymentDependencies(dep, wg, ctx, m)
+		go conn.ResolveDeploymentDependencies(dep, wg, ctx, m, int32(i))
 	}
 	return nil
 }
 
-func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context, m sync.Mutex) {
+func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.WaitGroup, ctx context.Context, m sync.Mutex, second int32) {
 	defer wg.Done()
-	if dep.Name == "antelope" {
-		fmt.Println("hello from antelope")
-	}
+
+	time.Sleep(time.Duration(rand.Int31n(second+10)) * time.Second)
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
 		ProjectId:   conn.ProjectId,
 		ServiceType: string(constants.Deployment),
@@ -1737,30 +1737,27 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 					vsTemp.AfterServices = append(vsTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &vsTemp.ServiceId)
 					serviceTemplates = append(serviceTemplates, vsTemp)
+
+					//istio gateway discovery
+					for _, gateway := range vs.Spec.Gateways {
+						istioGateway, err := conn.getIstioGateway(ctx, gateway, namespace)
+						if err != nil {
+							return err
+						}
+
+						gatewayTemp, err := conn.getIstioCpConvertedTemplate(istioGateway, istioGateway.Kind)
+						if err != nil {
+							return err
+						}
+
+						if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) {
+							gatewayTemp.AfterServices = append(gatewayTemp.AfterServices, &svcTemp.ServiceId)
+							svcTemp.BeforeServices = append(svcTemp.BeforeServices, &gatewayTemp.ServiceId)
+							serviceTemplates = append(serviceTemplates, gatewayTemp)
+						}
+					}
 					break
 				}
-			}
-		}
-
-		//istio gateway discovery
-		for _, gateway := range vs.Spec.Gateways {
-			istioGateway, err := conn.getIstioGateway(ctx, gateway, namespace)
-			if err != nil {
-				return err
-			}
-
-			gatewayTemp, err := conn.getIstioCpConvertedTemplate(istioGateway, istioGateway.Kind)
-			if err != nil {
-				return err
-			}
-
-			if !isAlreadyExist(gatewayTemp.Namespace, gatewayTemp.ServiceSubType, gatewayTemp.Name) {
-				if svcTemp.Name == "reviews-v3" {
-					fmt.Println("hello from debuggin")
-				}
-				gatewayTemp.AfterServices = append(gatewayTemp.AfterServices, &svcTemp.ServiceId)
-				svcTemp.BeforeServices = append(svcTemp.BeforeServices, &gatewayTemp.ServiceId)
-				serviceTemplates = append(serviceTemplates, gatewayTemp)
 			}
 		}
 	}
