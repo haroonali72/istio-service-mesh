@@ -1758,23 +1758,23 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
-		if container.ReadinessProbe != nil {
-			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
-				containerTemp.ReadinessProbe = rp
-			} else {
-				utils.Info.Println(err)
-				return nil, nil, err
-			}
-		}
-
-		if container.LivenessProbe != nil {
-			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
-				containerTemp.LivenessProbe = lp
-			} else {
-				utils.Info.Println(err)
-				return nil, nil, err
-			}
-		}
+		//if container.ReadinessProbe != nil {
+		//	if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+		//		containerTemp.ReadinessProbe = rp
+		//	} else {
+		//		utils.Info.Println(err)
+		//		return nil, nil, err
+		//	}
+		//}
+		//
+		//if container.LivenessProbe != nil {
+		//	if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+		//		containerTemp.LivenessProbe = lp
+		//	} else {
+		//		utils.Info.Println(err)
+		//		return nil, nil, err
+		//	}
+		//}
 
 		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			utils.Info.Println(err)
