@@ -817,11 +817,10 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 		if err != nil {
 			return err
 		}
-		var hostname string
+
 		for _, http := range vs.Spec.Http {
 			for _, route := range http.Route {
 				if !isAlreadyExist(vsTemp.Namespace, vsTemp.ServiceSubType, vsTemp.Name) && route.Destination.Host == kubesvcTemp.Name {
-					hostname = route.Destination.Host
 					vsTemp.AfterServices = append(vsTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &vsTemp.ServiceId)
 					vsTemp.Deleted = true
