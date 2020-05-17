@@ -1295,7 +1295,7 @@ func CreateDockerCfgSecret(container *pb.ContainerAttributes, token, namespace s
 		if err != nil {
 			return nil, false
 		}
-		req.Header.Set("token", token)
+		req.Header.Set("X-Auth-Token", token)
 		reqClient := http.Client{}
 		res, err := reqClient.Do(req)
 		if err == nil {

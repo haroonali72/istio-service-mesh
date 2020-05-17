@@ -797,6 +797,7 @@ func (conn *GrpcConn) discoverIstioDestinationRules(ctx context.Context, svcTemp
 			}
 			drTemp.AfterServices = append(drTemp.AfterServices, &svcTemp.ServiceId)
 			svcTemp.BeforeServices = append(svcTemp.BeforeServices, &drTemp.ServiceId)
+			drTemp.Deleted = true
 			serviceTemplates = append(serviceTemplates, drTemp)
 			break
 		}
@@ -816,11 +817,14 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 		if err != nil {
 			return err
 		}
+		var hostname string
 		for _, http := range vs.Spec.Http {
 			for _, route := range http.Route {
 				if !isAlreadyExist(vsTemp.Namespace, vsTemp.ServiceSubType, vsTemp.Name) && route.Destination.Host == kubesvcTemp.Name {
+					hostname = route.Destination.Host
 					vsTemp.AfterServices = append(vsTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &vsTemp.ServiceId)
+					vsTemp.Deleted = true
 					serviceTemplates = append(serviceTemplates, vsTemp)
 
 					//istio gateway discovery
@@ -3310,8 +3314,10 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		}
 		id := strconv.Itoa(rand.Int())
 		VStemplate.ServiceId = id
-		svcTemp.AfterServices = append(svcTemp.AfterServices, &VStemplate.ServiceId)
-		VStemplate.BeforeServices = append(VStemplate.BeforeServices, &svcTemp.ServiceId)
+
+		VStemplate.Deleted = true
+		//svcTemp.AfterServices = append(svcTemp.AfterServices, &VStemplate.ServiceId)
+		//VStemplate.BeforeServices = append(VStemplate.BeforeServices, &svcTemp.ServiceId)
 
 		var DStemplate *svcTypes.ServiceTemplate
 		bytes, err = json.Marshal(destRule)
@@ -3326,8 +3332,9 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		}
 		id = strconv.Itoa(rand.Int())
 		DStemplate.ServiceId = id
-		svcTemp.AfterServices = append(svcTemp.AfterServices, &DStemplate.ServiceId)
-		DStemplate.BeforeServices = append(DStemplate.BeforeServices, &svcTemp.ServiceId)
+		DStemplate.Deleted = true
+		//svcTemp.AfterServices = append(svcTemp.AfterServices, &DStemplate.ServiceId)
+		//DStemplate.BeforeServices = append(DStemplate.BeforeServices, &svcTemp.ServiceId)
 
 		//svcComponents = append(svcComponents, svcTemp)
 		svcComponents = append(svcComponents, VStemplate)
@@ -3471,6 +3478,9 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 						return err
 					}
 					for _, istioSvc := range istioSvcTemps {
+						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &istioSvc.ServiceId)
+						svcTemp.Embeds = append(svcTemp.Embeds, istioSvc.ServiceId)
+						istioSvc.AfterServices = append(istioSvc.AfterServices, &svcTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, istioSvc)
 					}
 					//istio components creation
@@ -3480,10 +3490,10 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 					k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
-					for _, key := range k8serviceTemp.AfterServices {
+					k8serviceTemp.Deleted = true
+					for _, key := range svcTemp.BeforeServices {
 						svcTemp.Embeds = append(svcTemp.Embeds, *key)
 					}
-					svcTemp.Embeds = append(svcTemp.Embeds, k8serviceTemp.ServiceId)
 					serviceTemplates = append(serviceTemplates, k8serviceTemp)
 				} else {
 					isSameService := false
@@ -3496,10 +3506,6 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					if !isSameService {
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
-						for _, key := range k8serviceTemp.AfterServices {
-							svcTemp.Embeds = append(svcTemp.Embeds, *key)
-						}
-						svcTemp.Embeds = append(svcTemp.Embeds, k8serviceTemp.ServiceId)
 					}
 				}
 			}
