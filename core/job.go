@@ -367,7 +367,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 	}
 
 	volumeMountNames1 := make(map[string]bool)
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers, false); err == nil {
 		if len(containersList) > 0 {
 			job.Spec.Template.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
@@ -379,7 +379,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers, true); err == nil {
 		if len(containersList) > 0 {
 			job.Spec.Template.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {

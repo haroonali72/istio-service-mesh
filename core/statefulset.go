@@ -361,7 +361,7 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 	}
 
 	volumeMountNames1 := make(map[string]bool)
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers, false); err == nil {
 		if len(containersList) > 0 {
 			statefulSet.Spec.Template.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
@@ -373,7 +373,7 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers, true); err == nil {
 		if len(containersList) > 0 {
 			statefulSet.Spec.Template.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {

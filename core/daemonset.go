@@ -346,7 +346,7 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 	}
 
 	volumeMountNames1 := make(map[string]bool)
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers, false); err == nil {
 		if len(containersList) > 0 {
 			daemonSet.Spec.Template.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
@@ -358,7 +358,7 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers, true); err == nil {
 		if len(containersList) > 0 {
 			daemonSet.Spec.Template.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {
