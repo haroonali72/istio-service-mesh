@@ -379,7 +379,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 	}
 
 	var volumeMountNames1 = make(map[string]bool)
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers, false); err == nil {
 		if len(containersList) > 0 {
 			deployment.Spec.Template.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
@@ -391,7 +391,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers, true); err == nil {
 		if len(containersList) > 0 {
 			deployment.Spec.Template.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {
@@ -557,7 +557,7 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 
 }
 
-func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]bool, error) {
+func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.Container, map[string]bool, error) {
 
 	volumeMountNames := make(map[string]bool)
 
@@ -568,6 +568,9 @@ func getContainers(conts []*pb.ContainerAttributes) ([]v2.Container, map[string]
 		//todo: change it and add containerName field
 		imageName := strings.Split(container.ImageName, "/")
 		name := strings.ToLower(strings.Split(imageName[len(imageName)-1], ":")[0])
+		if isInitContainer {
+			name = name + "-init"
+		}
 		containerTemp.Name = name
 		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			return nil, nil, err

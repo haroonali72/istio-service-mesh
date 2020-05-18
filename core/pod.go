@@ -312,7 +312,7 @@ func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, 
 	}
 
 	volumeMountNames1 := make(map[string]bool)
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.Containers, false); err == nil {
 		if len(containersList) > 0 {
 			pod.Spec.Containers = containersList
 			volumeMountNames1 = volumeMounts
@@ -324,7 +324,7 @@ func getPodRequestObject(ctx context.Context, service *pb.PodService) (*v1.Pod, 
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getContainers(service.ServiceAttributes.InitContainers, true); err == nil {
 		if len(containersList) > 0 {
 			pod.Spec.InitContainers = containersList
 			for k, v := range volumeMounts {
