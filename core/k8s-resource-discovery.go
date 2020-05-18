@@ -3607,10 +3607,20 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 	if svcPortArry, ok := kubeSvcAttr["ports"].([]interface{}); ok {
 		for _, v := range svcPortArry {
 			if port, ok := v.(map[string]interface{})["target_port"].(map[string]interface{})["port_number"].(float64); ok {
+
+				var portName string
+				if val, ok := v.(map[string]interface{})["name"]; !ok {
+					portName = "http-" + RandStringBytes(4)
+				} else {
+					portName = val.(string)
+				}
+
 				for index, _ := range svcAttr["containers"].([]interface{}) {
 					if c, ok := svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]; ok {
-						svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[svcTemp.Name] = svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]
+
+						svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[portName] = svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]
 						delete(svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{}), "")
+
 						fmt.Println(c, port)
 					} else {
 						fmt.Println("port key exists")
@@ -3812,4 +3822,13 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	}
 
 	return nil
+}
+
+func RandStringBytes(n int) string {
+	letterBytes := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
