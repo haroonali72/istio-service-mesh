@@ -299,7 +299,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 
 	volumeMountNames1 := make(map[string]bool)
 	if service.CronJobServiceAttribute != nil {
-		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.Containers); err == nil {
+		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.Containers, false); err == nil {
 			if len(containersList) > 0 {
 				cjob.Spec.JobTemplate.Spec.Template.Spec.Containers = containersList
 				volumeMountNames1 = volumeMounts
@@ -314,7 +314,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	}
 
 	if service.CronJobServiceAttribute != nil {
-		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.InitContainers); err == nil {
+		if containersList, volumeMounts, err := getContainers(service.CronJobServiceAttribute.InitContainers, true); err == nil {
 			if len(containersList) > 0 {
 				cjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers = containersList
 				for k, v := range volumeMounts {
