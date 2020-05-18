@@ -529,8 +529,10 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 				deployment.ServiceAttributes.Strategy.RollingUpdate = new(meshTypes.RollingUpdateDeployment)
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge = new(intstr.IntOrString)
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.Type = service.Spec.Strategy.RollingUpdate.MaxSurge.Type
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.Type = service.Spec.Strategy.RollingUpdate.MaxUnavailable.Type
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
 				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
 			}
@@ -1756,23 +1758,23 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
-		if container.ReadinessProbe != nil {
-			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
-				containerTemp.ReadinessProbe = rp
-			} else {
-				utils.Info.Println(err)
-				return nil, nil, err
-			}
-		}
-
-		if container.LivenessProbe != nil {
-			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
-				containerTemp.LivenessProbe = lp
-			} else {
-				utils.Info.Println(err)
-				return nil, nil, err
-			}
-		}
+		//if container.ReadinessProbe != nil {
+		//	if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+		//		containerTemp.ReadinessProbe = rp
+		//	} else {
+		//		utils.Info.Println(err)
+		//		return nil, nil, err
+		//	}
+		//}
+		//
+		//if container.LivenessProbe != nil {
+		//	if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+		//		containerTemp.LivenessProbe = lp
+		//	} else {
+		//		utils.Info.Println(err)
+		//		return nil, nil, err
+		//	}
+		//}
 
 		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			utils.Info.Println(err)
