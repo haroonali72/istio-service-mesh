@@ -3600,6 +3600,25 @@ func addIngressConfigurations(svcTemp *svcTypes.ServiceTemplate, vsTemp *svcType
 	svcTemp.ServiceAttributes = svcAttr
 }
 
+func addVolumeConfigurations(svcTemp *svcTypes.ServiceTemplate, pvTemp *svcTypes.ServiceTemplate, pvcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+
+	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
+		for _, container := range containterArry {
+			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
+				for _, volMount := range volumeMountArr {
+					volMount.(map[string]interface{})["service_id"] = pvTemp.ServiceId
+					volMount.(map[string]interface{})["service_sub_type"] = pvTemp.ServiceSubType
+					volMount.(map[string]interface{})["name"] = pvTemp.Name
+					volMount.(map[string]interface{})["persistent_volume_claim_name"] = pvcTemp.Name
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
+}
+
 func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeSvcTemp *svcTypes.ServiceTemplate) {
 	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
 	kubeSvcAttr := kubeSvcTemp.ServiceAttributes.(map[string]interface{})
@@ -3777,10 +3796,16 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 		return err
 	}
 	if !isAlreadyExist(pvTemp.Namespace, pvTemp.ServiceSubType, pvTemp.Name) {
+		//adding PV and PVC parameters within K8s CP deployment type
+		addVolumeConfigurations(svcTemp, pvTemp, pvcTemp)
+
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &pvTemp.ServiceId)
 		pvTemp.AfterServices = append(pvTemp.AfterServices, &svcTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, pvTemp)
 	} else {
+		//adding PV and PVC parameters within K8s CP deployment type
+		addVolumeConfigurations(svcTemp, pvTemp, pvcTemp)
+
 		service := GetExistingService(pvTemp.Namespace, pvTemp.ServiceSubType, pvTemp.Name)
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &service.ServiceId)
 		service.AfterServices = append(service.AfterServices, &svcTemp.ServiceId)
