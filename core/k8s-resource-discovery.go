@@ -3609,7 +3609,7 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 			if port, ok := v.(map[string]interface{})["target_port"].(map[string]interface{})["port_number"].(float64); ok {
 				for index, _ := range svcAttr["containers"].([]interface{}) {
 					if c, ok := svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]; ok {
-						svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[svcTemp.Name] = svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]
+						svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})["http-port"] = svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{})[""]
 						delete(svcAttr["containers"].([]interface{})[index].(map[string]interface{})["ports"].(map[string]interface{}), "")
 						fmt.Println(c, port)
 					} else {
