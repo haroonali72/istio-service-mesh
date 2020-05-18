@@ -3610,7 +3610,7 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 
 				var portName string
 				if val, ok := v.(map[string]interface{})["name"]; !ok {
-					portName = "http-port"
+					portName = "http-" + RandStringBytes(4)
 				} else {
 					portName = val.(string)
 				}
@@ -3822,4 +3822,13 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	}
 
 	return nil
+}
+
+func RandStringBytes(n int) string {
+	letterBytes := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
