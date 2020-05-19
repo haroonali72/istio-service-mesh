@@ -1865,12 +1865,14 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 			tempEnvVariable := meshTypes.EnvironmentVariable{}
 			if envVariable.ValueFrom != nil {
 				if envVariable.ValueFrom.ConfigMapKeyRef != nil {
-					tempEnvVariable.Value = strings.Join([]string{envVariable.ValueFrom.ConfigMapKeyRef.Name, envVariable.ValueFrom.ConfigMapKeyRef.Key}, ";")
-					tempEnvVariable.Type = "ConfigMap"
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.ConfigMapKeyRef.Name + ":" + envVariable.ValueFrom.ConfigMapKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.ConfigMap)
 					tempEnvVariable.Dynamic = true
 				} else if envVariable.ValueFrom.SecretKeyRef != nil {
-					tempEnvVariable.Value = strings.Join([]string{envVariable.ValueFrom.SecretKeyRef.Name, envVariable.ValueFrom.SecretKeyRef.Key}, ";")
-					tempEnvVariable.Type = "Secret"
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.SecretKeyRef.Name + ":" + envVariable.ValueFrom.SecretKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.Secret)
 					tempEnvVariable.Dynamic = true
 				}
 				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
