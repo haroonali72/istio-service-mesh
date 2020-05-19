@@ -1880,7 +1880,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 		template.ServiceAttributes = svcAttr
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 	//case constants.CronJob:
 	//	bytes, err := json.Marshal(data)
 	//	if err != nil {
@@ -1959,7 +1959,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 	case constants.DaemonSet:
 		CpDaemonset, err := convertToCPDaemonSet(data)
 		if err != nil {
@@ -2005,7 +2005,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 	case constants.StatefulSet:
 		CpStatefuleSet, err := convertToCPStatefulSet(data)
 		if err != nil {
@@ -2054,7 +2054,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 	case constants.Service:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2140,7 +2140,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2172,7 +2172,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
-		template.Version = "v1"
+		addVersion(template)
 		template.ServiceId = id
 	case constants.ConfigMap:
 
@@ -2220,7 +2220,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2298,7 +2298,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2371,7 +2371,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2449,7 +2449,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2527,7 +2527,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2600,7 +2600,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2673,7 +2673,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2746,7 +2746,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2816,7 +2816,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2889,7 +2889,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2980,7 +2980,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3058,7 +3058,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3136,7 +3136,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3234,7 +3234,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3858,6 +3858,25 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	}
 
 	return nil
+}
+
+func addVersion(svcTemp *svcTypes.ServiceTemplate) {
+	strArr := strings.Split(svcTemp.Name, "-")
+	if len(strArr) > 0 {
+		if len(strArr) == 2 {
+			svcTemp.Name = strArr[0]
+			svcTemp.Version = strArr[1]
+		} else {
+			var svcName []string
+			for i := 0; i < len(strArr)-1; i++ {
+				svcName = append(svcName, strArr[i])
+			}
+			svcTemp.Name = strings.Join(svcName, "-")
+		}
+		svcTemp.Version = strArr[len(strArr)-1]
+	} else {
+		svcTemp.Version = "v1"
+	}
 }
 
 func RandStringBytes(n int) string {
