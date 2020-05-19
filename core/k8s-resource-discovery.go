@@ -3212,6 +3212,26 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			return nil, err
 		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if resolution, ok := svcAttr["resolution"]; ok {
+			if resolution.(string) == "" {
+				svcAttr["resolution"] = "NONE"
+			}
+		} else {
+			svcAttr["resolution"] = "NONE"
+		}
+
+		if location, ok := svcAttr["location"]; ok {
+			if location.(string) == "" {
+				location = "MESH_EXTERNAL"
+			}
+		} else {
+			svcAttr["location"] = "MESH_EXTERNAL"
+		}
+
+		template.ServiceAttributes = svcAttr
+
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
 		template.Version = "v1"
