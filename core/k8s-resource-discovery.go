@@ -3275,7 +3275,7 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 	if !isAlreadyExist(svcTemp.Namespace, meshConstants.VirtualService, svcTemp.Name) {
 		destRule := new(meshTypes.DestinationRules)
 		istioVS := new(meshTypes.VirtualService)
-		istioVS.Name = cpKubeService.Name
+		istioVS.Name = cpKubeService.Name + "-vs"
 		istioVS.Namespace = cpKubeService.Namespace
 		istioVS.Version = cpKubeService.Version
 		istioVS.ServiceType = meshConstants.MeshType
@@ -3283,41 +3283,32 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		istioVS.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			istioVS.ServiceAttributes.Hosts = []string{value}
-			for _, label := range labels {
-				if label == value {
-					continue
-				}
-				http := new(meshTypes.Http)
-				httpRoute := new(meshTypes.HttpRoute)
-				routeRule := new(meshTypes.RouteDestination)
-				routeRule.Host = value
-				routeRule.Subset = label
-				routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
-				httpRoute.Routes = append(httpRoute.Routes, routeRule)
-				http.HttpRoute = append(http.HttpRoute, httpRoute)
-				istioVS.ServiceAttributes.Http = append(istioVS.ServiceAttributes.Http, http)
-
-			}
+			http := new(meshTypes.Http)
+			httpRoute := new(meshTypes.HttpRoute)
+			httpRoute.Weight = 100
+			routeRule := new(meshTypes.RouteDestination)
+			routeRule.Host = value
+			routeRule.Subset = cpKubeService.Version
+			routeRule.Port = cpKubeService.ServiceAttributes.Ports[0].Port
+			httpRoute.Routes = append(httpRoute.Routes, routeRule)
+			http.HttpRoute = append(http.HttpRoute, httpRoute)
+			istioVS.ServiceAttributes.Http = append(istioVS.ServiceAttributes.Http, http)
 		}
 
 		destRule.ServiceType = meshConstants.MeshType
 		destRule.ServiceSubType = meshConstants.DestinationRule
-		destRule.Name = cpKubeService.Name
+		destRule.Name = cpKubeService.Name + "-dr"
+		destRule.Version = cpKubeService.Version
 		destRule.Namespace = cpKubeService.Namespace
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
 			destRule.ServiceAttributes.Host = value
-			for key, label := range labels {
-				subset := new(meshTypes.Subset)
-				if label == value {
-					continue
-				} else {
-					subset.Name = label
-					lab := make(map[string]string)
-					lab[key] = label
-					subset.Labels = &lab
-					destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
-				}
-			}
+			subset := new(meshTypes.Subset)
+			subset.Name = cpKubeService.Version
+			lab := make(map[string]string)
+			lab["version"] = subset.Name
+			subset.Labels = &lab
+			destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
+
 		}
 
 		var VStemplate *svcTypes.ServiceTemplate
@@ -3498,7 +3489,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					}
 					for _, istioSvc := range istioSvcTemps {
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &istioSvc.ServiceId)
-						svcTemp.Embeds = append(svcTemp.Embeds, istioSvc.ServiceId)
+						//svcTemp.Embeds = append(svcTemp.Embeds, istioSvc.ServiceId)
 						istioSvc.AfterServices = append(istioSvc.AfterServices, &svcTemp.ServiceId)
 						serviceTemplates = append(serviceTemplates, istioSvc)
 					}
