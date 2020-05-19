@@ -158,7 +158,7 @@ type HttpRoute struct {
 	// version. (0-100). Sum of weights across destinations SHOULD BE == 100.
 	// If there is only one destination in a rule, the weight value is 100
 	// +optional
-	Weight int32 `json:"weight,omitempty" bson:"weight,omitempty" default:"100" jsonschema:"minimum:1,maximum=100"`
+	Weight *int32 `json:"weight,omitempty" bson:"weight,omitempty" default:"100" jsonschema:"minimum:1,maximum=100"`
 }
 
 type HttpRedirect struct {

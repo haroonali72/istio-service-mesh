@@ -265,7 +265,11 @@ func getDaemonSetRequestObject(service *pb.DaemonSetService) (*v1.DaemonSet, err
 		daemonSet.ObjectMeta.Namespace = service.Namespace
 	}
 
-	daemonSet.Name = service.Name + "-" + service.Version
+	if service.IsDiscovered {
+		daemonSet.Name = service.Name
+	} else {
+		daemonSet.Name = service.Name + "-" + service.Version
+	}
 	daemonSet.Labels = make(map[string]string)
 	daemonSet.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.ServiceAttributes.Labels {

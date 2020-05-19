@@ -40,6 +40,9 @@ type ServiceBasicInfo struct {
 	// auto populated key
 	// +optional
 	CompanyId string `json:"company_id,omitempty" bson:"company_id" valid:"-"`
+	// key for brown field discovery solution
+	// +optional
+	IsDiscovered bool `json:"is_discovered,omitempty" bson:"is_discovered" valid:"-"`
 	// auto generated id
 	// +optional
 	Id interface{} `json:"_id,omitempty" bson:"_id" valid:"-"`
@@ -56,7 +59,7 @@ type ServiceBasicInfo struct {
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 5-30 character
 	// +mandatory
-	Name string `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~service name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required"`
+	Name string `json:"name"  bson:"name" binding:"required" valid:"alphanumspecial,length(5|35),lowercase~service name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required"`
 	// Version is required for versioning purpose
 	// Version will be concatinated with name for container services,
 	// Cannot be updated.

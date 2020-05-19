@@ -268,7 +268,12 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 	} else {
 		deployment.ObjectMeta.Namespace = service.Namespace
 	}
-	deployment.Name = service.Name + "-" + service.Version
+
+	if service.IsDiscovered {
+		deployment.Name = service.Name
+	} else {
+		deployment.Name = service.Name + "-" + service.Version
+	}
 
 	deployment.TypeMeta.Kind = constants.Deployment.String() //"Deployment"
 	deployment.TypeMeta.APIVersion = "apps/v1"

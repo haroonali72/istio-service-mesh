@@ -260,7 +260,12 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 	} else {
 		cjob.ObjectMeta.Namespace = service.Namespace
 	}
-	cjob.Name = service.Name + "-" + service.Version
+
+	if service.IsDiscovered {
+		cjob.Name = service.Name
+	} else {
+		cjob.Name = service.Name + "-" + service.Version
+	}
 	cjob.APIVersion = "batch/v1beta1"
 	cjob.Kind = constants.CronJob.String() //"CronJob"
 	cjob.Labels = make(map[string]string)
