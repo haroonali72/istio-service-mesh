@@ -273,7 +273,11 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 		job.ObjectMeta.Namespace = service.Namespace
 	}
 
-	job.Name = service.Name
+	if service.IsDiscovered {
+		job.Name = service.Name
+	} else {
+		job.Name = service.Name + "-" + service.Version
+	}
 
 	job.Labels = make(map[string]string)
 	job.Labels["app"] = service.Name

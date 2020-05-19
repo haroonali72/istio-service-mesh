@@ -263,7 +263,11 @@ func getStatefulSetRequestObject(service *pb.StatefulSetService) (*v1.StatefulSe
 		statefulSet.ObjectMeta.Namespace = service.Namespace
 	}
 
-	statefulSet.Name = service.Name + "-" + service.Version
+	if service.IsDiscovered {
+		statefulSet.Name = service.Name
+	} else {
+		statefulSet.Name = service.Name + "-" + service.Version
+	}
 	statefulSet.Labels = make(map[string]string)
 	statefulSet.Labels["keel.sh/policy"] = "force"
 	for key, value := range service.ServiceAttributes.Labels {
