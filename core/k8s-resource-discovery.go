@@ -3904,7 +3904,7 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 
 func addVersion(svcTemp *svcTypes.ServiceTemplate) {
 	strArr := strings.Split(svcTemp.Name, "-")
-	if len(strArr) > 0 {
+	if len(strArr) > 1 {
 		if len(strArr) == 2 {
 			svcTemp.Name = strArr[0]
 			svcTemp.Version = strArr[1]
