@@ -19,6 +19,7 @@ import (
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
@@ -1882,36 +1883,37 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceAttributes = svcAttr
 		template.ServiceId = id
 		addVersion(template)
-	//case constants.CronJob:
-	//	bytes, err := json.Marshal(data)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	var cronjob batchv1.CronJob
-	//	err = json.Unmarshal(bytes, &cronjob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	CpCronJob, err := convertToCPCronJob(&cronjob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//
-	//	bytes, err = json.Marshal(CpCronJob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	err = json.Unmarshal(bytes, &template)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	id := strconv.Itoa(rand.Int())
-	//	template.ServiceId = id
+	case constants.CronJob:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var cronjob batchv1.CronJob
+		err = json.Unmarshal(bytes, &cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpCronJob, err := convertToCPCronJob(&cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		bytes, err = json.Marshal(CpCronJob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		addVersion(template)
 	case constants.Job:
 		CpJob, err := convertToCPJob(data.(*batch.Job))
 		if err != nil {
