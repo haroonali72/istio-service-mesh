@@ -42,7 +42,7 @@ type ServiceBasicInfo struct {
 	CompanyId string `json:"company_id,omitempty" bson:"company_id" valid:"-"`
 	// key for brown field discovery solution
 	// +optional
-	IsDiscovered string `json:"is_discovered,omitempty" bson:"is_discovered" valid:"-"`
+	IsDiscovered bool `json:"is_discovered,omitempty" bson:"is_discovered" valid:"-"`
 	// auto generated id
 	// +optional
 	Id interface{} `json:"_id,omitempty" bson:"_id" valid:"-"`
