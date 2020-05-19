@@ -2141,6 +2141,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2173,6 +2174,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 	case constants.ConfigMap:
 
 		CpConfigMap, err := ConvertToCPConfigMap(data.(*v2.ConfigMap))
@@ -2219,7 +2221,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2297,7 +2299,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2370,7 +2372,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2448,7 +2450,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2526,7 +2528,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2599,7 +2601,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2672,7 +2674,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2745,7 +2747,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2815,7 +2817,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2888,7 +2890,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2979,6 +2981,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3056,6 +3059,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3133,6 +3137,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3230,6 +3235,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
