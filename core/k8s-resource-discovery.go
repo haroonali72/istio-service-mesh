@@ -1069,13 +1069,13 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
-
+						clstrroleTemp.Deleted = true
+						clstrrolebindTemp.Deleted = true
 						rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
 						rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
 					} else {
 						clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -1115,13 +1115,14 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
+						rolebindTemp.Deleted = true
+						roleTemp.Deleted = true
 
 						rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
 						rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
 					} else {
 						rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
-						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -3282,6 +3283,7 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		istioVS.ServiceSubType = meshConstants.VirtualService
 		istioVS.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
+
 			istioVS.ServiceAttributes.Hosts = []string{value}
 			http := new(meshTypes.Http)
 			httpRoute := new(meshTypes.HttpRoute)
@@ -3310,6 +3312,42 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 			destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
 
 		}
+
+		//if cpKubeService.ServiceAttributes.Type == "LoadBalancer"{
+		//	gateway := new(meshTypes.GatewayService)
+		//	gateway.Name = cpKubeService.Name + "-gtw"
+		//	gateway.Namespace = cpKubeService.Namespace
+		//	gateway.Version = cpKubeService.Version
+		//	gateway.ServiceType = meshConstants.MeshType
+		//	gateway.ServiceSubType = meshConstants.Gateway
+		//	gateway.ServiceAttributes = new(meshTypes.GatewayServiceAttributes)
+		//	gateway.ServiceAttributes.Selectors = make(map[string]string)
+		//	gateway.ServiceAttributes.Selectors["istio"]= "ingressgateway"
+		//	server := new(meshTypes.Server)
+		//	server.Port = new(meshTypes.Port)
+		//	server.Port.Number = 80
+		//	server.Port.Name = "http"
+		//	server.Port.Protocol = meshTypes.Protocols_HTTP
+		//	server.Hosts = append(server.Hosts, "*")
+		//
+		//	var GatewayTemplate *svcTypes.ServiceTemplate
+		//	bytes, err = json.Marshal(gateway)
+		//	if err != nil {
+		//		utils.Error.Println(err)
+		//		return nil, err
+		//	}
+		//
+		//	err = json.Unmarshal(bytes, &GatewayTemplate)
+		//	if err != nil {
+		//		utils.Error.Println(err)
+		//		return nil, err
+		//	}
+		//	id := strconv.Itoa(rand.Int())
+		//	GatewayTemplate.ServiceId = id
+		//	GatewayTemplate.Deleted = true
+		//	svcComponents = append(svcComponents, GatewayTemplate)
+		//
+		//}
 
 		var VStemplate *svcTypes.ServiceTemplate
 		bytes, err = json.Marshal(istioVS)
@@ -3673,6 +3711,7 @@ func (conn *GrpcConn) resolveHpaDependency(svcTemp *svcTypes.ServiceTemplate, hp
 	hpaTemplate.AfterServices = append(hpaTemplate.AfterServices, &svcTemp.ServiceId)
 	svcTemp.BeforeServices = append(svcTemp.BeforeServices, &hpaTemplate.ServiceId)
 	svcTemp.Embeds = append(svcTemp.Embeds, hpaTemplate.ServiceId)
+	hpaTemplate.Deleted = true
 	serviceTemplates = append(serviceTemplates, hpaTemplate)
 	return nil
 }
@@ -3730,7 +3769,8 @@ func (conn *GrpcConn) resolveRbacDecpendency(ctx context.Context, svcAccName, na
 				svcTemp.BeforeServices = append(svcTemp.BeforeServices, &rbacTemp.ServiceId)
 				rbacTemp.AfterServices = append(rbacTemp.AfterServices, &svcTemp.ServiceId)
 				svcTemp.Embeds = append(svcTemp.Embeds, rbacTemp.ServiceId)
-
+				rbacTemp.Deleted = true
+				rbacTemp.IsEmbedded = true
 			}
 
 			if rbacTemp.ServiceSubType == meshConstants.Role {
