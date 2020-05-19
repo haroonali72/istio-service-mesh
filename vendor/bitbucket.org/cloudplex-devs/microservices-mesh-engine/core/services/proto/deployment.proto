@@ -23,7 +23,8 @@ message DeploymentService {
     string namespace = 7;
     string token = 8;
     string company_id = 9;
-    DeploymentServiceAttributes service_attributes = 10;
+    bool   is_discovered = 10;
+    DeploymentServiceAttributes service_attributes = 11;
     HookConfiguration hook_configuration=12;
 }
 

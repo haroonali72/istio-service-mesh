@@ -23,8 +23,9 @@ message JobService {
     string namespace = 7;
     string token = 8;
     string company_id = 9;
-    JobServiceAttribute service_attributes = 10;
-    HookConfiguration hook_configuration=11;
+    bool   is_discovered = 10;
+    JobServiceAttribute service_attributes = 11;
+    HookConfiguration hook_configuration=12;
 }
 
 message JobServiceAttribute {
