@@ -2477,7 +2477,7 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 				r.Routes = append(r.Routes, destRoute)
 
 			}
-			//r.Weight = route.Weight
+			r.Weight = &route.Weight
 			vSer.HttpRoute = append(vSer.HttpRoute, r)
 		}
 		if http.Redirect != nil {

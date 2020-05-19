@@ -19,6 +19,7 @@ import (
 	autoscale "k8s.io/api/autoscaling/v1"
 	batch "k8s.io/api/batch/v1"
 	"k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1beta1"
 	v2 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	storage "k8s.io/api/storage/v1"
@@ -1069,13 +1070,13 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrroleTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
-
+						clstrroleTemp.Deleted = true
+						clstrrolebindTemp.Deleted = true
 						rbacServiceTemplates = append(rbacServiceTemplates, clstrrolebindTemp)
 						rbacServiceTemplates = append(rbacServiceTemplates, clstrroleTemp)
 					} else {
 						clstrrolebindTemp.BeforeServices = append(clstrrolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &clstrrolebindTemp.ServiceId)
-						svcAccTemp.Embeds = append(svcAccTemp.Embeds, clstrrolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -1115,13 +1116,14 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 						svcAccTemp.Embeds = append(svcAccTemp.Embeds, roleTemp.ServiceId)
+						rolebindTemp.Deleted = true
+						roleTemp.Deleted = true
 
 						rbacServiceTemplates = append(rbacServiceTemplates, rolebindTemp)
 						rbacServiceTemplates = append(rbacServiceTemplates, roleTemp)
 					} else {
 						rolebindTemp.BeforeServices = append(rolebindTemp.BeforeServices, &svcAccTemp.ServiceId)
 						svcAccTemp.AfterServices = append(svcAccTemp.AfterServices, &rolebindTemp.ServiceId)
-						svcAccTemp.Embeds = append(svcAccTemp.Embeds, rolebindTemp.ServiceId)
 					}
 				}
 				break
@@ -1879,38 +1881,41 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 
 		template.ServiceAttributes = svcAttr
+		template.IsDiscovered = true
 		template.ServiceId = id
-		template.Version = "v1"
-	//case constants.CronJob:
-	//	bytes, err := json.Marshal(data)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	var cronjob batchv1.CronJob
-	//	err = json.Unmarshal(bytes, &cronjob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	CpCronJob, err := convertToCPCronJob(&cronjob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//
-	//	bytes, err = json.Marshal(CpCronJob)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	err = json.Unmarshal(bytes, &template)
-	//	if err != nil {
-	//		utils.Error.Println(err)
-	//		return nil, err
-	//	}
-	//	id := strconv.Itoa(rand.Int())
-	//	template.ServiceId = id
+		addVersion(template)
+	case constants.CronJob:
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var cronjob batchv1.CronJob
+		err = json.Unmarshal(bytes, &cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpCronJob, err := convertToCPCronJob(&cronjob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+
+		bytes, err = json.Marshal(CpCronJob)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		err = json.Unmarshal(bytes, &template)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		id := strconv.Itoa(rand.Int())
+		template.ServiceId = id
+		template.IsDiscovered = true
+		addVersion(template)
 	case constants.Job:
 		CpJob, err := convertToCPJob(data.(*batch.Job))
 		if err != nil {
@@ -1959,7 +1964,8 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		template.IsDiscovered = true
+		addVersion(template)
 	case constants.DaemonSet:
 		CpDaemonset, err := convertToCPDaemonSet(data)
 		if err != nil {
@@ -2005,7 +2011,8 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		template.IsDiscovered = true
+		addVersion(template)
 	case constants.StatefulSet:
 		CpStatefuleSet, err := convertToCPStatefulSet(data)
 		if err != nil {
@@ -2054,7 +2061,8 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		template.Version = "v1"
+		template.IsDiscovered = true
+		addVersion(template)
 	case constants.Service:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -2140,6 +2148,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2172,8 +2181,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
-		template.Version = "v1"
 		template.ServiceId = id
+		template.IsDiscovered = true
+		template.Version = "v1"
 	case constants.ConfigMap:
 
 		CpConfigMap, err := ConvertToCPConfigMap(data.(*v2.ConfigMap))
@@ -2220,6 +2230,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2298,6 +2309,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2371,6 +2383,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2449,6 +2462,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2527,6 +2541,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2600,6 +2615,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2673,6 +2689,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2746,6 +2763,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
@@ -2816,6 +2834,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2889,6 +2908,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -2980,6 +3000,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -3058,6 +3079,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -3136,6 +3158,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -3234,6 +3257,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
+		template.IsDiscovered = true
 		template.Version = "v1"
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
@@ -3282,10 +3306,11 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 		istioVS.ServiceSubType = meshConstants.VirtualService
 		istioVS.ServiceAttributes = new(meshTypes.VSServiceAttribute)
 		for _, value := range cpKubeService.ServiceAttributes.Selector {
+
 			istioVS.ServiceAttributes.Hosts = []string{value}
 			http := new(meshTypes.Http)
 			httpRoute := new(meshTypes.HttpRoute)
-			httpRoute.Weight = 100
+			//httpRoute.Weight = 100
 			routeRule := new(meshTypes.RouteDestination)
 			routeRule.Host = value
 			routeRule.Subset = cpKubeService.Version
@@ -3310,6 +3335,42 @@ func CreateIstioComponents(svcTemp *svcTypes.ServiceTemplate, labels map[string]
 			destRule.ServiceAttributes.Subsets = append(destRule.ServiceAttributes.Subsets, subset)
 
 		}
+
+		//if cpKubeService.ServiceAttributes.Type == "LoadBalancer"{
+		//	gateway := new(meshTypes.GatewayService)
+		//	gateway.Name = cpKubeService.Name + "-gtw"
+		//	gateway.Namespace = cpKubeService.Namespace
+		//	gateway.Version = cpKubeService.Version
+		//	gateway.ServiceType = meshConstants.MeshType
+		//	gateway.ServiceSubType = meshConstants.Gateway
+		//	gateway.ServiceAttributes = new(meshTypes.GatewayServiceAttributes)
+		//	gateway.ServiceAttributes.Selectors = make(map[string]string)
+		//	gateway.ServiceAttributes.Selectors["istio"]= "ingressgateway"
+		//	server := new(meshTypes.Server)
+		//	server.Port = new(meshTypes.Port)
+		//	server.Port.Number = 80
+		//	server.Port.Name = "http"
+		//	server.Port.Protocol = meshTypes.Protocols_HTTP
+		//	server.Hosts = append(server.Hosts, "*")
+		//
+		//	var GatewayTemplate *svcTypes.ServiceTemplate
+		//	bytes, err = json.Marshal(gateway)
+		//	if err != nil {
+		//		utils.Error.Println(err)
+		//		return nil, err
+		//	}
+		//
+		//	err = json.Unmarshal(bytes, &GatewayTemplate)
+		//	if err != nil {
+		//		utils.Error.Println(err)
+		//		return nil, err
+		//	}
+		//	id := strconv.Itoa(rand.Int())
+		//	GatewayTemplate.ServiceId = id
+		//	GatewayTemplate.Deleted = true
+		//	svcComponents = append(svcComponents, GatewayTemplate)
+		//
+		//}
 
 		var VStemplate *svcTypes.ServiceTemplate
 		bytes, err = json.Marshal(istioVS)
@@ -3673,6 +3734,7 @@ func (conn *GrpcConn) resolveHpaDependency(svcTemp *svcTypes.ServiceTemplate, hp
 	hpaTemplate.AfterServices = append(hpaTemplate.AfterServices, &svcTemp.ServiceId)
 	svcTemp.BeforeServices = append(svcTemp.BeforeServices, &hpaTemplate.ServiceId)
 	svcTemp.Embeds = append(svcTemp.Embeds, hpaTemplate.ServiceId)
+	hpaTemplate.Deleted = true
 	serviceTemplates = append(serviceTemplates, hpaTemplate)
 	return nil
 }
@@ -3730,7 +3792,8 @@ func (conn *GrpcConn) resolveRbacDecpendency(ctx context.Context, svcAccName, na
 				svcTemp.BeforeServices = append(svcTemp.BeforeServices, &rbacTemp.ServiceId)
 				rbacTemp.AfterServices = append(rbacTemp.AfterServices, &svcTemp.ServiceId)
 				svcTemp.Embeds = append(svcTemp.Embeds, rbacTemp.ServiceId)
-
+				rbacTemp.Deleted = true
+				rbacTemp.IsEmbedded = true
 			}
 
 			if rbacTemp.ServiceSubType == meshConstants.Role {
@@ -3858,6 +3921,19 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	}
 
 	return nil
+}
+
+func addVersion(svcTemp *svcTypes.ServiceTemplate) {
+	strArr := strings.Split(svcTemp.Name, "-")
+	if len(strArr) > 1 {
+		if len(strArr) == 2 {
+			svcTemp.Version = strArr[1]
+		} else {
+			svcTemp.Version = strArr[len(strArr)-1]
+		}
+	} else {
+		svcTemp.Version = "v1"
+	}
 }
 
 func RandStringBytes(n int) string {
