@@ -2141,7 +2141,6 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -2173,7 +2172,6 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
-		addVersion(template)
 		template.ServiceId = id
 	case constants.ConfigMap:
 
@@ -2981,7 +2979,6 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3059,7 +3056,6 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3137,7 +3133,6 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
@@ -3235,7 +3230,6 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
-		addVersion(template)
 		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
 			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
 		}
