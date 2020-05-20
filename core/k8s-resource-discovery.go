@@ -163,6 +163,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 		svcname := job.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, jobTemp)
 		if err != nil {
+			defer mutex.Unlock()
 			return
 		}
 		mutex.Unlock()
@@ -280,6 +281,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 		svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, cronjobTemp)
 		if err != nil {
+			defer mutex.Unlock()
 			return
 		}
 		mutex.Unlock()
@@ -413,6 +415,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 		svcname := daemonset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, daemonsetTemp)
 		if err != nil {
+			defer mutex.Unlock()
 			return
 		}
 		mutex.Unlock()
@@ -514,6 +517,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 		svcname := statefulset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, stsTemp)
 		if err != nil {
+			defer mutex.Unlock()
 			return
 		}
 		mutex.Unlock()
@@ -652,6 +656,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 		svcname := dep.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, depTemp)
 		if err != nil {
+			defer mutex.Unlock()
 			return
 		}
 		mutex.Unlock()
