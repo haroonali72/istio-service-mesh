@@ -1758,23 +1758,23 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
-		//if container.ReadinessProbe != nil {
-		//	if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
-		//		containerTemp.ReadinessProbe = rp
-		//	} else {
-		//		utils.Info.Println(err)
-		//		return nil, nil, err
-		//	}
-		//}
-		//
-		//if container.LivenessProbe != nil {
-		//	if lp, err := getCPProbe(container.LivenessProbe); err == nil {
-		//		containerTemp.LivenessProbe = lp
-		//	} else {
-		//		utils.Info.Println(err)
-		//		return nil, nil, err
-		//	}
-		//}
+		if container.ReadinessProbe != nil {
+			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+				containerTemp.ReadinessProbe = rp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if container.LivenessProbe != nil {
+			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+				containerTemp.LivenessProbe = lp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
 
 		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			utils.Info.Println(err)
@@ -1896,72 +1896,84 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 	CpProbe := new(meshTypes.Probe)
 
-	//CpProbe.FailureThreshold = prob.FailureThreshold
-	//CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
-	//CpProbe.SuccessThreshold = prob.SuccessThreshold
-	//CpProbe.PeriodSeconds = prob.PeriodSeconds
-	//CpProbe.TimeoutSeconds = prob.TimeoutSeconds
-	//
-	//if prob.Handler.Exec != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "Exec"
-	//	CpProbe.Handler.Exec = new(meshTypes.ExecAction)
-	//	for i := 0; i < len(prob.Handler.Exec.Command); i++ {
-	//		CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
-	//	}
-	//} else if prob.HTTPGet != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "http_get"
-	//	CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
-	//	if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
-	//		if prob.HTTPGet.Host == "" {
-	//			CpProbe.Handler.HTTPGet.Host = nil
-	//		} else {
-	//			CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
-	//		}
-	//		if prob.HTTPGet.Path == "" {
-	//			CpProbe.Handler.HTTPGet.Path = nil
-	//		} else {
-	//			CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
-	//		}
-	//
-	//		if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-	//			if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
-	//				scheme := meshTypes.URISchemeHTTP
-	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
-	//			} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-	//				scheme := meshTypes.URISchemeHTTPS
-	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
-	//			}
-	//		} else if prob.HTTPGet.Scheme == "" {
-	//			CpProbe.Handler.HTTPGet.Scheme = nil
-	//		} else {
-	//			return nil, errors.New("invalid URI scheme")
-	//		}
-	//
-	//		for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
-	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Name = &prob.HTTPGet.HTTPHeaders[i].Name
-	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Value = &prob.HTTPGet.HTTPHeaders[i].Value
-	//		}
-	//		CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
-	//	} else {
-	//		return nil, errors.New("not a valid port number for http_get")
-	//	}
-	//
-	//} else if prob.TCPSocket != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "tcpSocket"
-	//	CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
-	//	if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
-	//		CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
-	//		CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
-	//	} else {
-	//		return nil, errors.New("not a valid port number for tcp socket")
-	//	}
-	//
-	//} else {
-	//	return nil, errors.New("no handler found")
-	//}
+	if prob.FailureThreshold > 0 {
+		CpProbe.FailureThreshold = &prob.FailureThreshold
+
+	}
+	if prob.SuccessThreshold > 0 {
+		CpProbe.SuccessThreshold = &prob.SuccessThreshold
+
+	}
+	CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
+	if prob.PeriodSeconds > 0 {
+		CpProbe.PeriodSeconds = &prob.PeriodSeconds
+	}
+	if prob.TimeoutSeconds > 0 {
+		CpProbe.TimeoutSeconds = &prob.TimeoutSeconds
+	}
+
+	if prob.Handler.Exec != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "Exec"
+		CpProbe.Handler.Exec = new(meshTypes.ExecAction)
+		for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+			CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+		}
+	} else if prob.HTTPGet != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "http_get"
+		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
+		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
+			if prob.HTTPGet.Host == "" {
+				CpProbe.Handler.HTTPGet.Host = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
+			}
+			if prob.HTTPGet.Path == "" {
+				CpProbe.Handler.HTTPGet.Path = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+			}
+
+			if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+					scheme := meshTypes.URISchemeHTTP
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+					scheme := meshTypes.URISchemeHTTPS
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				}
+			} else if prob.HTTPGet.Scheme == "" {
+				CpProbe.Handler.HTTPGet.Scheme = nil
+			} else {
+				return nil, errors.New("invalid URI scheme")
+			}
+
+			for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+				var cphttpheader meshTypes.HTTPHeader
+				cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
+				cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
+				CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
+			}
+			CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
+		} else {
+			return nil, errors.New("not a valid port number for http_get")
+		}
+
+	} else if prob.TCPSocket != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "tcpSocket"
+		CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
+		if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
+			CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
+			CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
+		} else {
+			return nil, errors.New("not a valid port number for tcp socket")
+		}
+
+	} else {
+		return nil, errors.New("no handler found")
+	}
 	return CpProbe, nil
 
 }
