@@ -546,7 +546,7 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 	}
 
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			deployment.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -560,7 +560,7 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			deployment.ServiceAttributes.InitContainers = containersList
 		}
@@ -629,7 +629,7 @@ func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
 	}
 
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(service.Spec.Containers, service.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			pod.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -643,7 +643,7 @@ func convertToCPPod(service *v1.Pod) (*meshTypes.PodService, error) {
 		return nil, err
 	}
 
-	if containersList, volumeMounts, err := getCPContainers(service.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.InitContainers, service.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			pod.ServiceAttributes.InitContainers = containersList
 		}
@@ -730,7 +730,7 @@ func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
 
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			daemonSet.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -743,7 +743,7 @@ func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
 	}
 
 	//init containers
-	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			daemonSet.ServiceAttributes.InitContainers = containersList
 		}
@@ -840,7 +840,7 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	}
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			statefulSet.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -853,7 +853,7 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	}
 
 	//init containers
-	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(service.Spec.Template.Spec.InitContainers, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			statefulSet.ServiceAttributes.InitContainers = containersList
 		}
@@ -958,7 +958,7 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(job.Spec.Template.Spec.Containers, job.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			CpJobAttr.Containers = containers
 			volumeMountNames1 = vm
@@ -971,7 +971,7 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	}
 
 	//init containers
-	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(job.Spec.Template.Spec.InitContainers, job.Spec.Template.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			CpJobAttr.InitContainers = containersList
 		}
@@ -1034,7 +1034,7 @@ func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error)
 	cpJob.ServiceAttributes.Annotations = job.Annotations
 
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.Containers); err == nil {
+	if containers, vm, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.Containers, job.Spec.JobTemplate.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			cpJob.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -1047,7 +1047,7 @@ func convertToCPCronJob(job *batchv1.CronJob) (*meshTypes.CronJobService, error)
 	}
 
 	//init containers
-	if containersList, volumeMounts, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.InitContainers); err == nil {
+	if containersList, volumeMounts, err := getCPContainers(job.Spec.JobTemplate.Spec.Template.Spec.InitContainers, job.Spec.JobTemplate.Spec.Template.Spec.Volumes); err == nil {
 		if len(containersList) > 0 {
 			cpJob.ServiceAttributes.InitContainers = containersList
 		}
@@ -1748,13 +1748,15 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*meshTypes.NodeSelector, 
 
 	}
 	return temp, nil
-
 }
 
-func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
+func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
 	volumeMountNames := make(map[string]bool)
 	var containers []*meshTypes.ContainerAttribute
-
+	volumes := make(map[string]v1.Volume)
+	for _, each := range volume {
+		volumes[each.Name] = each
+	}
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
@@ -1818,6 +1820,37 @@ func getCPContainers(conts []v1.Container) ([]*meshTypes.ContainerAttribute, map
 			temp.MountPath = volumeMount.MountPath
 			temp.SubPath = volumeMount.SubPath
 			temp.SubPathExpr = volumeMount.SubPathExpr
+			tempVol, ok := volumes[volumeMount.Name]
+			if !ok {
+				return nil, nil, errors.New(volumeMount.Name + " is not present in pod volume")
+			}
+			if tempVol.ConfigMap != nil {
+				temp.ConfigMap = new(meshTypes.ConfigMapVolumeMount)
+				temp.ConfigMap.ConfigMapName = tempVol.ConfigMap.Name
+				if tempVol.ConfigMap.Optional != nil {
+					temp.ConfigMap.Optional = *tempVol.ConfigMap.Optional
+				}
+				for _, each := range tempVol.ConfigMap.Items {
+					temp.ConfigMap.Items = append(temp.ConfigMap.Items, meshTypes.KeyItems{
+						Key:  each.Key,
+						Path: each.Path,
+					})
+				}
+			} else if tempVol.Secret != nil {
+				temp.ConfigMap = new(meshTypes.ConfigMapVolumeMount)
+				temp.Secret.ConfigMapName = tempVol.Secret.SecretName
+				if tempVol.Secret.Optional != nil {
+					temp.Secret.Optional = *tempVol.Secret.Optional
+				}
+				for _, each := range tempVol.Secret.Items {
+					temp.Secret.Items = append(temp.Secret.Items, meshTypes.KeyItems{
+						Key:  each.Key,
+						Path: each.Path,
+					})
+				}
+			} else {
+				temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
+			}
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {
 					none := meshTypes.MountPropagationNone
