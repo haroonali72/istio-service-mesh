@@ -1849,7 +1849,9 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 					})
 				}
 			} else {
-				temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
+				if tempVol.PersistentVolumeClaim != nil {
+					temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
+				}
 			}
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {
