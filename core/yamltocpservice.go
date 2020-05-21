@@ -1183,6 +1183,13 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes
 	if pvc.Labels["version"] != "" {
 		persistentVolume.Version = pvc.Labels["version"]
 	}
+
+	if pvc.Namespace != "" {
+		persistentVolume.Namespace = pvc.Namespace
+	} else {
+		persistentVolume.Namespace = "default"
+	}
+
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeClaimServiceAttribute)
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
