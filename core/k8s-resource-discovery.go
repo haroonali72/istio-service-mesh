@@ -2830,6 +2830,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -3996,6 +3999,18 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 			}
 			if !isPVCexist {
 				pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, &storageClassTemp.ServiceId)
+				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
+			}
+
+			isPVexist := false
+			for _, serviceId := range storageClassTemp.AfterServices {
+				if *serviceId == pvTemp.ServiceId {
+					isPVexist = true
+					break
+				}
+			}
+			if !isPVexist {
+				pvTemp.BeforeServices = append(pvTemp.BeforeServices, &storageClassTemp.ServiceId)
 				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
 			}
 		}
