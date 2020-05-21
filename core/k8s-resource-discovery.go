@@ -128,6 +128,8 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
 		return &pb.K8SResourceResponse{}, err
+	} else if bytes == nil {
+		return &pb.K8SResourceResponse{}, errors.New("there are no resources found in the given namespace(s)")
 	}
 
 	serviceTemplates = nil
@@ -3801,6 +3803,8 @@ func (conn *GrpcConn) resolveSecretDepency(ctx context.Context, secretname, name
 	if !isAlreadyExist(secretTemp.Namespace, secretTemp.ServiceSubType, secretTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &secretTemp.ServiceId)
 		secretTemp.AfterServices = append(secretTemp.AfterServices, &svcTemp.ServiceId)
+		secretTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, secretTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, secretTemp)
 	} else {
 		isSameService := false
@@ -3875,6 +3879,8 @@ func (conn *GrpcConn) resolveConfigMapDependency(ctx context.Context, configmapn
 	if !isAlreadyExist(configmapTemp.Namespace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &configmapTemp.ServiceId)
 		configmapTemp.AfterServices = append(configmapTemp.AfterServices, &svcTemp.ServiceId)
+		configmapTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, configmapTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, configmapTemp)
 	} else {
 		isSameService := false
@@ -3905,6 +3911,8 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	if !isAlreadyExist(pvcTemp.Namespace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &pvcTemp.ServiceId)
 		pvcTemp.AfterServices = append(pvcTemp.AfterServices, &svcTemp.ServiceId)
+		pvcTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, pvcTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, pvcTemp)
 	} else {
 		service := GetExistingService(pvcTemp.Namespace, pvcTemp.ServiceSubType, pvcTemp.Name)
@@ -3926,6 +3934,8 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &pvTemp.ServiceId)
 		pvTemp.AfterServices = append(pvTemp.AfterServices, &svcTemp.ServiceId)
+		pvTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, pvTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, pvTemp)
 	} else {
 		//adding PV and PVC parameters within K8s CP deployment type
@@ -3950,6 +3960,9 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 			//attaching storage class with PVC
 			pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, &storageClassTemp.ServiceId)
 			storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
+			storageClassTemp.Deleted = true
+			pvcTemp.Embeds = append(pvcTemp.Embeds, storageClassTemp.ServiceId)
+			pvcTemp.IsEmbedded = true
 
 			//attaching storage clase with PV
 			pvTemp.BeforeServices = append(pvTemp.BeforeServices, &storageClassTemp.ServiceId)
