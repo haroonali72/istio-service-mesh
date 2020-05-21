@@ -1949,14 +1949,14 @@ func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 
 	if prob.Handler.Exec != nil {
 		CpProbe.Handler = new(meshTypes.Handler)
-		CpProbe.Handler.Type = "Exec"
+		CpProbe.Handler.Type = "exec"
 		CpProbe.Handler.Exec = new(meshTypes.ExecAction)
 		for i := 0; i < len(prob.Handler.Exec.Command); i++ {
 			CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
 		}
 	} else if prob.HTTPGet != nil {
 		CpProbe.Handler = new(meshTypes.Handler)
-		CpProbe.Handler.Type = "http_get"
+		CpProbe.Handler.Type = "httpGet"
 		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
 		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
 			if prob.HTTPGet.Host == "" {
