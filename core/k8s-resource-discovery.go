@@ -553,6 +553,23 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 		}
 	}
 
+	//finding statefulset PVC template dependency
+	for _, stsPVCtemp := range statefulset.Spec.VolumeClaimTemplates {
+		pvcList, err := conn.getAllPVCs(ctx, namespace)
+		if err != nil {
+			return
+		}
+
+		for _, pvc := range pvcList.Items {
+			if strings.Contains(pvc.Name, stsPVCtemp.Name) {
+				err := conn.resolvePvcDependency(ctx, pvc.Name, namespace, stsTemp)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+
 	//volume dependency finding
 	for _, vol := range statefulset.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -1557,6 +1574,43 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 	}
 
 	return pvc, nil
+}
+
+func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.PersistentVolumeClaimList, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "pvc", "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+
+		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+			ProjectId:    conn.ProjectId,
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		}))
+
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var pvcList *v2.PersistentVolumeClaimList
+	err = json.Unmarshal(response.Resource, &pvcList)
+	if err != nil {
+
+		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+			ProjectId:    conn.ProjectId,
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		}))
+
+		return nil, err
+	}
+
+	return pvcList, nil
 }
 
 func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2.PersistentVolume, error) {
