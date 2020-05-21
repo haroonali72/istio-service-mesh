@@ -1653,7 +1653,13 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 		}
 	}
 
-	return nil, nil
+	utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+		ProjectId:    conn.ProjectId,
+		ServiceType:  string(constants.PersistentVolume),
+		ErrorMessage: "No PV exist against pvc :" + pvcname,
+	}))
+
+	return nil, errors.New("No PV exist against pvc :" + pvcname)
 }
 
 func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace string) (*v2.ConfigMap, error) {
