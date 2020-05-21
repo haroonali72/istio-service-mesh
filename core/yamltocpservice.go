@@ -840,7 +840,7 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	}
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers, service.Spec.Template.Spec.Volumes); err == nil {
+	if containers, vm, err := getCpStsContainers(service.Spec.Template.Spec.Containers, service.Spec.VolumeClaimTemplates); err == nil {
 		if len(containers) > 0 {
 			statefulSet.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -1748,6 +1748,156 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*meshTypes.NodeSelector, 
 
 	}
 	return temp, nil
+}
+
+func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
+	volumeMountNames := make(map[string]bool)
+	var containers []*meshTypes.ContainerAttribute
+	volumes := make(map[string]v1.PersistentVolumeClaim)
+	for _, each := range PVCs {
+		volumes[each.Name] = each
+	}
+	for _, container := range conts {
+		containerTemp := meshTypes.ContainerAttribute{}
+
+		if container.ReadinessProbe != nil {
+			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+				containerTemp.ReadinessProbe = rp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if container.LivenessProbe != nil {
+			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+				containerTemp.LivenessProbe = lp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Limits, true); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Requests, false); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if container.SecurityContext != nil {
+			if context, err := getCPSecurityContext(container.SecurityContext); err == nil {
+				containerTemp.SecurityContext = context
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+		imgInfo := strings.Split(container.Image, ":")
+		if len(imgInfo) == 2 {
+			containerTemp.ImageName = imgInfo[0]
+			if imgInfo[1] != "" {
+				containerTemp.Tag = imgInfo[1]
+			}
+
+		} else {
+			containerTemp.ImageName = container.Image
+		}
+
+		var volumeMounts []meshTypes.VolumeMount
+		for _, volumeMount := range container.VolumeMounts {
+			volumeMountNames[volumeMount.Name] = true
+			temp := meshTypes.VolumeMount{}
+			temp.Name = volumeMount.Name
+			temp.MountPath = volumeMount.MountPath
+			temp.SubPath = volumeMount.SubPath
+			temp.SubPathExpr = volumeMount.SubPathExpr
+			_, ok := volumes[volumeMount.Name]
+			if !ok {
+				return nil, nil, errors.New(volumeMount.Name + " is not present in pod volume")
+			}
+
+			if volumeMount.MountPropagation != nil {
+				if *volumeMount.MountPropagation == v1.MountPropagationNone {
+					none := meshTypes.MountPropagationNone
+					temp.MountPropagation = &none
+				} else if *volumeMount.MountPropagation == v1.MountPropagationBidirectional {
+					bi := meshTypes.MountPropagationBidirectional
+					temp.MountPropagation = &bi
+				} else if *volumeMount.MountPropagation == v1.MountPropagationHostToContainer {
+					cont := meshTypes.MountPropagationHostToContainer
+					temp.MountPropagation = &cont
+				}
+
+			}
+			volumeMounts = append(volumeMounts, temp)
+
+		}
+
+		ports := make(map[string]meshTypes.ContainerPort)
+		for _, port := range container.Ports {
+			temp := meshTypes.ContainerPort{}
+			if port.ContainerPort == 0 && port.HostPort != 0 {
+				port.ContainerPort = port.HostPort
+			}
+
+			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
+				temp.ContainerPort = port.ContainerPort
+			} else {
+				utils.Info.Println("invalid port number")
+				continue
+			}
+			if port.HostPort != 0 {
+				if port.HostPort > 0 && port.HostPort < 65536 {
+					temp.HostPort = port.HostPort
+				} else {
+					utils.Info.Println("invalid port number")
+					continue
+				}
+
+			}
+			ports[port.Name] = temp
+		}
+
+		environmentVariables := make(map[string]meshTypes.EnvironmentVariable)
+		for _, envVariable := range container.Env {
+			tempEnvVariable := meshTypes.EnvironmentVariable{}
+			if envVariable.ValueFrom != nil {
+				if envVariable.ValueFrom.ConfigMapKeyRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.ConfigMapKeyRef.Name + ":" + envVariable.ValueFrom.ConfigMapKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.ConfigMap)
+					tempEnvVariable.Dynamic = true
+				} else if envVariable.ValueFrom.SecretKeyRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.SecretKeyRef.Name + ":" + envVariable.ValueFrom.SecretKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.Secret)
+					tempEnvVariable.Dynamic = true
+				}
+				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
+			} else {
+				tempEnvVariable.Key = envVariable.Name
+				tempEnvVariable.Value = envVariable.Value
+				environmentVariables[tempEnvVariable.Key] = tempEnvVariable
+			}
+
+		}
+
+		containerTemp.Ports = ports
+		containerTemp.EnvironmentVariables = environmentVariables
+		containerTemp.VolumeMounts = volumeMounts
+
+		containers = append(containers, &containerTemp)
+	}
+	return containers, volumeMountNames, nil
 }
 
 func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {

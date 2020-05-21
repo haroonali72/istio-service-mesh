@@ -121,8 +121,10 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 		}
 		//jobs
 	}
-
 	wg.Wait()
+
+	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
+
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
 		return &pb.K8SResourceResponse{}, err
@@ -161,13 +163,11 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	namespace := job.Namespace
 	if job.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := job.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, jobTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -278,13 +278,11 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	namespace := cronjob.Namespace
 	if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, cronjobTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -411,13 +409,11 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	namespace := daemonset.Namespace
 	if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := daemonset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, daemonsetTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -512,13 +508,11 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	namespace := statefulset.Namespace
 	if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := statefulset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, stsTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 
 	}
 
@@ -650,13 +644,11 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 	if dep.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := dep.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, depTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 
 	}
 
@@ -3577,6 +3569,9 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 						}
 					}
 					if !isSameService {
+						//in case if there are multuple deployments attached with same kubernetes service
+						addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					}
@@ -3775,6 +3770,8 @@ func (conn *GrpcConn) resolveSecretDepency(ctx context.Context, secretname, name
 }
 
 func (conn *GrpcConn) resolveRbacDecpendency(ctx context.Context, svcAccName, namespace string, svcTemp *svcTypes.ServiceTemplate) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 	svcaccount, err := conn.getSvcAccount(ctx, svcAccName, namespace)
 	if err != nil {
 		return err
