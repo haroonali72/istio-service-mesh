@@ -1653,7 +1653,13 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 		}
 	}
 
-	return nil, nil
+	utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+		ProjectId:    conn.ProjectId,
+		ServiceType:  string(constants.PersistentVolume),
+		ErrorMessage: "No PV exist against pvc :" + pvcname,
+	}))
+
+	return nil, errors.New("No PV exist against pvc :" + pvcname)
 }
 
 func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace string) (*v2.ConfigMap, error) {
@@ -1965,7 +1971,18 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.IsDiscovered = true
 		addVersion(template)
 	case constants.Job:
-		CpJob, err := convertToCPJob(data.(*batch.Job))
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var job batch.Job
+		err = json.Unmarshal(bytes, &job)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpJob, err := convertToCPJob(&job)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
@@ -1979,7 +1996,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			return nil, err
 		}
-		bytes, err := json.Marshal(CpJob)
+		bytes, err = json.Marshal(CpJob)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
@@ -2813,6 +2830,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -3979,6 +3999,18 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 			}
 			if !isPVCexist {
 				pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, &storageClassTemp.ServiceId)
+				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
+			}
+
+			isPVexist := false
+			for _, serviceId := range storageClassTemp.AfterServices {
+				if *serviceId == pvTemp.ServiceId {
+					isPVexist = true
+					break
+				}
+			}
+			if !isPVexist {
+				pvTemp.BeforeServices = append(pvTemp.BeforeServices, &storageClassTemp.ServiceId)
 				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
 			}
 		}

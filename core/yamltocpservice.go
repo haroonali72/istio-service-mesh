@@ -1183,6 +1183,13 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes
 	if pvc.Labels["version"] != "" {
 		persistentVolume.Version = pvc.Labels["version"]
 	}
+
+	if pvc.Namespace != "" {
+		persistentVolume.Namespace = pvc.Namespace
+	} else {
+		persistentVolume.Namespace = "default"
+	}
+
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeClaimServiceAttribute)
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
@@ -1645,7 +1652,7 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 				cpPort.TargetPort.PortNumber = each.TargetPort.IntVal
 			}
 		} else {
-			service.ServiceAttributes.ClusterIP = ""
+			service.ServiceAttributes.ClusterIP = "None"
 		}
 		cpPort.Protocol = string(each.Protocol)
 		if each.NodePort != 0 {
