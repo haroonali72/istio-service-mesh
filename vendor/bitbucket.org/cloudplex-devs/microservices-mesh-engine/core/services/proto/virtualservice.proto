@@ -50,6 +50,7 @@ message HttpMatchRequest {
     HttpMatch                   scheme				=3;
     HttpMatch                   method				=4;
     HttpMatch                   authority 			=5;
+    map<string, HttpMatch>      headers             =6;
 }
 message  HttpMatch {
     string                      type				=1;
