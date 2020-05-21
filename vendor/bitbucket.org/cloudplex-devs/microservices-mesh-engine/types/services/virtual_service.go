@@ -139,6 +139,16 @@ type HttpMatchRequest struct {
 	// - regex: "value" for ECMAscript style regex-based match
 	// +optional
 	Authority *HttpMatch `json:"authority,omitempty" bson:"authority,omitempty"`
+	// URI to match
+	// values are case-sensitive and formatted as follows:
+	//
+	// - exact: "value" for exact string match
+	//
+	// - prefix: "value" for prefix-based match
+	//
+	// - regex: "value" for ECMAscript style regex-based match
+	// +optional
+	Headers map[string]*HttpMatch `json:"headers,omitempty" bson:"headers,omitempty"`
 }
 
 type HttpMatch struct {

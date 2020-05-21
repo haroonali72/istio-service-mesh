@@ -2571,60 +2571,78 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			m.Name = match.Name
 			if match.Uri != nil {
 				m.Uri = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Uri.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Uri.GetPrefix() != "" {
 					m.Uri.Type = "prefix"
-					m.Uri.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Uri.Value = match.Uri.GetPrefix()
+				} else if match.Uri.GetExact() != "" {
 					m.Uri.Type = "exact"
-					m.Uri.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Uri.Value = match.Uri.GetExact()
+				} else if match.Uri.GetRegex() != "" {
 					m.Uri.Type = "regex"
-					m.Uri.Value = matchArray[1]
+					m.Uri.Value = match.Uri.GetRegex()
 				}
 			}
 			if match.Scheme != nil {
 				m.Scheme = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Scheme.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Scheme.GetPrefix() != "" {
 					m.Scheme.Type = "prefix"
-					m.Scheme.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Scheme.Value = match.Scheme.GetPrefix()
+				} else if match.Scheme.GetExact() != "" {
 					m.Scheme.Type = "exact"
-					m.Scheme.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Scheme.Value = match.Scheme.GetExact()
+				} else if match.Scheme.GetRegex() != "" {
 					m.Scheme.Type = "regex"
-					m.Scheme.Value = matchArray[1]
+					m.Scheme.Value = match.Scheme.GetRegex()
 				}
 			}
 			if match.Method != nil {
 				m.Method = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Method.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Method.GetPrefix() != "" {
 					m.Method.Type = "prefix"
-					m.Method.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Method.Value = match.Method.GetPrefix()
+				} else if match.Method.GetExact() != "" {
 					m.Method.Type = "exact"
-					m.Method.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Method.Value = match.Method.GetExact()
+				} else if match.Method.GetRegex() != "" {
 					m.Method.Type = "regex"
-					m.Method.Value = matchArray[1]
+					m.Method.Value = match.Method.GetRegex()
 				}
 			}
 			if match.Authority != nil {
 				m.Authority = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Authority.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Authority.GetPrefix() != "" {
 					m.Authority.Type = "prefix"
-					m.Authority.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Authority.Value = match.Authority.GetPrefix()
+				} else if match.Authority.GetExact() != "" {
 					m.Authority.Type = "exact"
-					m.Authority.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Authority.Value = match.Authority.GetExact()
+				} else if match.Authority.GetRegex() != "" {
 					m.Authority.Type = "regex"
-					m.Authority.Value = matchArray[1]
+					m.Authority.Value = match.Authority.GetRegex()
 				}
 			}
+			if match.Headers != nil {
+				m.Headers = make(map[string]*meshTypes.HttpMatch)
+				for key, value := range match.Headers {
+
+					tempHttpMatch := new(meshTypes.HttpMatch)
+					fmt.Println(value.GetExact())
+					if value.GetPrefix() != "" {
+						tempHttpMatch.Type = "prefix"
+						tempHttpMatch.Value = value.GetPrefix()
+					} else if value.GetExact() != "" {
+						tempHttpMatch.Type = "exact"
+						tempHttpMatch.Value = value.GetExact()
+					} else if value.GetRegex() != "" {
+						tempHttpMatch.Type = "regex"
+						tempHttpMatch.Value = value.GetRegex()
+					}
+
+					m.Headers[key] = tempHttpMatch
+				}
+
+			}
+
 			vSer.HttpMatch = append(vSer.HttpMatch, m)
 		}
 
@@ -2662,10 +2680,10 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 		if http.Fault != nil {
 			vSer.FaultInjection = new(meshTypes.HttpFaultInjection)
 			if http.Fault.GetDelay() != nil {
-				if http.Fault.GetDelay().String() == "FixedDelay" {
+				if http.Fault.GetDelay().GetFixedDelay() != nil {
 					vSer.FaultInjection.DelayType = "FixedDelay"
 					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetFixedDelay().Seconds)
-				} else if http.Fault.GetDelay().String() == "ExponentialDelay" {
+				} else if http.Fault.GetDelay().GetExponentialDelay() != nil {
 					vSer.FaultInjection.DelayType = "ExponentialDelay"
 					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetExponentialDelay().Seconds)
 					vSer.FaultInjection.FaultPercentage = float32(http.Fault.Delay.GetPercentage().Value)
