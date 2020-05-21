@@ -1965,7 +1965,18 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.IsDiscovered = true
 		addVersion(template)
 	case constants.Job:
-		CpJob, err := convertToCPJob(data.(*batch.Job))
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var job batch.Job
+		err = json.Unmarshal(bytes, &job)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpJob, err := convertToCPJob(&job)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
@@ -1979,7 +1990,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			return nil, err
 		}
-		bytes, err := json.Marshal(CpJob)
+		bytes, err = json.Marshal(CpJob)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
