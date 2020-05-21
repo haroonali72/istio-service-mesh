@@ -121,8 +121,10 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 		}
 		//jobs
 	}
-
 	wg.Wait()
+
+	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
+
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
 		return &pb.K8SResourceResponse{}, err
@@ -3565,6 +3567,9 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 						}
 					}
 					if !isSameService {
+						//in case if there are multuple deployments attached with same kubernetes service
+						addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					}
