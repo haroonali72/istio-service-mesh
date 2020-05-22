@@ -295,12 +295,10 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 			reqsub.Kind = subject.Kind
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
-			} else {
-				return nil, errors.New("can not find name space for service account" + reqsub.Name)
 			}
 
 		} else {
-			return nil, errors.New("can not find name space for service account" + reqsub.Name)
+			return nil, errors.New("not a valid kind of subject " + reqsub.Name)
 		}
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}

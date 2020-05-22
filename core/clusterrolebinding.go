@@ -273,12 +273,10 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 			reqsub.Kind = constants.ServiceAccount.String()
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
-			} else {
-				return nil, errors.New("can not find namespace for service account" + reqsub.Name)
 			}
 
 		} else {
-			return nil, errors.New("can not find namespace for service account" + reqsub.Name)
+			return nil, errors.New("not a valid kind of subject " + reqsub.Name)
 		}
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
