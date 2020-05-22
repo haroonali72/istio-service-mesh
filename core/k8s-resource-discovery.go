@@ -111,11 +111,11 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 		//cronjobs
 
 		//jobs
-		JobList, err := grpcConn.getAllJobs(ctx, namespace)
+		JobList, err := grpcConn.getAllJobs(ctx, namespace, cronJobList)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
-		err = grpcConn.jobK8sToCp(ctx, JobList.Items, &wg)
+		err = grpcConn.jobK8sToCp(ctx, JobList, &wg)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
@@ -1294,7 +1294,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 	return deploymentList, nil
 }
 
-func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string) (*batch.JobList, error) {
+func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobList *v1beta1.CronJobList) ([]batch.Job, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
 		ProjectId: conn.ProjectId,
 		CompanyId: conn.CompanyId,
@@ -1328,7 +1328,16 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string) (*batch.
 		return nil, err
 	}
 
-	return jobList, nil
+	var jobs []batch.Job
+	for _, cronjob := range cronjobList.Items {
+		for _, job := range jobList.Items {
+			if !strings.Contains(job.Name, cronjob.Name) {
+				jobs = append(jobs, job)
+			}
+		}
+	}
+
+	return jobs, nil
 }
 
 func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autoscale.HorizontalPodAutoscalerList, error) {
