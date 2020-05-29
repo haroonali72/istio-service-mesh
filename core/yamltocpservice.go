@@ -2820,7 +2820,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie = new(meshTypes.HttpCookie)
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Name = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Path = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
-					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = int64(input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds())
 
 				} else if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp() == true {
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HTTPHeaderName = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
@@ -2834,7 +2834,8 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 			if input.Spec.TrafficPolicy.ConnectionPool.Tcp != nil {
 				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp = new(meshTypes.DrTcp)
 				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout != nil {
-					timeout := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+
+					timeout := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.GetNanos())
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &timeout
 				}
 
@@ -2842,13 +2843,13 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-						keepAlive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+						keepAlive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &keepAlive
 					}
 
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes
 					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-						timealive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+						timealive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &timealive
 					}
 
@@ -2913,11 +2914,11 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					if port.ConnectionPool.Tcp.TcpKeepalive != nil {
 						setting.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 						if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-							t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 							setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 						}
 						if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-							interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+							interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 							setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
 						}
 
@@ -3020,11 +3021,11 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 						if port.ConnectionPool.Tcp.TcpKeepalive != nil {
 							setting.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 							if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-								t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+								t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 								setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 							}
 							if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-								interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+								interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 								setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
 							}
 
@@ -3132,7 +3133,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
 						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-							t := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							t := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 							ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 						}
 						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
