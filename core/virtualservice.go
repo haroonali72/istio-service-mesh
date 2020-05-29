@@ -272,19 +272,19 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			m := &v1alpha3.HTTPMatchRequest{}
 			m.Name = match.Name
 			if match.Uri != nil {
-				if match.Uri.Type == "Prefix" {
+				if match.Uri.Type == "prefix" {
 					m.Uri = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Prefix{
 							Prefix: match.Uri.Value,
 						},
 					}
-				} else if match.Uri.Type == "Exact" {
+				} else if match.Uri.Type == "exact" {
 					m.Uri = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Exact{
 							Exact: match.Uri.Value,
 						},
 					}
-				} else if match.Uri.Type == "Regex" {
+				} else if match.Uri.Type == "regex" {
 					m.Uri = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Regex{
 							Regex: match.Uri.Value,
@@ -293,19 +293,19 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				}
 			}
 			if match.Scheme != nil {
-				if match.Scheme.Type == "Prefix" {
+				if match.Scheme.Type == "prefix" {
 					m.Scheme = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Prefix{
 							Prefix: match.Scheme.Value,
 						},
 					}
-				} else if match.Scheme.Type == "Exact" {
+				} else if match.Scheme.Type == "exact" {
 					m.Scheme = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Exact{
 							Exact: match.Scheme.Value,
 						},
 					}
-				} else if match.Scheme.Type == "Regex" {
+				} else if match.Scheme.Type == "regex" {
 					m.Scheme = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Regex{
 							Regex: match.Scheme.Value,
@@ -314,19 +314,19 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				}
 			}
 			if match.Method != nil {
-				if match.Method.Type == "Prefix" {
+				if match.Method.Type == "prefix" {
 					m.Method = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Prefix{
 							Prefix: match.Method.Value,
 						},
 					}
-				} else if match.Method.Type == "Exact" {
+				} else if match.Method.Type == "exact" {
 					m.Method = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Exact{
 							Exact: match.Method.Value,
 						},
 					}
-				} else if match.Method.Type == "Regex" {
+				} else if match.Method.Type == "regex" {
 					m.Method = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Regex{
 							Regex: match.Method.Value,
@@ -335,23 +335,49 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				}
 			}
 			if match.Authority != nil {
-				if match.Authority.Type == "Prefix" {
+				if match.Authority.Type == "prefix" {
 					m.Authority = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Prefix{
 							Prefix: match.Authority.Value,
 						},
 					}
-				} else if match.Authority.Type == "Exact" {
+				} else if match.Authority.Type == "exact" {
 					m.Authority = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Exact{
 							Exact: match.Authority.Value,
 						},
 					}
-				} else if match.Authority.Type == "Regex" {
+				} else if match.Authority.Type == "regex" {
 					m.Authority = &v1alpha3.StringMatch{
 						MatchType: &v1alpha3.StringMatch_Regex{
 							Regex: match.Authority.Value,
 						},
+					}
+				}
+			} else if match.Headers != nil {
+				for key, value := range match.Headers {
+					if value.Type == "prefix" {
+						m.Headers = make(map[string]*v1alpha3.StringMatch)
+						m.Headers[key] = &v1alpha3.StringMatch{
+							MatchType: &v1alpha3.StringMatch_Prefix{
+								Prefix: value.Value,
+							},
+						}
+					} else if value.Type == "exact" {
+						m.Headers = make(map[string]*v1alpha3.StringMatch)
+						m.Headers[key] = &v1alpha3.StringMatch{
+							MatchType: &v1alpha3.StringMatch_Exact{
+								Exact: value.Value,
+							},
+						}
+
+					} else if value.Type == "regex" {
+						m.Headers = make(map[string]*v1alpha3.StringMatch)
+						m.Headers[key] = &v1alpha3.StringMatch{
+							MatchType: &v1alpha3.StringMatch_Regex{
+								Regex: value.Value,
+							},
+						}
 					}
 				}
 			}
@@ -393,14 +419,14 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
-						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+						FixedDelay: &types.Duration{Seconds: int64(http.FaultInjection.DelayValue)},
 					},
 				}
 			} else if http.FaultInjection.DelayType == "ExponentialDelay" {
 				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
-						FixedDelay: &types.Duration{Nanos: http.FaultInjection.DelayValue},
+						FixedDelay: &types.Duration{Seconds: int64(http.FaultInjection.DelayValue)},
 					},
 					Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
 				}
