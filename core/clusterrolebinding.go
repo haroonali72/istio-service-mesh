@@ -269,7 +269,7 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == meshConstants.ServiceAccount.String() {
+		} else if subject.Kind == constants.ServiceAccount.String() {
 			reqsub.Kind = constants.ServiceAccount.String()
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
