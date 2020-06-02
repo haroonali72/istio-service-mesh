@@ -421,6 +421,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
 						FixedDelay: &types.Duration{Seconds: int64(http.FaultInjection.DelayValue)},
 					},
+					Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
 				}
 			} else if http.FaultInjection.DelayType == "ExponentialDelay" {
 				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
