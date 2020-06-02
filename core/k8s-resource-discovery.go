@@ -229,6 +229,10 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(jobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(jobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -343,6 +347,10 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(cronjobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(cronjobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -459,6 +467,10 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(daemonsetTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(daemonsetTemp)
 		}
 
 		if vol.Projected != nil {
@@ -592,6 +604,10 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(stsTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(stsTemp)
 		}
 
 		if vol.Projected != nil {
