@@ -582,6 +582,9 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 				}
 			}
 		}
+
+		//removing PVC template within statefulset according to CP structure
+		removeStsPvcTemplate(stsTemp)
 	}
 
 	//volume dependency finding
@@ -2154,6 +2157,16 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			template.Replicas = int(replicas.(float64))
 		}
 		id := strconv.Itoa(rand.Int())
+		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
+			template.Replicas = int(replicas.(float64))
+		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if _, ok := svcAttr["update_Strategy"]; ok {
+			svcAttr["update_Strategy"] = struct{}{}
+		}
+
+		template.ServiceAttributes = svcAttr
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
@@ -3872,6 +3885,13 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 	}
 
 	svcTemp.ServiceAttributes = svcAttr
+}
+
+func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
+	if _, ok := svcAttr["volume_claim_templates"]; ok {
+		delete(svcAttr, "volume_claim_templates")
+	}
 }
 
 func (conn *GrpcConn) resolveHpaDependency(svcTemp *svcTypes.ServiceTemplate, hpa autoscale.HorizontalPodAutoscaler) error {
