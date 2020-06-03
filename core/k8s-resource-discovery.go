@@ -570,6 +570,9 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 				}
 			}
 		}
+
+		//removing PVC template within statefulset according to CP structure
+		removeStsPvcTemplate(stsTemp)
 	}
 
 	//volume dependency finding
@@ -2132,6 +2135,11 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
 			template.Replicas = int(replicas.(float64))
+		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if _, ok := svcAttr["update_Strategy"]; ok {
+			svcAttr["update_Strategy"] = struct{}{}
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
@@ -4048,4 +4056,11 @@ func RandStringBytes(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
+	if _, ok := svcAttr["volume_claim_templates"]; ok {
+		delete(svcAttr, "volume_claim_templates")
+	}
 }
