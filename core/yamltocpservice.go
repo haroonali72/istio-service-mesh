@@ -2540,6 +2540,12 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]meshTyp
 				if *volume.VolumeSource.HostPath.Type == v1.HostPathUnset {
 					hostPathType := meshTypes.HostPathUnset
 					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathDirectoryOrCreate {
+					hostPathType := meshTypes.HostPathDirectoryOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathFileOrCreate {
+					hostPathType := meshTypes.HostPathFileOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
 				}
 			}
 
