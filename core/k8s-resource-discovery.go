@@ -2156,17 +2156,13 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
 			template.Replicas = int(replicas.(float64))
 		}
-		id := strconv.Itoa(rand.Int())
-		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
-			template.Replicas = int(replicas.(float64))
-		}
 
 		svcAttr := template.ServiceAttributes.(map[string]interface{})
 		if _, ok := svcAttr["update_Strategy"]; ok {
 			svcAttr["update_Strategy"] = struct{}{}
 		}
 
-		template.ServiceAttributes = svcAttr
+		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
