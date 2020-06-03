@@ -2879,13 +2879,13 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 		if input.Spec.TrafficPolicy.OutlierDetection != nil {
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection = new(meshTypes.OutlierDetection)
 			if input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime != nil {
-				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.Nanos)
+				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.BaseEjectionTime = &injecTime
 			}
 
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.Spec.TrafficPolicy.OutlierDetection.ConsecutiveErrors
 			if input.Spec.TrafficPolicy.OutlierDetection.Interval != nil {
-				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.Nanos)
+				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.Interval = &interval
 			}
 

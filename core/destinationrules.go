@@ -325,7 +325,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 				vService.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy = v1alpha3.ConnectionPoolSettings_HTTPSettings_H2UpgradePolicy(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.ConnectionPoolSettingsHttpSettingsH2UpgradePolicy)
 				vService.TrafficPolicy.ConnectionPool.Http.Http1MaxPendingRequests = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.Http_1MaxPendingRequests
 				vService.TrafficPolicy.ConnectionPool.Http.Http2MaxRequests = int32(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.GetHttp_2MaxRequests())
-				vService.TrafficPolicy.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout}
+				if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout > 0 {
+					vService.TrafficPolicy.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout}
+				}
 				vService.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.MaxRequestsPerConnection
 				vService.TrafficPolicy.ConnectionPool.Http.MaxRetries = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.MaxRetries
 			}
@@ -333,9 +335,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 		}
 		if input.ServiceAttribute.TrafficPolicy.OutlierDetection != nil {
 			vService.TrafficPolicy.OutlierDetection = &v1alpha3.OutlierDetection{}
-			vService.TrafficPolicy.OutlierDetection.BaseEjectionTime = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.OutlierDetection.BaseEjectionTime}
+			vService.TrafficPolicy.OutlierDetection.BaseEjectionTime = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.OutlierDetection.BaseEjectionTime)}
 			vService.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.ServiceAttribute.TrafficPolicy.OutlierDetection.ConsecutiveErrors
-			vService.TrafficPolicy.OutlierDetection.Interval = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.OutlierDetection.Interval}
+			vService.TrafficPolicy.OutlierDetection.Interval = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.OutlierDetection.Interval)}
 			vService.TrafficPolicy.OutlierDetection.MaxEjectionPercent = input.ServiceAttribute.TrafficPolicy.OutlierDetection.MaxEjectionPercent
 			vService.TrafficPolicy.OutlierDetection.MinHealthPercent = input.ServiceAttribute.TrafficPolicy.OutlierDetection.MinHealthPercent
 		}
