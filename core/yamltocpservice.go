@@ -2727,6 +2727,14 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			vSer.CorsPolicy.MaxAge = time.Duration(http.CorsPolicy.MaxAge.Seconds)
 			vSer.CorsPolicy.AllowCredentials = http.CorsPolicy.AllowCredentials.Value
 		}
+		if http.Retries != nil {
+			vSer.Retry = new(meshTypes.HttpRetry)
+			vSer.Retry.TotalAttempts = http.Retries.Attempts
+			if http.Retries.PerTryTimeout != nil {
+				vSer.Retry.PerTryTimeOut = http.Retries.PerTryTimeout.Seconds
+			}
+			vSer.Retry.RetryOn = http.Retries.RetryOn
+		}
 
 		vServ.ServiceAttributes.Http = append(vServ.ServiceAttributes.Http, vSer)
 	}
