@@ -2540,6 +2540,12 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]meshTyp
 				if *volume.VolumeSource.HostPath.Type == v1.HostPathUnset {
 					hostPathType := meshTypes.HostPathUnset
 					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathDirectoryOrCreate {
+					hostPathType := meshTypes.HostPathDirectoryOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathFileOrCreate {
+					hostPathType := meshTypes.HostPathFileOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
 				}
 			}
 
@@ -2721,6 +2727,14 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			vSer.CorsPolicy.MaxAge = time.Duration(http.CorsPolicy.MaxAge.Seconds)
 			vSer.CorsPolicy.AllowCredentials = http.CorsPolicy.AllowCredentials.Value
 		}
+		if http.Retries != nil {
+			vSer.Retry = new(meshTypes.HttpRetry)
+			vSer.Retry.TotalAttempts = http.Retries.Attempts
+			if http.Retries.PerTryTimeout != nil {
+				vSer.Retry.PerTryTimeOut = http.Retries.PerTryTimeout.Seconds
+			}
+			vSer.Retry.RetryOn = http.Retries.RetryOn
+		}
 
 		vServ.ServiceAttributes.Http = append(vServ.ServiceAttributes.Http, vSer)
 	}
@@ -2879,13 +2893,13 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 		if input.Spec.TrafficPolicy.OutlierDetection != nil {
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection = new(meshTypes.OutlierDetection)
 			if input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime != nil {
-				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.Nanos)
+				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.BaseEjectionTime = &injecTime
 			}
 
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.Spec.TrafficPolicy.OutlierDetection.ConsecutiveErrors
 			if input.Spec.TrafficPolicy.OutlierDetection.Interval != nil {
-				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.Nanos)
+				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.Interval = &interval
 			}
 
