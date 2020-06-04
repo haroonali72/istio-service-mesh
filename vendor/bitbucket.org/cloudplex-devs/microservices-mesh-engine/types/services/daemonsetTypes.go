@@ -15,7 +15,7 @@ import (
 //CreationDate      time.Time                  `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type DaemonSetService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *DaemonSetServiceAttribute `json:"service_attributes,omitempty"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *DaemonSetServiceAttribute `json:"service_attributes,omitempty"  bson:"company_id" binding:"required"`
 }
 type DaemonSetServiceAttribute struct {
 	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`

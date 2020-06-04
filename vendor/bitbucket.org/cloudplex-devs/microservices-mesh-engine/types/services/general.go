@@ -395,18 +395,6 @@ type VolumeMount struct {
 	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name,omitempty"`
 	ConfigMap        *ConfigMapVolumeMount `json:"configmap,omitempty"`
 	Secret           *ConfigMapVolumeMount `json:"secrets,omitempty"`
-	HostPath         *HostPathVolumeMount  `json:"hostpath" bson:"hostpath"`
-	EmptyDir         *EmptyDirVolumeMount  `json:"empty_dir" bson:"empty_dir"`
-}
-
-type EmptyDirVolumeMount struct {
-	EmptyDirName string `json:"name" bson:"name" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed"`
-}
-
-type HostPathVolumeMount struct {
-	HostPathName string        `json:"name" bson:"name" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed"`
-	DirType      *HostPathType `json:"type,omitempty" bson:"type,omitempty" swaggerType:"string" jsonschema:"enum=DirectoryOrCreate,enum=FileOrCreate"`
-	Path         string        `json:"path,omitempty" bson:"path,omitempty"`
 }
 
 type ConfigMapVolumeMount struct {

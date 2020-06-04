@@ -7,7 +7,7 @@ message Volume {
 
 }
 message VolumeSource {
-    HostPathVolumeSource host_path = 1;
+    HostPathVolumeSource hostPath = 1;
     EmptyDirVolumeSource empty_dir = 2;
     GCEPersistentDiskVolumeSource gce_persistent_disk= 3;
     SecretVolumeSource secret = 4;
