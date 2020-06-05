@@ -258,7 +258,7 @@ func getHpa(input *pb.HPA) (*autoscaler.HorizontalPodAutoscaler, error) {
 	}
 	hpaSvc.Name = input.Name
 	hpaSvc.Labels = labels
-	if hpaSvc.Namespace != "" {
+	if input.Namespace != "" {
 		hpaSvc.Namespace = input.Namespace
 	}
 	if input.ServiceAttributes.CrossObjectVersion.Type == "Deployment" {
