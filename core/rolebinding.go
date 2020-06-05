@@ -279,6 +279,9 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	}
 	roleBind.Kind = constants.RoleBinding.String() //"RoleBinding"
 	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
+	if input.Namespace != "" {
+		roleBind.Namespace = input.Namespace
+	}
 
 	roleBind.Labels = labels
 	for _, subject := range input.ServiceAttributes.Subjects {
