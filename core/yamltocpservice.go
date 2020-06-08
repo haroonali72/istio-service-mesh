@@ -840,7 +840,7 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	}
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCPContainers(service.Spec.Template.Spec.Containers, service.Spec.Template.Spec.Volumes); err == nil {
+	if containers, vm, err := getCpStsContainers(service.Spec.Template.Spec.Containers, service.Spec.VolumeClaimTemplates); err == nil {
 		if len(containers) > 0 {
 			statefulSet.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -1183,6 +1183,13 @@ func convertToCPPersistentVolumeClaim(pvc *v1.PersistentVolumeClaim) (*meshTypes
 	if pvc.Labels["version"] != "" {
 		persistentVolume.Version = pvc.Labels["version"]
 	}
+
+	if pvc.Namespace != "" {
+		persistentVolume.Namespace = pvc.Namespace
+	} else {
+		persistentVolume.Namespace = "default"
+	}
+
 	persistentVolume.ServiceAttributes = new(meshTypes.PersistentVolumeClaimServiceAttribute)
 	if pvc.Spec.StorageClassName != nil {
 		persistentVolume.ServiceAttributes.StorageClassName = *pvc.Spec.StorageClassName
@@ -1645,7 +1652,7 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 				cpPort.TargetPort.PortNumber = each.TargetPort.IntVal
 			}
 		} else {
-			service.ServiceAttributes.ClusterIP = ""
+			service.ServiceAttributes.ClusterIP = "None"
 		}
 		cpPort.Protocol = string(each.Protocol)
 		if each.NodePort != 0 {
@@ -1750,6 +1757,156 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*meshTypes.NodeSelector, 
 	return temp, nil
 }
 
+func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
+	volumeMountNames := make(map[string]bool)
+	var containers []*meshTypes.ContainerAttribute
+	volumes := make(map[string]v1.PersistentVolumeClaim)
+	for _, each := range PVCs {
+		volumes[each.Name] = each
+	}
+	for _, container := range conts {
+		containerTemp := meshTypes.ContainerAttribute{}
+
+		if container.ReadinessProbe != nil {
+			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+				containerTemp.ReadinessProbe = rp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if container.LivenessProbe != nil {
+			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+				containerTemp.LivenessProbe = lp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Limits, true); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if err := putCPResource(&containerTemp, container.Resources.Requests, false); err != nil {
+			utils.Info.Println(err)
+			return nil, nil, err
+		}
+
+		if container.SecurityContext != nil {
+			if context, err := getCPSecurityContext(container.SecurityContext); err == nil {
+				containerTemp.SecurityContext = context
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+		imgInfo := strings.Split(container.Image, ":")
+		if len(imgInfo) == 2 {
+			containerTemp.ImageName = imgInfo[0]
+			if imgInfo[1] != "" {
+				containerTemp.Tag = imgInfo[1]
+			}
+
+		} else {
+			containerTemp.ImageName = container.Image
+		}
+
+		var volumeMounts []meshTypes.VolumeMount
+		for _, volumeMount := range container.VolumeMounts {
+			volumeMountNames[volumeMount.Name] = true
+			temp := meshTypes.VolumeMount{}
+			temp.Name = volumeMount.Name
+			temp.MountPath = volumeMount.MountPath
+			temp.SubPath = volumeMount.SubPath
+			temp.SubPathExpr = volumeMount.SubPathExpr
+			_, ok := volumes[volumeMount.Name]
+			if !ok {
+				return nil, nil, errors.New(volumeMount.Name + " is not present in pod volume")
+			}
+
+			if volumeMount.MountPropagation != nil {
+				if *volumeMount.MountPropagation == v1.MountPropagationNone {
+					none := meshTypes.MountPropagationNone
+					temp.MountPropagation = &none
+				} else if *volumeMount.MountPropagation == v1.MountPropagationBidirectional {
+					bi := meshTypes.MountPropagationBidirectional
+					temp.MountPropagation = &bi
+				} else if *volumeMount.MountPropagation == v1.MountPropagationHostToContainer {
+					cont := meshTypes.MountPropagationHostToContainer
+					temp.MountPropagation = &cont
+				}
+
+			}
+			volumeMounts = append(volumeMounts, temp)
+
+		}
+
+		ports := make(map[string]meshTypes.ContainerPort)
+		for _, port := range container.Ports {
+			temp := meshTypes.ContainerPort{}
+			if port.ContainerPort == 0 && port.HostPort != 0 {
+				port.ContainerPort = port.HostPort
+			}
+
+			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
+				temp.ContainerPort = port.ContainerPort
+			} else {
+				utils.Info.Println("invalid port number")
+				continue
+			}
+			if port.HostPort != 0 {
+				if port.HostPort > 0 && port.HostPort < 65536 {
+					temp.HostPort = port.HostPort
+				} else {
+					utils.Info.Println("invalid port number")
+					continue
+				}
+
+			}
+			ports[port.Name] = temp
+		}
+
+		environmentVariables := make(map[string]meshTypes.EnvironmentVariable)
+		for _, envVariable := range container.Env {
+			tempEnvVariable := meshTypes.EnvironmentVariable{}
+			if envVariable.ValueFrom != nil {
+				if envVariable.ValueFrom.ConfigMapKeyRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.ConfigMapKeyRef.Name + ":" + envVariable.ValueFrom.ConfigMapKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.ConfigMap)
+					tempEnvVariable.Dynamic = true
+				} else if envVariable.ValueFrom.SecretKeyRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.SecretKeyRef.Name + ":" + envVariable.ValueFrom.SecretKeyRef.Key + "}}"
+					tempEnvVariable.Type = string(meshConstants.Secret)
+					tempEnvVariable.Dynamic = true
+				}
+				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
+			} else {
+				tempEnvVariable.Key = envVariable.Name
+				tempEnvVariable.Value = envVariable.Value
+				environmentVariables[tempEnvVariable.Key] = tempEnvVariable
+			}
+
+		}
+
+		containerTemp.Ports = ports
+		containerTemp.EnvironmentVariables = environmentVariables
+		containerTemp.VolumeMounts = volumeMounts
+
+		containers = append(containers, &containerTemp)
+	}
+	return containers, volumeMountNames, nil
+}
+
 func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
 	volumeMountNames := make(map[string]bool)
 	var containers []*meshTypes.ContainerAttribute
@@ -1760,23 +1917,23 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
-		//if container.ReadinessProbe != nil {
-		//	if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
-		//		containerTemp.ReadinessProbe = rp
-		//	} else {
-		//		utils.Info.Println(err)
-		//		return nil, nil, err
-		//	}
-		//}
-		//
-		//if container.LivenessProbe != nil {
-		//	if lp, err := getCPProbe(container.LivenessProbe); err == nil {
-		//		containerTemp.LivenessProbe = lp
-		//	} else {
-		//		utils.Info.Println(err)
-		//		return nil, nil, err
-		//	}
-		//}
+		if container.ReadinessProbe != nil {
+			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+				containerTemp.ReadinessProbe = rp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
+
+		if container.LivenessProbe != nil {
+			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+				containerTemp.LivenessProbe = lp
+			} else {
+				utils.Info.Println(err)
+				return nil, nil, err
+			}
+		}
 
 		if err := putCPCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			utils.Info.Println(err)
@@ -1849,7 +2006,9 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 					})
 				}
 			} else {
-				temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
+				if tempVol.PersistentVolumeClaim != nil {
+					temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
+				}
 			}
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {
@@ -1929,72 +2088,84 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 	CpProbe := new(meshTypes.Probe)
 
-	//CpProbe.FailureThreshold = prob.FailureThreshold
-	//CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
-	//CpProbe.SuccessThreshold = prob.SuccessThreshold
-	//CpProbe.PeriodSeconds = prob.PeriodSeconds
-	//CpProbe.TimeoutSeconds = prob.TimeoutSeconds
-	//
-	//if prob.Handler.Exec != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "Exec"
-	//	CpProbe.Handler.Exec = new(meshTypes.ExecAction)
-	//	for i := 0; i < len(prob.Handler.Exec.Command); i++ {
-	//		CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
-	//	}
-	//} else if prob.HTTPGet != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "http_get"
-	//	CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
-	//	if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
-	//		if prob.HTTPGet.Host == "" {
-	//			CpProbe.Handler.HTTPGet.Host = nil
-	//		} else {
-	//			CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
-	//		}
-	//		if prob.HTTPGet.Path == "" {
-	//			CpProbe.Handler.HTTPGet.Path = nil
-	//		} else {
-	//			CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
-	//		}
-	//
-	//		if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-	//			if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
-	//				scheme := meshTypes.URISchemeHTTP
-	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
-	//			} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-	//				scheme := meshTypes.URISchemeHTTPS
-	//				CpProbe.Handler.HTTPGet.Scheme = &scheme
-	//			}
-	//		} else if prob.HTTPGet.Scheme == "" {
-	//			CpProbe.Handler.HTTPGet.Scheme = nil
-	//		} else {
-	//			return nil, errors.New("invalid URI scheme")
-	//		}
-	//
-	//		for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
-	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Name = &prob.HTTPGet.HTTPHeaders[i].Name
-	//			CpProbe.Handler.HTTPGet.HTTPHeaders[i].Value = &prob.HTTPGet.HTTPHeaders[i].Value
-	//		}
-	//		CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
-	//	} else {
-	//		return nil, errors.New("not a valid port number for http_get")
-	//	}
-	//
-	//} else if prob.TCPSocket != nil {
-	//	CpProbe.Handler = new(meshTypes.Handler)
-	//	CpProbe.Handler.Type = "tcpSocket"
-	//	CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
-	//	if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
-	//		CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
-	//		CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
-	//	} else {
-	//		return nil, errors.New("not a valid port number for tcp socket")
-	//	}
-	//
-	//} else {
-	//	return nil, errors.New("no handler found")
-	//}
+	if prob.FailureThreshold > 0 {
+		CpProbe.FailureThreshold = &prob.FailureThreshold
+
+	}
+	if prob.SuccessThreshold > 0 {
+		CpProbe.SuccessThreshold = &prob.SuccessThreshold
+
+	}
+	CpProbe.InitialDelaySeconds = &prob.InitialDelaySeconds
+	if prob.PeriodSeconds > 0 {
+		CpProbe.PeriodSeconds = &prob.PeriodSeconds
+	}
+	if prob.TimeoutSeconds > 0 {
+		CpProbe.TimeoutSeconds = &prob.TimeoutSeconds
+	}
+
+	if prob.Handler.Exec != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "exec"
+		CpProbe.Handler.Exec = new(meshTypes.ExecAction)
+		for i := 0; i < len(prob.Handler.Exec.Command); i++ {
+			CpProbe.Handler.Exec.Command = append(CpProbe.Handler.Exec.Command, prob.Handler.Exec.Command[i])
+		}
+	} else if prob.HTTPGet != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "httpGet"
+		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
+		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
+			if prob.HTTPGet.Host == "" {
+				CpProbe.Handler.HTTPGet.Host = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
+			}
+			if prob.HTTPGet.Path == "" {
+				CpProbe.Handler.HTTPGet.Path = nil
+			} else {
+				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+			}
+
+			if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+					scheme := meshTypes.URISchemeHTTP
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+					scheme := meshTypes.URISchemeHTTPS
+					CpProbe.Handler.HTTPGet.Scheme = &scheme
+				}
+			} else if prob.HTTPGet.Scheme == "" {
+				CpProbe.Handler.HTTPGet.Scheme = nil
+			} else {
+				return nil, errors.New("invalid URI scheme")
+			}
+
+			for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+				var cphttpheader meshTypes.HTTPHeader
+				cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
+				cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
+				CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
+			}
+			CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
+		} else {
+			return nil, errors.New("not a valid port number for http_get")
+		}
+
+	} else if prob.TCPSocket != nil {
+		CpProbe.Handler = new(meshTypes.Handler)
+		CpProbe.Handler.Type = "tcpSocket"
+		CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
+		if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
+			CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
+			CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
+		} else {
+			return nil, errors.New("not a valid port number for tcp socket")
+		}
+
+	} else {
+		return nil, errors.New("no handler found")
+	}
 	return CpProbe, nil
 
 }
@@ -2369,6 +2540,12 @@ func getCPVolumes(vols []v1.Volume, volumeMountNames map[string]bool) ([]meshTyp
 				if *volume.VolumeSource.HostPath.Type == v1.HostPathUnset {
 					hostPathType := meshTypes.HostPathUnset
 					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathDirectoryOrCreate {
+					hostPathType := meshTypes.HostPathDirectoryOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
+				} else if *volume.VolumeSource.HostPath.Type == v1.HostPathFileOrCreate {
+					hostPathType := meshTypes.HostPathFileOrCreate
+					tempVolume.VolumeSource.HostPath.Type = &hostPathType
 				}
 			}
 
@@ -2407,60 +2584,78 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			m.Name = match.Name
 			if match.Uri != nil {
 				m.Uri = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Uri.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Uri.GetPrefix() != "" {
 					m.Uri.Type = "prefix"
-					m.Uri.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Uri.Value = match.Uri.GetPrefix()
+				} else if match.Uri.GetExact() != "" {
 					m.Uri.Type = "exact"
-					m.Uri.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Uri.Value = match.Uri.GetExact()
+				} else if match.Uri.GetRegex() != "" {
 					m.Uri.Type = "regex"
-					m.Uri.Value = matchArray[1]
+					m.Uri.Value = match.Uri.GetRegex()
 				}
 			}
 			if match.Scheme != nil {
 				m.Scheme = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Scheme.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Scheme.GetPrefix() != "" {
 					m.Scheme.Type = "prefix"
-					m.Scheme.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Scheme.Value = match.Scheme.GetPrefix()
+				} else if match.Scheme.GetExact() != "" {
 					m.Scheme.Type = "exact"
-					m.Scheme.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Scheme.Value = match.Scheme.GetExact()
+				} else if match.Scheme.GetRegex() != "" {
 					m.Scheme.Type = "regex"
-					m.Scheme.Value = matchArray[1]
+					m.Scheme.Value = match.Scheme.GetRegex()
 				}
 			}
 			if match.Method != nil {
 				m.Method = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Method.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Method.GetPrefix() != "" {
 					m.Method.Type = "prefix"
-					m.Method.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Method.Value = match.Method.GetPrefix()
+				} else if match.Method.GetExact() != "" {
 					m.Method.Type = "exact"
-					m.Method.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Method.Value = match.Method.GetExact()
+				} else if match.Method.GetRegex() != "" {
 					m.Method.Type = "regex"
-					m.Method.Value = matchArray[1]
+					m.Method.Value = match.Method.GetRegex()
 				}
 			}
 			if match.Authority != nil {
 				m.Authority = new(meshTypes.HttpMatch)
-				matchArray := strings.Split(match.Authority.String(), ":")
-				if matchArray[0] == "prefix" {
+				if match.Authority.GetPrefix() != "" {
 					m.Authority.Type = "prefix"
-					m.Authority.Value = matchArray[1]
-				} else if matchArray[0] == "exact" {
+					m.Authority.Value = match.Authority.GetPrefix()
+				} else if match.Authority.GetExact() != "" {
 					m.Authority.Type = "exact"
-					m.Authority.Value = matchArray[1]
-				} else if matchArray[0] == "regex" {
+					m.Authority.Value = match.Authority.GetExact()
+				} else if match.Authority.GetRegex() != "" {
 					m.Authority.Type = "regex"
-					m.Authority.Value = matchArray[1]
+					m.Authority.Value = match.Authority.GetRegex()
 				}
 			}
+			if match.Headers != nil {
+				m.Headers = make(map[string]*meshTypes.HttpMatch)
+				for key, value := range match.Headers {
+
+					tempHttpMatch := new(meshTypes.HttpMatch)
+					fmt.Println(value.GetExact())
+					if value.GetPrefix() != "" {
+						tempHttpMatch.Type = "prefix"
+						tempHttpMatch.Value = value.GetPrefix()
+					} else if value.GetExact() != "" {
+						tempHttpMatch.Type = "exact"
+						tempHttpMatch.Value = value.GetExact()
+					} else if value.GetRegex() != "" {
+						tempHttpMatch.Type = "regex"
+						tempHttpMatch.Value = value.GetRegex()
+					}
+
+					m.Headers[key] = tempHttpMatch
+				}
+
+			}
+
 			vSer.HttpMatch = append(vSer.HttpMatch, m)
 		}
 
@@ -2498,10 +2693,10 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 		if http.Fault != nil {
 			vSer.FaultInjection = new(meshTypes.HttpFaultInjection)
 			if http.Fault.GetDelay() != nil {
-				if http.Fault.GetDelay().String() == "FixedDelay" {
+				if http.Fault.GetDelay().GetFixedDelay() != nil {
 					vSer.FaultInjection.DelayType = "FixedDelay"
 					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetFixedDelay().Seconds)
-				} else if http.Fault.GetDelay().String() == "ExponentialDelay" {
+				} else if http.Fault.GetDelay().GetExponentialDelay() != nil {
 					vSer.FaultInjection.DelayType = "ExponentialDelay"
 					vSer.FaultInjection.DelayValue = time.Duration(http.Fault.Delay.GetExponentialDelay().Seconds)
 					vSer.FaultInjection.FaultPercentage = float32(http.Fault.Delay.GetPercentage().Value)
@@ -2531,6 +2726,14 @@ func convertToCPVirtualService(input *v1alpha3.VirtualService) (*meshTypes.Virtu
 			vSer.CorsPolicy.ExposeHeaders = http.CorsPolicy.ExposeHeaders
 			vSer.CorsPolicy.MaxAge = time.Duration(http.CorsPolicy.MaxAge.Seconds)
 			vSer.CorsPolicy.AllowCredentials = http.CorsPolicy.AllowCredentials.Value
+		}
+		if http.Retries != nil {
+			vSer.Retry = new(meshTypes.HttpRetry)
+			vSer.Retry.TotalAttempts = http.Retries.Attempts
+			if http.Retries.PerTryTimeout != nil {
+				vSer.Retry.PerTryTimeOut = http.Retries.PerTryTimeout.Seconds
+			}
+			vSer.Retry.RetryOn = http.Retries.RetryOn
 		}
 
 		vServ.ServiceAttributes.Http = append(vServ.ServiceAttributes.Http, vSer)
@@ -2631,7 +2834,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie = new(meshTypes.HttpCookie)
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Name = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Path = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
-					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = int64(input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds())
 
 				} else if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp() == true {
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HTTPHeaderName = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
@@ -2645,7 +2848,8 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 			if input.Spec.TrafficPolicy.ConnectionPool.Tcp != nil {
 				vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp = new(meshTypes.DrTcp)
 				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout != nil {
-					timeout := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.Nanos)
+
+					timeout := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout.GetNanos())
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &timeout
 				}
 
@@ -2653,13 +2857,13 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 				if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-						keepAlive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+						keepAlive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &keepAlive
 					}
 
 					vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes
 					if input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-						timealive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+						timealive := time.Duration(input.Spec.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 						vServ.ServiceAttributes.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &timealive
 					}
 
@@ -2689,13 +2893,13 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 		if input.Spec.TrafficPolicy.OutlierDetection != nil {
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection = new(meshTypes.OutlierDetection)
 			if input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime != nil {
-				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.Nanos)
+				injecTime := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.BaseEjectionTime.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.BaseEjectionTime = &injecTime
 			}
 
 			vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.Spec.TrafficPolicy.OutlierDetection.ConsecutiveErrors
 			if input.Spec.TrafficPolicy.OutlierDetection.Interval != nil {
-				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.Nanos)
+				interval := time.Duration(input.Spec.TrafficPolicy.OutlierDetection.Interval.GetSeconds())
 				vServ.ServiceAttributes.TrafficPolicy.OutlierDetection.Interval = &interval
 			}
 
@@ -2724,11 +2928,11 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					if port.ConnectionPool.Tcp.TcpKeepalive != nil {
 						setting.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 						if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-							t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 							setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 						}
 						if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-							interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+							interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 							setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
 						}
 
@@ -2831,11 +3035,11 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 						if port.ConnectionPool.Tcp.TcpKeepalive != nil {
 							setting.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 							if port.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-								t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+								t := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 								setting.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 							}
 							if port.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {
-								interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Nanos)
+								interval := time.Duration(port.ConnectionPool.Tcp.TcpKeepalive.Interval.Seconds)
 								setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &interval
 							}
 
@@ -2943,7 +3147,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive != nil {
 						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = new(meshTypes.TcpKeepalive)
 						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time != nil {
-							t := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Nanos)
+							t := time.Duration(subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time.Seconds)
 							ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &t
 						}
 						if subset.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval != nil {

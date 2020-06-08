@@ -268,7 +268,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 		vService.TrafficPolicy = &v1alpha3.TrafficPolicy{}
 		if input.ServiceAttribute.TrafficPolicy.LoadBalancer != nil {
 			vService.TrafficPolicy.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
-			if input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple >= 0 || input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple <= 3 {
+			if (input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple >= 0 || input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple <= 3) && input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash == nil {
 				vService.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
 					Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(input.ServiceAttribute.TrafficPolicy.LoadBalancer.Simple)),
 				}
@@ -310,13 +310,13 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 			if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp != nil {
 				vService.TrafficPolicy.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
 				vService.TrafficPolicy.ConnectionPool.Tcp = &v1alpha3.ConnectionPoolSettings_TCPSettings{}
-				vService.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.ConnectTimeout}
+				vService.TrafficPolicy.ConnectionPool.Tcp.ConnectTimeout = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.ConnectTimeout)}
 				vService.TrafficPolicy.ConnectionPool.Tcp.MaxConnections = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.MaxConnections
 				if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive != nil {
 					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = &v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive{}
-					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Interval}
+					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Interval)}
 					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Probes
-					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Time}
+					vService.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Time)}
 				}
 			}
 			if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp != nil {
@@ -325,7 +325,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 				vService.TrafficPolicy.ConnectionPool.Http.H2UpgradePolicy = v1alpha3.ConnectionPoolSettings_HTTPSettings_H2UpgradePolicy(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.ConnectionPoolSettingsHttpSettingsH2UpgradePolicy)
 				vService.TrafficPolicy.ConnectionPool.Http.Http1MaxPendingRequests = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.Http_1MaxPendingRequests
 				vService.TrafficPolicy.ConnectionPool.Http.Http2MaxRequests = int32(input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.GetHttp_2MaxRequests())
-				vService.TrafficPolicy.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout}
+				if input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout > 0 {
+					vService.TrafficPolicy.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.IdleTimeout}
+				}
 				vService.TrafficPolicy.ConnectionPool.Http.MaxRequestsPerConnection = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.MaxRequestsPerConnection
 				vService.TrafficPolicy.ConnectionPool.Http.MaxRetries = input.ServiceAttribute.TrafficPolicy.ConnectionPool.DrHttp.MaxRetries
 			}
@@ -333,78 +335,84 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 		}
 		if input.ServiceAttribute.TrafficPolicy.OutlierDetection != nil {
 			vService.TrafficPolicy.OutlierDetection = &v1alpha3.OutlierDetection{}
-			vService.TrafficPolicy.OutlierDetection.BaseEjectionTime = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.OutlierDetection.BaseEjectionTime}
+			vService.TrafficPolicy.OutlierDetection.BaseEjectionTime = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.OutlierDetection.BaseEjectionTime)}
 			vService.TrafficPolicy.OutlierDetection.ConsecutiveErrors = input.ServiceAttribute.TrafficPolicy.OutlierDetection.ConsecutiveErrors
-			vService.TrafficPolicy.OutlierDetection.Interval = &types.Duration{Nanos: input.ServiceAttribute.TrafficPolicy.OutlierDetection.Interval}
+			vService.TrafficPolicy.OutlierDetection.Interval = &types.Duration{Seconds: int64(input.ServiceAttribute.TrafficPolicy.OutlierDetection.Interval)}
 			vService.TrafficPolicy.OutlierDetection.MaxEjectionPercent = input.ServiceAttribute.TrafficPolicy.OutlierDetection.MaxEjectionPercent
 			vService.TrafficPolicy.OutlierDetection.MinHealthPercent = input.ServiceAttribute.TrafficPolicy.OutlierDetection.MinHealthPercent
 		}
 		for _, port := range input.ServiceAttribute.TrafficPolicy.PortLevelSettings {
 
 			setting := &v1alpha3.TrafficPolicy_PortTrafficPolicy{}
-			setting.Port = &v1alpha3.PortSelector{}
-			setting.Port.Number = uint32(port.DrPort.Number)
+			if port.DrPort != nil {
+				setting.Port = &v1alpha3.PortSelector{}
+				setting.Port.Number = uint32(port.DrPort.Number)
+			}
+			if port.ConnectionPool != nil {
+				setting.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
+				setting.ConnectionPool.Tcp = &v1alpha3.ConnectionPoolSettings_TCPSettings{}
+				setting.ConnectionPool.Tcp.ConnectTimeout = &types.Duration{Nanos: port.ConnectionPool.DrTcp.ConnectTimeout}
+				setting.ConnectionPool.Tcp.MaxConnections = port.ConnectionPool.DrTcp.MaxConnections
+				setting.ConnectionPool.Tcp.TcpKeepalive = &v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive{}
+				setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Interval}
+				setting.ConnectionPool.Tcp.TcpKeepalive.Probes = port.ConnectionPool.DrTcp.TcpKeepAlive.Probes
+				setting.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Time}
 
-			setting.ConnectionPool = &v1alpha3.ConnectionPoolSettings{}
-			setting.ConnectionPool.Tcp = &v1alpha3.ConnectionPoolSettings_TCPSettings{}
-			setting.ConnectionPool.Tcp.ConnectTimeout = &types.Duration{Nanos: port.ConnectionPool.DrTcp.ConnectTimeout}
-			setting.ConnectionPool.Tcp.MaxConnections = port.ConnectionPool.DrTcp.MaxConnections
-			setting.ConnectionPool.Tcp.TcpKeepalive = &v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive{}
-			setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Interval}
-			setting.ConnectionPool.Tcp.TcpKeepalive.Probes = port.ConnectionPool.DrTcp.TcpKeepAlive.Probes
-			setting.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Time}
-
-			setting.ConnectionPool.Http = &v1alpha3.ConnectionPoolSettings_HTTPSettings{}
-			setting.ConnectionPool.Http.H2UpgradePolicy = v1alpha3.ConnectionPoolSettings_HTTPSettings_H2UpgradePolicy(port.ConnectionPool.DrHttp.Http_2MaxRequests)
-			setting.ConnectionPool.Http.Http1MaxPendingRequests = port.ConnectionPool.DrHttp.Http_1MaxPendingRequests
-			setting.ConnectionPool.Http.Http2MaxRequests = int32(port.ConnectionPool.DrHttp.GetHttp_2MaxRequests())
-			setting.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: port.ConnectionPool.DrHttp.IdleTimeout}
-			setting.ConnectionPool.Http.MaxRequestsPerConnection = port.ConnectionPool.DrHttp.MaxRequestsPerConnection
-			setting.ConnectionPool.Http.MaxRetries = port.ConnectionPool.DrHttp.MaxRetries
-
-			setting.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
-			if port.LoadBalancer.Simple >= 0 && port.LoadBalancer.Simple <= 3 {
-				setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
-					Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(port.LoadBalancer.Simple)),
-				}
-			} else if port.LoadBalancer.ConsistentHash != nil {
-				if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
-					t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
-					setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
-						ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
-							HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
-								HttpCookie: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HTTPCookie{
-									Name: port.LoadBalancer.ConsistentHash.HttpCookie.Name,
-									Path: port.LoadBalancer.ConsistentHash.HttpCookie.Path,
-									Ttl:  &t,
+				setting.ConnectionPool.Http = &v1alpha3.ConnectionPoolSettings_HTTPSettings{}
+				setting.ConnectionPool.Http.H2UpgradePolicy = v1alpha3.ConnectionPoolSettings_HTTPSettings_H2UpgradePolicy(port.ConnectionPool.DrHttp.Http_2MaxRequests)
+				setting.ConnectionPool.Http.Http1MaxPendingRequests = port.ConnectionPool.DrHttp.Http_1MaxPendingRequests
+				setting.ConnectionPool.Http.Http2MaxRequests = int32(port.ConnectionPool.DrHttp.GetHttp_2MaxRequests())
+				setting.ConnectionPool.Http.IdleTimeout = &types.Duration{Nanos: port.ConnectionPool.DrHttp.IdleTimeout}
+				setting.ConnectionPool.Http.MaxRequestsPerConnection = port.ConnectionPool.DrHttp.MaxRequestsPerConnection
+				setting.ConnectionPool.Http.MaxRetries = port.ConnectionPool.DrHttp.MaxRetries
+			}
+			if port.LoadBalancer != nil {
+				setting.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
+				if port.LoadBalancer.Simple >= 0 && port.LoadBalancer.Simple <= 3 {
+					setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
+						Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(port.LoadBalancer.Simple)),
+					}
+				} else if port.LoadBalancer.ConsistentHash != nil {
+					if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
+						t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
+						setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
+							ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
+								HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
+									HttpCookie: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HTTPCookie{
+										Name: port.LoadBalancer.ConsistentHash.HttpCookie.Name,
+										Path: port.LoadBalancer.ConsistentHash.HttpCookie.Path,
+										Ttl:  &t,
+									},
 								},
 							},
-						},
-					}
-				} else if port.LoadBalancer.ConsistentHash.HttpHeaderName != "" {
-					setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
-						ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
-							HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpHeaderName{
-								HttpHeaderName: port.LoadBalancer.ConsistentHash.HttpHeaderName,
+						}
+					} else if port.LoadBalancer.ConsistentHash.HttpHeaderName != "" {
+						setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
+							ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
+								HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpHeaderName{
+									HttpHeaderName: port.LoadBalancer.ConsistentHash.HttpHeaderName,
+								},
 							},
-						},
-					}
-				} else if port.LoadBalancer.ConsistentHash.UseSourceIp != false {
-					setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
-						ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
-							HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_UseSourceIp{
-								UseSourceIp: port.LoadBalancer.ConsistentHash.UseSourceIp,
+						}
+					} else if port.LoadBalancer.ConsistentHash.UseSourceIp != false {
+						setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
+							ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
+								HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_UseSourceIp{
+									UseSourceIp: port.LoadBalancer.ConsistentHash.UseSourceIp,
+								},
 							},
-						},
+						}
 					}
 				}
 			}
-			setting.OutlierDetection = &v1alpha3.OutlierDetection{}
-			setting.OutlierDetection.BaseEjectionTime = &types.Duration{Nanos: port.OutlierDetection.BaseEjectionTime}
-			setting.OutlierDetection.ConsecutiveErrors = port.OutlierDetection.ConsecutiveErrors
-			setting.OutlierDetection.Interval = &types.Duration{Nanos: port.OutlierDetection.Interval}
-			setting.OutlierDetection.MaxEjectionPercent = port.OutlierDetection.MaxEjectionPercent
-			setting.OutlierDetection.MinHealthPercent = port.OutlierDetection.MinHealthPercent
+			if port.OutlierDetection != nil {
+				setting.OutlierDetection = &v1alpha3.OutlierDetection{}
+				setting.OutlierDetection.BaseEjectionTime = &types.Duration{Nanos: port.OutlierDetection.BaseEjectionTime}
+				setting.OutlierDetection.ConsecutiveErrors = port.OutlierDetection.ConsecutiveErrors
+				setting.OutlierDetection.Interval = &types.Duration{Nanos: port.OutlierDetection.Interval}
+				setting.OutlierDetection.MaxEjectionPercent = port.OutlierDetection.MaxEjectionPercent
+				setting.OutlierDetection.MinHealthPercent = port.OutlierDetection.MinHealthPercent
+			}
 
 			vService.TrafficPolicy.PortLevelSettings = append(vService.TrafficPolicy.PortLevelSettings, setting)
 		}
@@ -437,9 +445,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 						setting.ConnectionPool.Tcp.MaxConnections = port.ConnectionPool.DrTcp.MaxConnections
 						if port.ConnectionPool.DrTcp.TcpKeepAlive != nil {
 							setting.ConnectionPool.Tcp.TcpKeepalive = &v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive{}
-							setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Interval}
+							setting.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Seconds: int64(port.ConnectionPool.DrTcp.TcpKeepAlive.Interval)}
 							setting.ConnectionPool.Tcp.TcpKeepalive.Probes = port.ConnectionPool.DrTcp.TcpKeepAlive.Probes
-							setting.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Nanos: port.ConnectionPool.DrTcp.TcpKeepAlive.Time}
+							setting.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Seconds: int64(port.ConnectionPool.DrTcp.TcpKeepAlive.Time)}
 						}
 					}
 					if port.ConnectionPool.DrHttp != nil {
@@ -511,7 +519,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 			}
 			if subset.TrafficPolicy.LoadBalancer != nil {
 				ser.TrafficPolicy.LoadBalancer = &v1alpha3.LoadBalancerSettings{}
-				if subset.TrafficPolicy.LoadBalancer.Simple >= 0 && subset.TrafficPolicy.LoadBalancer.Simple <= 3 {
+				if (subset.TrafficPolicy.LoadBalancer.Simple >= 0 && subset.TrafficPolicy.LoadBalancer.Simple <= 3) && subset.TrafficPolicy.LoadBalancer.ConsistentHash == nil {
 					ser.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_Simple{
 						Simple: v1alpha3.LoadBalancerSettings_SimpleLB(int32(subset.TrafficPolicy.LoadBalancer.Simple)),
 					}
@@ -556,9 +564,9 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 					ser.TrafficPolicy.ConnectionPool.Tcp.MaxConnections = subset.TrafficPolicy.ConnectionPool.DrTcp.MaxConnections
 					if subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive != nil {
 						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive = &v1alpha3.ConnectionPoolSettings_TCPSettings_TcpKeepalive{}
-						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Nanos: subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Interval}
+						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Interval = &types.Duration{Seconds: int64(subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Interval)}
 						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Probes = subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Probes
-						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Nanos: subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Time}
+						ser.TrafficPolicy.ConnectionPool.Tcp.TcpKeepalive.Time = &types.Duration{Seconds: int64(subset.TrafficPolicy.ConnectionPool.DrTcp.TcpKeepAlive.Time)}
 					}
 				}
 				if subset.TrafficPolicy.ConnectionPool.DrHttp != nil {

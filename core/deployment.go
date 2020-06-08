@@ -1086,7 +1086,7 @@ func putLivenessProbe(container *v2.Container, prob *pb.Probe) error {
 					temp.Handler.Exec.Command = append(temp.Handler.Exec.Command, prob.Handler.Exec.Command[i])
 				}
 
-			case "http_get":
+			case "httpGet":
 				if prob.Handler.HttpGet == nil {
 					return errors.New("there is no liveness handler of httpGet type")
 				}

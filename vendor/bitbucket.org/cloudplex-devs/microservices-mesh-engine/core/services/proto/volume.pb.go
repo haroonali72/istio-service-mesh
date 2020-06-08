@@ -195,7 +195,7 @@ func (m *Volume) GetVolumeSource() *VolumeSource {
 }
 
 type VolumeSource struct {
-	HostPath              *HostPathVolumeSource              `protobuf:"bytes,1,opt,name=hostPath,proto3" json:"hostPath,omitempty"`
+	HostPath              *HostPathVolumeSource              `protobuf:"bytes,1,opt,name=host_path,json=hostPath,proto3" json:"host_path,omitempty"`
 	EmptyDir              *EmptyDirVolumeSource              `protobuf:"bytes,2,opt,name=empty_dir,json=emptyDir,proto3" json:"empty_dir,omitempty"`
 	GcePersistentDisk     *GCEPersistentDiskVolumeSource     `protobuf:"bytes,3,opt,name=gce_persistent_disk,json=gcePersistentDisk,proto3" json:"gce_persistent_disk,omitempty"`
 	Secret                *SecretVolumeSource                `protobuf:"bytes,4,opt,name=secret,proto3" json:"secret,omitempty"`

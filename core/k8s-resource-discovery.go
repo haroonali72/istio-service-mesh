@@ -111,21 +111,25 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 		//cronjobs
 
 		//jobs
-		JobList, err := grpcConn.getAllJobs(ctx, namespace)
+		JobList, err := grpcConn.getAllJobs(ctx, namespace, cronJobList)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
-		err = grpcConn.jobK8sToCp(ctx, JobList.Items, &wg)
+		err = grpcConn.jobK8sToCp(ctx, JobList, &wg)
 		if err != nil {
 			return &pb.K8SResourceResponse{}, err
 		}
 		//jobs
 	}
-
 	wg.Wait()
+
+	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
+
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
 		return &pb.K8SResourceResponse{}, err
+	} else if bytes == nil {
+		return &pb.K8SResourceResponse{}, errors.New("there are no resources found in the given namespace(s)")
 	}
 
 	serviceTemplates = nil
@@ -159,13 +163,11 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	namespace := job.Namespace
 	if job.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := job.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, jobTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -227,6 +229,10 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(jobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(jobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -276,13 +282,11 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	namespace := cronjob.Namespace
 	if cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := cronjob.Spec.JobTemplate.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, cronjobTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -343,6 +347,10 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(cronjobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(cronjobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -409,13 +417,11 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	namespace := daemonset.Namespace
 	if daemonset.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := daemonset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, daemonsetTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 	}
 
 	//image pull secrets
@@ -461,6 +467,10 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(daemonsetTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(daemonsetTemp)
 		}
 
 		if vol.Projected != nil {
@@ -510,13 +520,11 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	namespace := statefulset.Namespace
 	if statefulset.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := statefulset.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, stsTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 
 	}
 
@@ -559,6 +567,23 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 		}
 	}
 
+	//finding statefulset PVC template dependency
+	for _, stsPVCtemp := range statefulset.Spec.VolumeClaimTemplates {
+		pvcList, err := conn.getAllPVCs(ctx, namespace)
+		if err != nil {
+			return
+		}
+
+		for _, pvc := range pvcList.Items {
+			if strings.Contains(pvc.Name, stsPVCtemp.Name) {
+				err := conn.resolvePvcDependency(ctx, pvc.Name, namespace, stsTemp)
+				if err != nil {
+					return
+				}
+			}
+		}
+	}
+
 	//volume dependency finding
 	for _, vol := range statefulset.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -579,6 +604,10 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(stsTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(stsTemp)
 		}
 
 		if vol.Projected != nil {
@@ -648,13 +677,11 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	//checking for the service account if name not empty then getting cluster role and cluster role  binding against that service account
 	if dep.Spec.Template.Spec.ServiceAccountName != "" {
 
-		mutex.Lock()
 		svcname := dep.Spec.Template.Spec.ServiceAccountName
 		err := conn.resolveRbacDecpendency(ctx, svcname, namespace, depTemp)
 		if err != nil {
 			return
 		}
-		mutex.Unlock()
 
 	}
 
@@ -716,6 +743,10 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(depTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(depTemp)
 		}
 
 		if vol.Projected != nil {
@@ -1283,7 +1314,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 	return deploymentList, nil
 }
 
-func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string) (*batch.JobList, error) {
+func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobList *v1beta1.CronJobList) ([]batch.Job, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
 		ProjectId: conn.ProjectId,
 		CompanyId: conn.CompanyId,
@@ -1317,7 +1348,16 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string) (*batch.
 		return nil, err
 	}
 
-	return jobList, nil
+	var jobs []batch.Job
+	for _, cronjob := range cronjobList.Items {
+		for _, job := range jobList.Items {
+			if !strings.Contains(job.Name, cronjob.Name) {
+				jobs = append(jobs, job)
+			}
+		}
+	}
+
+	return jobs, nil
 }
 
 func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autoscale.HorizontalPodAutoscalerList, error) {
@@ -1567,6 +1607,43 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 	return pvc, nil
 }
 
+func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.PersistentVolumeClaimList, error) {
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+		ProjectId: conn.ProjectId,
+		CompanyId: conn.CompanyId,
+		Token:     conn.token,
+		Command:   "kubectl",
+		Args:      []string{"get", "pvc", "-n", namespace, "-o", "json"},
+	})
+	if err != nil {
+
+		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+			ProjectId:    conn.ProjectId,
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			Namespace:    namespace,
+			ErrorMessage: "error from grpc server :" + err.Error(),
+		}))
+
+		return nil, errors.New("error from grpc server :" + err.Error())
+	}
+
+	var pvcList *v2.PersistentVolumeClaimList
+	err = json.Unmarshal(response.Resource, &pvcList)
+	if err != nil {
+
+		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+			ProjectId:    conn.ProjectId,
+			ServiceType:  string(constants.PersistentVolumeClaim),
+			Namespace:    namespace,
+			ErrorMessage: err.Error(),
+		}))
+
+		return nil, err
+	}
+
+	return pvcList, nil
+}
+
 func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2.PersistentVolume, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
 		ProjectId: conn.ProjectId,
@@ -1605,7 +1682,13 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 		}
 	}
 
-	return nil, nil
+	utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
+		ProjectId:    conn.ProjectId,
+		ServiceType:  string(constants.PersistentVolume),
+		ErrorMessage: "No PV exist against pvc :" + pvcname,
+	}))
+
+	return nil, errors.New("No PV exist against pvc :" + pvcname)
 }
 
 func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace string) (*v2.ConfigMap, error) {
@@ -1917,7 +2000,18 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.IsDiscovered = true
 		addVersion(template)
 	case constants.Job:
-		CpJob, err := convertToCPJob(data.(*batch.Job))
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		var job batch.Job
+		err = json.Unmarshal(bytes, &job)
+		if err != nil {
+			utils.Error.Println(err)
+			return nil, err
+		}
+		CpJob, err := convertToCPJob(&job)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
@@ -1931,7 +2025,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			return nil, err
 		}
-		bytes, err := json.Marshal(CpJob)
+		bytes, err = json.Marshal(CpJob)
 		if err != nil {
 
 			ErrJob := data.(batch.Job)
@@ -2765,6 +2859,9 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
+		if isAlreadyExist(template.Namespace, template.ServiceSubType, template.Name) {
+			template = GetExistingService(template.Namespace, template.ServiceSubType, template.Name)
+		}
 	case constants.PersistentVolumeClaim:
 		bytes, err := json.Marshal(data)
 		if err != nil {
@@ -3575,6 +3672,9 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 						}
 					}
 					if !isSameService {
+						//in case if there are multuple deployments attached with same kubernetes service
+						addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					}
@@ -3601,6 +3701,56 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 	}
 
 	return nil
+}
+
+func addHostPathConfigurations(svcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
+		for _, container := range containterArry {
+			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
+				for _, volMount := range volumeMountArr {
+					volName := volMount.(map[string]interface{})["name"].(string)
+					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
+						for _, volume := range volumeArry {
+							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"]
+							if ok && volName == volume.(map[string]interface{})["name"] {
+								hostpathConf := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"].(map[string]interface{})
+								hostpathConf["name"] = volName
+								volMount.(map[string]interface{})["hostpath"] = hostpathConf
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
+}
+
+func addEmptyDirConfigurations(svcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
+		for _, container := range containterArry {
+			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
+				for _, volMount := range volumeMountArr {
+					volName := volMount.(map[string]interface{})["name"].(string)
+					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
+						for _, volume := range volumeArry {
+							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["empty_dir"]
+							if ok && volName == volume.(map[string]interface{})["name"] {
+								emptydirConf := make(map[string]interface{})
+								emptydirConf["name"] = volName
+								volMount.(map[string]interface{})["empty_dir"] = emptydirConf
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
 }
 
 func addRbacConfigurations(svcTemp *svcTypes.ServiceTemplate, rbacBindingTemp *svcTypes.ServiceTemplate) {
@@ -3752,6 +3902,8 @@ func (conn *GrpcConn) resolveSecretDepency(ctx context.Context, secretname, name
 	if !isAlreadyExist(secretTemp.Namespace, secretTemp.ServiceSubType, secretTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &secretTemp.ServiceId)
 		secretTemp.AfterServices = append(secretTemp.AfterServices, &svcTemp.ServiceId)
+		secretTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, secretTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, secretTemp)
 	} else {
 		isSameService := false
@@ -3771,6 +3923,8 @@ func (conn *GrpcConn) resolveSecretDepency(ctx context.Context, secretname, name
 }
 
 func (conn *GrpcConn) resolveRbacDecpendency(ctx context.Context, svcAccName, namespace string, svcTemp *svcTypes.ServiceTemplate) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 	svcaccount, err := conn.getSvcAccount(ctx, svcAccName, namespace)
 	if err != nil {
 		return err
@@ -3824,6 +3978,8 @@ func (conn *GrpcConn) resolveConfigMapDependency(ctx context.Context, configmapn
 	if !isAlreadyExist(configmapTemp.Namespace, configmapTemp.ServiceSubType, configmapTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &configmapTemp.ServiceId)
 		configmapTemp.AfterServices = append(configmapTemp.AfterServices, &svcTemp.ServiceId)
+		configmapTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, configmapTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, configmapTemp)
 	} else {
 		isSameService := false
@@ -3854,6 +4010,8 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 	if !isAlreadyExist(pvcTemp.Namespace, pvcTemp.ServiceSubType, pvcTemp.Name) {
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &pvcTemp.ServiceId)
 		pvcTemp.AfterServices = append(pvcTemp.AfterServices, &svcTemp.ServiceId)
+		pvcTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, pvcTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, pvcTemp)
 	} else {
 		service := GetExistingService(pvcTemp.Namespace, pvcTemp.ServiceSubType, pvcTemp.Name)
@@ -3875,6 +4033,8 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 
 		svcTemp.BeforeServices = append(svcTemp.BeforeServices, &pvTemp.ServiceId)
 		pvTemp.AfterServices = append(pvTemp.AfterServices, &svcTemp.ServiceId)
+		pvTemp.Deleted = true
+		svcTemp.Embeds = append(svcTemp.Embeds, pvTemp.ServiceId)
 		serviceTemplates = append(serviceTemplates, pvTemp)
 	} else {
 		//adding PV and PVC parameters within K8s CP deployment type
@@ -3899,6 +4059,9 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 			//attaching storage class with PVC
 			pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, &storageClassTemp.ServiceId)
 			storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
+			storageClassTemp.Deleted = true
+			pvcTemp.Embeds = append(pvcTemp.Embeds, storageClassTemp.ServiceId)
+			pvcTemp.IsEmbedded = true
 
 			//attaching storage clase with PV
 			pvTemp.BeforeServices = append(pvTemp.BeforeServices, &storageClassTemp.ServiceId)
@@ -3915,6 +4078,18 @@ func (conn *GrpcConn) resolvePvcDependency(ctx context.Context, pvcname, namespa
 			}
 			if !isPVCexist {
 				pvcTemp.BeforeServices = append(pvcTemp.BeforeServices, &storageClassTemp.ServiceId)
+				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
+			}
+
+			isPVexist := false
+			for _, serviceId := range storageClassTemp.AfterServices {
+				if *serviceId == pvTemp.ServiceId {
+					isPVexist = true
+					break
+				}
+			}
+			if !isPVexist {
+				pvTemp.BeforeServices = append(pvTemp.BeforeServices, &storageClassTemp.ServiceId)
 				storageClassTemp.AfterServices = append(storageClassTemp.AfterServices, &pvcTemp.ServiceId)
 			}
 		}
