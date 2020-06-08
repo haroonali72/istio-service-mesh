@@ -15,7 +15,7 @@ import (
 //	CreationDate      time.Time                      `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type NetworkPolicyService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *NetworkPolicyServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *NetworkPolicyServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type NetworkPolicyServiceAttribute struct {
 	PodSelector *LabelSelectorObj `json:"pod_selector,omitempty" bson:"pod_selector,omitempty"` //empty means all po in np namespaces

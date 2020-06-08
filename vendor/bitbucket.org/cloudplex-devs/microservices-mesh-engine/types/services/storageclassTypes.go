@@ -14,7 +14,7 @@ import (
 //	CreationDate      time.Time                     `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type StorageClassService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *StorageClassServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *StorageClassServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type StorageClassServiceAttribute struct {
 	BindingMod           VolumeBindingMode      `json:"volume_binding_mode,omitempty" bson:"volume_binding_mode,omitempty"`

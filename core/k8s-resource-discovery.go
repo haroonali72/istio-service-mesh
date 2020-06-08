@@ -229,10 +229,6 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			if err != nil {
 				return
 			}
-		} else if vol.HostPath != nil {
-			addHostPathConfigurations(jobTemp)
-		} else if vol.EmptyDir != nil {
-			addEmptyDirConfigurations(jobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -347,10 +343,6 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			if err != nil {
 				return
 			}
-		} else if vol.HostPath != nil {
-			addHostPathConfigurations(cronjobTemp)
-		} else if vol.EmptyDir != nil {
-			addEmptyDirConfigurations(cronjobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -467,10 +459,6 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			if err != nil {
 				return
 			}
-		} else if vol.HostPath != nil {
-			addHostPathConfigurations(daemonsetTemp)
-		} else if vol.EmptyDir != nil {
-			addEmptyDirConfigurations(daemonsetTemp)
 		}
 
 		if vol.Projected != nil {
@@ -582,6 +570,9 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 				}
 			}
 		}
+
+		//removing PVC template within statefulset according to CP structure
+		removeStsPvcTemplate(stsTemp)
 	}
 
 	//volume dependency finding
@@ -604,10 +595,6 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			if err != nil {
 				return
 			}
-		} else if vol.HostPath != nil {
-			addHostPathConfigurations(stsTemp)
-		} else if vol.EmptyDir != nil {
-			addEmptyDirConfigurations(stsTemp)
 		}
 
 		if vol.Projected != nil {
@@ -743,10 +730,6 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			if err != nil {
 				return
 			}
-		} else if vol.HostPath != nil {
-			addHostPathConfigurations(depTemp)
-		} else if vol.EmptyDir != nil {
-			addEmptyDirConfigurations(depTemp)
 		}
 
 		if vol.Projected != nil {
@@ -2152,6 +2135,11 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
 			template.Replicas = int(replicas.(float64))
+		}
+
+		svcAttr := template.ServiceAttributes.(map[string]interface{})
+		if _, ok := svcAttr["update_Strategy"]; ok {
+			svcAttr["update_Strategy"] = struct{}{}
 		}
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
@@ -3703,56 +3691,6 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 	return nil
 }
 
-func addHostPathConfigurations(svcTemp *svcTypes.ServiceTemplate) {
-	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
-	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
-		for _, container := range containterArry {
-			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
-				for _, volMount := range volumeMountArr {
-					volName := volMount.(map[string]interface{})["name"].(string)
-					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
-						for _, volume := range volumeArry {
-							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"]
-							if ok && volName == volume.(map[string]interface{})["name"] {
-								hostpathConf := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"].(map[string]interface{})
-								hostpathConf["name"] = volName
-								volMount.(map[string]interface{})["hostpath"] = hostpathConf
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	svcTemp.ServiceAttributes = svcAttr
-}
-
-func addEmptyDirConfigurations(svcTemp *svcTypes.ServiceTemplate) {
-	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
-	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
-		for _, container := range containterArry {
-			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
-				for _, volMount := range volumeMountArr {
-					volName := volMount.(map[string]interface{})["name"].(string)
-					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
-						for _, volume := range volumeArry {
-							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["empty_dir"]
-							if ok && volName == volume.(map[string]interface{})["name"] {
-								emptydirConf := make(map[string]interface{})
-								emptydirConf["name"] = volName
-								volMount.(map[string]interface{})["empty_dir"] = emptydirConf
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	svcTemp.ServiceAttributes = svcAttr
-}
-
 func addRbacConfigurations(svcTemp *svcTypes.ServiceTemplate, rbacBindingTemp *svcTypes.ServiceTemplate) {
 	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
 	svcAttr["is_rbac_enabled"] = true
@@ -4118,4 +4056,11 @@ func RandStringBytes(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
+	if _, ok := svcAttr["volume_claim_templates"]; ok {
+		delete(svcAttr, "volume_claim_templates")
+	}
 }
