@@ -527,14 +527,14 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 			deployment.ServiceAttributes.Strategy.Type = meshTypes.RollingUpdateDeploymentStrategyType
 			if service.Spec.Strategy.RollingUpdate != nil {
 				deployment.ServiceAttributes.Strategy.RollingUpdate = new(meshTypes.RollingUpdateDeployment)
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge = new(intstr.IntOrString)
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.Type = service.Spec.Strategy.RollingUpdate.MaxSurge.Type
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.Type = service.Spec.Strategy.RollingUpdate.MaxUnavailable.Type
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
-				deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge = new(intstr.IntOrString)
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable = new(intstr.IntOrString)
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.Type = service.Spec.Strategy.RollingUpdate.MaxSurge.Type
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxSurge.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.Type = service.Spec.Strategy.RollingUpdate.MaxUnavailable.Type
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.IntVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.IntVal
+				//deployment.ServiceAttributes.Strategy.RollingUpdate.MaxUnavailable.StrVal = service.Spec.Strategy.RollingUpdate.MaxUnavailable.StrVal
 			}
 		}
 
@@ -1849,7 +1849,7 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 
 		}
 
-		ports := make(map[string]meshTypes.ContainerPort)
+		var ports []meshTypes.ContainerPort
 		for _, port := range container.Ports {
 			temp := meshTypes.ContainerPort{}
 			if port.ContainerPort == 0 && port.HostPort != 0 {
@@ -1871,10 +1871,10 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 				}
 
 			}
-			ports[port.Name] = temp
+			ports = append(ports, temp)
 		}
 
-		environmentVariables := make(map[string]meshTypes.EnvironmentVariable)
+		var environmentVariables []meshTypes.EnvironmentVariable
 		for _, envVariable := range container.Env {
 			tempEnvVariable := meshTypes.EnvironmentVariable{}
 			if envVariable.ValueFrom != nil {
@@ -1889,11 +1889,11 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 					tempEnvVariable.Type = string(meshConstants.Secret)
 					tempEnvVariable.Dynamic = true
 				}
-				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
+				environmentVariables = append(environmentVariables, tempEnvVariable)
 			} else {
 				tempEnvVariable.Key = envVariable.Name
 				tempEnvVariable.Value = envVariable.Value
-				environmentVariables[tempEnvVariable.Key] = tempEnvVariable
+				environmentVariables = append(environmentVariables, tempEnvVariable)
 			}
 
 		}
@@ -2027,7 +2027,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 
 		}
 
-		ports := make(map[string]meshTypes.ContainerPort)
+		var ports []meshTypes.ContainerPort
 		for _, port := range container.Ports {
 			temp := meshTypes.ContainerPort{}
 			if port.ContainerPort == 0 && port.HostPort != 0 {
@@ -2049,10 +2049,10 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 				}
 
 			}
-			ports[port.Name] = temp
+			ports = append(ports, temp)
 		}
 
-		environmentVariables := make(map[string]meshTypes.EnvironmentVariable)
+		var environmentVariables []meshTypes.EnvironmentVariable
 		for _, envVariable := range container.Env {
 			tempEnvVariable := meshTypes.EnvironmentVariable{}
 			if envVariable.ValueFrom != nil {
@@ -2067,11 +2067,11 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 					tempEnvVariable.Type = string(meshConstants.Secret)
 					tempEnvVariable.Dynamic = true
 				}
-				environmentVariables[tempEnvVariable.Type] = tempEnvVariable
+				environmentVariables = append(environmentVariables, tempEnvVariable)
 			} else {
 				tempEnvVariable.Key = envVariable.Name
 				tempEnvVariable.Value = envVariable.Value
-				environmentVariables[tempEnvVariable.Key] = tempEnvVariable
+				environmentVariables = append(environmentVariables, tempEnvVariable)
 			}
 
 		}

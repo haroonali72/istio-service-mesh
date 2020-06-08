@@ -8,8 +8,10 @@ bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200515095205-e
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200515095205-e4a9ddc7023c/go.mod h1:W2v2M7OwafdE1QYvYmguUfJwDYHrwKxzsr/myEy5OWE=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200519190018-2c6e0b9a0fb6 h1:wK/UXsYs5PUowvGokK0B3FVXmIhxqXBM1B+pgXwpYv0=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200519190018-2c6e0b9a0fb6/go.mod h1:oQC7nQXARdGItk0gTYuDtAJEC8lQ7RF3WUIKsSD/pM4=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200521104057-07aa75d6f2dc h1:2cXJY7pbiLh0YgJ/2L/APN33TYobsPmphps7EnsoAPc=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200521104057-07aa75d6f2dc/go.mod h1:B8JPgfPoboFytvY4n/Owepd8Z/O6ZS5Pu14j667UkYA=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200608061708-27500eb97ec5 h1:GpeD4SXN/JLh6C44l2ewEc/WIUAVrwlOOpQzjhofp0E=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200608061708-27500eb97ec5/go.mod h1:oQC7nQXARdGItk0gTYuDtAJEC8lQ7RF3WUIKsSD/pM4=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200608102033-e592d44c3017 h1:qHBMglpeuKVLKgEvU8Jm3cr/IOTTmnAn26iwAKDQM0Y=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200608102033-e592d44c3017/go.mod h1:oQC7nQXARdGItk0gTYuDtAJEC8lQ7RF3WUIKsSD/pM4=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=

@@ -458,7 +458,7 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		}
 		if http.Retry != nil {
 			vSer.Retries = &v1alpha3.HTTPRetry{}
-			vSer.Retries.Attempts = http.Retry.TotalAttempts
+			vSer.Retries.Attempts = http.Retry.TotalAttempt
 			vSer.Retries.PerTryTimeout = &types.Duration{Seconds: http.Retry.PerTryTimeout}
 			vSer.Retries.RetryOn = http.Retry.RetryOn
 		}

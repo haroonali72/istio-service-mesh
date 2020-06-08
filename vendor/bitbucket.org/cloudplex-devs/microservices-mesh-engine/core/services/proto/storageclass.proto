@@ -28,11 +28,11 @@ message StorageClassServiceResponse {
 }
 
 message StorageClassAttributes{
-    VolumeBindingMode volumeBindingMode =1;
+    VolumeBindingMode volume_binding_mode =1;
     string allowVolumeExpansion  =2;
     string  provisioner =3;
     map<string,string> parameters =4;
-    ReclaimPolicy reclaimPolicy =5;
+    ReclaimPolicy reclaim_policy =5;
     repeated string mountOptions=6;
     repeated TopologySelectorTerm allowedTopologies=7;
 }

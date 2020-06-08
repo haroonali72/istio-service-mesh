@@ -241,7 +241,10 @@ type ContainerAttribute struct {
 	//	}
 	//}
 	//+optional
-	EnvironmentVariables map[string]EnvironmentVariable `json:"environment_variables,omitempty" bson:"environment_variables,omitempty"`
+
+	ContainerName string `json:"container_name"bson:"container_name"`
+
+	EnvironmentVariables []EnvironmentVariable `json:"environment_variables,omitempty" bson:"environment_variables,omitempty"`
 	// image repository configurations. If you have private Docker Registry
 	// create docker registry creation from secrets-management API and provide
 	// profile_id information in this object
@@ -262,7 +265,7 @@ type ContainerAttribute struct {
 	//}
 	// This syntax is to make dynamic parameter replacement simple
 	// +optional
-	Ports map[string]ContainerPort `json:"ports,omitempty" bson:"ports,omitempty"`
+	Ports []ContainerPort `json:"ports,omitempty" bson:"ports,omitempty"`
 	// Docker image tag
 	// More info: https://kubernetes.io/docs/concepts/containers/images
 	// +mandatory
@@ -558,8 +561,8 @@ const (
 )
 
 type RollingUpdateDeployment struct {
-	MaxUnavailable *intstr.IntOrString `json:"max_unavailable,omitempty"`
-	MaxSurge       *intstr.IntOrString `json:"max_surge,omitempty"`
+	MaxUnavailable int32 `json:"max_unavailable,omitempty"`
+	MaxSurge       int32 `json:"max_surge,omitempty"`
 }
 
 type DaemonSetUpdateStrategy struct {
