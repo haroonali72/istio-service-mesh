@@ -14,7 +14,7 @@ import (
 //	CreationDate      time.Time                         `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type PersistentVolumeService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *PersistentVolumeServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *PersistentVolumeServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type PersistentVolumeServiceAttribute struct {
 	Labels                 map[string]string       `json:"labels,omitempty" bson:"labels,omitempty"`

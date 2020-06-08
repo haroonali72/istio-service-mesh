@@ -258,12 +258,11 @@ func getHpa(input *pb.HPA) (*autoscaler.HorizontalPodAutoscaler, error) {
 	}
 	hpaSvc.Name = input.Name
 	hpaSvc.Labels = labels
-	if hpaSvc.Namespace == "" {
-		input.Namespace = "default"
+	if input.Namespace != "" {
+		hpaSvc.Namespace = input.Namespace
 	}
-	hpaSvc.Namespace = input.Namespace
 	if input.ServiceAttributes.CrossObjectVersion.Type == "Deployment" {
-		input.ServiceAttributes.CrossObjectVersion.Version = "app/v1"
+		input.ServiceAttributes.CrossObjectVersion.Version = "apps/v1"
 	} else if input.ServiceAttributes.CrossObjectVersion.Type == "CronJob" {
 		input.ServiceAttributes.CrossObjectVersion.Version = "batch/v1beta1"
 	} else if input.ServiceAttributes.CrossObjectVersion.Type == "StatefulSet" {
