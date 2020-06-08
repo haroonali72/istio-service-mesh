@@ -644,9 +644,9 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 		}
 
 		var ports []v2.ContainerPort
-		for key, port := range container.Ports {
+		for _, port := range container.Ports {
 			temp := v2.ContainerPort{}
-			temp.Name = key
+			temp.Name = port.Name
 			if port.ContainerPort == 0 && port.HostPort == 0 {
 				continue
 			}
@@ -994,9 +994,9 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 		}
 
 		var envVariables []v2.EnvVar
-		for key, envVariable := range container.EnvironmentVariables {
+		for _, envVariable := range container.EnvironmentVariables {
 			tempEnvVariable := v2.EnvVar{}
-			if strings.EqualFold(key, "ConfigMap") {
+			if strings.EqualFold(envVariable.Type, "ConfigMap") {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{ConfigMapKeyRef: &v2.ConfigMapKeySelector{
@@ -1004,7 +1004,7 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 						Key:                  envVariableValue[1],
 					}}}
 
-			} else if strings.EqualFold(key, "Secret") {
+			} else if strings.EqualFold(envVariable.Type, "Secret") {
 				envVariableValue := strings.Split(envVariable.Value, ";")
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
 					ValueFrom: &v2.EnvVarSource{SecretKeyRef: &v2.SecretKeySelector{

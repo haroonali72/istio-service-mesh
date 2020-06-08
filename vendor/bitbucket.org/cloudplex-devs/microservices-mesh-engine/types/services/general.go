@@ -241,7 +241,10 @@ type ContainerAttribute struct {
 	//	}
 	//}
 	//+optional
-	EnvironmentVariables map[string]EnvironmentVariable `json:"environment_variables,omitempty" bson:"environment_variables,omitempty"`
+
+	ContainerName string `json:"container_name"bson:"container_name"`
+
+	EnvironmentVariables []EnvironmentVariable `json:"environment_variables,omitempty" bson:"environment_variables,omitempty"`
 	// image repository configurations. If you have private Docker Registry
 	// create docker registry creation from secrets-management API and provide
 	// profile_id information in this object
@@ -262,7 +265,7 @@ type ContainerAttribute struct {
 	//}
 	// This syntax is to make dynamic parameter replacement simple
 	// +optional
-	Ports map[string]ContainerPort `json:"ports,omitempty" bson:"ports,omitempty"`
+	Ports []ContainerPort `json:"ports,omitempty" bson:"ports,omitempty"`
 	// Docker image tag
 	// More info: https://kubernetes.io/docs/concepts/containers/images
 	// +mandatory
@@ -395,6 +398,18 @@ type VolumeMount struct {
 	PvcSvcName       string                `json:"persistent_volume_claim_name,omitempty" bson:"persistent_volume_claim_name,omitempty"`
 	ConfigMap        *ConfigMapVolumeMount `json:"configmap,omitempty"`
 	Secret           *ConfigMapVolumeMount `json:"secrets,omitempty"`
+	HostPath         *HostPathVolumeMount  `json:"hostpath" bson:"hostpath"`
+	EmptyDir         *EmptyDirVolumeMount  `json:"empty_dir" bson:"empty_dir"`
+}
+
+type EmptyDirVolumeMount struct {
+	EmptyDirName string `json:"name" bson:"name" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed"`
+}
+
+type HostPathVolumeMount struct {
+	HostPathName string        `json:"name" bson:"name" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed"`
+	DirType      *HostPathType `json:"type,omitempty" bson:"type,omitempty" swaggerType:"string" jsonschema:"enum=DirectoryOrCreate,enum=FileOrCreate"`
+	Path         string        `json:"path,omitempty" bson:"path,omitempty"`
 }
 
 type ConfigMapVolumeMount struct {
@@ -558,8 +573,8 @@ const (
 )
 
 type RollingUpdateDeployment struct {
-	MaxUnavailable *intstr.IntOrString `json:"max_unavailable,omitempty"`
-	MaxSurge       *intstr.IntOrString `json:"max_surge,omitempty"`
+	MaxUnavailable int32 `json:"max_unavailable,omitempty"`
+	MaxSurge       int32 `json:"max_surge,omitempty"`
 }
 
 type DaemonSetUpdateStrategy struct {

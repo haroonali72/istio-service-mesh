@@ -160,5 +160,16 @@ var ListOfIgnoredServicesInAppSize = []string{
 	"configmap",
 	"secrets",
 }
+var ListOfServicesInAppSize = []ServiceSubType{
+	Deployment,
+	StatefulSet,
+	DaemonSet,
+	CronJob,
+	Job,
+	ServerlessService,
+	PubSubEventing,
+	PubSubGCPSource,
+	LegacyService,
+}
 
 const LetterBytes = "abcdefghijklmnopqrstuvwxyz"
