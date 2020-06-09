@@ -456,6 +456,12 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 			vSer.CorsPolicy.MaxAge = &types.Duration{Nanos: http.CorsPolicy.MaxAge}
 			vSer.CorsPolicy.AllowCredentials = &types.BoolValue{Value: http.CorsPolicy.AllowCredentials}
 		}
+		if http.Retry != nil {
+			vSer.Retries = &v1alpha3.HTTPRetry{}
+			vSer.Retries.Attempts = http.Retry.TotalAttempt
+			vSer.Retries.PerTryTimeout = &types.Duration{Seconds: http.Retry.PerTryTimeout}
+			vSer.Retries.RetryOn = http.Retry.RetryOn
+		}
 		vService.Http = append(vService.Http, &vSer)
 	}
 

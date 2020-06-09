@@ -39,6 +39,7 @@ type GrpcConn struct {
 
 var serviceTemplates []*svcTypes.ServiceTemplate
 var mutex sync.Mutex
+var serviceDepInfo = make(map[string][]string)
 
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
@@ -123,6 +124,9 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 	wg.Wait()
 
+	//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
+	resolveSvcDependencies(serviceDepInfo)
+
 	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
 
 	bytes, err := json.Marshal(serviceTemplates)
@@ -133,8 +137,36 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 
 	serviceTemplates = nil
+	serviceDepInfo = map[string][]string{}
 	response.Resource = bytes
 	return response, err
+}
+
+func resolveSvcDependencies(svcDepInfo map[string][]string) {
+	for beforeSvcId, envArr := range svcDepInfo {
+		for _, value := range envArr {
+			for _, svcTemp := range serviceTemplates {
+				if svcTemp.ServiceSubType == meshConstants.KubernetesService && strings.Contains(value, svcTemp.Name) {
+					for _, afterSvcId := range svcTemp.AfterServices {
+						beforeSvctemp := getSvcById(beforeSvcId)
+						afterSvctemp := getSvcById(*afterSvcId)
+						beforeSvctemp.AfterServices = append(beforeSvctemp.AfterServices, &afterSvctemp.ServiceId)
+						afterSvctemp.BeforeServices = append(afterSvctemp.BeforeServices, &beforeSvctemp.ServiceId)
+					}
+				}
+			}
+		}
+	}
+}
+
+func getSvcById(serviceId string) *svcTypes.ServiceTemplate {
+	for _, svcTemp := range serviceTemplates {
+		if svcTemp.ServiceId == serviceId {
+			return svcTemp
+		}
+	}
+
+	return nil
 }
 
 func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job, wg *sync.WaitGroup) error {
@@ -2161,7 +2193,6 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		if _, ok := svcAttr["update_Strategy"]; ok {
 			svcAttr["update_Strategy"] = struct{}{}
 		}
-
 		id := strconv.Itoa(rand.Int())
 		template.ServiceId = id
 		template.IsDiscovered = true
@@ -3694,7 +3725,11 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 
 	//discovering secret and config maps in deployment containers
 	for _, env := range container.Env {
-		if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
+
+		if env.Name != "" && env.Value != "" {
+			//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
+			serviceDepInfo[svcTemp.ServiceId] = append(serviceDepInfo[svcTemp.ServiceId], env.Value)
+		} else if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
 			secretname := env.ValueFrom.SecretKeyRef.Name
 			err := conn.resolveSecretDepency(ctx, secretname, namespace, svcTemp)
 			if err != nil {
@@ -4134,4 +4169,11 @@ func RandStringBytes(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
+	if _, ok := svcAttr["volume_claim_templates"]; ok {
+		delete(svcAttr, "volume_claim_templates")
+	}
 }

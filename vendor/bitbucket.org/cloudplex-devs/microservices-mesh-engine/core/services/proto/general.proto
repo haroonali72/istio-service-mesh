@@ -3,9 +3,9 @@ package proto;
 
 
 message ContainerAttributes{
-    map<string,EnvironmentVariable> environment_variables = 1;
+   repeated EnvironmentVariable environment_variables = 1;
     ImageRepositoryConfigurations image_repository_configurations = 2;
-    map<string, ContainerPort> ports = 3;
+    repeated ContainerPort ports = 3;
     string tag = 4;
     string image_prefix = 5;
     string image_name = 6;

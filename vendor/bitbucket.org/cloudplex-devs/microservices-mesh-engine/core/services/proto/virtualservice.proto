@@ -75,7 +75,7 @@ message HttpRewrite {
     string                      authority			=2;
 }
 message HttpRetry {
-    int32                       total_attempts		=1;
+    int32                       total_attempt		=1;
     int64                     per_try_timeout		=2;
     string                      retry_on			=3;
 }

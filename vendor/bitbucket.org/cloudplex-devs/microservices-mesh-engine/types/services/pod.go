@@ -15,7 +15,7 @@ import (
 //	CreationDate      time.Time            `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type PodService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *PodServiceAttribute `json:"service_attributes, omitempty"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *PodServiceAttribute `json:"service_attributes, omitempty"  bson:"company_id" binding:"required"`
 }
 type PodServiceAttribute struct {
 	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`

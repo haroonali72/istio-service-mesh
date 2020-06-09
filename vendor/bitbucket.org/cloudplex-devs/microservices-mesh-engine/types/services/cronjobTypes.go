@@ -13,7 +13,7 @@ import "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types"
 //CreationDate      time.Time                `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type CronJobService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *CronJobServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
+	ServiceAttributes      *CronJobServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
 }
 type CronJobServiceAttribute struct {
 	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`
