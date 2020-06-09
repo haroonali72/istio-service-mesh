@@ -3695,7 +3695,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 				}
 
 				if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
-					addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+					//addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 					k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					k8serviceTemp.Deleted = true
@@ -3713,7 +3713,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					}
 					if !isSameService {
 						//in case if there are multuple deployments attached with same kubernetes service
-						addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+						//addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
@@ -4169,11 +4169,4 @@ func RandStringBytes(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
-	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
-	if _, ok := svcAttr["volume_claim_templates"]; ok {
-		delete(svcAttr, "volume_claim_templates")
-	}
 }
