@@ -39,6 +39,7 @@ type GrpcConn struct {
 
 var serviceTemplates []*svcTypes.ServiceTemplate
 var mutex sync.Mutex
+var serviceDepInfo = make(map[string][]string)
 
 func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequest) (response *pb.K8SResourceResponse, err error) {
 	response = new(pb.K8SResourceResponse)
@@ -123,6 +124,9 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 	wg.Wait()
 
+	//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
+	resolveSvcDependencies(serviceDepInfo)
+
 	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
 
 	bytes, err := json.Marshal(serviceTemplates)
@@ -133,8 +137,36 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	}
 
 	serviceTemplates = nil
+	serviceDepInfo = map[string][]string{}
 	response.Resource = bytes
 	return response, err
+}
+
+func resolveSvcDependencies(svcDepInfo map[string][]string) {
+	for beforeSvcId, envArr := range svcDepInfo {
+		for _, value := range envArr {
+			for _, svcTemp := range serviceTemplates {
+				if svcTemp.ServiceSubType == meshConstants.KubernetesService && strings.Contains(value, svcTemp.Name) {
+					for _, afterSvcId := range svcTemp.AfterServices {
+						beforeSvctemp := getSvcById(beforeSvcId)
+						afterSvctemp := getSvcById(*afterSvcId)
+						beforeSvctemp.AfterServices = append(beforeSvctemp.AfterServices, &afterSvctemp.ServiceId)
+						afterSvctemp.BeforeServices = append(afterSvctemp.BeforeServices, &beforeSvctemp.ServiceId)
+					}
+				}
+			}
+		}
+	}
+}
+
+func getSvcById(serviceId string) *svcTypes.ServiceTemplate {
+	for _, svcTemp := range serviceTemplates {
+		if svcTemp.ServiceId == serviceId {
+			return svcTemp
+		}
+	}
+
+	return nil
 }
 
 func (conn *GrpcConn) jobK8sToCp(ctx context.Context, jobs []batch.Job, wg *sync.WaitGroup) error {
@@ -229,6 +261,10 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(jobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(jobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -343,6 +379,10 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(cronjobTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(cronjobTemp)
 		}
 
 		if vol.Projected != nil {
@@ -459,6 +499,10 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(daemonsetTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(daemonsetTemp)
 		}
 
 		if vol.Projected != nil {
@@ -595,6 +639,10 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(stsTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(stsTemp)
 		}
 
 		if vol.Projected != nil {
@@ -730,6 +778,10 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 			if err != nil {
 				return
 			}
+		} else if vol.HostPath != nil {
+			addHostPathConfigurations(depTemp)
+		} else if vol.EmptyDir != nil {
+			addEmptyDirConfigurations(depTemp)
 		}
 
 		if vol.Projected != nil {
@@ -3643,7 +3695,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 				}
 
 				if !isAlreadyExist(k8serviceTemp.Namespace, k8serviceTemp.ServiceSubType, k8serviceTemp.Name) {
-					addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+					//addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 					k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 					svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
 					k8serviceTemp.Deleted = true
@@ -3661,7 +3713,7 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 					}
 					if !isSameService {
 						//in case if there are multuple deployments attached with same kubernetes service
-						addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
+						//addKubernetesServiceConfigurations(svcTemp, k8serviceTemp)
 
 						k8serviceTemp.AfterServices = append(k8serviceTemp.AfterServices, &svcTemp.ServiceId)
 						svcTemp.BeforeServices = append(svcTemp.BeforeServices, &k8serviceTemp.ServiceId)
@@ -3673,7 +3725,11 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 
 	//discovering secret and config maps in deployment containers
 	for _, env := range container.Env {
-		if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
+
+		if env.Name != "" && env.Value != "" {
+			//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
+			serviceDepInfo[svcTemp.ServiceId] = append(serviceDepInfo[svcTemp.ServiceId], env.Value)
+		} else if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil {
 			secretname := env.ValueFrom.SecretKeyRef.Name
 			err := conn.resolveSecretDepency(ctx, secretname, namespace, svcTemp)
 			if err != nil {
@@ -3689,6 +3745,56 @@ func (conn *GrpcConn) resolveContainerDependency(ctx context.Context, kubeSvcLis
 	}
 
 	return nil
+}
+
+func addHostPathConfigurations(svcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
+		for _, container := range containterArry {
+			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
+				for _, volMount := range volumeMountArr {
+					volName := volMount.(map[string]interface{})["name"].(string)
+					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
+						for _, volume := range volumeArry {
+							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"]
+							if ok && volName == volume.(map[string]interface{})["name"] {
+								hostpathConf := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["host_path"].(map[string]interface{})
+								hostpathConf["name"] = volName
+								volMount.(map[string]interface{})["hostpath"] = hostpathConf
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
+}
+
+func addEmptyDirConfigurations(svcTemp *svcTypes.ServiceTemplate) {
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	if containterArry, ok := svcAttr["containers"].([]interface{}); ok {
+		for _, container := range containterArry {
+			if volumeMountArr, ok := container.(map[string]interface{})["volume_mounts"].([]interface{}); ok {
+				for _, volMount := range volumeMountArr {
+					volName := volMount.(map[string]interface{})["name"].(string)
+					if volumeArry, ok := svcAttr["volumes"].([]interface{}); ok {
+						for _, volume := range volumeArry {
+							_, ok := volume.(map[string]interface{})["volumeSource"].(map[string]interface{})["empty_dir"]
+							if ok && volName == volume.(map[string]interface{})["name"] {
+								emptydirConf := make(map[string]interface{})
+								emptydirConf["name"] = volName
+								volMount.(map[string]interface{})["empty_dir"] = emptydirConf
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	svcTemp.ServiceAttributes = svcAttr
 }
 
 func addRbacConfigurations(svcTemp *svcTypes.ServiceTemplate, rbacBindingTemp *svcTypes.ServiceTemplate) {
@@ -3810,6 +3916,13 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 	}
 
 	svcTemp.ServiceAttributes = svcAttr
+}
+
+func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
+	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
+	if _, ok := svcAttr["volume_claim_templates"]; ok {
+		delete(svcAttr, "volume_claim_templates")
+	}
 }
 
 func (conn *GrpcConn) resolveHpaDependency(svcTemp *svcTypes.ServiceTemplate, hpa autoscale.HorizontalPodAutoscaler) error {
@@ -4056,11 +4169,4 @@ func RandStringBytes(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
-}
-
-func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
-	svcAttr := stsTemp.ServiceAttributes.(map[string]interface{})
-	if _, ok := svcAttr["volume_claim_templates"]; ok {
-		delete(svcAttr, "volume_claim_templates")
-	}
 }
