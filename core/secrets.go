@@ -286,9 +286,9 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 		kube.Data = map2
 	}
 
-	if len(input.SecretServiceAttributes.StringData) > 0 {
+	if len(input.SecretServiceAttributes.SecretData) > 0 {
 		kube.StringData = make(map[string]string)
-		for key, value := range input.SecretServiceAttributes.StringData {
+		for key, value := range input.SecretServiceAttributes.SecretData {
 			kube.StringData[key] = value
 		}
 	}

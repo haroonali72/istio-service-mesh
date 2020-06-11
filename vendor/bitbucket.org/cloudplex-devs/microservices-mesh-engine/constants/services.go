@@ -14,7 +14,7 @@ const (
 	AzureType  ServiceType = "azure_managed"
 	GCPType    ServiceType = "gcp_managed"
 	DOType     ServiceType = "do_managed"
-	PubSubType ServiceType = "pubsub"
+	PubSubType ServiceType = "eventing"
 	BuildType  ServiceType = "build"
 
 	//------------------Services------------------------------------//
@@ -145,7 +145,7 @@ var (
 		Gateway,
 		VirtualService,
 		DestinationRule,
-		ServiceEntry,
+		//ServiceEntry,
 		MeshPolicy,
 	}
 	serverlessServicesSubTypes = []ServiceSubType{
@@ -154,6 +154,7 @@ var (
 	otherServicesSubTypes = []ServiceSubType{
 		LegacyService,
 		ApiService,
+		ServiceEntry,
 	}
 	awsServiceSubTypes = []ServiceSubType{
 		AWSS3,

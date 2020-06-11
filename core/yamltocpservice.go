@@ -1916,7 +1916,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 	}
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
-
+		containerTemp.ContainerName = container.Name
 		if container.ReadinessProbe != nil {
 			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
 				containerTemp.ReadinessProbe = rp
