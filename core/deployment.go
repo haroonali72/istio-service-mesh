@@ -578,7 +578,9 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 			name = name + "-init"
 		}
 		containerTemp.Name = name
-		containerTemp.Name = container.ContainerName
+		if container.ContainerName != "" {
+			containerTemp.Name = container.ContainerName
+		}
 		if err := putCommandAndArguments(&containerTemp, container.Command, container.Args); err != nil {
 			return nil, nil, err
 		}
