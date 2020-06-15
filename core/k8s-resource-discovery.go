@@ -241,6 +241,11 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 		}
 	}
 
+	//init container dependency finding
+	if len(job.Spec.Template.Spec.InitContainers) > 0 {
+		addInitContainerConfigurations(jobTemp)
+	}
+
 	//volume dependency finding
 	for _, vol := range job.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -357,6 +362,11 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 		if err != nil {
 			return
 		}
+	}
+
+	//init container dependency finding
+	if len(cronjob.Spec.JobTemplate.Spec.Template.Spec.InitContainers) > 0 {
+		addInitContainerConfigurations(cronjobTemp)
 	}
 
 	//volume dependency finding
@@ -479,6 +489,11 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 		}
 	}
 
+	//init container dependency finding
+	if len(daemonset.Spec.Template.Spec.InitContainers) > 0 {
+		addInitContainerConfigurations(daemonsetTemp)
+	}
+
 	//volume dependency finding
 	for _, vol := range daemonset.Spec.Template.Spec.Volumes {
 		if vol.Secret != nil {
@@ -597,6 +612,11 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 		if err != nil {
 			return
 		}
+	}
+
+	//init container dependency finding
+	if len(statefulset.Spec.Template.Spec.InitContainers) > 0 {
+		addInitContainerConfigurations(stsTemp)
 	}
 
 	//finding statefulset PVC template dependency
@@ -756,6 +776,11 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 		if err != nil {
 			return
 		}
+	}
+
+	//init container dependency finding
+	if len(dep.Spec.Template.Spec.InitContainers) > 0 {
+		addInitContainerConfigurations(depTemp)
 	}
 
 	//volume dependency finding
@@ -3916,6 +3941,35 @@ func addKubernetesServiceConfigurations(svcTemp *svcTypes.ServiceTemplate, kubeS
 	}
 
 	svcTemp.ServiceAttributes = svcAttr
+}
+
+func addInitContainerConfigurations(svcTemp *svcTypes.ServiceTemplate) {
+	//enable init container
+	svcAttr := svcTemp.ServiceAttributes.(map[string]interface{})
+	svcAttr["enable_init"] = true
+	svcTemp.ServiceAttributes = svcAttr
+
+	//creating init container service and resolving dependency
+	var initContainerSvc svcTypes.ServiceTemplate
+	initContainerSvc.ServiceId = strconv.Itoa(rand.Int())
+	initContainerSvc.Name = "service-" + RandStringBytes(5) + "-ic"
+	initContainerSvc.Version = "v1"
+	initContainerSvc.Namespace = svcTemp.Namespace
+	initContainerSvc.Replicas = svcTemp.Replicas
+	initContainerSvc.ServiceType = meshConstants.Kubernetes
+	initContainerSvc.ServiceSubType = meshConstants.InitContainer
+	initContainerSvc.IsDiscovered = true
+
+	//assigning svcTemp init container attributes to iniiContainerSvc attributes
+	initContainerAttr := initContainerSvc.ServiceAttributes.(map[string]interface{})
+	initContainerAttr["containers"] = svcAttr["init_containers"]
+	initContainerSvc.ServiceAttributes = initContainerAttr
+
+	//resolving init container service dependency
+	initContainerSvc.AfterServices = append(initContainerSvc.AfterServices, &svcTemp.ServiceId)
+	svcTemp.BeforeServices = append(svcTemp.BeforeServices, &initContainerSvc.ServiceId)
+
+	serviceTemplates = append(serviceTemplates, &initContainerSvc)
 }
 
 func removeStsPvcTemplate(stsTemp *svcTypes.ServiceTemplate) {
