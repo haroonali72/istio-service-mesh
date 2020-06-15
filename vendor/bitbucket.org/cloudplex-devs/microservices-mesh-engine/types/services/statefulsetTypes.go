@@ -15,7 +15,7 @@ import (
 //	CreationDate      time.Time                    `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 type StatefulSetService struct {
 	types.ServiceBasicInfo `json:",inline" bson:",inline"`
-	ServiceAttributes      *StatefulSetServiceAttribute `json:"service_attributes"  bson:"company_id" binding:"required"`
+	ServiceAttributes      *StatefulSetServiceAttribute `json:"service_attributes"  bson:"service_attributes" binding:"required"`
 }
 type StatefulSetServiceAttribute struct {
 	CommonContainerAttributes `json:",inline,omitempty" bson:",inline,omitempty"`
