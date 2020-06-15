@@ -263,7 +263,7 @@ func getClusterRole(input *pb.ClusterRole) (*v1.ClusterRole, error) {
 			policyrule.ResourceNames = append(policyrule.ResourceNames, resourcename)
 
 		}
-		for _, resourcename := range rule.Resources {
+		for _, resourcename := range rule.ResourceName {
 			policyrule.Resources = append(policyrule.Resources, resourcename)
 		}
 		clstrRolSvc.Rules = append(clstrRolSvc.Rules, policyrule)

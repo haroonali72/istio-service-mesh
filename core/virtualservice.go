@@ -414,9 +414,9 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 		}
 
 		if http.FaultInjection != nil {
+			vSer.Fault = new(v1alpha3.HTTPFaultInjection)
 
 			if http.FaultInjection.DelayType == "FixedDelay" {
-				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
 						FixedDelay: &types.Duration{Seconds: int64(http.FaultInjection.DelayValue)},
@@ -424,7 +424,6 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 					Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
 				}
 			} else if http.FaultInjection.DelayType == "ExponentialDelay" {
-				vSer.Fault = &v1alpha3.HTTPFaultInjection{}
 				vSer.Fault.Delay = &v1alpha3.HTTPFaultInjection_Delay{
 					HttpDelayType: &v1alpha3.HTTPFaultInjection_Delay_FixedDelay{
 						FixedDelay: &types.Duration{Seconds: int64(http.FaultInjection.DelayValue)},
@@ -432,18 +431,22 @@ func getVirtualService(input *pb.VirtualService) (*istioClient.VirtualService, e
 					Percentage: &v1alpha3.Percent{Value: float64(http.FaultInjection.FaultPercentage)},
 				}
 			}
-			value, _ := strconv.ParseInt(http.FaultInjection.AbortPercentage, 10, 32)
+			value, _ := strconv.ParseInt(http.FaultInjection.AbortErrorValue, 10, 32)
+			percentage, _ := strconv.ParseFloat(http.FaultInjection.AbortPercentage, 64)
 			if http.FaultInjection.AbortErrorType == "HttpStatus" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
+					ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_HttpStatus{HttpStatus: int32(value)},
+					Percentage: &v1alpha3.Percent{Value: percentage},
 				}
 			} else if http.FaultInjection.AbortErrorType == "GrpcStatus" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortPercentage},
+					ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_GrpcStatus{GrpcStatus: http.FaultInjection.AbortErrorValue},
+					Percentage: &v1alpha3.Percent{Value: percentage},
 				}
 			} else if http.FaultInjection.AbortErrorType == "Http2Status" {
 				vSer.Fault.Abort = &v1alpha3.HTTPFaultInjection_Abort{
-					ErrorType: &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortPercentage},
+					ErrorType:  &v1alpha3.HTTPFaultInjection_Abort_Http2Error{Http2Error: http.FaultInjection.AbortErrorValue},
+					Percentage: &v1alpha3.Percent{Value: percentage},
 				}
 			}
 		}
