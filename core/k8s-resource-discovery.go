@@ -3961,7 +3961,7 @@ func addInitContainerConfigurations(svcTemp *svcTypes.ServiceTemplate) {
 	initContainerSvc.IsDiscovered = true
 
 	//assigning svcTemp init container attributes to iniiContainerSvc attributes
-	initContainerAttr := initContainerSvc.ServiceAttributes.(map[string]interface{})
+	initContainerAttr := make(map[string]interface{})
 	initContainerAttr["containers"] = svcAttr["init_containers"]
 	initContainerSvc.ServiceAttributes = initContainerAttr
 
