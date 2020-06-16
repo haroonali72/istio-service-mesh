@@ -517,6 +517,9 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 	deployment.ServiceAttributes.NodeSelector = make(map[string]string)
 	deployment.ServiceAttributes.NodeSelector = service.Spec.Template.Spec.NodeSelector
 
+	if service.Spec.Template.Spec.ServiceAccountName != "" {
+		deployment.ServiceAttributes.ServiceAccountName = service.Spec.Template.Spec.ServiceAccountName
+	}
 	if service.Spec.Strategy.Type != "" {
 		if service.Spec.Strategy.Type == apps.RecreateDeploymentStrategyType {
 			var CpDepStrategy = new(meshTypes.DeploymentStrategy)
