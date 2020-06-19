@@ -2837,7 +2837,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie = new(meshTypes.HttpCookie)
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Name = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Path = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
-					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = int64(input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds())
+					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds
 
 				} else if input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetUseSourceIp() == true {
 					vServ.ServiceAttributes.TrafficPolicy.LoadBalancer.ConsistentHash.HTTPHeaderName = input.Spec.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpHeaderName()
@@ -2973,7 +2973,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 						setting.LoadBalancer.ConsistentHash.HttpCookie.Name = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Name
 						setting.LoadBalancer.ConsistentHash.HttpCookie.Path = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Path
 
-						setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+						setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds
 
 					}
 
@@ -3075,7 +3075,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 						if port.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
 							setting.LoadBalancer.ConsistentHash.HttpCookie = new(meshTypes.HttpCookie)
 							if port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl != nil {
-								setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+								setting.LoadBalancer.ConsistentHash.HttpCookie.Ttl = port.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds
 
 							}
 
@@ -3123,7 +3123,7 @@ func convertToCPDestinationRule(input *v1alpha3.DestinationRule) (*meshTypes.Des
 
 					if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie() != nil {
 						if subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl != nil {
-							ser.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Nanoseconds()
+							ser.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl = subset.TrafficPolicy.LoadBalancer.GetConsistentHash().GetHttpCookie().Ttl.Seconds
 
 						}
 

@@ -283,15 +283,15 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			server.Port.Protocol = serverInput.Port.GetProtocol().String()
 		}
 		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.Server_TLSOptions)
+			server.Tls = new(v1alpha3.ServerTLSSettings)
 			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.Server_TLSOptions_TLSmode(int32(serverInput.Tls.Mode))
+			server.Tls.Mode = v1alpha3.ServerTLSSettings_TLSmode(int32(serverInput.Tls.Mode))
 			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
 			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
 			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
 			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.Server_TLSOptions_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
+			server.Tls.MinProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
+			server.Tls.MaxProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
 		}
 		server.Hosts = serverInput.Hosts
 		gateway.Servers = append(gateway.Servers, server)

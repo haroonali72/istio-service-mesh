@@ -47,11 +47,11 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/google/gofuzz
 # github.com/google/uuid v1.1.1
 github.com/google/uuid
-# github.com/googleapis/gnostic v0.3.1
+# github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
-# github.com/imdario/mergo v0.3.7
+# github.com/imdario/mergo v0.3.5
 github.com/imdario/mergo
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
@@ -210,13 +210,14 @@ gopkg.in/mgo.v2/internal/json
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20200430220031-f818d6294944 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
-istio.io/api/authentication/v1alpha1
+# istio.io/api v0.0.0-20200615162408-9b5293c30ef5 => istio.io/api v0.0.0-20200615162408-9b5293c30ef5
 istio.io/api/networking/v1alpha3
-# istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4 => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
-istio.io/client-go/pkg/apis/authentication/v1alpha1
+istio.io/api/security/v1beta1
+istio.io/api/type/v1beta1
+# istio.io/client-go v0.0.0-20200615164228-d77b0b53b6a0 => istio.io/client-go v0.0.0-20200615164228-d77b0b53b6a0
 istio.io/client-go/pkg/apis/networking/v1alpha3
-# istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9
+istio.io/client-go/pkg/apis/security/v1beta1
+# istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200615162707-ab08778e3a4e
 istio.io/gogo-genproto/googleapis/google/api
 # k8s.io/api v0.18.2 => k8s.io/api v0.16.4
 k8s.io/api/admissionregistration/v1
