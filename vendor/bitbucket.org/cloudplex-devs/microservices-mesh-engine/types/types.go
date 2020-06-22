@@ -63,6 +63,8 @@ type ServiceResp struct {
 	StatusIndividual []string `json:"status_individual"`
 	Status           string   `json:"status"`
 	Reason           string   `json:"reason"`
+	Namespace        string   `json:"namespace"`
+	ServiceSubType   string   `json:"service_sub_type"`
 }
 
 type LogRequest struct {
@@ -164,4 +166,21 @@ type LoggingRequestFrontend struct {
 	CompanyId string `json:"company_id"`
 	UserId    string `json:"userId"`
 	Type      string `json:"type"`
+}
+
+type GitImport struct {
+	ImportType string `json:"import_type"`
+	URL        string `json:"url"`
+}
+
+type GitExport struct {
+	ExportType string `json:"export_type"`
+	ProfileId  string `json:"profile_id"`
+	URL        string `json:"url"`
+}
+
+type GitMain struct {
+	ProfileName string      `json:"profile_name" valid:"required"`
+	ServiceId   string      `json:"service_id" valid:"required"`
+	GitCreds    interface{} `json:"git_credentials"`
 }

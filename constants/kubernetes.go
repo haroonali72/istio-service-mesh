@@ -22,11 +22,12 @@ const (
 	StorageClass          K8sKind = "StorageClass"
 	HPA                   K8sKind = "HorizontalPodAutoscaler"
 
-	Gateway         MeshKind = "Gateway"
-	VirtualService  MeshKind = "VirtualService"
-	DestinationRule MeshKind = "DestinationRule"
-	MeshPolicy      MeshKind = "Policy"
-	ServiceEntry    MeshKind = "ServiceEntry"
+	Gateway            MeshKind = "Gateway"
+	VirtualService     MeshKind = "VirtualService"
+	DestinationRule    MeshKind = "DestinationRule"
+	MeshPolicy         MeshKind = "Policy"
+	ServiceEntry       MeshKind = "ServiceEntry"
+	PeerAuthentication MeshKind = "PeerAuthentication"
 )
 
 var (

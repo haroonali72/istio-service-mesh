@@ -43,11 +43,12 @@ const (
 	Pod                ServiceSubType = "pod"
 	// Istio service sub type
 
-	Gateway         ServiceSubType = "gateway"
-	VirtualService  ServiceSubType = "virtual_service"
-	DestinationRule ServiceSubType = "destination_rule"
-	ServiceEntry    ServiceSubType = "service_entry"
-	MeshPolicy      ServiceSubType = "policy"
+	Gateway            ServiceSubType = "gateway"
+	VirtualService     ServiceSubType = "virtual_service"
+	DestinationRule    ServiceSubType = "destination_rule"
+	ServiceEntry       ServiceSubType = "service_entry"
+	MeshPolicy         ServiceSubType = "policy"
+	PeerAuthentication ServiceSubType = "peer_authentication"
 
 	// Serverless Service Sub Types
 	ServerlessService ServiceSubType = "serverless"
