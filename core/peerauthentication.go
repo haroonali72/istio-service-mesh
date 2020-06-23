@@ -10,11 +10,12 @@ import (
 	"errors"
 	"google.golang.org/grpc"
 	securityv1beta1 "istio.io/api/security/v1beta1"
+	v1beta1Type "istio.io/api/type/v1beta1"
 	"istio.io/client-go/pkg/apis/security/v1beta1"
 	"strings"
 )
 
-func (s *Server) CreatePeerAuthenticaion(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
+func (s *Server) CreatePeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -62,7 +63,7 @@ func (s *Server) CreatePeerAuthenticaion(ctx context.Context, req *pb.PeerAuthen
 
 	return serviceResp, nil
 }
-func (s *Server) GetPeerAuthenticaion(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
+func (s *Server) GetPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -108,7 +109,7 @@ func (s *Server) GetPeerAuthenticaion(ctx context.Context, req *pb.PeerAuthentic
 
 	return serviceResp, nil
 }
-func (s *Server) DeletePeerAuthenticaion(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
+func (s *Server) DeletePeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -154,7 +155,7 @@ func (s *Server) DeletePeerAuthenticaion(ctx context.Context, req *pb.PeerAuthen
 
 	return serviceResp, nil
 }
-func (s *Server) PatchPeerAuthenticaion(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -200,7 +201,7 @@ func (s *Server) PatchPeerAuthenticaion(ctx context.Context, req *pb.PeerAuthent
 
 	return serviceResp, nil
 }
-func (s *Server) PutPeerAuthenticaion(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
+func (s *Server) PutPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
@@ -265,6 +266,8 @@ func getPeerAuthenticaion(input *pb.PeerAuthenticationService) (*v1beta1.PeerAut
 	} else {
 		peerAuthSvc.Namespace = input.Namespace
 	}
+
+	peerAuthSvc.Spec.Mtls = new(securityv1beta1.PeerAuthentication_MutualTLS)
 	if input.ServiceAttributes.TlsMode.String() == pb.TlsMode_STRICT.String() {
 		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_STRICT
 	} else if input.ServiceAttributes.TlsMode.String() == pb.TlsMode_PERMISSIVE.String() {
@@ -274,6 +277,8 @@ func getPeerAuthenticaion(input *pb.PeerAuthenticationService) (*v1beta1.PeerAut
 	} else {
 		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_UNSET
 	}
+
+	peerAuthSvc.Spec.Selector = new(v1beta1Type.WorkloadSelector)
 	peerAuthSvc.Spec.Selector.MatchLabels = input.ServiceAttributes.Labels
 	return peerAuthSvc, nil
 }

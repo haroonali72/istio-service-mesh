@@ -96,6 +96,7 @@ func main() {
 	pb.RegisterSecretServer(srv, svc)
 	pb.RegisterRoleBindingServer(srv, svc)
 	pb.RegisterPodServer(srv, svc)
+	pb.RegisterPeerAuthenticationServer(srv, svc)
 	//pb.RegisterClusterroleServer(srv, svc)
 	//pb.RegisterClusterrolebindingServer(srv, svc)
 	// Register reflection service on gRPC server.
