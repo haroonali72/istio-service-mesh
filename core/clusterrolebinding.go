@@ -4,7 +4,6 @@ import (
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
-	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
@@ -284,7 +283,7 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 
 	if input.ServiceAttributes.RoleReference != nil {
 		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
-		if input.ServiceAttributes.RoleReference.Kind == meshConstants.ClusterRole.String() {
+		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() {
 			clstrRolBindSvc.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole"
 		} else {
 			clstrRolBindSvc.RoleRef.Kind = constants.Role.String() //"Role"
