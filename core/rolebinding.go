@@ -306,7 +306,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
 	if input.ServiceAttributes.RoleReference != nil {
-		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() || input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
+		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() {
 			roleBind.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole" //input.ServiceAttributes.Reference.Kind
 
 		} else if input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
