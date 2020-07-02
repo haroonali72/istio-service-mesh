@@ -290,6 +290,7 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
 			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
 			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
+			server.Tls.CredentialName = serverInput.Tls.CredentialName
 			server.Tls.MinProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
 			server.Tls.MaxProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
 		}
