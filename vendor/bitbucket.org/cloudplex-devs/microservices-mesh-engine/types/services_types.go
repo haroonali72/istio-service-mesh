@@ -202,9 +202,9 @@ type ServiceBasicInfo struct {
 	Embeds []string `json:"embeds,omitempty" bson:"embeds,omitempty"`
 }
 type HookMain struct {
-	Weight     int64    `json:"weight" bson:"weight"`
-	ServiceID  string   `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
-	HooksTypes []string `json:"hook_types,omitempty" bson:"hook_types"`
+	Weight     int64            `json:"weight" bson:"weight"`
+	ServiceID  string           `json:"service_id,omitempty" bson:"service_id" binding:"required" valid:"alphanumspecial,length(6|100)~service_id must contain between 6 and 100 characters,lowercase~lowercase alphanumeric characters are allowed,required~service_id is missing in request"`
+	HooksTypes []constants.Hook `json:"hook_types,omitempty" bson:"hook_types"`
 }
 type ServiceTemplate struct {
 	HookConfiguration *HookConfiguration `json:"hook_configuration,omitempty"`
