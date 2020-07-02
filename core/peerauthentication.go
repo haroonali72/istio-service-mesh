@@ -7,16 +7,15 @@ import (
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
+	"errors"
 	"google.golang.org/grpc"
-	"istio.io/api/networking/v1alpha3"
-	istioClient "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	securityv1beta1 "istio.io/api/security/v1beta1"
+	v1beta1Type "istio.io/api/type/v1beta1"
+	"istio.io/client-go/pkg/apis/security/v1beta1"
 	"strings"
 )
 
-type Server struct {
-}
-
-func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) CreatePeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	utils.Info.Println(ctx)
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
@@ -24,7 +23,9 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+
+	peerAuthSvcReq, err := getPeerAuthRequestObject(req)
+
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -39,7 +40,7 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(peerAuthSvcReq)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -61,28 +62,15 @@ func (s *Server) CreateGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
 	return serviceResp, nil
-
-	/*converToResp(serviceResp,req.ProjectId,statusCode,resp)
-
-	url := fmt.Sprintf("%s%s",constants.KubernetesEngineURL,constants.KUBERNETES_SERVICES_DEPLOYMENT)
-	statusCode, resp, err := utils.Post(url,ksdRequest,getHeaders(ctx,req.ProjectId))
-
-	if err != nil {
-		utils.Error.Println(err)
-		getErrorResp(serviceResp,err)
-		return serviceResp,err
-	}
-	converToResp(serviceResp,req.ProjectId,statusCode,resp)
-	return serviceResp,nil*/
 }
-func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) GetPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	peerAuthSvcReq, err := getPeerAuthenticaion(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -98,7 +86,7 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(peerAuthSvcReq)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -121,14 +109,14 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 
 	return serviceResp, nil
 }
-func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) DeletePeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	peerAuthSvcReq, err := getPeerAuthenticaion(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -144,7 +132,7 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(peerAuthSvcReq)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -167,14 +155,14 @@ func (s *Server) DeleteGateway(ctx context.Context, req *pb.GatewayService) (*pb
 
 	return serviceResp, nil
 }
-func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PatchPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	peerAuthSvcReq, err := getPeerAuthenticaion(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -190,7 +178,7 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(peerAuthSvcReq)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -213,14 +201,14 @@ func (s *Server) PatchGateway(ctx context.Context, req *pb.GatewayService) (*pb.
 
 	return serviceResp, nil
 }
-func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.ServiceResponse, error) {
+func (s *Server) PutPeerAuthentication(ctx context.Context, req *pb.PeerAuthenticationService) (*pb.ServiceResponse, error) {
 	serviceResp := new(pb.ServiceResponse)
 	serviceResp.Status = &pb.ServiceStatus{
 		Id:        req.ServiceId,
 		ServiceId: req.ServiceId,
 		Name:      req.Name,
 	}
-	ksdRequest, err := getRequestObject(req)
+	peerAuthSvcReq, err := getPeerAuthenticaion(req)
 
 	if err != nil {
 		utils.Error.Println(err)
@@ -236,7 +224,7 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	}
 	defer conn.Close()
 
-	raw, err := json.Marshal(ksdRequest)
+	raw, err := json.Marshal(peerAuthSvcReq)
 	if err != nil {
 		utils.Error.Println(err)
 		getErrorResp(serviceResp, err)
@@ -260,76 +248,47 @@ func (s *Server) PutGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 	return serviceResp, nil
 }
 
-func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
-	var istioServ = new(istioClient.Gateway)
+func getPeerAuthenticaion(input *pb.PeerAuthenticationService) (*v1beta1.PeerAuthentication, error) {
+	var peerAuthSvc = new(v1beta1.PeerAuthentication)
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
-	istioServ.Labels = labels
-	istioServ.Kind = constants.Gateway.String() //"Gateway"
-	istioServ.APIVersion = "networking.istio.io/v1alpha3"
-	istioServ.Name = input.Name
-	istioServ.Namespace = input.Namespace
-	gateway := v1alpha3.Gateway{}
-
-	gateway.Selector = input.ServiceAttributes.Selectors
-
-	for _, serverInput := range input.ServiceAttributes.Servers {
-		server := new(v1alpha3.Server)
-		if serverInput.Port != nil {
-			server.Port = new(v1alpha3.Port)
-			server.Port.Name = serverInput.Port.Name
-			server.Port.Number = serverInput.Port.Number
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
-		}
-		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.ServerTLSSettings)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.ServerTLSSettings_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.MinProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
-		}
-		server.Hosts = serverInput.Hosts
-		gateway.Servers = append(gateway.Servers, server)
+	peerAuthSvc.Labels = labels
+	peerAuthSvc.Kind = constants.PeerAuthentication.String() //"PeerAuthentication"
+	peerAuthSvc.APIVersion = "security.istio.io/v1beta1"
+	if input.Name == "" {
+		return nil, errors.New("service name must not be empty")
+	} else {
+		peerAuthSvc.Name = input.Name
 	}
-	istioServ.Spec = gateway
-	return istioServ, nil
-}
-func getIstioGatewaySpec() (v1alpha3.Gateway, error) {
+	if input.Namespace == "" {
+		return nil, errors.New("service name must not be empty")
+	} else {
+		peerAuthSvc.Namespace = input.Namespace
+	}
 
-	gateway := v1alpha3.Gateway{}
-	var hosts []string
-	hosts = append(hosts, "*")
-	var servers []*v1alpha3.Server
+	peerAuthSvc.Spec.Mtls = new(securityv1beta1.PeerAuthentication_MutualTLS)
+	if input.ServiceAttributes.TlsMode.String() == pb.TlsMode_STRICT.String() {
+		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_STRICT
+	} else if input.ServiceAttributes.TlsMode.String() == pb.TlsMode_PERMISSIVE.String() {
+		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_PERMISSIVE
+	} else if input.ServiceAttributes.TlsMode.String() == pb.TlsMode_DISABLE.String() {
+		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_DISABLE
+	} else {
+		peerAuthSvc.Spec.Mtls.Mode = securityv1beta1.PeerAuthentication_MutualTLS_UNSET
+	}
 
-	var serv v1alpha3.Server
-	serv.Port = &v1alpha3.Port{Name: strings.ToLower("HTTP"), Protocol: "HTTP", Number: uint32(80)}
-	serv.Hosts = hosts
-	servers = append(servers, &serv)
-
-	/*var serv2 v1alpha3.Server
-	serv2.Port = &v1alpha3.Port{Name: strings.ToLower("HTTPS"), Protocol: "HTTPS", Number: uint32(443)}
-	serv2.Hosts = hosts
-	servers = append(servers, &serv2)*/
-
-	selector := make(map[string]string)
-
-	selector["istio"] = "ingressgateway"
-	gateway.Selector = selector
-	gateway.Servers = servers
-	return gateway, nil
+	peerAuthSvc.Spec.Selector = new(v1beta1Type.WorkloadSelector)
+	peerAuthSvc.Spec.Selector.MatchLabels = input.ServiceAttributes.Labels
+	return peerAuthSvc, nil
 }
 
-func getRequestObject(req *pb.GatewayService) (*istioClient.Gateway, error) {
-	gtwReq, err := getIstioGateway(req)
+func getPeerAuthRequestObject(req *pb.PeerAuthenticationService) (*v1beta1.PeerAuthentication, error) {
+	peerAuthReq, err := getPeerAuthenticaion(req)
 	if err != nil {
 		utils.Error.Println(err)
 
 		return nil, err
 	}
-	return gtwReq, nil
+	return peerAuthReq, nil
 }

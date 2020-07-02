@@ -173,3 +173,16 @@ var ListOfServicesInAppSize = []ServiceSubType{
 }
 
 const LetterBytes = "abcdefghijklmnopqrstuvwxyz"
+
+type Hook string
+
+const (
+	PreInstallHook   Hook = "pre-install"
+	PostInstallHook  Hook = "post-install"
+	PreUpgradeHook   Hook = "pre-upgrade"
+	PostUpgradeHook  Hook = "post-upgrade"
+	PreDeleteHook    Hook = "pre-delete"
+	PostDeleteHook   Hook = "post-delete"
+	PreRollbackHook  Hook = "pre-rollback"
+	PostRollbackHook Hook = "post-rollback"
+)
