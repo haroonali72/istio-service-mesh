@@ -65,6 +65,7 @@ type ServiceResp struct {
 	Reason           string   `json:"reason"`
 	Namespace        string   `json:"namespace"`
 	ServiceSubType   string   `json:"service_sub_type"`
+	PodErrors        []string `json:"pod_errors"`
 }
 
 type LogRequest struct {

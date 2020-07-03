@@ -55,6 +55,7 @@ message TlsConfig {
     repeated string subject_alt_name = 6;
     ProtocolVersion min_protocol_version = 7;
     ProtocolVersion max_protocol_version = 8;
+    string credential_name = 9;
 }
 
 

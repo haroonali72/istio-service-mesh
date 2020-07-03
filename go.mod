@@ -3,8 +3,8 @@ module bitbucket.org/cloudplex-devs/istio-service-mesh
 go 1.13
 
 require (
-	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200507175720-6940251ff5c9
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200702082357-982174ef6f4a
+	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703072056-a7fe91227ce0
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
@@ -27,8 +27,8 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.3.0
-	istio.io/api v0.0.0-20200615162408-9b5293c30ef5
-	istio.io/client-go v0.0.0-20200615164228-d77b0b53b6a0
+	istio.io/api v0.0.0-20200430220031-f818d6294944
+	istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v11.0.0+incompatible
@@ -37,9 +37,9 @@ require (
 )
 
 replace (
-	istio.io/api => istio.io/api v0.0.0-20200615162408-9b5293c30ef5
-	istio.io/client-go => istio.io/client-go v0.0.0-20200615164228-d77b0b53b6a0
-	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200615162707-ab08778e3a4e // indirect
+	istio.io/api => istio.io/api v0.0.0-20200208020912-9564cdd03c96
+	istio.io/client-go => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
+	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4
