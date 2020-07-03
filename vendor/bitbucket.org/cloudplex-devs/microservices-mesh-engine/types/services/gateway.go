@@ -90,6 +90,9 @@ type TlsConfig struct {
 	//Maximum TLS protocol version. supported values  TLS_AUTO|TLSV1_0|TLSV1_1|TLSV1_2|TLSV1_3
 	// +optional
 	MaxProtocolVersion ProtocolVersion `json:"max_protocol_Version,omitempty" bson:"max_protocol_version,omitempty" swaggerType:"string" jsonschema:"enum=TLS_AUTO,enum=TLSV1_0,enum=TLSV1_2,enum=TLSV1_3" `
+	//Credential Name. secret name of type tls which will have certificate and private key and this secret must be created in istio-system namespace
+	// +optional
+	CredentialName string `json:"credential_name,omitempty" bson:"credential_name,omitempty"`
 }
 
 type Protocols string
