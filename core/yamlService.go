@@ -892,29 +892,29 @@ func ConvertNetworkPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.Yaml
 
 func ConvertPolicyToYaml(req *pb.YamlServiceRequest, serviceResp *pb.YamlServiceResponse) error {
 
-	policy := pb.PolicyService{}
-	if err := json.Unmarshal(req.Service, &policy); err != nil {
-		utils.Error.Println(err)
-		return err
-	}
-	result, err := getPolicy(&policy)
-	if err != nil {
-		utils.Error.Println(err)
-		return err
-	}
-	//if req.IsYaml{
-	if byteData, err := yaml.Marshal(result); err != nil {
-		utils.Error.Println(err)
-		return err
-	} else {
-		strdata := string(byteData)
-		re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
-		res := re.ReplaceAllString(strdata, "")
-		re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
-		res = re.ReplaceAllString(res, "")
-		serviceResp.Service = []byte(res)
-		serviceResp.Namespace = result.Namespace
-	}
+	//policy := pb.PolicyService{}
+	//if err := json.Unmarshal(req.Service, &policy); err != nil {
+	//	utils.Error.Println(err)
+	//	return err
+	//}
+	//result, err := getPolicy(&policy)
+	//if err != nil {
+	//	utils.Error.Println(err)
+	//	return err
+	//}
+	////if req.IsYaml{
+	//if byteData, err := yaml.Marshal(result); err != nil {
+	//	utils.Error.Println(err)
+	//	return err
+	//} else {
+	//	strdata := string(byteData)
+	//	re := regexp.MustCompile("(?m)[\r\n]+^.*creationTimestamp.*$")
+	//	res := re.ReplaceAllString(strdata, "")
+	//	re = regexp.MustCompile("(?m)[\r\n]+^.*status.*$")
+	//	res = re.ReplaceAllString(res, "")
+	//	serviceResp.Service = []byte(res)
+	//	serviceResp.Namespace = result.Namespace
+	//}
 	//}else {
 	//	byteData, chartByteData, helperByteData, err := helm_parameterization.PersistentVolumeClaimParameters(result)
 	//

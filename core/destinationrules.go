@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gogo/protobuf/types"
-	"time"
-
 	//	types "github.com/gogo/protobuf/types"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
@@ -274,7 +272,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 				}
 			} else if input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash != nil {
 				if input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie != nil {
-					t := time.Duration(input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
+					t := types.Duration{Seconds: input.ServiceAttribute.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl}
 					vService.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
 						ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
 							HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
@@ -374,7 +372,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 					}
 				} else if port.LoadBalancer.ConsistentHash != nil {
 					if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
-						t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
+						t := types.Duration{Seconds: port.LoadBalancer.ConsistentHash.HttpCookie.Ttl}
 						setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
 							ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
 								HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
@@ -417,8 +415,8 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 			vService.TrafficPolicy.PortLevelSettings = append(vService.TrafficPolicy.PortLevelSettings, setting)
 		}
 		if input.ServiceAttribute.TrafficPolicy.DrTls != nil {
-			vService.TrafficPolicy.Tls = &v1alpha3.TLSSettings{}
-			vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(input.ServiceAttribute.TrafficPolicy.DrTls.GetMode())
+			vService.TrafficPolicy.Tls = &v1alpha3.ClientTLSSettings{}
+			vService.TrafficPolicy.Tls.Mode = v1alpha3.ClientTLSSettings_TLSmode(input.ServiceAttribute.TrafficPolicy.DrTls.GetMode())
 			vService.TrafficPolicy.Tls.ClientCertificate = input.ServiceAttribute.TrafficPolicy.DrTls.ClientCertificate
 			vService.TrafficPolicy.Tls.PrivateKey = input.ServiceAttribute.TrafficPolicy.DrTls.PrivateKey
 			vService.TrafficPolicy.Tls.CaCertificates = input.ServiceAttribute.TrafficPolicy.DrTls.CaCertificate
@@ -468,7 +466,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 						}
 					} else if port.LoadBalancer.ConsistentHash != nil {
 						if port.LoadBalancer.ConsistentHash.HttpCookie != nil {
-							t := time.Duration(port.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
+							t := types.Duration{Seconds: port.LoadBalancer.ConsistentHash.HttpCookie.Ttl}
 							setting.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
 								ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
 									HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
@@ -508,8 +506,8 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 					setting.OutlierDetection.MinHealthPercent = port.OutlierDetection.MinHealthPercent
 				}
 				if port.DrTls != nil {
-					setting.Tls = &v1alpha3.TLSSettings{}
-					vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(port.DrTls.GetMode())
+					setting.Tls = &v1alpha3.ClientTLSSettings{}
+					vService.TrafficPolicy.Tls.Mode = v1alpha3.ClientTLSSettings_TLSmode(port.DrTls.GetMode())
 					setting.Tls.ClientCertificate = port.DrTls.ClientCertificate
 					setting.Tls.PrivateKey = port.DrTls.PrivateKey
 					setting.Tls.CaCertificates = port.DrTls.CaCertificate
@@ -525,7 +523,7 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 					}
 				} else if subset.TrafficPolicy.LoadBalancer.ConsistentHash != nil {
 					if subset.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie != nil {
-						t := time.Duration(subset.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl)
+						t := types.Duration{Seconds: subset.TrafficPolicy.LoadBalancer.ConsistentHash.HttpCookie.Ttl}
 						ser.TrafficPolicy.LoadBalancer.LbPolicy = &v1alpha3.LoadBalancerSettings_ConsistentHash{
 							ConsistentHash: &v1alpha3.LoadBalancerSettings_ConsistentHashLB{
 								HashKey: &v1alpha3.LoadBalancerSettings_ConsistentHashLB_HttpCookie{
@@ -588,8 +586,8 @@ func getDestinationRules(input *pb.DestinationRules) (*istioClient.DestinationRu
 				ser.TrafficPolicy.OutlierDetection.MinHealthPercent = subset.TrafficPolicy.OutlierDetection.MinHealthPercent
 			}
 			if subset.TrafficPolicy.DrTls != nil {
-				ser.TrafficPolicy.Tls = &v1alpha3.TLSSettings{}
-				vService.TrafficPolicy.Tls.Mode = v1alpha3.TLSSettings_TLSmode(int32(subset.TrafficPolicy.DrTls.GetMode()))
+				ser.TrafficPolicy.Tls = &v1alpha3.ClientTLSSettings{}
+				vService.TrafficPolicy.Tls.Mode = v1alpha3.ClientTLSSettings_TLSmode(int32(subset.TrafficPolicy.DrTls.GetMode()))
 				ser.TrafficPolicy.Tls.ClientCertificate = subset.TrafficPolicy.DrTls.ClientCertificate
 				ser.TrafficPolicy.Tls.PrivateKey = subset.TrafficPolicy.DrTls.PrivateKey
 				ser.TrafficPolicy.Tls.CaCertificates = subset.TrafficPolicy.DrTls.CaCertificate
