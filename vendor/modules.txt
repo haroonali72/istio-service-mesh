@@ -1,6 +1,6 @@
 # bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703072056-a7fe91227ce0
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703132918-d2661ae5e396
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
@@ -53,6 +53,13 @@ github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 # github.com/imdario/mergo v0.3.9
 github.com/imdario/mergo
+# github.com/jetstack/cert-manager v0.15.2
+github.com/jetstack/cert-manager/pkg/apis/acme
+github.com/jetstack/cert-manager/pkg/apis/acme/v1alpha3
+github.com/jetstack/cert-manager/pkg/apis/certmanager
+github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha3
+github.com/jetstack/cert-manager/pkg/apis/meta
+github.com/jetstack/cert-manager/pkg/apis/meta/v1
 # github.com/json-iterator/go v1.1.9
 github.com/json-iterator/go
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -67,7 +74,7 @@ github.com/russross/blackfriday/v2
 github.com/shiena/ansicolor
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
 github.com/shurcooL/sanitized_anchor_name
-# github.com/spf13/pflag v1.0.3
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # github.com/urfave/cli/v2 v2.2.0
 github.com/urfave/cli/v2
@@ -211,11 +218,12 @@ gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
 # istio.io/api v0.0.0-20200430220031-f818d6294944 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
-istio.io/api/authentication/v1alpha1
 istio.io/api/networking/v1alpha3
+istio.io/api/security/v1beta1
+istio.io/api/type/v1beta1
 # istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4 => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
-istio.io/client-go/pkg/apis/authentication/v1alpha1
 istio.io/client-go/pkg/apis/networking/v1alpha3
+istio.io/client-go/pkg/apis/security/v1beta1
 # istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9
 istio.io/gogo-genproto/googleapis/google/api
 # k8s.io/api v0.18.2 => k8s.io/api v0.16.4
@@ -257,6 +265,9 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
+# k8s.io/apiextensions-apiserver v0.18.0
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
+k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
 # k8s.io/apimachinery v0.18.2 => k8s.io/apimachinery v0.16.4
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -358,7 +369,8 @@ k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+# k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
 k8s.io/utils/integer
+k8s.io/utils/pointer
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml

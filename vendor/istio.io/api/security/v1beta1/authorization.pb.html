@@ -221,6 +221,212 @@ No
 </tbody>
 </table>
 </section>
+<h2 id="AuthorizationPolicy-Action">AuthorizationPolicy.Action</h2>
+<section>
+<p>Action specifies the operation to take.</p>
+
+<table class="enum-values">
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr id="AuthorizationPolicy-Action-ALLOW">
+<td><code>ALLOW</code></td>
+<td>
+<p>Allow a request only if it matches the rules. This is the default type.</p>
+
+</td>
+</tr>
+<tr id="AuthorizationPolicy-Action-DENY">
+<td><code>DENY</code></td>
+<td>
+<p>Deny a request if it matches any of the rules.</p>
+
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Condition">Condition</h2>
+<section>
+<p>Condition specifies additional required attributes.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Condition-key">
+<td><code>key</code></td>
+<td><code>string</code></td>
+<td>
+<p>The name of an Istio attribute.
+See the <a href="https://istio.io/docs/reference/config/security/conditions/">full list of supported attributes</a>.</p>
+
+</td>
+<td>
+Yes
+</td>
+</tr>
+<tr id="Condition-values">
+<td><code>values</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of allowed values for the attribute.
+Note: at least one of values or not_values must be set.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Condition-not_values">
+<td><code>notValues</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of values for the attribute.
+Note: at least one of values or not_values must be set.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Operation">Operation</h2>
+<section>
+<p>Operation specifies the operations of a request. Fields in the operation are
+ANDed together.</p>
+
+<p>For example, the following operation matches if the host has suffix &ldquo;.example.com&rdquo;
+and the method is &ldquo;GET&rdquo; or &ldquo;HEAD&rdquo; and the path doesn&rsquo;t have prefix &ldquo;/admin&rdquo;.</p>
+
+<pre><code class="language-yaml">hosts: [&quot;*.example.com&quot;]
+methods: [&quot;GET&quot;, &quot;HEAD&quot;]
+not_paths: [&quot;/admin*&quot;]
+</code></pre>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Operation-hosts">
+<td><code>hosts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of hosts, which matches to the &ldquo;request.host&rdquo; attribute.</p>
+
+<p>If not set, any host is allowed. Must be used only with HTTP.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_hosts">
+<td><code>notHosts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of hosts.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-ports">
+<td><code>ports</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of ports, which matches to the &ldquo;destination.port&rdquo; attribute.</p>
+
+<p>If not set, any port is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_ports">
+<td><code>notPorts</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of ports.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-methods">
+<td><code>methods</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of methods, which matches to the &ldquo;request.method&rdquo; attribute.
+For gRPC service, this should be the fully-qualified name in the form of
+&ldquo;/package.service/method&rdquo;</p>
+
+<p>If not set, any method is allowed. Must be used only with HTTP or gRPC.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_methods">
+<td><code>notMethods</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of methods.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-paths">
+<td><code>paths</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of paths, which matches to the &ldquo;request.url_path&rdquo; attribute.</p>
+
+<p>If not set, any path is allowed. Must be used only with HTTP.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Operation-not_paths">
+<td><code>notPaths</code></td>
+<td><code>string[]</code></td>
+<td>
+<p>Optional. A list of negative match of paths.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
 <h2 id="Rule">Rule</h2>
 <section>
 <p>Rule matches requests from a list of sources that perform a list of operations subject to a
@@ -279,6 +485,62 @@ No
 <p>Optional. when specifies a list of additional conditions of a request.</p>
 
 <p>If not set, any condition is allowed.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Rule-From">Rule.From</h2>
+<section>
+<p>From includes a list or sources.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-From-source">
+<td><code>source</code></td>
+<td><code><a href="#Source">Source</a></code></td>
+<td>
+<p>Source specifies the source of a request.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="Rule-To">Rule.To</h2>
+<section>
+<p>To includes a list or operations.</p>
+
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="Rule-To-operation">
+<td><code>operation</code></td>
+<td><code><a href="#Operation">Operation</a></code></td>
+<td>
+<p>Operation specifies the operation of a request.</p>
 
 </td>
 <td>
@@ -409,269 +671,6 @@ No
 </td>
 <td>
 No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Operation">Operation</h2>
-<section>
-<p>Operation specifies the operations of a request. Fields in the operation are
-ANDed together.</p>
-
-<p>For example, the following operation matches if the host has suffix &ldquo;.example.com&rdquo;
-and the method is &ldquo;GET&rdquo; or &ldquo;HEAD&rdquo; and the path doesn&rsquo;t have prefix &ldquo;/admin&rdquo;.</p>
-
-<pre><code class="language-yaml">hosts: [&quot;*.example.com&quot;]
-methods: [&quot;GET&quot;, &quot;HEAD&quot;]
-not_paths: [&quot;/admin*&quot;]
-</code></pre>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Operation-hosts">
-<td><code>hosts</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of hosts, which matches to the &ldquo;request.host&rdquo; attribute.</p>
-
-<p>If not set, any host is allowed. Must be used only with HTTP.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-not_hosts">
-<td><code>notHosts</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of negative match of hosts.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-ports">
-<td><code>ports</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of ports, which matches to the &ldquo;destination.port&rdquo; attribute.</p>
-
-<p>If not set, any port is allowed.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-not_ports">
-<td><code>notPorts</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of negative match of ports.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-methods">
-<td><code>methods</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of methods, which matches to the &ldquo;request.method&rdquo; attribute.
-For gRPC service, this will always be &ldquo;POST&rdquo;.</p>
-
-<p>If not set, any method is allowed. Must be used only with HTTP.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-not_methods">
-<td><code>notMethods</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of negative match of methods.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-paths">
-<td><code>paths</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of paths, which matches to the &ldquo;request.url_path&rdquo; attribute.
-For gRPC service, this will be the fully-qualified name in the form of
-&ldquo;/package.service/method&rdquo;.</p>
-
-<p>If not set, any path is allowed. Must be used only with HTTP.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Operation-not_paths">
-<td><code>notPaths</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of negative match of paths.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Condition">Condition</h2>
-<section>
-<p>Condition specifies additional required attributes.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Condition-key">
-<td><code>key</code></td>
-<td><code>string</code></td>
-<td>
-<p>The name of an Istio attribute.
-See the <a href="https://istio.io/docs/reference/config/security/conditions/">full list of supported attributes</a>.</p>
-
-</td>
-<td>
-Yes
-</td>
-</tr>
-<tr id="Condition-values">
-<td><code>values</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of allowed values for the attribute.
-Note: at least one of values or not_values must be set.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-<tr id="Condition-not_values">
-<td><code>notValues</code></td>
-<td><code>string[]</code></td>
-<td>
-<p>Optional. A list of negative match of values for the attribute.
-Note: at least one of values or not_values must be set.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Rule-From">Rule.From</h2>
-<section>
-<p>From includes a list or sources.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Rule-From-source">
-<td><code>source</code></td>
-<td><code><a href="#Source">Source</a></code></td>
-<td>
-<p>Source specifies the source of a request.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="Rule-To">Rule.To</h2>
-<section>
-<p>To includes a list or operations.</p>
-
-<table class="message-fields">
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Description</th>
-<th>Required</th>
-</tr>
-</thead>
-<tbody>
-<tr id="Rule-To-operation">
-<td><code>operation</code></td>
-<td><code><a href="#Operation">Operation</a></code></td>
-<td>
-<p>Operation specifies the operation of a request.</p>
-
-</td>
-<td>
-No
-</td>
-</tr>
-</tbody>
-</table>
-</section>
-<h2 id="AuthorizationPolicy-Action">AuthorizationPolicy.Action</h2>
-<section>
-<p>Action specifies the operation to take.</p>
-
-<table class="enum-values">
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr id="AuthorizationPolicy-Action-ALLOW">
-<td><code>ALLOW</code></td>
-<td>
-<p>Allow a request only if it matches the rules. This is the default type.</p>
-
-</td>
-</tr>
-<tr id="AuthorizationPolicy-Action-DENY">
-<td><code>DENY</code></td>
-<td>
-<p>Deny a request if it matches any of the rules.</p>
-
 </td>
 </tr>
 </tbody>

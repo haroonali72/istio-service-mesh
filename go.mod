@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703072056-a7fe91227ce0
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703132918-d2661ae5e396
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
@@ -13,6 +13,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.1.1
+	github.com/jetstack/cert-manager v0.15.2
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect

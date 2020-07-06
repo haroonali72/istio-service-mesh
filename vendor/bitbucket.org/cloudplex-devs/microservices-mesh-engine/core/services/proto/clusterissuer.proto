@@ -1,0 +1,30 @@
+syntax = "proto3";
+package proto;
+
+import "service.proto";
+
+service ClusterIssuer {
+    rpc CreateClusterIssuer (ClusterIssuerService) returns (ServiceResponse) {}
+    rpc DeleteClusterIssuer  (ClusterIssuerService) returns (ServiceResponse) {}
+    rpc GetClusterIssuer (ClusterIssuerService) returns (ServiceResponse) {}
+    rpc PatchClusterIssuer  (ClusterIssuerService) returns (ServiceResponse) {}
+    rpc PutClusterIssuer (ClusterIssuerService) returns (ServiceResponse) {}
+}
+
+message ClusterIssuerService {
+    string project_id = 1;
+    string service_id = 2;
+    string name = 3;
+    string version = 4;
+    string service_type = 5;
+    string service_sub_type = 6;
+    string namespace = 7;
+    string token = 8;
+    string company_id = 9;
+    bool is_discovered = 10;
+    ClusterIssuerServiceAttributes service_attributes = 11;
+}
+
+message ClusterIssuerServiceAttributes {
+    string email = 1;
+}
