@@ -88,8 +88,10 @@ const (
 	DoMySQL       ServiceSubType = "do_my_sql"
 
 	// PUBSUB Service SubTypes
-	PubSubEventing  ServiceSubType = "eventing"
-	PubSubGCPSource ServiceSubType = "gcppubsubsource"
+	PubSubEventing     ServiceSubType = "eventing"
+	PubSubGCPSource    ServiceSubType = "gcppubsubsource"
+	PubSubGitHubSource ServiceSubType = "githubsource"
+	PubSubKubernetes   ServiceSubType = "kubernetessource"
 
 	//Build Service SubType
 	BuildService ServiceSubType = "build"
@@ -190,6 +192,8 @@ var (
 	pubSubServiceSubTypes = []ServiceSubType{
 		PubSubEventing,
 		PubSubGCPSource,
+		PubSubGitHubSource,
+		PubSubKubernetes,
 	}
 	buildServiceSubTypes = []ServiceSubType{
 		BuildService,
