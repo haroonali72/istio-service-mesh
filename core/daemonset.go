@@ -102,6 +102,10 @@ func (s *Server) GetDaemonSet(ctx context.Context, req *pb.DaemonSetService) (*p
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
+	if len(result.PodErrors) > 0 {
+		getPodErrors(serviceResp, result.PodErrors)
+		return serviceResp, nil
+	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
