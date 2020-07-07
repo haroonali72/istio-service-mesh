@@ -49,6 +49,8 @@ const (
 	ServiceEntry       ServiceSubType = "service_entry"
 	MeshPolicy         ServiceSubType = "policy"
 	PeerAuthentication ServiceSubType = "peer_authentication"
+	ClusterIssuer      ServiceSubType = "cluster_issuer"
+	Certificate        ServiceSubType = "certificate"
 
 	// Serverless Service Sub Types
 	ServerlessService ServiceSubType = "serverless"

@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703072056-a7fe91227ce0
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200703132918-d2661ae5e396
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
@@ -13,6 +13,7 @@ require (
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.1.1
+	github.com/jetstack/cert-manager v0.15.2
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
@@ -27,7 +28,7 @@ require (
 	google.golang.org/grpc v1.29.1
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.3.0
-	istio.io/api v0.0.0-20200629210345-933b83065c19
+	istio.io/api v0.0.0-20200707013816-8bca8f687388
 	istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
@@ -37,9 +38,9 @@ require (
 )
 
 replace (
-	istio.io/api => istio.io/api v0.0.0-20200630182154-19d61f093aab
-	istio.io/client-go => istio.io/client-go v0.0.0-20200630182733-fd3f873f3f52
-	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200630182733-ab958dac3bf8 // indirect
+	istio.io/api => istio.io/api v0.0.0-20200707013816-8bca8f687388
+	istio.io/client-go => istio.io/client-go v0.0.0-20200707015438-3ff059bce653
+	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200707014329-ca00aeef2ef8
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4

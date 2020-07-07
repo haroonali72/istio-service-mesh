@@ -28,6 +28,8 @@ const (
 	MeshPolicy         MeshKind = "Policy"
 	ServiceEntry       MeshKind = "ServiceEntry"
 	PeerAuthentication MeshKind = "PeerAuthentication"
+	Certificate        MeshKind = "Certificate"
+	ClusterIssuer      MeshKind = "ClusterIssuer"
 )
 
 var (
