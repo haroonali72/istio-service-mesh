@@ -109,8 +109,12 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
+	if len(result.PodErrors) > 0 {
+		getPodErrors(serviceResp, result.PodErrors)
+		serviceResp.Status.IsComplete = false
+		return serviceResp, nil
+	}
 	serviceResp.Status.IsComplete = checkJobCompletion(tjoob)
-
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 

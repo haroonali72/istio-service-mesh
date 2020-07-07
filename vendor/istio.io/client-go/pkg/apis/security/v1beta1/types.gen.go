@@ -250,7 +250,7 @@ type PeerAuthenticationList struct {
 // ```
 //
 // - The next example shows how to set a different JWT requirement for a different `host`. The `RequestAuthentication`
-// declares it can accpet JWTs issuer by either `issuer-foo` or `issuer-bar` (the public key set is implicitly
+// declares it can accept JWTs issued by either `issuer-foo` or `issuer-bar` (the public key set is implicitly
 // set from the OpenID Connect spec).
 // ```yaml
 // apiVersion: security.istio.io/v1beta1

@@ -699,7 +699,6 @@ message HTTPRoute {
 // ```
 // {{</tab>}}
 // {{</tabset>}}
-
 message Headers {
   // Header manipulation rules to apply before forwarding a request
   // to the destination service

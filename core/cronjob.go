@@ -101,6 +101,10 @@ func (s *Server) GetCronJob(ctx context.Context, req *pb.CronJobService) (*pb.Se
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
+	if len(result.PodErrors) > 0 {
+		getPodErrors(serviceResp, result.PodErrors)
+		return serviceResp, nil
+	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")

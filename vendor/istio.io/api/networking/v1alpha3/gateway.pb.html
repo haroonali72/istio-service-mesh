@@ -454,7 +454,7 @@ metadata:
   name: my-ingress
 spec:
   selector:
-    app: my-ingress-gateway
+    app: my-ingressgateway
   servers:
   - port:
       number: 80
@@ -474,7 +474,7 @@ metadata:
   name: my-ingress
 spec:
   selector:
-    app: my-ingress-gateway
+    app: my-ingressgateway
   servers:
   - port:
       number: 80
@@ -498,7 +498,7 @@ metadata:
   name: my-tcp-ingress
 spec:
   selector:
-    app: my-tcp-ingress-gateway
+    app: my-tcp-ingressgateway
   servers:
   - port:
       number: 27018
@@ -518,7 +518,7 @@ metadata:
   name: my-tcp-ingress
 spec:
   selector:
-    app: my-tcp-ingress-gateway
+    app: my-tcp-ingressgateway
   servers:
   - port:
       number: 27018
@@ -542,7 +542,7 @@ metadata:
   name: my-tls-ingress
 spec:
   selector:
-    app: my-tls-ingress-gateway
+    app: my-tls-ingressgateway
   servers:
   - port:
       number: 443
@@ -566,7 +566,7 @@ metadata:
   name: my-tls-ingress
 spec:
   selector:
-    app: my-tls-ingress-gateway
+    app: my-tls-ingressgateway
   servers:
   - port:
       number: 443
@@ -651,6 +651,19 @@ Yes
 <p>Set of TLS related options that govern the server&rsquo;s behavior. Use
 these options to control if all http requests should be redirected to
 https, and the TLS modes to use.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="Server-name">
+<td><code>name</code></td>
+<td><code>string</code></td>
+<td>
+<p>An optional name of the server, when set must be unique across all servers.
+This will be used for variety of purposes like prefixing stats generated with
+this name etc.</p>
 
 </td>
 <td>

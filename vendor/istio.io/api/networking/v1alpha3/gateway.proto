@@ -396,7 +396,7 @@ message Gateway {
 //   name: my-ingress
 // spec:
 //   selector:
-//     app: my-ingress-gateway
+//     app: my-ingressgateway
 //   servers:
 //   - port:
 //       number: 80
@@ -415,7 +415,7 @@ message Gateway {
 //   name: my-ingress
 // spec:
 //   selector:
-//     app: my-ingress-gateway
+//     app: my-ingressgateway
 //   servers:
 //   - port:
 //       number: 80
@@ -438,7 +438,7 @@ message Gateway {
 //   name: my-tcp-ingress
 // spec:
 //   selector:
-//     app: my-tcp-ingress-gateway
+//     app: my-tcp-ingressgateway
 //   servers:
 //   - port:
 //       number: 27018
@@ -457,7 +457,7 @@ message Gateway {
 //   name: my-tcp-ingress
 // spec:
 //   selector:
-//     app: my-tcp-ingress-gateway
+//     app: my-tcp-ingressgateway
 //   servers:
 //   - port:
 //       number: 27018
@@ -480,7 +480,7 @@ message Gateway {
 //   name: my-tls-ingress
 // spec:
 //   selector:
-//     app: my-tls-ingress-gateway
+//     app: my-tls-ingressgateway
 //   servers:
 //   - port:
 //       number: 443
@@ -503,7 +503,7 @@ message Gateway {
 //   name: my-tls-ingress
 // spec:
 //   selector:
-//     app: my-tls-ingress-gateway
+//     app: my-tls-ingressgateway
 //   servers:
 //   - port:
 //       number: 443
@@ -702,6 +702,11 @@ message Server {
   // NOT IMPLEMENTED.
   // $hide_from_docs
   string default_endpoint = 5;
+
+  // An optional name of the server, when set must be unique across all servers.
+  // This will be used for variety of purposes like prefixing stats generated with
+  // this name etc.
+  string name = 6;
 }
 
 // Port describes the properties of a specific port of a service.
