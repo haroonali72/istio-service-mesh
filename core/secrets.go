@@ -270,6 +270,8 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 		kube.Type = kb.SecretType(kb.SecretTypeDockercfg)
 	case "DockerConfigKey":
 		kube.Type = kb.SecretType(kb.DockerConfigKey)
+	case "Tls":
+		kube.Type = kb.SecretType(kb.SecretTypeTLS)
 	default:
 		kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
 	}

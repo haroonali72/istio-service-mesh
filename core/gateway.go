@@ -283,16 +283,41 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			server.Port.Protocol = serverInput.Port.GetProtocol().String()
 		}
 		if serverInput.Tls != nil {
-			server.Tls = new(v1alpha3.ServerTLSSettings)
-			server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-			server.Tls.Mode = v1alpha3.ServerTLSSettings_TLSmode(int32(serverInput.Tls.Mode))
-			server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
-			server.Tls.CaCertificates = serverInput.Tls.CaCertificate
-			server.Tls.PrivateKey = serverInput.Tls.PrivateKey
-			server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
-			server.Tls.CredentialName = serverInput.Tls.CredentialName
-			server.Tls.MinProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MinProtocolVersion))
-			server.Tls.MaxProtocolVersion = v1alpha3.ServerTLSSettings_TLSProtocol(int32(serverInput.Tls.MaxProtocolVersion))
+			if serverInput.Tls.CredentialName != "" {
+				server.Tls = new(v1alpha3.Server_TLSOptions)
+				if serverInput.Tls.Mode.String() == pb.Mode_SIMPLE.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_SIMPLE
+				} else if serverInput.Tls.Mode.String() == pb.Mode_PASSTHROUGH.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_PASSTHROUGH
+				} else if serverInput.Tls.Mode.String() == pb.Mode_AUTO_PASSTHROUGH.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_AUTO_PASSTHROUGH
+				} else if serverInput.Tls.Mode.String() == pb.Mode_ISTIO_MUTUAL.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_ISTIO_MUTUAL
+				} else {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_MUTUAL
+				}
+				server.Tls.CredentialName = serverInput.Tls.CredentialName
+			} else {
+				server.Tls = new(v1alpha3.Server_TLSOptions)
+				server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
+				server.Tls = new(v1alpha3.Server_TLSOptions)
+				if serverInput.Tls.Mode.String() == pb.Mode_SIMPLE.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_SIMPLE
+				} else if serverInput.Tls.Mode.String() == pb.Mode_PASSTHROUGH.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_PASSTHROUGH
+				} else if serverInput.Tls.Mode.String() == pb.Mode_AUTO_PASSTHROUGH.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_AUTO_PASSTHROUGH
+				} else if serverInput.Tls.Mode.String() == pb.Mode_ISTIO_MUTUAL.String() {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_ISTIO_MUTUAL
+				} else {
+					server.Tls.Mode = v1alpha3.Server_TLSOptions_MUTUAL
+				}
+				server.Tls.CredentialName = serverInput.Tls.CredentialName
+				server.Tls.ServerCertificate = serverInput.Tls.ServerCertificate
+				server.Tls.CaCertificates = serverInput.Tls.CaCertificate
+				server.Tls.PrivateKey = serverInput.Tls.PrivateKey
+				server.Tls.SubjectAltNames = serverInput.Tls.SubjectAltName
+			}
 		}
 		server.Hosts = serverInput.Hosts
 		gateway.Servers = append(gateway.Servers, server)

@@ -217,7 +217,7 @@ gopkg.in/mgo.v2/internal/json
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20200430220031-f818d6294944 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
+# istio.io/api v0.0.0-20200707013816-8bca8f687388 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
 istio.io/api/networking/v1alpha3
 istio.io/api/security/v1beta1
 istio.io/api/type/v1beta1
