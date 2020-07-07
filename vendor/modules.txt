@@ -217,14 +217,14 @@ gopkg.in/mgo.v2/internal/json
 gopkg.in/resty.v1
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20200707013816-8bca8f687388 => istio.io/api v0.0.0-20200208020912-9564cdd03c96
+# istio.io/api v0.0.0-20200707013816-8bca8f687388 => istio.io/api v0.0.0-20200707013816-8bca8f687388
 istio.io/api/networking/v1alpha3
 istio.io/api/security/v1beta1
 istio.io/api/type/v1beta1
-# istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4 => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
+# istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4 => istio.io/client-go v0.0.0-20200707015438-3ff059bce653
 istio.io/client-go/pkg/apis/networking/v1alpha3
 istio.io/client-go/pkg/apis/security/v1beta1
-# istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9
+# istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a => istio.io/gogo-genproto v0.0.0-20200707014329-ca00aeef2ef8
 istio.io/gogo-genproto/googleapis/google/api
 # k8s.io/api v0.18.2 => k8s.io/api v0.16.4
 k8s.io/api/admissionregistration/v1

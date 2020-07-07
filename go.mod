@@ -38,9 +38,9 @@ require (
 )
 
 replace (
-	istio.io/api => istio.io/api v0.0.0-20200208020912-9564cdd03c96
-	istio.io/client-go => istio.io/client-go v0.0.0-20200206191104-0c72ba04e5a1
-	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200207183027-a3495bac39f9 // indirect
+	istio.io/api => istio.io/api v0.0.0-20200707013816-8bca8f687388
+	istio.io/client-go => istio.io/client-go v0.0.0-20200707015438-3ff059bce653
+	istio.io/gogo-genproto => istio.io/gogo-genproto v0.0.0-20200707014329-ca00aeef2ef8
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4
