@@ -269,6 +269,8 @@ func getClusterIssuer(input *pb.ClusterIssuerService) (*v1alpha3.ClusterIssuer, 
 		clstrIssueSvc.Spec.ACME.Email = input.ServiceAttributes.Email
 	}
 
+	clstrIssueSvc.Spec.ACME.PrivateKey.Name = input.Name + "-secret"
+
 	ingressClass := new(string)
 	*ingressClass = "istio"
 	clstrIssueSvc.Spec.ACME.Solvers = []cmacme.ACMEChallengeSolver{
