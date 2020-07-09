@@ -21,5 +21,5 @@ type Secret struct {
 type SecretServiceAttribute struct {
 	Data       map[string][]byte `bson:"data,omitempty" json:"data,omitempty"`
 	StringData map[string]string `bson:"secret_data,omitempty" json:"secret_data,omitempty",valid:"-"`
-	SecretType string            `bson:"secret_type" json:"secret_type",valid:"required,in(Opaque|ServiceAccountToken|ServiceAccountNameKey|ServiceAccountUIDKey|ServiceAccountTokenKey|ServiceAccountKubeconfigKey|ServiceAccountRootCAKey|SecretTypeDockercfg|DockerConfigKey)"`
+	SecretType string            `bson:"secret_type" json:"secret_type",valid:"required,in(Opaque|ServiceAccountToken|ServiceAccountNameKey|ServiceAccountUIDKey|ServiceAccountTokenKey|ServiceAccountKubeconfigKey|ServiceAccountRootCAKey|SecretTypeDockercfg|DockerConfigKey|Tls)"`
 }

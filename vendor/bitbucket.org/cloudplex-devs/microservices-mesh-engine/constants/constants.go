@@ -111,9 +111,12 @@ const (
 	PersistentVolumeService      = "persistent_volume_service"
 	PersistentVolumeClaimService = "persistent_volume_claim_service"
 	NetworkPolicyService         = "network_policy_service"
+	Legacyservice                = "legacy_service"
 	DefaultResourcesDatabase     = "default_resources"
 	ResourcesDatabase            = "resource"
-
+	Serverlessservice            = "serverless_service"
+	Buildservice                 = "build_service"
+	APIservice                   = "api_service"
 	/////---------------Istio service database collection--------------------////////
 	GatewayServiceDataBase   = "gateway_service_template"
 	VirtualServiceDataBase   = "virtual_service_template"

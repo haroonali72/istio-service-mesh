@@ -63,7 +63,7 @@ type TlsConfig struct {
 	// applicable in Sidecar API.
 	// default value is false
 	// +optional
-	HttpsRedirect bool `json:"https_redirect" bson:"https_redirect" default:"false"`
+	HttpsRedirect bool `json:"https_redirect,omitempty" bson:"https_redirect,omitempty" default:"false"`
 	//supported modes  PASSTHROUGH|SIMPLE|MUTUAL|AUTO_PASSTHROUGH|ISTIO_MUTUAL
 	// +optional
 	Mode Mode `json:"mode,omitempty" bson:"mode,omitempty" swaggerType:"string" jsonschema:"enum=PASSTHROUGH,enum=SIMPLE,enum=MUTUAL,enum=AUTO_PASSTHROUGH,enum=ISTIO_MUTUAL"`
