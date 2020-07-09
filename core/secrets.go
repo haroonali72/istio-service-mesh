@@ -246,7 +246,6 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 	kube.APIVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace
-	kube.ResourceVersion = input.Version
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
