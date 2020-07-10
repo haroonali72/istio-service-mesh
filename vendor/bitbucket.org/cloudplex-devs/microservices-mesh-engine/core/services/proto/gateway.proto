@@ -44,11 +44,11 @@ message Server {
 message Port {
     string name = 1;
     uint32 number = 2;
-    Protocols protocol = 3;
+    string protocol = 3;
 }
 message TlsConfig {
     bool https_redirect = 1;
-    Mode mode = 2;
+    string mode = 2;
     string server_certificate = 3;
     string private_key = 4;
     string ca_certificate = 5;

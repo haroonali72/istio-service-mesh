@@ -1,5 +1,11 @@
-package types
+package services
 
+import "bitbucket.org/cloudplex-devs/microservices-mesh-engine/types"
+
+type LegacyService struct {
+	types.ServiceBasicInfo `json:",inline" bson:",inline"`
+	ServiceAttributes      *LegacyServiceAttributes `json:"service_attributes"  bson:"service_attributes" binding:"required"`
+}
 type LegacyServiceAttributes struct {
 	IP       string        `json:"ip" bson:"ip"`
 	Ports    []PortsAttrib `json:"ports" bson:"ports"`

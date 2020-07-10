@@ -280,18 +280,19 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			server.Port = new(v1alpha3.Port)
 			server.Port.Name = serverInput.Port.Name
 			server.Port.Number = serverInput.Port.Number
-			server.Port.Protocol = serverInput.Port.GetProtocol().String()
+			server.Port.Protocol = serverInput.Port.Protocol
 		}
 		if serverInput.Tls != nil {
 			if serverInput.Tls.CredentialName != "" {
 				server.Tls = new(v1alpha3.ServerTLSSettings)
-				if serverInput.Tls.Mode.String() == pb.Mode_SIMPLE.String() {
+				server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
+				if serverInput.Tls.Mode == "SIMPLE" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_SIMPLE
-				} else if serverInput.Tls.Mode.String() == pb.Mode_PASSTHROUGH.String() {
+				} else if serverInput.Tls.Mode == "PASSTHROUGH" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_PASSTHROUGH
-				} else if serverInput.Tls.Mode.String() == pb.Mode_AUTO_PASSTHROUGH.String() {
+				} else if serverInput.Tls.Mode == "AUTO_PASSTHROUGH" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_AUTO_PASSTHROUGH
-				} else if serverInput.Tls.Mode.String() == pb.Mode_ISTIO_MUTUAL.String() {
+				} else if serverInput.Tls.Mode == "ISTIO_MUTUAL" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_ISTIO_MUTUAL
 				} else {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_MUTUAL
@@ -300,13 +301,13 @@ func getIstioGateway(input *pb.GatewayService) (*istioClient.Gateway, error) {
 			} else {
 				server.Tls = new(v1alpha3.ServerTLSSettings)
 				server.Tls.HttpsRedirect = serverInput.Tls.HttpsRedirect
-				if serverInput.Tls.Mode.String() == pb.Mode_SIMPLE.String() {
+				if serverInput.Tls.Mode == "SIMPLE" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_SIMPLE
-				} else if serverInput.Tls.Mode.String() == pb.Mode_PASSTHROUGH.String() {
+				} else if serverInput.Tls.Mode == "PASSTHROUGH" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_PASSTHROUGH
-				} else if serverInput.Tls.Mode.String() == pb.Mode_AUTO_PASSTHROUGH.String() {
+				} else if serverInput.Tls.Mode == "AUTO_PASSTHROUGH" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_AUTO_PASSTHROUGH
-				} else if serverInput.Tls.Mode.String() == pb.Mode_ISTIO_MUTUAL.String() {
+				} else if serverInput.Tls.Mode == "ISTIO_MUTUAL" {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_ISTIO_MUTUAL
 				} else {
 					server.Tls.Mode = v1alpha3.ServerTLSSettings_MUTUAL
