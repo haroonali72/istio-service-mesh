@@ -1631,7 +1631,13 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 	}
 	service.ServiceType = meshConstants.Kubernetes
 	service.ServiceSubType = meshConstants.KubernetesService
-	service.ServiceAttributes.Type = string(svc.Spec.Type)
+	if svc.Spec.Type != "" {
+		service.ServiceAttributes.Type = string(svc.Spec.Type)
+	} else {
+		//set default type of k8s service
+		service.ServiceAttributes.Type = "ClusterIP"
+	}
+
 	if len(svc.Spec.Selector) > 0 {
 		service.ServiceAttributes.Selector = make(map[string]string)
 	}
