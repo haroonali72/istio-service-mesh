@@ -1647,8 +1647,6 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 		//set default External traffic policy of k8s service
 		service.ServiceAttributes.ExternalTrafficPolicy = "Cluster"
 	}
-	service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
-
 	if len(svc.Spec.Selector) > 0 {
 		service.ServiceAttributes.Selector = make(map[string]string)
 	}
