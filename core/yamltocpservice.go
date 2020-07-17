@@ -1674,7 +1674,11 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 		} else {
 			service.ServiceAttributes.ClusterIP = "None"
 		}
-		cpPort.Protocol = string(each.Protocol)
+		if each.Protocol != "" {
+			cpPort.Protocol = string(each.Protocol)
+		} else {
+			cpPort.Protocol = "TCP"
+		}
 		if each.NodePort != 0 {
 			cpPort.NodePort = each.NodePort
 		}
