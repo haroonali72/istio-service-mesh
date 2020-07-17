@@ -1638,13 +1638,22 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 		service.ServiceAttributes.Type = "ClusterIP"
 	}
 
+	if svc.Spec.ExternalTrafficPolicy != "" {
+		if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal && !(svc.Spec.Type == v1.ServiceTypeLoadBalancer || svc.Spec.Type == v1.ServiceTypeNodePort) {
+			return nil, errors.New("for external traffic policy local service type should be LoadBalancer or NodePort")
+		}
+		service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
+	} else {
+		//set default External traffic policy of k8s service
+		service.ServiceAttributes.ExternalTrafficPolicy = "Cluster"
+	}
 	if len(svc.Spec.Selector) > 0 {
 		service.ServiceAttributes.Selector = make(map[string]string)
 	}
 	for key, value := range svc.Spec.Selector {
 		service.ServiceAttributes.Selector[key] = value
 	}
-	service.ServiceAttributes.ExternalTrafficPolicy = string(svc.Spec.ExternalTrafficPolicy)
+
 	for _, each := range svc.Spec.Ports {
 		cpPort := meshTypes.KubePort{}
 		if each.Name != "" {
@@ -1663,7 +1672,11 @@ func convertToCPKubernetesService(svc *v1.Service) (*meshTypes.Service, error) {
 		} else {
 			service.ServiceAttributes.ClusterIP = "None"
 		}
-		cpPort.Protocol = string(each.Protocol)
+		if each.Protocol != "" {
+			cpPort.Protocol = string(each.Protocol)
+		} else {
+			cpPort.Protocol = "TCP"
+		}
 		if each.NodePort != 0 {
 			cpPort.NodePort = each.NodePort
 		}
