@@ -49,6 +49,10 @@ const (
 	KnativeServicePostEndpoint = "/api/v1/service"
 	KnativeEventingEndpoint    = "/api/v1/eventing"
 	KnativeBuildPostEndpoint   = "/api/v1/build"
+
+	TrantulaServingEndpoint  = "/kube/api/v1/install/serving/{PROJECT_ID}"
+	TrantulaEventingEndpoint = "/kube/api/v1/install/eventing/{PROJECT_ID}"
+	TrantulaBuildEndpoint    = "/kube/api/v1/install/tekton/{PROJECT_ID}"
 	////////////////////////////////////////////////////////////////
 	//////////////////logging/////////////////////////////////////
 	AuditTrailEndpoint      = "/elephant/api/v1/audit/store"
@@ -130,6 +134,14 @@ const (
 	ErrServiceNotExecuted         = "the service you are fetching data from is not executed or have some other issue"
 	ErrSolutionConversion         = "solution schema has some issues"
 	//-----------------------------------------------------//
+	///--------------------- Eventing service database collection ----------------///
+
+	KubernetesSourceDatabase = "kubernetes_source_template"
+	GithubSourceDatabase     = "github_source_template"
+	GcpPubSubSourceDatabase  = "gcppubsub_source_template"
+
+	///-----------------------Node Service Collection-------------------------------/////
+	NodeServiceDataBase = "node_template"
 
 	ModePost   = "post"
 	ModeGet    = "get"

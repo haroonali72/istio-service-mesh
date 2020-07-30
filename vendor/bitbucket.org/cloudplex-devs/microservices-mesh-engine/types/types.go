@@ -66,6 +66,8 @@ type ServiceResp struct {
 	Namespace        string   `json:"namespace"`
 	ServiceSubType   string   `json:"service_sub_type"`
 	PodErrors        []string `json:"pod_errors"`
+	IngressIP        []string `json:"ingress_ip,omitempty"`
+	HostName         []string `json:"host_name,omitempty"`
 }
 
 type LogRequest struct {

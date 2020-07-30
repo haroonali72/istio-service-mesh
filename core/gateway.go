@@ -115,6 +115,17 @@ func (s *Server) GetGateway(ctx context.Context, req *pb.GatewayService) (*pb.Se
 		getErrorResp(serviceResp, err)
 		return serviceResp, err
 	}
+	var gtw istioClient.Gateway
+	if err = json.Unmarshal(result.Service, &gtw); err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	if gtw.Spec.Servers != nil {
+		if gtw.Spec.Servers[0].Hosts[0] != "*" {
+			serviceResp.Status.HostName = append(serviceResp.Status.HostName, gtw.Spec.Servers[0].Hosts[0])
+		}
+	}
 	utils.Info.Println(result.Service)
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
