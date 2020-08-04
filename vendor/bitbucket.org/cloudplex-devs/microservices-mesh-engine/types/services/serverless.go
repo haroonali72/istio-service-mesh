@@ -8,7 +8,6 @@ type ServerlessService struct {
 }
 
 type ServerlessServiceAttributes struct {
-	//Address                       []interface{}                 `json:"address" `
 	Domains                       []Domain                      `json:"domains"`
 	LocalVisibilityCheck          bool                          `json:"local_visibility_check"`
 	EnvVars                       []EnvVars                     `json:"environment_variables"`

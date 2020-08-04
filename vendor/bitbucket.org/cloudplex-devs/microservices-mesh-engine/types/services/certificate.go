@@ -8,13 +8,13 @@ type CertificateService struct {
 }
 
 type CertificateAttribute struct {
-	SecretName string    `json:"secret_name,omitempty" bson:"secret_name,omitempty"`
-	CommonName string    `json:"common_name,omitempty" bson:"common_name,omitempty"`
-	DnsNames   []string  `json:"dns_names,omitempty" bson:"dns_names,omitempty"`
-	IssuerRef  IssuerRef `json:"issuer_ref,omitempty" bson:"issuer_ref,omitempty"`
+	SecretName string    `json:"secret_name" bson:"secret_name" binding:"required"`
+	CommonName string    `json:"common_name" bson:"common_name" binding:"required"`
+	DnsNames   []string  `json:"dns_names" bson:"dns_names" binding:"required"`
+	IssuerRef  IssuerRef `json:"issuer_ref" bson:"issuer_ref" binding:"required"`
 }
 
 type IssuerRef struct {
-	Name string `json:"name,omitempty" bson:"name,omitempty"`
-	Kind string `json:"kind,omitempty" bson:"kind,omitempty"`
+	Name string `json:"name,omitempty" bson:"name,omitempty" binding:"required"`
+	Kind string `json:"kind,omitempty" bson:"kind,omitempty" binding:"required"`
 }

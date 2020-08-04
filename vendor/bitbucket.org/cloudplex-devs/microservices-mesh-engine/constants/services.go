@@ -41,6 +41,7 @@ const (
 	Hpa                ServiceSubType = "hpa"
 	InitContainer      ServiceSubType = "init_container"
 	Pod                ServiceSubType = "pod"
+	Node               ServiceSubType = "node"
 	// Istio service sub type
 
 	Gateway            ServiceSubType = "gateway"
@@ -140,6 +141,7 @@ var (
 		NetworkPolicy,
 		InitContainer,
 		Pod,
+		Node,
 		//registries
 		AWSDockerRegistry,
 		AzureDockerRegistry,
@@ -152,6 +154,9 @@ var (
 		DestinationRule,
 		//ServiceEntry,
 		MeshPolicy,
+		Certificate,
+		ClusterIssuer,
+		PeerAuthentication,
 	}
 	serverlessServicesSubTypes = []ServiceSubType{
 		ServerlessService,

@@ -44,7 +44,7 @@ message DeploymentServiceAttributes {
     int32 replicas=14;
     TerminationGracePeriodSeconds Termination_grace_period_seconds = 15;
     repeated LocalObjectReference image_pull_secrets = 16;
-    string serviceAccountName = 17;
+    string service_account_name = 17;
     AutomountServiceAccountToken automount_service_account_token = 18;
     bool is_rbac_enabled = 19;
 }
