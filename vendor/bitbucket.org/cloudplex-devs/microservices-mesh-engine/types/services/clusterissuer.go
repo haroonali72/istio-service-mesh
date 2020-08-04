@@ -8,5 +8,5 @@ type ClusterIssuerService struct {
 }
 
 type ClusterIssuerAttribute struct {
-	Email string `json:"email,omitempty" bson:"email,omitempty"`
+	Email string `json:"email" bson:"email" binding:"required"`
 }
