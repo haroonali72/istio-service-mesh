@@ -2016,7 +2016,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 					})
 				}
 			} else if tempVol.Secret != nil {
-				temp.ConfigMap = new(meshTypes.ConfigMapVolumeMount)
+				temp.Secret = new(meshTypes.ConfigMapVolumeMount)
 				temp.Secret.ConfigMapName = tempVol.Secret.SecretName
 				if tempVol.Secret.Optional != nil {
 					temp.Secret.Optional = *tempVol.Secret.Optional
@@ -2137,42 +2137,45 @@ func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 		CpProbe.Handler = new(meshTypes.Handler)
 		CpProbe.Handler.Type = "httpGet"
 		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
-		if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
-			if prob.HTTPGet.Host == "" {
-				CpProbe.Handler.HTTPGet.Host = nil
-			} else {
-				CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
-			}
-			if prob.HTTPGet.Path == "" {
-				CpProbe.Handler.HTTPGet.Path = nil
-			} else {
-				CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
-			}
-
-			if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-				if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
-					scheme := meshTypes.URISchemeHTTP
-					CpProbe.Handler.HTTPGet.Scheme = &scheme
-				} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-					scheme := meshTypes.URISchemeHTTPS
-					CpProbe.Handler.HTTPGet.Scheme = &scheme
+		if prob.HTTPGet.Port.Type == intstr.Int {
+			if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
+				if prob.HTTPGet.Host == "" {
+					CpProbe.Handler.HTTPGet.Host = nil
+				} else {
+					CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
 				}
-			} else if prob.HTTPGet.Scheme == "" {
-				CpProbe.Handler.HTTPGet.Scheme = nil
-			} else {
-				return nil, errors.New("invalid URI scheme")
-			}
+				if prob.HTTPGet.Path == "" {
+					CpProbe.Handler.HTTPGet.Path = nil
+				} else {
+					CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+				}
 
-			for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
-				var cphttpheader meshTypes.HTTPHeader
-				cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
-				cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
-				CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
+				if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+					if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+						scheme := meshTypes.URISchemeHTTP
+						CpProbe.Handler.HTTPGet.Scheme = &scheme
+					} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+						scheme := meshTypes.URISchemeHTTPS
+						CpProbe.Handler.HTTPGet.Scheme = &scheme
+					}
+				} else if prob.HTTPGet.Scheme == "" {
+					CpProbe.Handler.HTTPGet.Scheme = nil
+				} else {
+					return nil, errors.New("invalid URI scheme")
+				}
+
+				for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+					var cphttpheader meshTypes.HTTPHeader
+					cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
+					cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
+					CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
+				}
+				CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
+			} else {
+				return nil, errors.New("not a valid port number for http_get")
 			}
-			CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
-		} else {
-			return nil, errors.New("not a valid port number for http_get")
 		}
+		//TODo add support for name ports
 
 	} else if prob.TCPSocket != nil {
 		CpProbe.Handler = new(meshTypes.Handler)
