@@ -130,6 +130,14 @@ const (
 	ErrServiceNotExecuted         = "the service you are fetching data from is not executed or have some other issue"
 	ErrSolutionConversion         = "solution schema has some issues"
 	//-----------------------------------------------------//
+	///--------------------- Eventing service database collection ----------------///
+
+	KubernetesSourceDatabase = "kubernetes_source_template"
+	GithubSourceDatabase     = "github_source_template"
+	GcpPubSubSourceDatabase  = "gcppubsub_source_template"
+
+	///-----------------------Node Service Collection-------------------------------/////
+	NodeServiceDataBase = "node_template"
 
 	ModePost   = "post"
 	ModeGet    = "get"
