@@ -365,8 +365,8 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 		serviceResp.Service = bytesData
 		return serviceResp, nil
 
-	default:
-		return nil, errors.New("object is not in our scope")
+		//default:
+		//	return nil, errors.New("object is not in our scope")
 	}
 	return serviceResp, nil
 
