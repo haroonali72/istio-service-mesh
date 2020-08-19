@@ -699,6 +699,11 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
 						Key:                  envVariableValue[1],
 					}}}
+			} else if strings.EqualFold(envVariable.Type, "FieldRef") {
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{
+						FieldRef: &v2.ObjectFieldSelector{FieldPath: envVariable.Value},
+					}}
 			} else {
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
 			}
@@ -1077,7 +1082,7 @@ func putLivenessProbe(container *v2.Container, prob *pb.Probe) error {
 
 	var temp v2.Probe
 	if prob != nil {
-		if prob.Handler != nil {
+		if prob.Handler != nil && prob.Handler.HandlerType != "none" {
 			temp.InitialDelaySeconds = prob.InitialDelaySeconds
 			temp.FailureThreshold = prob.FailureThreshold
 			temp.PeriodSeconds = prob.PeriodSeconds
@@ -1139,7 +1144,8 @@ func putLivenessProbe(container *v2.Container, prob *pb.Probe) error {
 
 			}
 		} else {
-			return errors.New("Liveness prob header can not be nil")
+			container.LivenessProbe = nil
+			return nil
 		}
 		container.LivenessProbe = &temp
 	}
@@ -1148,7 +1154,7 @@ func putLivenessProbe(container *v2.Container, prob *pb.Probe) error {
 func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 	var temp v2.Probe
 	if prob != nil {
-		if prob.Handler != nil {
+		if prob.Handler != nil && prob.Handler.HandlerType != "none" {
 			temp.InitialDelaySeconds = prob.InitialDelaySeconds
 			temp.FailureThreshold = prob.FailureThreshold
 			temp.PeriodSeconds = prob.PeriodSeconds
@@ -1214,7 +1220,8 @@ func putReadinessProbe(container *v2.Container, prob *pb.Probe) error {
 
 			}
 		} else {
-			return errors.New("Readiness prob handler can not be nil")
+			container.ReadinessProbe = nil
+			return nil
 		}
 		container.ReadinessProbe = &temp
 	}
