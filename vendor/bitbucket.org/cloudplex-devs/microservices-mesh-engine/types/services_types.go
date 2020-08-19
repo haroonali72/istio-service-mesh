@@ -67,7 +67,7 @@ type ServiceBasicInfo struct {
 	// valid length is 1-10 character
 	// default=v1
 	// +mandatory
-	Version string `json:"version" bson:"version"  binding:"required" valid:"alphanumspecial,length(1|10),lowercase~service version is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,required" default:"v1"`
+	Version string `json:"version" bson:"version"  binding:"required" valid:"alphanumspecial,length(0|10),lowercase~service version is invalid. Valid regex is ^[ A-Za-z0-9_-]*$,optional" default:"v1"`
 	// ServiceType is used to categorize score and objects.
 	// Refer Documentation for more details
 	// valid regex is ^[ A-Za-z0-9_-]*$

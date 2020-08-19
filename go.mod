@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200729095300-b61063c871f7
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200819123037-b88ca393370c
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
 	github.com/go-redis/redis v6.15.7+incompatible
