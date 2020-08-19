@@ -5,6 +5,48 @@ import (
 	"time"
 )
 
+type ListHelmDataApiResponse struct {
+	Data       []*HelmHubData `json:"data"`
+	NextCursor int            `json:"next_cursor"`
+	TotalCount int            `json:"total_count"`
+}
+
+type HelmHubData struct {
+	Id          string ` bson:"_id" valid:"-"`
+	Name        string `json:"name" bson:"name"`
+	Description string `json:"description,omitempty" bson:"description,omitempty"`
+	// char version key app version value
+	Versions map[string]HelmChartCreationDateAndVersion `json:"versions" bson:"version"`
+}
+type HelmChartCreationDateAndVersion struct {
+	Created    string ` json:"created" bson:"created"`
+	AppVersion string `json:"app_version" bson:"app_version" `
+	Deprecated bool   `json:"deprecated,omitempty"  bson:"deprecated,omitempty"`
+}
+
+type HelmRepoIndexFile struct {
+	Entries map[string][]HelmChartData `yaml:"entries"`
+}
+
+type HelmChartData struct {
+	Deprecated   bool   `json:"deprecated"  yaml:"deprecated"`
+	Created      string `yaml:"created" json:"created"`
+	AppVersion   string `yaml:"appVersion" json:"appVersion"`
+	Description  string `yaml:"description" json:"description"`
+	ChartVersion string `yaml:"version" json:"chart_version"`
+}
+
+type HelmHubConfigFile struct {
+	Sync HelmHubRepoList `yaml:"sync"`
+}
+
+type HelmHubRepoList struct {
+	Repos []HelmRepoData `yaml:"repos"`
+}
+type HelmRepoData struct {
+	Name string `yaml:"name"`
+	URL  string `yaml:"url"`
+}
 type HelmHookImport struct {
 	MetaData struct {
 		Annotations struct {
@@ -66,6 +108,8 @@ type ServiceResp struct {
 	Namespace        string   `json:"namespace"`
 	ServiceSubType   string   `json:"service_sub_type"`
 	PodErrors        []string `json:"pod_errors"`
+	IngressIP        []string `json:"ingress_ip,omitempty"`
+	HostName         []string `json:"host_name,omitempty"`
 }
 
 type LogRequest struct {

@@ -445,6 +445,8 @@ type IstioRbacAttribute struct {
 }
 
 type ContainerPort struct {
+	// Name of the port
+	Name string `json:"name,omitempty" bson:"name,omitempty"`
 	// Number of port to expose on the host.
 	// If specified, this must be a valid port number, 0 < x < 65536.
 	// If HostNetwork is specified, this must match ContainerPort.

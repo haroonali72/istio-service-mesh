@@ -2052,6 +2052,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 		var ports []meshTypes.ContainerPort
 		for _, port := range container.Ports {
 			temp := meshTypes.ContainerPort{}
+			temp.Name = port.Name
 			if port.ContainerPort == 0 && port.HostPort != 0 {
 				port.ContainerPort = port.HostPort
 			}
@@ -2088,6 +2089,10 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.SecretKeyRef.Name + ":" + envVariable.ValueFrom.SecretKeyRef.Key + "}}"
 					tempEnvVariable.Type = string(meshConstants.Secret)
 					tempEnvVariable.Dynamic = true
+				} else if envVariable.ValueFrom.FieldRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = envVariable.ValueFrom.FieldRef.FieldPath
+					tempEnvVariable.Type = "FieldRef"
 				}
 				environmentVariables = append(environmentVariables, tempEnvVariable)
 			} else {
