@@ -699,6 +699,11 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 						LocalObjectReference: v2.LocalObjectReference{Name: envVariableValue[0]},
 						Key:                  envVariableValue[1],
 					}}}
+			} else if strings.EqualFold(envVariable.Type, "FieldRef") {
+				tempEnvVariable = v2.EnvVar{Name: envVariable.Key,
+					ValueFrom: &v2.EnvVarSource{
+						FieldRef: &v2.ObjectFieldSelector{FieldPath: envVariable.Value},
+					}}
 			} else {
 				tempEnvVariable = v2.EnvVar{Name: envVariable.Key, Value: envVariable.Value}
 			}

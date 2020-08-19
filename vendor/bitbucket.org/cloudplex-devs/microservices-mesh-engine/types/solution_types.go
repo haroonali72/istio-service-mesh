@@ -57,6 +57,16 @@ type SolutionTemplate struct {
 	// valid length is 6-30 character
 	// +mandatory
 	SolutionId *string `json:"solution_id" bson:"solution_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~solution_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$~Solution Id is missing in request"`
+
+	// version used to link multiple version of applications/project
+	// Cannot be updated.
+	// valid regex is ^[ A-Za-z0-9_-]*$
+	// +mandatory
+	Version *string `json:"version" bson:"version" valid:"matches(^[ A-Za-z0-9._-]),optional"`
+
+	Description string `json:"description" bson:"description"`
+
+	Tags []string `json:"tags"bson:"tags"`
 	// ProjectId is the field which will refer which project is linked
 	// with this solution
 	// +optional
@@ -77,6 +87,10 @@ type SolutionTemplate struct {
 	// auto populated key
 	// +optional
 	CompanyID *string `json:"company_id" bson:"company_id" valid:"-"`
+	// CreationTime is timestamp of when the solution is created
+	// auto generated time
+	// +optional
+	CreationDate time.Time `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 }
 
 type SolutionMetadataByProject struct {
@@ -97,4 +111,16 @@ type SolutionMetadataByProject struct {
 	// Valid Status list Deployed/ Deployment Failed/ New
 	// +optional
 	Status *string `json:"status" bson:"status" valid:"-" default:"new"`
+
+	// version used to link multiple version of applications/project
+	// Cannot be updated.
+	// valid regex is ^[ A-Za-z0-9_-]*$
+	// +mandatory
+	AllVersion  []string               `json:"versions,omitempty" bson:"versions" `
+	VersionInfo map[string]VersionInfo `json:"version_info,omitempty" json:"version_info"`
+}
+type VersionInfo struct {
+	Tags         []string  `json:"tags,omitempty"bson:"tags"`
+	CreationDate time.Time `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
+	Description  string    `json:"description" bson:"description"`
 }
