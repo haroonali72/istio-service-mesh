@@ -100,6 +100,22 @@ func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesSer
 		return serviceResp, err
 	}
 	utils.Info.Println(result.Service)
+	var k8service kb.Service
+	if err = json.Unmarshal(result.Service, &k8service); err != nil {
+		utils.Error.Println(err)
+		getErrorResp(serviceResp, err)
+		return serviceResp, err
+	}
+	if k8service.Spec.Type == kb.ServiceTypeLoadBalancer {
+		if len(k8service.Status.LoadBalancer.Ingress) > 0 {
+			for _, value := range k8service.Status.LoadBalancer.Ingress {
+				serviceResp.Status.IngressIp = append(serviceResp.Status.IngressIp, value.IP)
+			}
+		} else {
+			serviceResp.Status.IngressIp = append(serviceResp.Status.IngressIp, "Pending")
+		}
+
+	}
 	serviceResp.Status.Status = "successful"
 	serviceResp.Status.StatusIndividual = append(serviceResp.Status.StatusIndividual, "successful")
 
