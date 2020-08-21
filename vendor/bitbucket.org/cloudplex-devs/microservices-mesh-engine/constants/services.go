@@ -1,6 +1,8 @@
 package constants
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ServiceType string
 type ServiceSubType string
@@ -20,6 +22,7 @@ const (
 	//------------------Services------------------------------------//
 
 	// k8s service sub type
+	NameSpace          ServiceSubType = "namespace"
 	Deployment         ServiceSubType = "deployment"
 	StatefulSet        ServiceSubType = "statefulset"
 	DaemonSet          ServiceSubType = "daemonset"
@@ -121,6 +124,7 @@ var (
 	}
 
 	kubernetesServiceSubTypes = []ServiceSubType{
+		NameSpace,
 		Deployment,
 		StatefulSet,
 		DaemonSet,
@@ -268,4 +272,70 @@ func IsSupportedService(svcType ServiceType, svcSubType ServiceSubType) error {
 		return fmt.Errorf("unsupported service_type %s and service_sub_type %s combination. Refer Documentation for more information", svcType, svcSubType)
 	}
 	return nil
+}
+
+func IsNameSpaceScopedService(svcSubType ServiceSubType) bool {
+
+	switch svcSubType {
+	case Deployment:
+		return true
+	case StatefulSet:
+		return true
+	case DaemonSet:
+		return true
+	case CronJob:
+		return true
+	case Job:
+		return true
+	case KubernetesService:
+		return true
+	case Role:
+		return true
+	case RoleBinding:
+		return true
+	case ServiceAccount:
+		return true
+	case PVC:
+		return true
+	case Secret:
+		return true
+	case ConfigMap:
+		return true
+	case Hpa:
+		return true
+	case NetworkPolicy:
+		return true
+	case InitContainer:
+		return true
+	case Pod:
+		return true
+	case Gateway:
+		return true
+	case VirtualService:
+		return true
+	case DestinationRule:
+		return true
+	case ServiceEntry:
+		return true
+	case MeshPolicy:
+		return true
+	case Certificate:
+		return true
+	case PeerAuthentication:
+		return true
+	case ServerlessService:
+		return true
+	case PubSubEventing:
+		return true
+	case PubSubGCPSource:
+		return true
+	case PubSubGitHubSource:
+		return true
+	case PubSubKubernetes:
+		return true
+	case BuildService:
+		return true
+	default:
+		return false
+	}
 }

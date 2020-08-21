@@ -49,6 +49,10 @@ const (
 	KnativeServicePostEndpoint = "/api/v1/service"
 	KnativeEventingEndpoint    = "/api/v1/eventing"
 	KnativeBuildPostEndpoint   = "/api/v1/build"
+
+	TrantulaServingEndpoint  = "/kube/api/v1/install/serving/{PROJECT_ID}"
+	TrantulaEventingEndpoint = "/kube/api/v1/install/eventing/{PROJECT_ID}"
+	TrantulaBuildEndpoint    = "/kube/api/v1/install/tekton/{PROJECT_ID}"
 	////////////////////////////////////////////////////////////////
 	//////////////////logging/////////////////////////////////////
 	AuditTrailEndpoint      = "/elephant/api/v1/audit/store"
@@ -88,6 +92,7 @@ const (
 	DynamicConfigurationSchema = "dynamicConfigurationSchema"
 	DeletedServiceState        = "services_state"
 	CustomerSolutionTemplate   = "customer_solution_templates"
+	HelmHubChartInfo           = "helm_hub_chart_info"
 
 	//---------k8s service database collection-------------  /////
 
@@ -145,13 +150,14 @@ const (
 	ModePut    = "put"
 	ModeDelete = "delete"
 	//-----------------Rbac Configurations----------------//
-	Rbac_Token_Info        = "/security/api/rbac/token/extract"
-	Rbac_Verify_Credential = "/security/api/rbac/allowed?resource_id={resourceID}&resource_type={resourceType}&action={action}"
-	Rbac_Delete_Policy     = "/security/api/rbac/policy?resource_id={resourceID}&resource_type={resourceType}"
-	Rbac_Add_Policy        = "/security/api/rbac/policy"
-	Rbac_List              = "/security/api/rbac/list?companyId={companyID}&resource_type={resourceType}"
-	Rbac_Evaluate          = "/security/api/rbac/evaluate"
-	Rbac_Subscription_Plan = "/security/api/rbac/companies"
+	Rbac_Token_Info         = "/security/api/rbac/token/extract"
+	Rbac_Verify_Credential  = "/security/api/rbac/allowed?resource_id={resourceID}&resource_type={resourceType}&action={action}"
+	Rbac_Delete_Policy      = "/security/api/rbac/policy?resource_id={resourceID}&resource_type={resourceType}"
+	Rbac_Add_Policy         = "/security/api/rbac/policy"
+	Rbac_Allowed_Namespaces = "/security/api/rbac/application/namespaces/allowed"
+	Rbac_List               = "/security/api/rbac/list?companyId={companyID}&resource_type={resourceType}"
+	Rbac_Evaluate           = "/security/api/rbac/evaluate"
+	Rbac_Subscription_Plan  = "/security/api/rbac/companies"
 
 	ProjectSecretPostEndpoint   = "/api/v1/project/{projectId}/solution/{solutionId}/secrets/{serviceId}"
 	ProjectSecretGetEndpoint    = ProjectSecretPostEndpoint

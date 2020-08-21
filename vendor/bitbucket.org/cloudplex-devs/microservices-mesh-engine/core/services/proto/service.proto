@@ -16,6 +16,8 @@ message ServiceStatus {
     string reason = 6;
     bool isComplete=7;
     repeated string pod_errors=8;
+    repeated string ingress_ip=9;
+    repeated string host_name=10;
 }
 
 message NameRequest {
