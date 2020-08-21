@@ -2031,6 +2031,19 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 				if tempVol.PersistentVolumeClaim != nil {
 					temp.PvcSvcName = tempVol.PersistentVolumeClaim.ClaimName
 				}
+				if tempVol.EmptyDir != nil {
+					temp.EmptyDir = new(meshTypes.EmptyDirVolumeMount)
+					temp.EmptyDir.EmptyDirName = tempVol.Name
+					temp.ServiceSubType = "emptyDir"
+					temp.Name = tempVol.Name
+
+				}
+				if tempVol.HostPath != nil {
+					temp.HostPath.HostPathName = tempVol.Name
+					temp.HostPath.Path = tempVol.HostPath.Path
+					temp.ServiceSubType = "hostpath"
+					temp.Name = tempVol.Name
+				}
 			}
 			if volumeMount.MountPropagation != nil {
 				if *volumeMount.MountPropagation == v1.MountPropagationNone {

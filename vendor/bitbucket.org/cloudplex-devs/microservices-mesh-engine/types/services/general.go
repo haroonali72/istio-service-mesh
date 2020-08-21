@@ -1,6 +1,9 @@
 package services
 
-import "k8s.io/apimachinery/pkg/util/intstr"
+import (
+	"bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
+	"k8s.io/apimachinery/pkg/util/intstr"
+)
 
 type CommonContainerAttributes struct {
 	IsInitContainerEnable bool `json:"enable_init,omitempty" bson:"enable_init,omitempty"`
@@ -44,6 +47,10 @@ type CommonContainerAttributes struct {
 	// this option is a metadata to attach gateway with container service
 	// +optional
 	EnableExternalTraffic bool `json:"enable_external_traffic,omitempty" bson:"enable_external_traffic,omitempty"`
+
+	EnableScaling bool `json:"enable_scaling,omitempty" bson:"enable_scaling,omitempty"`
+
+	HPAConfiguration HpaSvcAttr `json:hpa_configurations,omitempty" bson:hpa_configurations,omitempty"`
 }
 type ImageRepositoryConfigurations struct {
 	Url         string               `json:"url,omitempty"`
@@ -400,6 +407,9 @@ type VolumeMount struct {
 	Secret           *ConfigMapVolumeMount `json:"secrets,omitempty"`
 	HostPath         *HostPathVolumeMount  `json:"hostpath" bson:"hostpath"`
 	EmptyDir         *EmptyDirVolumeMount  `json:"empty_dir" bson:"empty_dir"`
+	//fe keys
+	ServiceID      string                   `json:"service_id,omitempty" bson:"service_id,omitempty"`
+	ServiceSubType constants.ServiceSubType `json:"service_sub_type,omitempty" bson:"service_sub_type,omitempty"`
 }
 
 type EmptyDirVolumeMount struct {
