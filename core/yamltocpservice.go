@@ -41,8 +41,8 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 
 	if err != nil {
 		yamlService := types.Yamlservice{}
-		err := yaml.Unmarshal(req.Service, &yamlService)
-		if err == nil {
+		err2 := yaml.Unmarshal(req.Service, &yamlService)
+		if err2 == nil {
 			if yamlService.Kind == constants.Gateway.String() {
 				gateway := v1alpha3.Gateway{}
 				err = yaml2.Unmarshal(req.Service, &gateway)
@@ -116,7 +116,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 
 		}
 		utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
-		return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
+		//		return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 	}
 	switch o := obj.(type) {
 	case *net.NetworkPolicy:
@@ -510,8 +510,9 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 	deployment.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
 	//deployment.ServiceAttributes.LabelSelector.MatchLabels["version"] = service.Labels["version"]
 	//deployment.ServiceAttributes.LabelSelector.MatchLabels["name"] = service.Labels["name"]
-	deployment.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
-
+	if service.Spec.Selector != nil && service.Spec.Selector.MatchLabels != nil {
+		deployment.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	}
 	deployment.ServiceAttributes.Annotations = make(map[string]string)
 	deployment.ServiceAttributes.Annotations = service.Spec.Template.Annotations
 	deployment.ServiceAttributes.NodeSelector = make(map[string]string)
@@ -707,9 +708,11 @@ func convertToCPDaemonSet(ds interface{}) (*meshTypes.DaemonSetService, error) {
 	daemonSet.ServiceAttributes = new(meshTypes.DaemonSetServiceAttribute)
 	daemonSet.ServiceAttributes.Labels = make(map[string]string)
 	daemonSet.ServiceAttributes.Labels = service.Spec.Template.Labels
-	daemonSet.ServiceAttributes.LabelSelector = new(meshTypes.LabelSelectorObj)
-	daemonSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
-	daemonSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	if service.Spec.Selector != nil {
+		daemonSet.ServiceAttributes.LabelSelector = new(meshTypes.LabelSelectorObj)
+		daemonSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+		daemonSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	}
 
 	daemonSet.ServiceAttributes.Annotations = make(map[string]string)
 	daemonSet.ServiceAttributes.Annotations = service.Spec.Template.Annotations
@@ -811,9 +814,11 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 
 	statefulSet.ServiceAttributes.Annotations = make(map[string]string)
 	statefulSet.ServiceAttributes.Annotations = service.Spec.Template.Annotations
-	statefulSet.ServiceAttributes.LabelSelector = new(meshTypes.LabelSelectorObj)
-	statefulSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
-	statefulSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	if service.Spec.Selector != nil {
+		statefulSet.ServiceAttributes.LabelSelector = new(meshTypes.LabelSelectorObj)
+		statefulSet.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
+		statefulSet.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	}
 	statefulSet.ServiceAttributes.NodeSelector = make(map[string]string)
 	statefulSet.ServiceAttributes.NodeSelector = service.Spec.Template.Spec.NodeSelector
 
@@ -843,7 +848,7 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 	}
 	//containers
 	var volumeMountNames1 = make(map[string]bool)
-	if containers, vm, err := getCpStsContainers(service.Spec.Template.Spec.Containers, service.Spec.VolumeClaimTemplates); err == nil {
+	if containers, vm, err := getCpStsContainers(service.Spec.Template.Spec.Containers, service.Spec.VolumeClaimTemplates, service.Spec.Template.Spec.Volumes); err == nil {
 		if len(containers) > 0 {
 			statefulSet.ServiceAttributes.Containers = containers
 			volumeMountNames1 = vm
@@ -925,8 +930,11 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	CpJobAttr.Labels = job.Spec.Template.Labels
 
 	CpJobAttr.LabelSelector = new(meshTypes.LabelSelectorObj)
-	CpJobAttr.LabelSelector.MatchLabels = make(map[string]string)
-	CpJobAttr.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	if job.Spec.Selector != nil && job.Spec.Selector.MatchLabels != nil {
+		CpJobAttr.LabelSelector.MatchLabels = make(map[string]string)
+		CpJobAttr.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+
+	}
 	CpJobAttr.Annotations = make(map[string]string)
 	CpJobAttr.Annotations = job.Spec.Template.Annotations
 
@@ -1779,18 +1787,22 @@ func getCPNodeSelector(nodeSelector *v1.NodeSelector) (*meshTypes.NodeSelector, 
 	return temp, nil
 }
 
-func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
+func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim, vol []v1.Volume) ([]*meshTypes.ContainerAttribute, map[string]bool, error) {
 	volumeMountNames := make(map[string]bool)
 	var containers []*meshTypes.ContainerAttribute
-	volumes := make(map[string]v1.PersistentVolumeClaim)
+	persistentVolumesClaims := make(map[string]v1.PersistentVolumeClaim)
+	volumes := make(map[string]v1.Volume)
 	for _, each := range PVCs {
+		persistentVolumesClaims[each.Name] = each
+	}
+	for _, each := range vol {
 		volumes[each.Name] = each
 	}
 	for _, container := range conts {
 		containerTemp := meshTypes.ContainerAttribute{}
 
 		if container.ReadinessProbe != nil {
-			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+			if rp, err := getCPProbe(container.ReadinessProbe, container.Ports); err == nil {
 				containerTemp.ReadinessProbe = rp
 			} else {
 				utils.Info.Println(err)
@@ -1799,7 +1811,7 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 		}
 
 		if container.LivenessProbe != nil {
-			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+			if lp, err := getCPProbe(container.LivenessProbe, container.Ports); err == nil {
 				containerTemp.LivenessProbe = lp
 			} else {
 				utils.Info.Println(err)
@@ -1849,8 +1861,9 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 			temp.MountPath = volumeMount.MountPath
 			temp.SubPath = volumeMount.SubPath
 			temp.SubPathExpr = volumeMount.SubPathExpr
-			_, ok := volumes[volumeMount.Name]
-			if !ok {
+			_, foundInPVCS := persistentVolumesClaims[volumeMount.Name]
+			_, foundInVolumes := volumes[volumeMount.Name]
+			if !foundInPVCS && !foundInVolumes {
 				return nil, nil, errors.New(volumeMount.Name + " is not present in pod volume")
 			}
 
@@ -1876,6 +1889,9 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 			temp := meshTypes.ContainerPort{}
 			if port.ContainerPort == 0 && port.HostPort != 0 {
 				port.ContainerPort = port.HostPort
+			}
+			if port.Name != "" {
+				temp.Name = port.Name
 			}
 
 			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
@@ -1910,6 +1926,10 @@ func getCpStsContainers(conts []v1.Container, PVCs []v1.PersistentVolumeClaim) (
 					tempEnvVariable.Value = "{{" + envVariable.ValueFrom.SecretKeyRef.Name + ":" + envVariable.ValueFrom.SecretKeyRef.Key + "}}"
 					tempEnvVariable.Type = string(meshConstants.Secret)
 					tempEnvVariable.Dynamic = true
+				} else if envVariable.ValueFrom.FieldRef != nil {
+					tempEnvVariable.Key = envVariable.Name
+					tempEnvVariable.Value = envVariable.ValueFrom.FieldRef.FieldPath
+					tempEnvVariable.Type = "FieldRef"
 				}
 				environmentVariables = append(environmentVariables, tempEnvVariable)
 			} else {
@@ -1940,7 +1960,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 		containerTemp := meshTypes.ContainerAttribute{}
 		containerTemp.ContainerName = container.Name
 		if container.ReadinessProbe != nil {
-			if rp, err := getCPProbe(container.ReadinessProbe); err == nil {
+			if rp, err := getCPProbe(container.ReadinessProbe, container.Ports); err == nil {
 				containerTemp.ReadinessProbe = rp
 			} else {
 				utils.Info.Println(err)
@@ -1949,7 +1969,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 		}
 
 		if container.LivenessProbe != nil {
-			if lp, err := getCPProbe(container.LivenessProbe); err == nil {
+			if lp, err := getCPProbe(container.LivenessProbe, container.Ports); err == nil {
 				containerTemp.LivenessProbe = lp
 			} else {
 				utils.Info.Println(err)
@@ -2039,6 +2059,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 
 				}
 				if tempVol.HostPath != nil {
+					temp.HostPath = new(meshTypes.HostPathVolumeMount)
 					temp.HostPath.HostPathName = tempVol.Name
 					temp.HostPath.Path = tempVol.HostPath.Path
 					temp.ServiceSubType = "hostpath"
@@ -2125,7 +2146,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 	return containers, volumeMountNames, nil
 }
 
-func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
+func getCPProbe(prob *v1.Probe, contPorts []v1.ContainerPort) (*meshTypes.Probe, error) {
 	CpProbe := new(meshTypes.Probe)
 
 	if prob.FailureThreshold > 0 {
@@ -2157,53 +2178,68 @@ func getCPProbe(prob *v1.Probe) (*meshTypes.Probe, error) {
 		CpProbe.Handler.HTTPGet = new(meshTypes.HTTPGetAction)
 		if prob.HTTPGet.Port.Type == intstr.Int {
 			if prob.HTTPGet.Port.IntVal > 0 && prob.HTTPGet.Port.IntVal < 65536 {
-				if prob.HTTPGet.Host == "" {
-					CpProbe.Handler.HTTPGet.Host = nil
-				} else {
-					CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
-				}
-				if prob.HTTPGet.Path == "" {
-					CpProbe.Handler.HTTPGet.Path = nil
-				} else {
-					CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
-				}
-
-				if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-					if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
-						scheme := meshTypes.URISchemeHTTP
-						CpProbe.Handler.HTTPGet.Scheme = &scheme
-					} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
-						scheme := meshTypes.URISchemeHTTPS
-						CpProbe.Handler.HTTPGet.Scheme = &scheme
-					}
-				} else if prob.HTTPGet.Scheme == "" {
-					CpProbe.Handler.HTTPGet.Scheme = nil
-				} else {
-					return nil, errors.New("invalid URI scheme")
-				}
-
-				for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
-					var cphttpheader meshTypes.HTTPHeader
-					cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
-					cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
-					CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
-				}
 				CpProbe.Handler.HTTPGet.Port = int(prob.HTTPGet.Port.IntVal)
 			} else {
 				return nil, errors.New("not a valid port number for http_get")
 			}
+		} else if prob.HTTPGet.Port.Type == intstr.String {
+			for _, value := range contPorts {
+				if strings.EqualFold(value.Name, prob.HTTPGet.Port.StrVal) {
+					CpProbe.Handler.HTTPGet.Port = int(value.ContainerPort)
+				}
+			}
 		}
-		//TODo add support for name ports
+		if prob.HTTPGet.Host == "" {
+			CpProbe.Handler.HTTPGet.Host = nil
+		} else {
+			CpProbe.Handler.HTTPGet.Host = &prob.HTTPGet.Host
+		}
+		if prob.HTTPGet.Path == "" {
+			CpProbe.Handler.HTTPGet.Path = nil
+		} else {
+			CpProbe.Handler.HTTPGet.Path = &prob.HTTPGet.Path
+		}
 
+		if prob.HTTPGet.Scheme == v1.URISchemeHTTP || prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+			if prob.HTTPGet.Scheme == v1.URISchemeHTTP {
+				scheme := meshTypes.URISchemeHTTP
+				CpProbe.Handler.HTTPGet.Scheme = &scheme
+			} else if prob.HTTPGet.Scheme == v1.URISchemeHTTPS {
+				scheme := meshTypes.URISchemeHTTPS
+				CpProbe.Handler.HTTPGet.Scheme = &scheme
+			}
+		} else if prob.HTTPGet.Scheme == "" {
+			CpProbe.Handler.HTTPGet.Scheme = nil
+		} else {
+			return nil, errors.New("invalid URI scheme")
+		}
+
+		for i := 0; i < len(prob.HTTPGet.HTTPHeaders); i++ {
+			var cphttpheader meshTypes.HTTPHeader
+			cphttpheader.Name = &prob.HTTPGet.HTTPHeaders[i].Name
+			cphttpheader.Value = &prob.HTTPGet.HTTPHeaders[i].Value
+			CpProbe.Handler.HTTPGet.HTTPHeaders = append(CpProbe.Handler.HTTPGet.HTTPHeaders, cphttpheader)
+		}
 	} else if prob.TCPSocket != nil {
 		CpProbe.Handler = new(meshTypes.Handler)
 		CpProbe.Handler.Type = "tcpSocket"
 		CpProbe.Handler.TCPSocket = new(meshTypes.TCPSocketAction)
-		if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
-			CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
-			CpProbe.Handler.TCPSocket.Host = &prob.TCPSocket.Host
-		} else {
-			return nil, errors.New("not a valid port number for tcp socket")
+		if prob.TCPSocket.Port.Type == intstr.Int {
+			if prob.TCPSocket.Port.IntVal > 0 && prob.TCPSocket.Port.IntVal < 65536 {
+				CpProbe.Handler.TCPSocket.Port = int(prob.TCPSocket.Port.IntVal)
+			} else {
+				return nil, errors.New("not a valid port number for tcpsocket")
+			}
+		} else if prob.TCPSocket.Port.Type == intstr.String {
+			for _, value := range contPorts {
+				if strings.EqualFold(value.Name, prob.TCPSocket.Port.StrVal) {
+					CpProbe.Handler.TCPSocket.Port = int(value.ContainerPort)
+				}
+			}
+
+		}
+		if prob.Handler.TCPSocket.Host != "" {
+			CpProbe.Handler.TCPSocket.Host = &prob.Handler.TCPSocket.Host
 		}
 
 	} else {

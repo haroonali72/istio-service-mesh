@@ -665,7 +665,7 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
 				temp.ContainerPort = port.ContainerPort
 			} else {
-				utils.Info.Println("invalid prot number")
+				utils.Info.Println("invalid port number")
 				continue
 			}
 			if port.HostPort != 0 {
@@ -673,10 +673,13 @@ func getContainers(conts []*pb.ContainerAttributes, isInitContainer bool) ([]v2.
 				if port.HostPort > 0 && port.HostPort < 65536 {
 					temp.HostPort = port.HostPort
 				} else {
-					utils.Info.Println("invalid prot number")
+					utils.Info.Println("invalid port number")
 					continue
 				}
 
+			}
+			if port.Name != "" {
+				temp.Name = port.Name
 			}
 			ports = append(ports, temp)
 		}
@@ -980,6 +983,7 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 		var ports []v2.ContainerPort
 		for _, port := range container.Ports {
 			temp := v2.ContainerPort{}
+			temp.Name = port.Name
 			if port.ContainerPort == 0 && port.HostPort == 0 {
 				continue
 			}
@@ -990,7 +994,7 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 			if port.ContainerPort > 0 && port.ContainerPort < 65536 {
 				temp.ContainerPort = port.ContainerPort
 			} else {
-				utils.Info.Println("invalid prot number")
+				utils.Info.Println("invalid port number")
 				continue
 			}
 			if port.HostPort != 0 {
@@ -998,7 +1002,7 @@ func getInitContainers(service *pb.DeploymentService) ([]v2.Container, []string,
 				if port.HostPort > 0 && port.HostPort < 65536 {
 					temp.HostPort = port.HostPort
 				} else {
-					utils.Info.Println("invalid prot number")
+					utils.Info.Println("invalid port number")
 					continue
 				}
 
