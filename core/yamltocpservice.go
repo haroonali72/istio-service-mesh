@@ -41,8 +41,8 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 
 	if err != nil {
 		yamlService := types.Yamlservice{}
-		err := yaml.Unmarshal(req.Service, &yamlService)
-		if err == nil {
+		err2 := yaml.Unmarshal(req.Service, &yamlService)
+		if err2 == nil {
 			if yamlService.Kind == constants.Gateway.String() {
 				gateway := v1alpha3.Gateway{}
 				err = yaml2.Unmarshal(req.Service, &gateway)
@@ -116,7 +116,7 @@ func (s *Server) GetCPService(ctx context.Context, req *pb.YamlToCPServiceReques
 
 		}
 		utils.Error.Println(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
-		return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
+		//		return nil, errors.New(fmt.Sprintf("Error while decoding YAML object. Err was: %s", err))
 	}
 	switch o := obj.(type) {
 	case *net.NetworkPolicy:
@@ -510,8 +510,9 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 	deployment.ServiceAttributes.LabelSelector.MatchLabels = make(map[string]string)
 	//deployment.ServiceAttributes.LabelSelector.MatchLabels["version"] = service.Labels["version"]
 	//deployment.ServiceAttributes.LabelSelector.MatchLabels["name"] = service.Labels["name"]
-	deployment.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
-
+	if service.Spec.Selector != nil && service.Spec.Selector.MatchLabels != nil {
+		deployment.ServiceAttributes.LabelSelector.MatchLabels = service.Spec.Selector.MatchLabels
+	}
 	deployment.ServiceAttributes.Annotations = make(map[string]string)
 	deployment.ServiceAttributes.Annotations = service.Spec.Template.Annotations
 	deployment.ServiceAttributes.NodeSelector = make(map[string]string)
@@ -929,8 +930,11 @@ func convertToCPJob(job *batch.Job) (*meshTypes.JobService, error) {
 	CpJobAttr.Labels = job.Spec.Template.Labels
 
 	CpJobAttr.LabelSelector = new(meshTypes.LabelSelectorObj)
-	CpJobAttr.LabelSelector.MatchLabels = make(map[string]string)
-	CpJobAttr.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+	if job.Spec.Selector != nil && job.Spec.Selector.MatchLabels != nil {
+		CpJobAttr.LabelSelector.MatchLabels = make(map[string]string)
+		CpJobAttr.LabelSelector.MatchLabels = job.Spec.Selector.MatchLabels
+
+	}
 	CpJobAttr.Annotations = make(map[string]string)
 	CpJobAttr.Annotations = job.Spec.Template.Annotations
 
@@ -2055,6 +2059,7 @@ func getCPContainers(conts []v1.Container, volume []v1.Volume) ([]*meshTypes.Con
 
 				}
 				if tempVol.HostPath != nil {
+					temp.HostPath = new(meshTypes.HostPathVolumeMount)
 					temp.HostPath.HostPathName = tempVol.Name
 					temp.HostPath.Path = tempVol.HostPath.Path
 					temp.ServiceSubType = "hostpath"
