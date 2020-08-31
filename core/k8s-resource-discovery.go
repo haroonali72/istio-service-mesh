@@ -2014,6 +2014,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		if replicas, ok := template.ServiceAttributes.(map[string]interface{})["replicas"]; ok {
 			template.Replicas = int(replicas.(float64))
 		}
@@ -2056,6 +2057,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
@@ -2117,6 +2119,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			template.Replicas = int(replicas.(float64))
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
@@ -2164,6 +2167,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
@@ -2219,6 +2223,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			svcAttr["update_Strategy"] = struct{}{}
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		addVersion(template)
@@ -2306,6 +2311,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 		}
 		template.ServiceAttributes = svcAttr
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2340,6 +2346,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2388,6 +2395,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2467,6 +2475,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2541,6 +2550,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2620,6 +2630,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2699,6 +2710,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2773,6 +2785,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2847,6 +2860,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2921,6 +2935,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -2995,6 +3010,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -3069,6 +3085,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 			return nil, err
 		}
 		id := strconv.Itoa(rand.Int())
+		id = RandStringBytes(3) + id
 		template.ServiceId = id
 		template.IsDiscovered = true
 		template.Version = "v1"
@@ -4217,7 +4234,7 @@ func addVersion(svcTemp *svcTypes.ServiceTemplate) {
 }
 
 func RandStringBytes(n int) string {
-	letterBytes := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	letterBytes := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
