@@ -243,7 +243,6 @@ func getServiceAccount(input *pb.ServiceAccountService) (*kb.ServiceAccount, err
 	var kube = new(kb.ServiceAccount)
 	kube.Kind = constants.ServiceAccount.String() //"ServiceAccount"
 	kube.APIVersion = "v1"
-	kube.ResourceVersion = "v1"
 	kube.Name = input.Name
 	kube.Namespace = input.Namespace
 	labels := make(map[string]string)
