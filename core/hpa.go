@@ -45,7 +45,7 @@ func (s *Server) CreateHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceRespons
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -91,7 +91,7 @@ func (s *Server) GetHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceResponse, 
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -137,7 +137,7 @@ func (s *Server) DeleteHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceRespons
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -183,7 +183,7 @@ func (s *Server) PatchHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceResponse
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -229,7 +229,7 @@ func (s *Server) PutHPA(ctx context.Context, req *pb.HPA) (*pb.ServiceResponse, 
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

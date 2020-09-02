@@ -43,7 +43,7 @@ func (s *Server) CreateJob(ctx context.Context, req *pb.JobService) (*pb.Service
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -90,7 +90,7 @@ func (s *Server) GetJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -150,7 +150,7 @@ func (s *Server) DeleteJob(ctx context.Context, req *pb.JobService) (*pb.Service
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -197,7 +197,7 @@ func (s *Server) PutJob(ctx context.Context, req *pb.JobService) (*pb.ServiceRes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -244,7 +244,7 @@ func (s *Server) PatchJob(ctx context.Context, req *pb.JobService) (*pb.ServiceR
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -360,7 +360,7 @@ func getJobRequestObject(service *pb.JobService) (*v1.Job, error) {
 			utils.Error.Println(err)
 		}
 		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-			ProjectId: service.ProjectId,
+			InfraId:   service.InfraId,
 			Service:   raw,
 			CompanyId: service.CompanyId,
 			Token:     service.Token,

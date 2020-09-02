@@ -32,7 +32,7 @@ import (
 
 type GrpcConn struct {
 	Connection *grpc.ClientConn
-	ProjectId  string
+	InfraId    string
 	CompanyId  string
 	token      string
 }
@@ -45,8 +45,8 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	response = new(pb.K8SResourceResponse)
 	utils.Info.Println(reflect.TypeOf(ctx))
 
-	if request.CompanyId == "" || request.ProjectId == "" {
-		return &pb.K8SResourceResponse{}, errors.New("projectId or companyId must not be empty")
+	if request.CompanyId == "" || request.InfraId == "" {
+		return &pb.K8SResourceResponse{}, errors.New("infraId or companyId must not be empty")
 	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
@@ -58,7 +58,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 
 	grpcConn := &GrpcConn{
 		Connection: conn,
-		ProjectId:  request.ProjectId,
+		InfraId:    request.InfraId,
 		CompanyId:  request.CompanyId,
 		token:      request.Token,
 	}
@@ -127,7 +127,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
 	resolveSvcDependencies(serviceDepInfo)
 
-	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
+	utils.Info.Printf("App discovered successfully for infrastructure %s", grpcConn.InfraId)
 
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
@@ -181,7 +181,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Job),
 		ServiceName: job.Name,
 		Namespace:   job.Namespace,
@@ -294,7 +294,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	serviceTemplates = append(serviceTemplates, jobTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Job),
 		ServiceName: job.Name,
 		Namespace:   job.Namespace,
@@ -305,7 +305,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.CronJob),
 		ServiceName: cronjob.Name,
 		Namespace:   cronjob.Namespace,
@@ -417,7 +417,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	serviceTemplates = append(serviceTemplates, cronjobTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.CronJob),
 		ServiceName: cronjob.Name,
 		Namespace:   cronjob.Namespace,
@@ -445,7 +445,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.DaemonSet),
 		ServiceName: daemonset.Name,
 		Namespace:   daemonset.Namespace,
@@ -542,7 +542,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	serviceTemplates = append(serviceTemplates, daemonsetTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.DaemonSet),
 		ServiceName: daemonset.Name,
 		Namespace:   daemonset.Namespace,
@@ -553,7 +553,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.StatefulSet),
 		ServiceName: statefulset.Name,
 		Namespace:   statefulset.Namespace,
@@ -687,7 +687,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	serviceTemplates = append(serviceTemplates, stsTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.StatefulSet),
 		ServiceName: statefulset.Name,
 		Namespace:   statefulset.Namespace,
@@ -717,7 +717,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Deployment),
 		ServiceName: dep.Name,
 		Namespace:   dep.Namespace,
@@ -831,7 +831,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	serviceTemplates = append(serviceTemplates, depTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Deployment),
 		ServiceName: dep.Name,
 		Namespace:   dep.Namespace,
@@ -950,7 +950,7 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 
 func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string) (*istioClient.ServiceEntryList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -959,7 +959,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceEntry),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -973,7 +973,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceEntry),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -987,7 +987,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 
 func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespace string) (*istioClient.Gateway, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -996,7 +996,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Gateway),
 			ServiceName:  gatewayName,
 			Namespace:    namespace,
@@ -1011,7 +1011,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Gateway),
 			ServiceName:  gatewayName,
 			Namespace:    namespace,
@@ -1026,7 +1026,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 
 func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace string) (*istioClient.DestinationRuleList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1035,7 +1035,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DestinationRule),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1049,7 +1049,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DestinationRule),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1063,7 +1063,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 
 func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace string) (*istioClient.VirtualServiceList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1072,7 +1072,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.VirtualService),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1086,7 +1086,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.VirtualService),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1100,7 +1100,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 
 func (conn *GrpcConn) isIstioEnabled(ctx context.Context) bool {
 	_, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1228,7 +1228,7 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1beta1.CronJobList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1237,7 +1237,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.CronJob),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1251,7 +1251,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.CronJob),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1265,7 +1265,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 
 func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*v1.DaemonSetList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1274,7 +1274,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DaemonSet),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1288,7 +1288,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DaemonSet),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1302,7 +1302,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 
 func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) (*v1.StatefulSetList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
