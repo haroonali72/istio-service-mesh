@@ -277,7 +277,7 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 	if input.Version != "" {
 		labels["version"] = strings.ToLower(input.Version)
 	}
-	roleBind.Kind = constants.RoleBinding.String() //"RoleBinding"
+	roleBind.Kind = "RoleBinding"
 	roleBind.APIVersion = "rbac.authorization.k8s.io/v1"
 	if input.Namespace != "" {
 		roleBind.Namespace = input.Namespace
@@ -306,16 +306,10 @@ func getRoleBinding(input *pb.RoleBindingService) (*v1.RoleBinding, error) {
 		roleBind.Subjects = append(roleBind.Subjects, reqsub)
 	}
 	if input.ServiceAttributes.RoleReference != nil {
-		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() {
-			roleBind.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole" //input.ServiceAttributes.Reference.Kind
 
-		} else if input.ServiceAttributes.RoleReference.Kind == constants.Role.String() {
-			roleBind.RoleRef.Kind = constants.Role.String() //"Role"
-		} else {
-			return nil, errors.New("invalid kind  role binding ref " + input.Name)
-		}
-		roleBind.RoleRef.APIGroup = "rbac.authorization.k8s.io"
 		if input.ServiceAttributes.RoleReference.Name != "" {
+			roleBind.RoleRef.Kind = input.ServiceAttributes.RoleReference.Kind
+			roleBind.RoleRef.APIGroup = "rbac.authorization.k8s.io"
 			roleBind.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
 		} else {
 			return nil, errors.New("can not find Name in cluster role binding ref " + input.Name)
