@@ -595,6 +595,13 @@ func convertToCPDeployment(deploy interface{}) (*meshTypes.DeploymentService, er
 			return nil, err
 		}
 	}
+	if service.Spec.Replicas != nil {
+		deployment.Replicas = int(*service.Spec.Replicas)
+	} else {
+		//set default value
+		deployment.Replicas = 1
+	}
+
 	return deployment, nil
 }
 
@@ -897,7 +904,12 @@ func convertToCPStatefulSet(sset interface{}) (*meshTypes.StatefulSetService, er
 			return nil, err
 		}
 	}
-
+	if service.Spec.Replicas != nil {
+		statefulSet.Replicas = int(*service.Spec.Replicas)
+	} else {
+		//set default value
+		statefulSet.Replicas = 1
+	}
 	return statefulSet, nil
 
 }
