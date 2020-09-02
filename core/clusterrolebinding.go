@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/constants"
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
+	meshConstants "bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
 	"context"
 	"encoding/json"
@@ -253,7 +254,7 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 	if input.Version != "" {
 		labels["version"] = strings.ToLower(input.Version)
 	}
-	clstrRolBindSvc.Kind = constants.ClusterRoleBinding.String() //"ClusterRoleBinding"
+	clstrRolBindSvc.Kind = "ClusterRoleBinding"
 	clstrRolBindSvc.APIVersion = "rbac.authorization.k8s.io/v1"
 
 	clstrRolBindSvc.Labels = labels
@@ -268,8 +269,8 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		if subject.Kind == "User" || subject.Kind == "Group" {
 			reqsub.Kind = subject.Kind
 			reqsub.APIGroup = "rbac.authorization.k8s.io"
-		} else if subject.Kind == constants.ServiceAccount.String() {
-			reqsub.Kind = constants.ServiceAccount.String()
+		} else if subject.Kind == meshConstants.ServiceAccount.String() {
+			reqsub.Kind = "ServiceAccount"
 			if subject.Namespace != "" {
 				reqsub.Namespace = subject.Namespace
 			}
@@ -279,15 +280,10 @@ func getClusterRoleBinding(input *pb.ClusterRoleBinding) (*v1.ClusterRoleBinding
 		}
 		clstrRolBindSvc.Subjects = append(clstrRolBindSvc.Subjects, reqsub)
 	}
-	clstrRolBindSvc.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole"
 
 	if input.ServiceAttributes.RoleReference != nil {
 		clstrRolBindSvc.RoleRef.Name = input.ServiceAttributes.RoleReference.Name
-		if input.ServiceAttributes.RoleReference.Kind == constants.ClusterRole.String() {
-			clstrRolBindSvc.RoleRef.Kind = constants.ClusterRole.String() //"ClusterRole"
-		} else {
-			clstrRolBindSvc.RoleRef.Kind = constants.Role.String() //"Role"
-		}
+		clstrRolBindSvc.RoleRef.Kind = "ClusterRole"
 		clstrRolBindSvc.RoleRef.APIGroup = "rbac.authorization.k8s.io"
 	} else {
 		return nil, errors.New("can not find name in cluster role binding ref " + input.Name)
