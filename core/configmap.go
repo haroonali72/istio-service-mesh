@@ -246,7 +246,6 @@ func getConfigMapService(input *pb.ConfigMapService) (*kb.ConfigMap, error) {
 	config.APIVersion = "v1"
 	config.Name = input.Name
 	config.Namespace = input.Namespace
-	config.ResourceVersion = input.Version
 	labels := make(map[string]string)
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
