@@ -15,6 +15,9 @@ type HelmHubData struct {
 	Id          string ` bson:"_id" valid:"-"`
 	Name        string `json:"name" bson:"name"`
 	Description string `json:"description,omitempty" bson:"description,omitempty"`
+	IconUrl     string `json:"icon,omitempty" bson:"icon,omitempty"`
+	Home        string `json:"home,omitempty" bson:"home,omitempty"`
+
 	// char version key app version value
 	Versions map[string]HelmChartCreationDateAndVersion `json:"versions" bson:"version"`
 }
@@ -34,6 +37,8 @@ type HelmChartData struct {
 	AppVersion   string `yaml:"appVersion" json:"appVersion"`
 	Description  string `yaml:"description" json:"description"`
 	ChartVersion string `yaml:"version" json:"chart_version"`
+	IconUrl      string `json:"icon" yaml:"icon"`
+	Home         string `json:"home" yaml:"home"`
 }
 
 type HelmHubConfigFile struct {

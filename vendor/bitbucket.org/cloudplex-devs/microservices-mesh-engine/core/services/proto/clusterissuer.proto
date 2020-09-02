@@ -12,7 +12,7 @@ service ClusterIssuer {
 }
 
 message ClusterIssuerService {
-    string project_id = 1;
+    string application_id = 1;
     string service_id = 2;
     string name = 3;
     string version = 4;
@@ -22,7 +22,8 @@ message ClusterIssuerService {
     string token = 8;
     string company_id = 9;
     bool is_discovered = 10;
-    ClusterIssuerServiceAttributes service_attributes = 11;
+    string infra_id = 11;
+    ClusterIssuerServiceAttributes service_attributes = 12;
 }
 
 message ClusterIssuerServiceAttributes {

@@ -15,7 +15,7 @@ service RoleBinding{
 message RoleBindingService{
     string service_id = 1;
     string token = 2;
-    string project_id=3;
+    string application_id=3;
     string company_id = 4;
     string name = 5;
     string service_type= 6;
@@ -23,8 +23,9 @@ message RoleBindingService{
     google.protobuf.Any service_dependency_info=8;
     string namespace =9;
     string version =10;
-    RoleBServiceAttributee service_attributes =11;
-    HookConfiguration hook_configuration=12;
+    string infra_id = 11;
+    RoleBServiceAttributee service_attributes =12;
+    HookConfiguration hook_configuration=13;
 }
 
 message RoleBServiceAttributee {

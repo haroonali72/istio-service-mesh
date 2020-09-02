@@ -14,7 +14,7 @@ service Job {
 }
 
 message JobService {
-    string project_id = 1;
+    string application_id = 1;
     string service_id = 2;
     string name = 3;
     string version = 4;
@@ -24,8 +24,9 @@ message JobService {
     string token = 8;
     string company_id = 9;
     bool   is_discovered = 10;
-    JobServiceAttribute service_attributes = 11;
-    HookConfiguration hook_configuration=12;
+    string infra_id = 11;
+    JobServiceAttribute service_attributes = 12;
+    HookConfiguration hook_configuration=13;
 }
 
 message JobServiceAttribute {

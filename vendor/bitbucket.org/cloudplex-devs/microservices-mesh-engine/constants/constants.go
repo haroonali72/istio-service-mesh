@@ -1,6 +1,7 @@
 package constants
 
 type Logger string
+type Publisher string
 
 var (
 	LoggingURL                    string
@@ -16,6 +17,7 @@ var (
 	RedisUrl                      string
 	RobinUrl                      string
 	RbacURL                       string
+	RabbitMQURL                   string
 	////Mongodb///
 	Host             string
 	UserName         string
@@ -30,13 +32,17 @@ var (
 	D_Duck_Password  string
 	D_Duck_ApiKey    string
 	D_Duck_ApiSecret string
+	RabbitMqUserName string
+	RabbitMqPassword string
 )
 
 const (
-	AuthTokenKey = "X-Auth-Token"
-	BASE_PATH    = ".temp-data/"
-	SERVICE_NAME = "ms-mesh-engine"
-	Component    = "Solution"
+	AuthTokenKey      = "X-Auth-Token"
+	BASE_PATH         = ".temp-data/"
+	SERVICE_NAME      = "ms-mesh-engine"
+	Component         = "Application"
+	RabbitMQWorkQueue = "bb.app.work"
+	RabbitMqDoneQueue = "bb.app.done"
 	//////////////////istio////////////////////////////////
 	IstioServicePostEndpoint     = "/istioservicedeployer"
 	IstioYamlToServiceEndpoint   = "/importservice"
@@ -63,6 +69,9 @@ const (
 	LoggingLevelError      = "error"
 	LOGGING_LEVEL_WARN     = "warn"
 
+	// Publisher Type Current supported Types are redis, rabbitmq
+	RedisPublisher    Publisher = "redis"
+	RabbitMqPublisher Publisher = "rabbitmq"
 	///////logger
 
 	BackendLogging  Logger = "backendLogging"
@@ -159,12 +168,12 @@ const (
 	Rbac_Evaluate           = "/security/api/rbac/evaluate"
 	Rbac_Subscription_Plan  = "/security/api/rbac/companies"
 
-	ProjectSecretPostEndpoint   = "/api/v1/project/{projectId}/solution/{solutionId}/secrets/{serviceId}"
+	ProjectSecretPostEndpoint   = "/api/v1/application/{applicationId}/secrets/{serviceId}"
 	ProjectSecretGetEndpoint    = ProjectSecretPostEndpoint
 	ProjectSecretPutEndpoint    = ProjectSecretGetEndpoint
 	ProjectSecretDeleteEndpoint = ProjectSecretGetEndpoint
 
-	TemplateSecretPostEndpoint   = "/api/v1/solution/{solutionId}/secrets/{serviceId}"
+	TemplateSecretPostEndpoint   = "/api/v1/secrettemplate/{templateId}/secrets/{serviceId}"
 	TemplateSecretGetEndpoint    = TemplateSecretPostEndpoint
 	TemplateSecretPutEndpoint    = TemplateSecretGetEndpoint
 	TemplateSecretDeleteEndpoint = TemplateSecretGetEndpoint

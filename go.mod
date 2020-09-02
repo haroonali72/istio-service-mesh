@@ -3,8 +3,8 @@ module bitbucket.org/cloudplex-devs/istio-service-mesh
 go 1.13
 
 require (
-	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200820211002-9841667fb9e7
+	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200827133924-914db2fbfab5
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
@@ -18,13 +18,11 @@ require (
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4
 	golang.org/x/build v0.0.0-20200508193432-bf27e2732389
 	golang.org/x/net v0.0.0-20200513185701-a91f0712d120 // indirect
-	golang.org/x/sys v0.0.0-20200513112337-417ce2331b5c // indirect
 	golang.org/x/tools v0.0.0-20200515010526-7d3b6ebf133d // indirect
-	google.golang.org/genproto v0.0.0-20200514193133-8feb7f20f2a2 // indirect
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.30.0
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.3.0
 	istio.io/api v0.0.0-20200707013816-8bca8f687388

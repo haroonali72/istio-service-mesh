@@ -14,7 +14,7 @@ service PersistentVolumeClaim {
 }
 
 message PersistentVolumeClaimService {
-    string project_id = 1;
+    string application_id = 1;
     string service_id = 2;
     string name = 3;
     string version = 4;
@@ -24,7 +24,8 @@ message PersistentVolumeClaimService {
     string company_id = 8;
     PersistentVolumeClaimAttributes service_attributes = 9;
     string namespace = 10;
-    HookConfiguration hook_configuration=11;
+    string infra_id = 11;
+    HookConfiguration hook_configuration=12;
 }
 message PersistentVolumeClaimServiceResponse {
     string error = 1;

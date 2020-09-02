@@ -11,7 +11,7 @@ service StorageClass {
     rpc PutStorageClass (StorageClassService) returns (ServiceResponse) {}
 }
 message StorageClassService {
-    string project_id = 1;
+    string application_id = 1;
     string service_id = 2;
     string name = 3;
     string version = 4;
@@ -20,6 +20,7 @@ message StorageClassService {
     string token = 7;
     string company_id = 8;
     StorageClassAttributes service_attributes = 9;
+    string infra_id = 11;
     HookConfiguration hook_configuration=12;
 }
 message StorageClassServiceResponse {
