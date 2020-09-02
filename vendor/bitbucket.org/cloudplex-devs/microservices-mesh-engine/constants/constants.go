@@ -3,19 +3,19 @@ package constants
 type Logger string
 
 var (
-	LoggingURL                    string
-	IstioEngineURL                string
-	KnativeEngineURL              string
-	IstioDeploymentEngineURL      string
-	KubernetesEngineURL           string
-	SolutionEngineURL             string
-	KubernetesDeploymentEngineURL string
-	LegacyEngineURL               string
-	ServicePort                   string
-	ClusterAPI                    string
-	RedisUrl                      string
-	RobinUrl                      string
-	RbacURL                       string
+	LoggingURL       string
+	IstioEngineURL   string
+	KnativeEngineURL string
+	//IstioDeploymentEngineURL      string
+	KubernetesEngineURL string
+	SolutionEngineURL   string
+	//KubernetesDeploymentEngineURL string
+	LegacyEngineURL string
+	ServicePort     string
+	ClusterAPI      string
+	RedisUrl        string
+	RobinUrl        string
+	RbacURL         string
 	////Mongodb///
 	Host             string
 	UserName         string
