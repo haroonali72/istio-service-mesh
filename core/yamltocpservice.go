@@ -1603,8 +1603,12 @@ func ConvertToCPClusterRole(k8ROle *rbac.ClusterRole) (*meshTypes.ClusterRole, e
 		for _, resource := range each.Resources {
 			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
 		}
-		for _, resource := range each.ResourceNames {
-			rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		//for _, resource := range each.ResourceNames {
+		//	rolePolicy.ResourceName = append(rolePolicy.ResourceName, resource)
+		//}
+		for _, resourceUrls := range each.NonResourceURLs {
+			rolePolicy.NonResourceUrls = append(rolePolicy.NonResourceUrls, resourceUrls)
+
 		}
 		role.ServiceAttributes.Rules = append(role.ServiceAttributes.Rules, rolePolicy)
 	}

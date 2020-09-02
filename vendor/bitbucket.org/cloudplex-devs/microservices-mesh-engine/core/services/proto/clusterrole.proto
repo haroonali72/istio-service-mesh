@@ -4,7 +4,7 @@ package proto;
 
 import "service.proto";
 import "general.proto";
-import "google/protobuf/any.proto";
+//import "google/protobuf/any.proto";
 
 
 
@@ -24,7 +24,7 @@ message ClusterRole {
    string service_sub_type = 5;
    string status = 6;
    string token = 7;
-   google.protobuf.Any service_dependency_info = 8;
+   //google.protobuf.Any service_dependency_info = 8;
    ClusterRoleSvcAttr service_attributes = 9;
    string company_id = 10;
    string version = 11;
@@ -41,5 +41,7 @@ message Rules {
    repeated string verbs = 2;
    repeated string api_group = 3;
    repeated string resources =4;
+   repeated string non_resource_urls =5;
+
 }
 

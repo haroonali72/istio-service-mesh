@@ -8,14 +8,14 @@ type ServerlessService struct {
 }
 
 type ServerlessServiceAttributes struct {
-	Domains                       []Domain                      `json:"domains"`
-	LocalVisibilityCheck          bool                          `json:"local_visibility_check"`
-	EnvVars                       []EnvVars                     `json:"environment_variables"`
-	Ports                         []Ports                       `json:"ports"`
+	Domains                       []Domain                      `json:"domains,omitempty"`
+	LocalVisibilityCheck          bool                          `json:"local_visibility_check,omitempty"`
+	EnvVars                       []EnvVars                     `json:"environment_variables,omitempty"`
+	Ports                         []Ports                       `json:"ports,omitempty"`
 	ImageRepositoryConfigurations ImageRepositoryConfigurations `json:"image_repository_configurations" binding:"required"`
-	Label                         string                        `json:"label"`
-	MinimumScale                  int                           `json:"minimum_scale"`
-	MaximumScale                  int                           `json:"maximum_scale"`
+	Label                         string                        `json:"label,omitempty"`
+	MinimumScale                  int                           `json:"minimum_scale,omitempty"`
+	MaximumScale                  int                           `json:"maximum_scale,omitempty"`
 }
 
 type Domain struct {
