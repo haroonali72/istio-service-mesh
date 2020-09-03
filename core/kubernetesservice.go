@@ -43,7 +43,7 @@ func (s *Server) CreateKubernetesService(ctx context.Context, req *pb.Kubernetes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -89,7 +89,7 @@ func (s *Server) GetKubernetesService(ctx context.Context, req *pb.KubernetesSer
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -150,7 +150,7 @@ func (s *Server) DeleteKubernetesService(ctx context.Context, req *pb.Kubernetes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -194,7 +194,7 @@ func (s *Server) PatchKubernetesService(ctx context.Context, req *pb.KubernetesS
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -239,7 +239,7 @@ func (s *Server) PutKubernetesService(ctx context.Context, req *pb.KubernetesSer
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

@@ -43,7 +43,7 @@ func (s *Server) CreateStorageClass(ctx context.Context, req *pb.StorageClassSer
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -102,7 +102,7 @@ func (s *Server) GetStorageClass(ctx context.Context, req *pb.StorageClassServic
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -148,7 +148,7 @@ func (s *Server) DeleteStorageClass(ctx context.Context, req *pb.StorageClassSer
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -194,7 +194,7 @@ func (s *Server) PatchStorageClass(ctx context.Context, req *pb.StorageClassServ
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -240,7 +240,7 @@ func (s *Server) PutStorageClass(ctx context.Context, req *pb.StorageClassServic
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

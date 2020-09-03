@@ -41,7 +41,7 @@ func (s *Server) CreateServiceAccountService(ctx context.Context, req *pb.Servic
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -87,7 +87,7 @@ func (s *Server) GetServiceAccountService(ctx context.Context, req *pb.ServiceAc
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -132,7 +132,7 @@ func (s *Server) DeleteServiceAccountService(ctx context.Context, req *pb.Servic
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -177,7 +177,7 @@ func (s *Server) PatchServiceAccountService(ctx context.Context, req *pb.Service
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -222,7 +222,7 @@ func (s *Server) PutServiceAccountService(ctx context.Context, req *pb.ServiceAc
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
