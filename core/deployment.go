@@ -550,8 +550,10 @@ func getVolumes(vols []*pb.Volume, volumeMountNames map[string]bool) ([]v2.Volum
 			tempVolume.HostPath = new(v2.HostPathVolumeSource)
 			tempVolume.HostPath.Path = volume.VolumeSource.HostPath.Path
 			hostPathType := volume.VolumeSource.HostPath.Type.String()
-			hostPathTypeTemp := v2.HostPathType(hostPathType)
-			tempVolume.HostPath.Type = &hostPathTypeTemp
+			if hostPathType != "" && hostPathType != "Unset" {
+				hostPathTypeTemp := v2.HostPathType(hostPathType)
+				tempVolume.HostPath.Type = &hostPathTypeTemp
+			}
 		}
 
 		volumes = append(volumes, tempVolume)
