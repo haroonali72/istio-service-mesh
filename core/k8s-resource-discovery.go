@@ -32,7 +32,7 @@ import (
 
 type GrpcConn struct {
 	Connection *grpc.ClientConn
-	ProjectId  string
+	InfraId    string
 	CompanyId  string
 	token      string
 }
@@ -45,8 +45,8 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	response = new(pb.K8SResourceResponse)
 	utils.Info.Println(reflect.TypeOf(ctx))
 
-	if request.CompanyId == "" || request.ProjectId == "" {
-		return &pb.K8SResourceResponse{}, errors.New("projectId or companyId must not be empty")
+	if request.CompanyId == "" || request.InfraId == "" {
+		return &pb.K8SResourceResponse{}, errors.New("infraId or companyId must not be empty")
 	}
 
 	conn, err := grpc.DialContext(ctx, constants.K8sEngineGRPCURL, grpc.WithInsecure())
@@ -58,7 +58,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 
 	grpcConn := &GrpcConn{
 		Connection: conn,
-		ProjectId:  request.ProjectId,
+		InfraId:    request.InfraId,
 		CompanyId:  request.CompanyId,
 		token:      request.Token,
 	}
@@ -127,7 +127,7 @@ func (s *Server) GetK8SResource(ctx context.Context, request *pb.K8SResourceRequ
 	//for resolving services (deployments, statefulsets, daemontsets etc) dependencies w.r.t kubernetes service name
 	resolveSvcDependencies(serviceDepInfo)
 
-	utils.Info.Printf("App discovered successfully for project %s", grpcConn.ProjectId)
+	utils.Info.Printf("App discovered successfully for infrastructure %s", grpcConn.InfraId)
 
 	bytes, err := json.Marshal(serviceTemplates)
 	if err != nil {
@@ -181,7 +181,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Job),
 		ServiceName: job.Name,
 		Namespace:   job.Namespace,
@@ -294,7 +294,7 @@ func (conn *GrpcConn) ResolveJobDependencies(job batch.Job, wg *sync.WaitGroup, 
 	serviceTemplates = append(serviceTemplates, jobTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Job),
 		ServiceName: job.Name,
 		Namespace:   job.Namespace,
@@ -305,7 +305,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.CronJob),
 		ServiceName: cronjob.Name,
 		Namespace:   cronjob.Namespace,
@@ -417,7 +417,7 @@ func (conn *GrpcConn) ResolveCronJobDependencies(cronjob v1beta1.CronJob, wg *sy
 	serviceTemplates = append(serviceTemplates, cronjobTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.CronJob),
 		ServiceName: cronjob.Name,
 		Namespace:   cronjob.Namespace,
@@ -445,7 +445,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.DaemonSet),
 		ServiceName: daemonset.Name,
 		Namespace:   daemonset.Namespace,
@@ -542,7 +542,7 @@ func (conn *GrpcConn) ResolveDaemonSetDependencies(daemonset v1.DaemonSet, wg *s
 	serviceTemplates = append(serviceTemplates, daemonsetTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.DaemonSet),
 		ServiceName: daemonset.Name,
 		Namespace:   daemonset.Namespace,
@@ -553,7 +553,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.StatefulSet),
 		ServiceName: statefulset.Name,
 		Namespace:   statefulset.Namespace,
@@ -687,7 +687,7 @@ func (conn *GrpcConn) ResolveStatefulSetDependencies(statefulset v1.StatefulSet,
 	serviceTemplates = append(serviceTemplates, stsTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.StatefulSet),
 		ServiceName: statefulset.Name,
 		Namespace:   statefulset.Namespace,
@@ -717,7 +717,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	defer wg.Done()
 
 	utils.Info.Printf("Resolving dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Deployment),
 		ServiceName: dep.Name,
 		Namespace:   dep.Namespace,
@@ -831,7 +831,7 @@ func (conn *GrpcConn) ResolveDeploymentDependencies(dep v1.Deployment, wg *sync.
 	serviceTemplates = append(serviceTemplates, depTemp)
 
 	utils.Info.Printf("Resolved dependency :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:   conn.ProjectId,
+		InfraId:     conn.InfraId,
 		ServiceType: string(constants.Deployment),
 		ServiceName: dep.Name,
 		Namespace:   dep.Namespace,
@@ -950,7 +950,7 @@ func (conn *GrpcConn) discoverIstioVirtualServices(ctx context.Context, svcTemp 
 
 func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string) (*istioClient.ServiceEntryList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -959,7 +959,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceEntry),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -973,7 +973,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceEntry),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -987,7 +987,7 @@ func (conn *GrpcConn) getAllServiceEntries(ctx context.Context, namespace string
 
 func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespace string) (*istioClient.Gateway, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -996,7 +996,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Gateway),
 			ServiceName:  gatewayName,
 			Namespace:    namespace,
@@ -1011,7 +1011,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Gateway),
 			ServiceName:  gatewayName,
 			Namespace:    namespace,
@@ -1026,7 +1026,7 @@ func (conn *GrpcConn) getIstioGateway(ctx context.Context, gatewayName, namespac
 
 func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace string) (*istioClient.DestinationRuleList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1035,7 +1035,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DestinationRule),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1049,7 +1049,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DestinationRule),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1063,7 +1063,7 @@ func (conn *GrpcConn) getAllDestinationRules(ctx context.Context, namespace stri
 
 func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace string) (*istioClient.VirtualServiceList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1072,7 +1072,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.VirtualService),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1086,7 +1086,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.VirtualService),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1100,7 +1100,7 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 
 func (conn *GrpcConn) isIstioEnabled(ctx context.Context) bool {
 	_, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1228,7 +1228,7 @@ func (conn *GrpcConn) getK8sRbacResources(ctx context.Context, namespace string,
 
 func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1beta1.CronJobList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1237,7 +1237,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.CronJob),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1251,7 +1251,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.CronJob),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1265,7 +1265,7 @@ func (conn *GrpcConn) getAllCronjobs(ctx context.Context, namespace string) (*v1
 
 func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*v1.DaemonSetList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1274,7 +1274,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DaemonSet),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1288,7 +1288,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.DaemonSet),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1302,7 +1302,7 @@ func (conn *GrpcConn) getAllDaemonsets(ctx context.Context, namespace string) (*
 
 func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) (*v1.StatefulSetList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1311,7 +1311,7 @@ func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) 
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.StatefulSet),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1325,7 +1325,7 @@ func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) 
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.StatefulSet),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1339,7 +1339,7 @@ func (conn *GrpcConn) getAllStatefulsets(ctx context.Context, namespace string) 
 
 func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (*v1.DeploymentList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1348,7 +1348,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Deployment),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1362,7 +1362,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Deployment),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1376,7 +1376,7 @@ func (conn *GrpcConn) getAllDeployments(ctx context.Context, namespace string) (
 
 func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobList *v1beta1.CronJobList) ([]batch.Job, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1385,7 +1385,7 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobL
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Job),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1399,7 +1399,7 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobL
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Job),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1422,7 +1422,7 @@ func (conn *GrpcConn) getAllJobs(ctx context.Context, namespace string, cronjobL
 
 func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autoscale.HorizontalPodAutoscalerList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1431,7 +1431,7 @@ func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autosc
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.HPA),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1445,7 +1445,7 @@ func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autosc
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.HPA),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1459,7 +1459,7 @@ func (conn *GrpcConn) getAllHpas(ctx context.Context, namespace string) (*autosc
 
 func (conn *GrpcConn) getStorageClass(ctx context.Context, storgaClassName, namespace string) (*storage.StorageClass, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1468,7 +1468,7 @@ func (conn *GrpcConn) getStorageClass(ctx context.Context, storgaClassName, name
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.StorageClass),
 			ServiceName:  storgaClassName,
 			Namespace:    namespace,
@@ -1483,7 +1483,7 @@ func (conn *GrpcConn) getStorageClass(ctx context.Context, storgaClassName, name
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.StorageClass),
 			ServiceName:  storgaClassName,
 			Namespace:    namespace,
@@ -1499,7 +1499,7 @@ func (conn *GrpcConn) getStorageClass(ctx context.Context, storgaClassName, name
 func (conn *GrpcConn) getKubernetesServices(ctx context.Context, labels map[string]string, namespace string) (*v2.ServiceList, error) {
 
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1508,7 +1508,7 @@ func (conn *GrpcConn) getKubernetesServices(ctx context.Context, labels map[stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Service),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1522,7 +1522,7 @@ func (conn *GrpcConn) getKubernetesServices(ctx context.Context, labels map[stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Service),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1554,7 +1554,7 @@ func (conn *GrpcConn) getKubernetesServices(ctx context.Context, labels map[stri
 
 func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (*rbac.Role, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1563,7 +1563,7 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Role),
 			ServiceName:  rolename,
 			Namespace:    namespace,
@@ -1578,7 +1578,7 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Role),
 			ServiceName:  rolename,
 			Namespace:    namespace,
@@ -1593,7 +1593,7 @@ func (conn *GrpcConn) getRole(ctx context.Context, rolename, namespace string) (
 
 func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) (*rbac.RoleBindingList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1602,7 +1602,7 @@ func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) 
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.RoleBinding),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1616,7 +1616,7 @@ func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) 
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.RoleBinding),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1630,7 +1630,7 @@ func (conn *GrpcConn) getAllRoleBindings(ctx context.Context, namespace string) 
 
 func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v2.PersistentVolumeClaim, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1639,7 +1639,7 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolumeClaim),
 			ServiceName:  pvcname,
 			Namespace:    namespace,
@@ -1654,7 +1654,7 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolumeClaim),
 			ServiceName:  pvcname,
 			Namespace:    namespace,
@@ -1669,7 +1669,7 @@ func (conn *GrpcConn) getPvc(ctx context.Context, pvcname, namespace string) (*v
 
 func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.PersistentVolumeClaimList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1678,7 +1678,7 @@ func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.Per
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolumeClaim),
 			Namespace:    namespace,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1692,7 +1692,7 @@ func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.Per
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolumeClaim),
 			Namespace:    namespace,
 			ErrorMessage: err.Error(),
@@ -1706,7 +1706,7 @@ func (conn *GrpcConn) getAllPVCs(ctx context.Context, namespace string) (*v2.Per
 
 func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2.PersistentVolume, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1715,7 +1715,7 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolume),
 			ErrorMessage: "error from grpc server :" + err.Error(),
 		}))
@@ -1728,7 +1728,7 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.PersistentVolume),
 			ErrorMessage: err.Error(),
 		}))
@@ -1743,7 +1743,7 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 	}
 
 	utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-		ProjectId:    conn.ProjectId,
+		InfraId:      conn.InfraId,
 		ServiceType:  string(constants.PersistentVolume),
 		ErrorMessage: "No PV exist against pvc :" + pvcname,
 	}))
@@ -1753,7 +1753,7 @@ func (conn *GrpcConn) getPV(ctx context.Context, pvcname, namespace string) (*v2
 
 func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace string) (*v2.ConfigMap, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1762,7 +1762,7 @@ func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ConfigMap),
 			ServiceName:  configmapname,
 			Namespace:    namespace,
@@ -1777,7 +1777,7 @@ func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ConfigMap),
 			ServiceName:  configmapname,
 			Namespace:    namespace,
@@ -1792,7 +1792,7 @@ func (conn *GrpcConn) getConfigMap(ctx context.Context, configmapname, namespace
 
 func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace string) (*api.ServiceAccount, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1801,7 +1801,7 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceAccount),
 			ServiceName:  svcname,
 			Namespace:    namespace,
@@ -1816,7 +1816,7 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ServiceAccount),
 			ServiceName:  svcname,
 			Namespace:    namespace,
@@ -1831,7 +1831,7 @@ func (conn *GrpcConn) getSvcAccount(ctx context.Context, svcname, namespace stri
 
 func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace string) (*v2.Secret, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1840,7 +1840,7 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Secret),
 			ServiceName:  secretname,
 			Namespace:    namespace,
@@ -1855,7 +1855,7 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.Secret),
 			ServiceName:  secretname,
 			Namespace:    namespace,
@@ -1870,7 +1870,7 @@ func (conn *GrpcConn) getSecret(ctx context.Context, secretname, namespace strin
 
 func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.ClusterRoleBindingList, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1879,7 +1879,7 @@ func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.Clus
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ClusterRoleBinding),
 			ErrorMessage: "error from grpc server :" + err.Error(),
 		}))
@@ -1892,7 +1892,7 @@ func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.Clus
 	if err != nil {
 
 		utils.Error.Printf("Error while getting list :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ClusterRoleBinding),
 			ErrorMessage: err.Error(),
 		}))
@@ -1905,7 +1905,7 @@ func (conn *GrpcConn) getAllClusterRoleBindings(ctx context.Context) (*rbac.Clus
 
 func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string) (*rbac.ClusterRole, error) {
 	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
-		ProjectId: conn.ProjectId,
+		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
@@ -1914,7 +1914,7 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ClusterRole),
 			ServiceName:  clusterrolename,
 			ErrorMessage: "error from grpc server :" + err.Error(),
@@ -1928,7 +1928,7 @@ func (conn *GrpcConn) getClusterRole(ctx context.Context, clusterrolename string
 	if err != nil {
 
 		utils.Error.Printf("Error while getting service :%v", getLogData(types.AppDiscoveryLog{
-			ProjectId:    conn.ProjectId,
+			InfraId:      conn.InfraId,
 			ServiceType:  string(constants.ClusterRole),
 			ServiceName:  clusterrolename,
 			ErrorMessage: err.Error(),
@@ -1975,7 +1975,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDep := data.(v1.Deployment)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Deployment),
 				ServiceName:  ErrDep.Name,
 				Namespace:    ErrDep.Namespace,
@@ -1989,7 +1989,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDep := data.(v1.Deployment)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Deployment),
 				ServiceName:  ErrDep.Name,
 				Namespace:    ErrDep.Namespace,
@@ -2004,7 +2004,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDep := data.(v1.Deployment)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Deployment),
 				ServiceName:  ErrDep.Name,
 				Namespace:    ErrDep.Namespace,
@@ -2078,7 +2078,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrJob := data.(batch.Job)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Job),
 				ServiceName:  ErrJob.Name,
 				Namespace:    ErrJob.Namespace,
@@ -2092,7 +2092,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrJob := data.(batch.Job)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Job),
 				ServiceName:  ErrJob.Name,
 				Namespace:    ErrJob.Namespace,
@@ -2106,7 +2106,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrJob := data.(batch.Job)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Job),
 				ServiceName:  ErrJob.Name,
 				Namespace:    ErrJob.Namespace,
@@ -2129,7 +2129,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDmSet := data.(v1.DaemonSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DaemonSet),
 				ServiceName:  ErrDmSet.Name,
 				Namespace:    ErrDmSet.Namespace,
@@ -2143,7 +2143,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDmSet := data.(v1.DaemonSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DaemonSet),
 				ServiceName:  ErrDmSet.Name,
 				Namespace:    ErrDmSet.Namespace,
@@ -2157,7 +2157,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrDmSet := data.(v1.DaemonSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DaemonSet),
 				ServiceName:  ErrDmSet.Name,
 				Namespace:    ErrDmSet.Namespace,
@@ -2177,7 +2177,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSts := data.(v1.StatefulSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StatefulSet),
 				ServiceName:  ErrSts.Name,
 				Namespace:    ErrSts.Namespace,
@@ -2191,7 +2191,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSts := data.(v1.StatefulSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StatefulSet),
 				ServiceName:  ErrSts.Name,
 				Namespace:    ErrSts.Namespace,
@@ -2205,7 +2205,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSts := data.(v1.StatefulSet)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StatefulSet),
 				ServiceName:  ErrSts.Name,
 				Namespace:    ErrSts.Namespace,
@@ -2233,7 +2233,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrKubeSvc := data.(v2.Service)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Service),
 				ServiceName:  ErrKubeSvc.Name,
 				Namespace:    ErrKubeSvc.Namespace,
@@ -2248,7 +2248,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrKubeSvc := data.(v2.Service)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Service),
 				ServiceName:  ErrKubeSvc.Name,
 				Namespace:    ErrKubeSvc.Namespace,
@@ -2263,7 +2263,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrKubeSvc := data.(v2.Service)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Service),
 				ServiceName:  ErrKubeSvc.Name,
 				Namespace:    ErrKubeSvc.Namespace,
@@ -2277,7 +2277,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrKubeSvc := data.(v2.Service)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Service),
 				ServiceName:  ErrKubeSvc.Name,
 				Namespace:    ErrKubeSvc.Namespace,
@@ -2291,7 +2291,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrKubeSvc := data.(v2.Service)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Service),
 				ServiceName:  ErrKubeSvc.Name,
 				Namespace:    ErrKubeSvc.Namespace,
@@ -2357,7 +2357,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrConfigMap := data.(v2.ConfigMap)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ConfigMap),
 				ServiceName:  ErrConfigMap.Name,
 				Namespace:    ErrConfigMap.Namespace,
@@ -2371,7 +2371,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrConfigMap := data.(v2.ConfigMap)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ConfigMap),
 				ServiceName:  ErrConfigMap.Name,
 				Namespace:    ErrConfigMap.Namespace,
@@ -2385,7 +2385,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrConfigMap := data.(v2.ConfigMap)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ConfigMap),
 				ServiceName:  ErrConfigMap.Name,
 				Namespace:    ErrConfigMap.Namespace,
@@ -2408,7 +2408,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSecret := data.(v2.Secret)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Secret),
 				ServiceName:  ErrSecret.Name,
 				Namespace:    ErrSecret.Namespace,
@@ -2423,7 +2423,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSecret := data.(v2.Secret)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Secret),
 				ServiceName:  ErrSecret.Name,
 				Namespace:    ErrSecret.Namespace,
@@ -2437,7 +2437,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSecret := data.(v2.Secret)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Secret),
 				ServiceName:  ErrSecret.Name,
 				Namespace:    ErrSecret.Namespace,
@@ -2451,7 +2451,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSecret := data.(v2.Secret)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Secret),
 				ServiceName:  ErrSecret.Name,
 				Namespace:    ErrSecret.Namespace,
@@ -2465,7 +2465,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSecret := data.(v2.Secret)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Secret),
 				ServiceName:  ErrSecret.Name,
 				Namespace:    ErrSecret.Namespace,
@@ -2488,7 +2488,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSvcAcc := data.(v2.ServiceAccount)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceAccount),
 				ServiceName:  ErrSvcAcc.Name,
 				ErrorMessage: err.Error(),
@@ -2502,7 +2502,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSvcAcc := data.(v2.ServiceAccount)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceAccount),
 				ServiceName:  ErrSvcAcc.Name,
 				ErrorMessage: err.Error(),
@@ -2515,7 +2515,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSvcAcc := data.(v2.ServiceAccount)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceAccount),
 				ServiceName:  ErrSvcAcc.Name,
 				ErrorMessage: err.Error(),
@@ -2528,7 +2528,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSvcAcc := data.(v2.ServiceAccount)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceAccount),
 				ServiceName:  ErrSvcAcc.Name,
 				ErrorMessage: err.Error(),
@@ -2541,7 +2541,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSvcAcc := data.(v2.ServiceAccount)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceAccount),
 				ServiceName:  ErrSvcAcc.Name,
 				ErrorMessage: err.Error(),
@@ -2563,7 +2563,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRole := data.(rbac.Role)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Role),
 				ServiceName:  ErrRole.Name,
 				Namespace:    ErrRole.Namespace,
@@ -2578,7 +2578,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRole := data.(rbac.Role)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Role),
 				ServiceName:  ErrRole.Name,
 				Namespace:    ErrRole.Namespace,
@@ -2592,7 +2592,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRole := data.(rbac.Role)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Role),
 				ServiceName:  ErrRole.Name,
 				Namespace:    ErrRole.Namespace,
@@ -2606,7 +2606,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRole := data.(rbac.Role)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Role),
 				ServiceName:  ErrRole.Name,
 				Namespace:    ErrRole.Namespace,
@@ -2620,7 +2620,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRole := data.(rbac.Role)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Role),
 				ServiceName:  ErrRole.Name,
 				Namespace:    ErrRole.Namespace,
@@ -2643,7 +2643,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRoleBinding := data.(rbac.RoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.RoleBinding),
 				ServiceName:  ErrRoleBinding.Name,
 				Namespace:    ErrRoleBinding.Namespace,
@@ -2658,7 +2658,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRoleBinding := data.(rbac.RoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.RoleBinding),
 				ServiceName:  ErrRoleBinding.Name,
 				Namespace:    ErrRoleBinding.Namespace,
@@ -2672,7 +2672,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRoleBinding := data.(rbac.RoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.RoleBinding),
 				ServiceName:  ErrRoleBinding.Name,
 				Namespace:    ErrRoleBinding.Namespace,
@@ -2686,7 +2686,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRoleBinding := data.(rbac.RoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.RoleBinding),
 				ServiceName:  ErrRoleBinding.Name,
 				Namespace:    ErrRoleBinding.Namespace,
@@ -2700,7 +2700,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrRoleBinding := data.(rbac.RoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.RoleBinding),
 				ServiceName:  ErrRoleBinding.Name,
 				Namespace:    ErrRoleBinding.Namespace,
@@ -2723,7 +2723,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRole := data.(rbac.ClusterRole)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRole),
 				ServiceName:  ErrClusterRole.Name,
 				ErrorMessage: err.Error(),
@@ -2737,7 +2737,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRole := data.(rbac.ClusterRole)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRole),
 				ServiceName:  ErrClusterRole.Name,
 				ErrorMessage: err.Error(),
@@ -2750,7 +2750,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRole := data.(rbac.ClusterRole)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRole),
 				ServiceName:  ErrClusterRole.Name,
 				ErrorMessage: err.Error(),
@@ -2763,7 +2763,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRole := data.(rbac.ClusterRole)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRole),
 				ServiceName:  ErrClusterRole.Name,
 				ErrorMessage: err.Error(),
@@ -2776,7 +2776,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRole := data.(rbac.ClusterRole)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRole),
 				ServiceName:  ErrClusterRole.Name,
 				ErrorMessage: err.Error(),
@@ -2798,7 +2798,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRoleBinding),
 				ServiceName:  ErrClusterRoleBind.Name,
 				ErrorMessage: err.Error(),
@@ -2812,7 +2812,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRoleBinding),
 				ServiceName:  ErrClusterRoleBind.Name,
 				ErrorMessage: err.Error(),
@@ -2825,7 +2825,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRoleBinding),
 				ServiceName:  ErrClusterRoleBind.Name,
 				ErrorMessage: err.Error(),
@@ -2838,7 +2838,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRoleBinding),
 				ServiceName:  ErrClusterRoleBind.Name,
 				ErrorMessage: err.Error(),
@@ -2851,7 +2851,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrClusterRoleBind := data.(rbac.ClusterRoleBinding)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ClusterRoleBinding),
 				ServiceName:  ErrClusterRoleBind.Name,
 				ErrorMessage: err.Error(),
@@ -2873,7 +2873,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPv := data.(v2.PersistentVolume)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolume),
 				ServiceName:  ErrPv.Name,
 				ErrorMessage: err.Error(),
@@ -2887,7 +2887,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPv := data.(v2.PersistentVolume)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolume),
 				ServiceName:  ErrPv.Name,
 				ErrorMessage: err.Error(),
@@ -2900,7 +2900,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPv := data.(v2.PersistentVolume)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolume),
 				ServiceName:  ErrPv.Name,
 				ErrorMessage: err.Error(),
@@ -2913,7 +2913,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPv := data.(v2.PersistentVolume)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolume),
 				ServiceName:  ErrPv.Name,
 				ErrorMessage: err.Error(),
@@ -2926,7 +2926,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPv := data.(v2.PersistentVolume)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolume),
 				ServiceName:  ErrPv.Name,
 				ErrorMessage: err.Error(),
@@ -2948,7 +2948,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPVC := data.(v2.PersistentVolumeClaim)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolumeClaim),
 				ServiceName:  ErrPVC.Name,
 				ErrorMessage: err.Error(),
@@ -2962,7 +2962,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPVC := data.(v2.PersistentVolumeClaim)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolumeClaim),
 				ServiceName:  ErrPVC.Name,
 				ErrorMessage: err.Error(),
@@ -2975,7 +2975,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPVC := data.(v2.PersistentVolumeClaim)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolumeClaim),
 				ServiceName:  ErrPVC.Name,
 				ErrorMessage: err.Error(),
@@ -2988,7 +2988,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPVC := data.(v2.PersistentVolumeClaim)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolumeClaim),
 				ServiceName:  ErrPVC.Name,
 				ErrorMessage: err.Error(),
@@ -3001,7 +3001,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrPVC := data.(v2.PersistentVolumeClaim)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.PersistentVolumeClaim),
 				ServiceName:  ErrPVC.Name,
 				ErrorMessage: err.Error(),
@@ -3023,7 +3023,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSC := data.(storage.StorageClass)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StorageClass),
 				ServiceName:  ErrSC.Name,
 				ErrorMessage: err.Error(),
@@ -3037,7 +3037,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSC := data.(storage.StorageClass)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StorageClass),
 				ServiceName:  ErrSC.Name,
 				ErrorMessage: err.Error(),
@@ -3050,7 +3050,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSC := data.(storage.StorageClass)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StorageClass),
 				ServiceName:  ErrSC.Name,
 				ErrorMessage: err.Error(),
@@ -3063,7 +3063,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSC := data.(storage.StorageClass)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StorageClass),
 				ServiceName:  ErrSC.Name,
 				ErrorMessage: err.Error(),
@@ -3076,7 +3076,7 @@ func (conn *GrpcConn) getCpConvertedTemplate(data interface{}, kind string) (*sv
 
 			ErrSC := data.(storage.StorageClass)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.StorageClass),
 				ServiceName:  ErrSC.Name,
 				ErrorMessage: err.Error(),
@@ -3111,7 +3111,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrDR := data.(istioClient.DestinationRule)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DestinationRule),
 				ServiceName:  ErrDR.Name,
 				Namespace:    ErrDR.Namespace,
@@ -3126,7 +3126,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrDR := data.(istioClient.DestinationRule)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DestinationRule),
 				ServiceName:  ErrDR.Name,
 				Namespace:    ErrDR.Namespace,
@@ -3140,7 +3140,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrDR := data.(istioClient.DestinationRule)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DestinationRule),
 				ServiceName:  ErrDR.Name,
 				Namespace:    ErrDR.Namespace,
@@ -3154,7 +3154,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrDR := data.(istioClient.DestinationRule)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DestinationRule),
 				ServiceName:  ErrDR.Name,
 				Namespace:    ErrDR.Namespace,
@@ -3168,7 +3168,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrDR := data.(istioClient.DestinationRule)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.DestinationRule),
 				ServiceName:  ErrDR.Name,
 				Namespace:    ErrDR.Namespace,
@@ -3190,7 +3190,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrVS := data.(istioClient.VirtualService)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.VirtualService),
 				ServiceName:  ErrVS.Name,
 				Namespace:    ErrVS.Namespace,
@@ -3205,7 +3205,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrVS := data.(istioClient.VirtualService)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.VirtualService),
 				ServiceName:  ErrVS.Name,
 				Namespace:    ErrVS.Namespace,
@@ -3219,7 +3219,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrVS := data.(istioClient.VirtualService)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.VirtualService),
 				ServiceName:  ErrVS.Name,
 				Namespace:    ErrVS.Namespace,
@@ -3233,7 +3233,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrVS := data.(istioClient.VirtualService)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.VirtualService),
 				ServiceName:  ErrVS.Name,
 				Namespace:    ErrVS.Namespace,
@@ -3247,7 +3247,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrVS := data.(istioClient.VirtualService)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.VirtualService),
 				ServiceName:  ErrVS.Name,
 				Namespace:    ErrVS.Namespace,
@@ -3269,7 +3269,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrGTW := data.(istioClient.Gateway)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Gateway),
 				ServiceName:  ErrGTW.Name,
 				Namespace:    ErrGTW.Namespace,
@@ -3284,7 +3284,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrGTW := data.(istioClient.Gateway)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Gateway),
 				ServiceName:  ErrGTW.Name,
 				Namespace:    ErrGTW.Namespace,
@@ -3298,7 +3298,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrGTW := data.(istioClient.Gateway)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Gateway),
 				ServiceName:  ErrGTW.Name,
 				Namespace:    ErrGTW.Namespace,
@@ -3312,7 +3312,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrGTW := data.(istioClient.Gateway)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Gateway),
 				ServiceName:  ErrGTW.Name,
 				Namespace:    ErrGTW.Namespace,
@@ -3326,7 +3326,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrGTW := data.(istioClient.Gateway)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.Gateway),
 				ServiceName:  ErrGTW.Name,
 				Namespace:    ErrGTW.Namespace,
@@ -3348,7 +3348,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrSvcEntry := data.(istioClient.ServiceEntry)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceEntry),
 				ServiceName:  ErrSvcEntry.Name,
 				Namespace:    ErrSvcEntry.Namespace,
@@ -3363,7 +3363,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrSvcEntry := data.(istioClient.ServiceEntry)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceEntry),
 				ServiceName:  ErrSvcEntry.Name,
 				Namespace:    ErrSvcEntry.Namespace,
@@ -3377,7 +3377,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrSvcEntry := data.(istioClient.ServiceEntry)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceEntry),
 				ServiceName:  ErrSvcEntry.Name,
 				Namespace:    ErrSvcEntry.Namespace,
@@ -3391,7 +3391,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrSvcEntry := data.(istioClient.ServiceEntry)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceEntry),
 				ServiceName:  ErrSvcEntry.Name,
 				Namespace:    ErrSvcEntry.Namespace,
@@ -3405,7 +3405,7 @@ func (conn *GrpcConn) getIstioCpConvertedTemplate(data interface{}, kind string)
 
 			ErrSvcEntry := data.(istioClient.ServiceEntry)
 			utils.Error.Printf("Error while CP conversion : %v", getLogData(types.AppDiscoveryLog{
-				ProjectId:    conn.ProjectId,
+				InfraId:      conn.InfraId,
 				ServiceType:  string(constants.ServiceEntry),
 				ServiceName:  ErrSvcEntry.Name,
 				Namespace:    ErrSvcEntry.Namespace,

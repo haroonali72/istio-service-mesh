@@ -15,7 +15,7 @@ service Clusterrolebinding {
 }
 
 message ClusterRoleBinding {
-   string project_id = 1;
+   string application_id = 1;
    string service_id = 2;
    string name = 3;
    string service_type = 4;
@@ -27,7 +27,8 @@ message ClusterRoleBinding {
    string company_id = 10;
    string version = 11;
    string namespace = 12;
-   HookConfiguration hook_configuration=13;
+   string infra_id = 13;
+   HookConfiguration hook_configuration=14;
 }
 
 message ClusterRoleBindingSvcAttr {

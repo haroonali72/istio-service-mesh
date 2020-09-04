@@ -15,7 +15,7 @@ service Pod {
 }
 
 message PodService {
-    string project_id = 1;
+    string application_id = 1;
     string service_id = 2;
     string name = 3;
     string version = 4;
@@ -24,8 +24,9 @@ message PodService {
     string namespace = 7;
     string token = 8;
     string company_id = 9;
-    PodServiceServiceAttributes service_attributes = 10;
-    HookConfiguration hook_configuration=11;
+    string infra_id = 10;
+    PodServiceServiceAttributes service_attributes = 11;
+    HookConfiguration hook_configuration=12;
 }
 
 message PodServiceServiceAttributes {

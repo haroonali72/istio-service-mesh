@@ -51,7 +51,7 @@ func (s *Server) CreateDeployment(ctx context.Context, req *pb.DeploymentService
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -98,7 +98,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *pb.DeploymentService) (
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -149,7 +149,7 @@ func (s *Server) DeleteDeployment(ctx context.Context, req *pb.DeploymentService
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -196,7 +196,7 @@ func (s *Server) PatchDeployment(ctx context.Context, req *pb.DeploymentService)
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -243,7 +243,7 @@ func (s *Server) PutDeployment(ctx context.Context, req *pb.DeploymentService) (
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -338,7 +338,7 @@ func getDeploymentRequestObject(ctx context.Context, service *pb.DeploymentServi
 			utils.Error.Println(err)
 		}
 		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-			ProjectId: service.ProjectId,
+			InfraId:   service.InfraId,
 			Service:   raw,
 			CompanyId: service.CompanyId,
 			Token:     service.Token,

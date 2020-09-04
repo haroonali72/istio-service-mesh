@@ -15,14 +15,15 @@ service Destinationrules{
 message DestinationRules {
     string service_id = 1;
     string token=2;
-    string project_id=3;
+    string application_id=3;
     string company_id = 4;
     string name = 5;
     string service_type= 6;
     string service_sub_type =7;
     string namespace =9;
     string version =10;
-    DRServiceAttributes service_attribute =11;
+    string infra_id = 11;
+    DRServiceAttributes service_attribute =12;
 }
 
 message DRServiceAttributes {
@@ -117,7 +118,7 @@ enum TLSSettings {
 
 enum Simple{
    ROUND_ROBIN=0;
-  LEAST_CONN=1;
+   LEAST_CONN=1;
    RANDOM=2;
    PASSTHROUGH=3;
 }

@@ -8,17 +8,16 @@ type SolutionInfo struct {
 }
 
 type DynamicConfigurationSolutionSchema struct {
-	DoumentID    interface{}            `json:"_id" bson:"_id"`
-	SolutionId   interface{}            `json:"solution_id" bson:"solution_id"`
-	SolutionName interface{}            `json:"solution_name" bson:"solution_name"`
-	ServicesData map[string]interface{} `json:"solution_data" bson:"solution_data"`
+	DoumentID       interface{}            `json:"_id" bson:"_id"`
+	ApplicationId   interface{}            `json:"application_id" bson:"application_id"`
+	ApplicationName interface{}            `json:"application_name" bson:"application_name"`
+	ServicesData    map[string]interface{} `json:"solution_data" bson:"solution_data"`
 }
 
 type DynamicDataSolution struct {
-	SolutionId   string                 `json:"solution_id" bson:"solution_id"`
-	ProjectId    string                 `json:"project_id" bson:"project_id"`
-	CompnayId    string                 `json:"company_id" bson:"company_id"`
-	ServicesData map[string]interface{} `json:"solution_data" bson:"solution_data"`
+	ApplicationId string                 `json:"application_id" bson:"application_id"`
+	CompnayId     string                 `json:"company_id" bson:"company_id"`
+	ServicesData  map[string]interface{} `json:"solution_data" bson:"solution_data"`
 }
 
 type LoadBalancerAPIResponse struct {

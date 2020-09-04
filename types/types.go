@@ -391,7 +391,7 @@ type LoggingHttpRequest struct {
 }
 
 type AppDiscoveryLog struct {
-	ProjectId    string `json:"project_id"`
+	InfraId      string `json:"infra_id"`
 	ServiceType  string `json:"service_type"`
 	ServiceName  string `json:"service_name"`
 	Namespace    string `json:"namespace"`

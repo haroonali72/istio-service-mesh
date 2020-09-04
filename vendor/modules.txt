@@ -1,6 +1,6 @@
-# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0
+# bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto
-# bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200902125520-368bbc42bc7c
+# bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200827133924-914db2fbfab5
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto
 bitbucket.org/cloudplex-devs/microservices-mesh-engine/types
@@ -47,7 +47,7 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/google/gofuzz
 # github.com/google/uuid v1.1.1
 github.com/google/uuid
-# github.com/googleapis/gnostic v0.3.1
+# github.com/googleapis/gnostic v0.4.0
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -78,7 +78,7 @@ github.com/shurcooL/sanitized_anchor_name
 github.com/spf13/pflag
 # github.com/urfave/cli/v2 v2.2.0
 github.com/urfave/cli/v2
-# go.opencensus.io v0.22.3
+# go.opencensus.io v0.22.4
 go.opencensus.io
 go.opencensus.io/internal
 go.opencensus.io/internal/tagencoding
@@ -96,7 +96,7 @@ go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
 # golang.org/x/build v0.0.0-20200508193432-bf27e2732389
 golang.org/x/build/kubernetes/api
-# golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
+# golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/ssh/terminal
@@ -113,11 +113,11 @@ golang.org/x/net/trace
 # golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20200513112337-417ce2331b5c
+# golang.org/x/sys v0.0.0-20200622214017-ed371f2e16b4
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -132,14 +132,15 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20200514193133-8feb7f20f2a2
+# google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.29.1
+# google.golang.org/grpc v1.30.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
+google.golang.org/grpc/balancer/grpclb/state
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
@@ -162,12 +163,12 @@ google.golang.org/grpc/internal/grpcsync
 google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
+google.golang.org/grpc/internal/serviceconfig
 google.golang.org/grpc/internal/status
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
-google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/reflection
 google.golang.org/grpc/reflection/grpc_reflection_v1alpha
@@ -176,7 +177,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.23.0
+# google.golang.org/protobuf v1.24.0
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -369,7 +370,7 @@ k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
+# k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
 k8s.io/utils/integer
 k8s.io/utils/pointer
 # sigs.k8s.io/yaml v1.2.0

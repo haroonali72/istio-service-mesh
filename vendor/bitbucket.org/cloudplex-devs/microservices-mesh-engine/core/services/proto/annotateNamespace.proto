@@ -8,10 +8,11 @@ service AnnotateNamespace {
 
 
 message Namespacerequest{
-    string project_id = 1;
+    string application_id = 1;
     string company_id = 2;
     string token = 3;
     string namespace = 4;
+    string infra_id = 5;
 }
 
 message Namespaceresponse{

@@ -43,7 +43,7 @@ func (s *Server) CreateCronJob(ctx context.Context, req *pb.CronJobService) (*pb
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -90,7 +90,7 @@ func (s *Server) GetCronJob(ctx context.Context, req *pb.CronJobService) (*pb.Se
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -141,7 +141,7 @@ func (s *Server) DeleteCronJob(ctx context.Context, req *pb.CronJobService) (*pb
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -188,7 +188,7 @@ func (s *Server) PutCronJob(ctx context.Context, req *pb.CronJobService) (*pb.Se
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -235,7 +235,7 @@ func (s *Server) PatchCronJob(ctx context.Context, req *pb.CronJobService) (*pb.
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		ProjectId: req.ProjectId,
+		InfraId:   req.InfraId,
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -353,7 +353,7 @@ func getCronJobRequestObject(service *pb.CronJobService) (*v1.CronJob, error) {
 			utils.Error.Println(err)
 		}
 		result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-			ProjectId: service.ProjectId,
+			InfraId:   service.InfraId,
 			Service:   raw,
 			CompanyId: service.CompanyId,
 			Token:     service.Token,

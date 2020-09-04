@@ -6,12 +6,13 @@ service PodKillService{
 }
 
 message PodRequest {
-    string project_id = 1;
+    string application_id = 1;
     string company_id = 2;
     string token = 3;
     string namespace = 4;
     string name = 5;
     string type = 6;
+    string infra_id = 7;
 }
 
 message PodResponse {

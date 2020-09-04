@@ -17,18 +17,16 @@ type Packages struct {
 	Services       []*ServiceTemplate `json:"services" binding:"required"`
 }
 
-type SolutionMesh struct {
-	ClusterName     *string     `json:"cluster_name"`
-	ProjectId       *string     `json:"project_id"`
-	Credentials     interface{} `json:"credentials"`
-	KubeCredentials struct {
-		KubernetesURL      string `json:"url"`
-		KubernetesUsername string `json:"username"`
-		KubernetesPassword string `json:"password"`
-	} `json:"kubernetes_credentials"`
-	Solution *SolutionMeshRequest `json:"solution_info"`
+//solutionMesh
+//ApplicationMesh
+type ApplicationDepRequest struct {
+	InfrastructureId string              `json:"infrastructure_id"`
+	Application      *ApplicationRequest `json:"solution_info"`
 }
-type SolutionMeshRequest struct {
+
+//SolutionMeshRequest
+//ApplicationMeshRequest
+type ApplicationRequest struct {
 	Id             *string             `json:"_id"`
 	Name           *string             `json:"name"`
 	Version        *string             `json:"version"`
@@ -44,20 +42,20 @@ type AWSCredentials struct {
 	Region    string `json:"region"`
 }
 
-type SolutionTemplate struct {
+type ApplicationTemplate struct {
+	InfraIds []string `json:"infra_ids" bson:"infra_ids" binding:"required" valid:"alphanumspecial,length(5|30)~Solution name must contain between 5 and 30 characters or solution name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$ ,required~Solution Name is missing in request"`
 	// Name Used to link with application/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 5-30 character
 	// +mandatory
 	Name *string `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30)~Solution name must contain between 5 and 30 characters or solution name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$ ,required~Solution Name is missing in request"`
-	// SolutionId used to link with application/project
+	// ApplicationId used to link with application/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 6-30 character
 	// +mandatory
-	SolutionId *string `json:"solution_id" bson:"solution_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~solution_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$~Solution Id is missing in request"`
-
+	ApplicationId *string `json:"application_id" bson:"application_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~solution_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$~Solution Id is missing in request"`
 	// version used to link multiple version of applications/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
@@ -67,10 +65,6 @@ type SolutionTemplate struct {
 	Description string `json:"description" bson:"description"`
 
 	Tags []string `json:"tags"bson:"tags"`
-	// ProjectId is the field which will refer which project is linked
-	// with this solution
-	// +optional
-	ProjectID *string `json:"project_id" bson:"project_id" valid:"-"`
 	// Overall Status of the Solution
 	// Status will give you status of solution
 	// Valid Status list Deployed/ Deployment Failed/ New
@@ -93,7 +87,7 @@ type SolutionTemplate struct {
 	CreationDate time.Time `json:"creation_date,omitempty" bson:"creation_date" valid:"-"`
 }
 
-type SolutionMetadataByProject struct {
+type ApplicationMetadata struct {
 	// Name Used to link with application/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
@@ -105,7 +99,7 @@ type SolutionMetadataByProject struct {
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 6-30 character
 	// +mandatory
-	SolutionId *string `json:"solution_id" bson:"solution_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~lowercase alphanumeric characters are allowed,required~Solution Id is missing in request"`
+	TemplateId *string `json:"template_id" bson:"template_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~lowercase alphanumeric characters are allowed,required~Solution Id is missing in request"`
 	// Overall Status of the Solution
 	// Status will give you status of solution
 	// Valid Status list Deployed/ Deployment Failed/ New

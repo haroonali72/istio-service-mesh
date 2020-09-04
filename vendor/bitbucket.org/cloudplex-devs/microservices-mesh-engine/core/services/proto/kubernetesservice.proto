@@ -18,7 +18,7 @@ service Kubernetes{
 message KubernetesService {
     string service_id = 1;
     string token = 2;
-    string project_id = 3;
+    string application_id = 3;
     string company_id = 4;
     string name = 5;
     string version = 6;
@@ -26,8 +26,9 @@ message KubernetesService {
     string service_sub_type = 8;
     google.protobuf.Any service_dependency_info = 9;
     string namespace = 10;
-    KubeServiceAttributes kube_service_attributes = 11;
-    HookConfiguration hook_configuration=12;
+    string infra_id = 11;
+    KubeServiceAttributes kube_service_attributes = 12;
+    HookConfiguration hook_configuration=13;
 
 }
 message KubeServiceAttributes{
