@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f
-	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200827133924-914db2fbfab5
+	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200904082841-1171cb406115
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1
 	github.com/go-openapi/spec v0.19.8 // indirect
