@@ -6,6 +6,12 @@ bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-2020070210550
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0/go.mod h1:HmO/Mci6gxSHnumTNm+DVRmoBv+VVqtsIIWo5Xk7uuw=
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f h1:RrgqNmcRENPl0koJw9P1jQjSZpWy02KrblMXdiKA4Pg=
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200904082739-ec41476bf152 h1:tyF9z9/RPwYeevEAOe5icvzwOrlRRl5fMJN/+4jL97s=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200904082739-ec41476bf152/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918121637-aac95068f29b h1:JP7OUL7td9MnRqg66Ui8QuM+6iOlbC7NCa5ZxjeFH8Y=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918121637-aac95068f29b/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918124033-e1177f866702 h1:uP4apsLFaeLr89T+BoJ8Oo2sQIkNM81Hgm7iwagVV9Y=
+bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918124033-e1177f866702/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.3 h1:n6OoEHr/rppJB1gRO4tRzgvkAYZkwWP/G2GrUKIaO+4=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.3/go.mod h1:6bd0pmtmXJeb4mHuKbeoYX/mmwzxTmMv6Zyk8K3H5Aw=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200515095205-e4a9ddc7023c h1:Svj1R09ixkPJjuITihOpYh+9SWaJpTtKvf34GX4hlkU=
