@@ -11,6 +11,12 @@ type ListHelmDataApiResponse struct {
 	TotalCount int            `json:"total_count"`
 }
 
+type ListAppDataApiResponse struct {
+	Data       []*ApplicationTemplate `json:"data"`
+	NextCursor int                    `json:"next_cursor"`
+	TotalCount int                    `json:"total_count"`
+}
+
 type HelmHubData struct {
 	Id          string ` bson:"_id" valid:"-"`
 	Name        string `json:"name" bson:"name"`
