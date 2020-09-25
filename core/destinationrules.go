@@ -46,7 +46,9 @@ func (s *Server) CreateDestinationRules(ctx context.Context, req *pb.Destination
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -92,7 +94,9 @@ func (s *Server) GetDestinationRules(ctx context.Context, req *pb.DestinationRul
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -138,7 +142,9 @@ func (s *Server) DeleteDestinationRules(ctx context.Context, req *pb.Destination
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -184,7 +190,9 @@ func (s *Server) PatchDestinationRules(ctx context.Context, req *pb.DestinationR
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -230,7 +238,9 @@ func (s *Server) PutDestinationRules(ctx context.Context, req *pb.DestinationRul
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

@@ -3,7 +3,7 @@ module bitbucket.org/cloudplex-devs/istio-service-mesh
 go 1.13
 
 require (
-	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f
+	bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200925132834-98b056d8e0b4
 	bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200925115200-60cfaaea0cbe
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535 // indirect
 	github.com/astaxie/beego v1.12.1

@@ -41,7 +41,9 @@ func (s *Server) CreatePod(ctx context.Context, req *pb.PodService) (*pb.Service
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -92,7 +94,9 @@ func (s *Server) GetPod(ctx context.Context, req *pb.PodService) (*pb.ServiceRes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -147,7 +151,9 @@ func (s *Server) DeletePod(ctx context.Context, req *pb.PodService) (*pb.Service
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -194,7 +200,9 @@ func (s *Server) PatchPod(ctx context.Context, req *pb.PodService) (*pb.ServiceR
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -241,7 +249,9 @@ func (s *Server) PutPod(ctx context.Context, req *pb.PodService) (*pb.ServiceRes
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

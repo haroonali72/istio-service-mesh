@@ -44,7 +44,9 @@ func (s *Server) CreateDaemonSet(ctx context.Context, req *pb.DaemonSetService) 
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -91,7 +93,9 @@ func (s *Server) GetDaemonSet(ctx context.Context, req *pb.DaemonSetService) (*p
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -142,7 +146,9 @@ func (s *Server) DeleteDaemonSet(ctx context.Context, req *pb.DaemonSetService) 
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -189,7 +195,9 @@ func (s *Server) PatchDaemonSet(ctx context.Context, req *pb.DaemonSetService) (
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -236,7 +244,9 @@ func (s *Server) PutDaemonSet(ctx context.Context, req *pb.DaemonSetService) (*p
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
