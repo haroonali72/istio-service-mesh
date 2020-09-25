@@ -6,12 +6,6 @@ bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-2020070210550
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200702105509-6bdc6957dcd0/go.mod h1:HmO/Mci6gxSHnumTNm+DVRmoBv+VVqtsIIWo5Xk7uuw=
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f h1:RrgqNmcRENPl0koJw9P1jQjSZpWy02KrblMXdiKA4Pg=
 bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200831093839-d24c6be1ff8f/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200904082739-ec41476bf152 h1:tyF9z9/RPwYeevEAOe5icvzwOrlRRl5fMJN/+4jL97s=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200904082739-ec41476bf152/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918121637-aac95068f29b h1:JP7OUL7td9MnRqg66Ui8QuM+6iOlbC7NCa5ZxjeFH8Y=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918121637-aac95068f29b/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918124033-e1177f866702 h1:uP4apsLFaeLr89T+BoJ8Oo2sQIkNM81Hgm7iwagVV9Y=
-bitbucket.org/cloudplex-devs/kubernetes-services-deployment v0.0.0-20200918124033-e1177f866702/go.mod h1:hJETWrui+zRyGeXTlSnXQg19Lw2yc9mXsb31E8ZL/P0=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.3 h1:n6OoEHr/rppJB1gRO4tRzgvkAYZkwWP/G2GrUKIaO+4=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.3/go.mod h1:6bd0pmtmXJeb4mHuKbeoYX/mmwzxTmMv6Zyk8K3H5Aw=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200515095205-e4a9ddc7023c h1:Svj1R09ixkPJjuITihOpYh+9SWaJpTtKvf34GX4hlkU=
@@ -44,10 +38,8 @@ bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200827133924-9
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200827133924-914db2fbfab5/go.mod h1:p9nS7Y6wKBzxwtNvUz1+2xY/kdPh/c+uIYWXnAxGuQw=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200904082841-1171cb406115 h1:ba+kn0igYY4aPHdangqVkc0G5pOIP2OskrgQDn0aZag=
 bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200904082841-1171cb406115/go.mod h1:p9nS7Y6wKBzxwtNvUz1+2xY/kdPh/c+uIYWXnAxGuQw=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200922115426-188fb0cd9569 h1:8uG4ul1f3OHXZ+H4FWOs6jFSyfpPRllQenRP4dRzQVI=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200922115426-188fb0cd9569/go.mod h1:p9nS7Y6wKBzxwtNvUz1+2xY/kdPh/c+uIYWXnAxGuQw=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200922121604-e6b1e89804dd h1:Mu+Hgmr9EMVoklorp0p5OPAZvW420DSLERVV7UyYj9Q=
-bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200922121604-e6b1e89804dd/go.mod h1:p9nS7Y6wKBzxwtNvUz1+2xY/kdPh/c+uIYWXnAxGuQw=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200925115200-60cfaaea0cbe h1:MQwnSQmxWAI3LO7cIKIlSJgUnxdLLM0Mt92Sl2HJhgw=
+bitbucket.org/cloudplex-devs/microservices-mesh-engine v1.4.4-0.20200925115200-60cfaaea0cbe/go.mod h1:p9nS7Y6wKBzxwtNvUz1+2xY/kdPh/c+uIYWXnAxGuQw=
 bitbucket.org/cloudplex-devs/woodpecker v0.0.0-20200130130714-b6df537e38c6/go.mod h1:BbcPoZMTVsFbwbcsNBu4qQFN2711UfYnZBlg1SG+dIk=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
@@ -388,6 +380,7 @@ github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d/go.mod h1:sJBsC
 github.com/googleapis/gnostic v0.1.0/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
 github.com/googleapis/gnostic v0.3.1 h1:WeAefnSUHlBb0iJKwxFDZdbfGwkd7xRNuV+IpXMJhYk=
 github.com/googleapis/gnostic v0.3.1/go.mod h1:on+2t9HRStVgn95RSsFWFz+6Q0Snyqv1awfrALZdbtU=
+github.com/googleapis/gnostic v0.4.0 h1:BXDUo8p/DaxC+4FJY/SSx3gvnx9C1VdHNgaUkiEL5mk=
 github.com/googleapis/gnostic v0.4.0/go.mod h1:on+2t9HRStVgn95RSsFWFz+6Q0Snyqv1awfrALZdbtU=
 github.com/gophercloud/gophercloud v0.1.0/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gophercloud/gophercloud v0.12.0/go.mod h1:gmC5oQqMDOMO1t1gq5DquX/yAU808e/4mzjjDA76+Ss=
@@ -853,6 +846,7 @@ golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3 h1:5B6i6EAiSYyejWfvc5Rc9BbI3
 golang.org/x/sys v0.0.0-20200501145240-bc7a7d42d5c3/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200513112337-417ce2331b5c h1:kISX68E8gSkNYAFRFiDU8rl5RIn1sJYKYb/r2vMLDrU=
 golang.org/x/sys v0.0.0-20200513112337-417ce2331b5c/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200622214017-ed371f2e16b4 h1:5/PjkGUjvEU5Gl6BxmvKRPpqo2uNMv4rcHBMwzk/st8=
 golang.org/x/sys v0.0.0-20200622214017-ed371f2e16b4/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.0.0-20160726164857-2910a502d2bf/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.0.0-20170915032832-14c0d48ead0c/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
