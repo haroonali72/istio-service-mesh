@@ -42,7 +42,9 @@ func (s *Server) CreateRoleBindingService(ctx context.Context, req *pb.RoleBindi
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -87,7 +89,9 @@ func (s *Server) GetRoleBindingService(ctx context.Context, req *pb.RoleBindingS
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -132,7 +136,9 @@ func (s *Server) DeleteRoleBindingService(ctx context.Context, req *pb.RoleBindi
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -177,7 +183,9 @@ func (s *Server) PatchRoleBindingService(ctx context.Context, req *pb.RoleBindin
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -222,7 +230,9 @@ func (s *Server) PutRoleBindingService(ctx context.Context, req *pb.RoleBindingS
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,

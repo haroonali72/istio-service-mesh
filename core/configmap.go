@@ -42,7 +42,9 @@ func (s *Server) CreateConfigMapService(ctx context.Context, req *pb.ConfigMapSe
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).CreateService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -88,7 +90,9 @@ func (s *Server) GetConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).GetService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -133,7 +137,9 @@ func (s *Server) DeleteConfigMapService(ctx context.Context, req *pb.ConfigMapSe
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).DeleteService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -177,7 +183,9 @@ func (s *Server) PatchConfigMapService(ctx context.Context, req *pb.ConfigMapSer
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PatchService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
@@ -222,7 +230,9 @@ func (s *Server) PutConfigMapService(ctx context.Context, req *pb.ConfigMapServi
 		return serviceResp, err
 	}
 	result, err := pb1.NewServiceClient(conn).PutService(ctx, &pb1.ServiceRequest{
-		InfraId:   req.InfraId,
+		InfraId:       req.InfraId,
+		ApplicationId: req.ApplicationId,
+
 		Service:   raw,
 		CompanyId: req.CompanyId,
 		Token:     req.Token,
