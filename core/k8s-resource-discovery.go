@@ -1099,19 +1099,29 @@ func (conn *GrpcConn) getAllVirtualServices(ctx context.Context, namespace strin
 }
 
 func (conn *GrpcConn) isIstioEnabled(ctx context.Context) bool {
-	_, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
+	response, err := pb.NewK8SResourceClient(conn.Connection).GetK8SResource(ctx, &pb.K8SResourceRequest{
 		InfraId:   conn.InfraId,
 		CompanyId: conn.CompanyId,
 		Token:     conn.token,
 		Command:   "kubectl",
-		Args:      []string{"get", "ns", "istio-system"},
+		Args:      []string{"get", "ns", "istio-system", "-o", "json"},
 	})
 	if err != nil {
 		utils.Info.Println("checking existance of 'istio-sytem' namepace :", err)
 		return false
 	}
 
-	return true
+	var namesapce *v2.Namespace
+	err = json.Unmarshal(response.Resource, &namesapce)
+	if err != nil {
+		utils.Error.Printf("error while unmarshalling 'istio-system' namespace %v", err.Error())
+		return false
+	}
+	value, isFound := namesapce.Labels["do-not-delete"]
+	if isFound && value == "true" {
+		return true
+	}
+	return false
 }
 
 func GetExistingService(namespace string, svcsubtype meshConstants.ServiceSubType, name string) *svcTypes.ServiceTemplate {
