@@ -25,10 +25,10 @@ message NameRequest {
 }
 
 
-enum Mode {
-    PASSTHROUGH = 0;
-    SIMPLE = 1;
-    MUTUAL = 2;
-    AUTO_PASSTHROUGH = 3;
-    ISTIO_MUTUAL = 4;
-}
+//enum Mode {
+//    PASSTHROUGH = 0;
+//    SIMPLE = 1;
+//    MUTUAL = 2;
+//    AUTO_PASSTHROUGH = 3;
+//    ISTIO_MUTUAL = 4;
+//}

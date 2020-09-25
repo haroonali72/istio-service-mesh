@@ -43,19 +43,22 @@ type AWSCredentials struct {
 }
 
 type ApplicationTemplate struct {
-	InfraIds []string `json:"infra_ids" bson:"infra_ids" binding:"required" valid:"alphanumspecial,length(5|30)~Solution name must contain between 5 and 30 characters or solution name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$ ,required~Solution Name is missing in request"`
+	User string `json:"user" bson:"user"`
+	//brownfield_infra_id will be specifically used for discovered application
+	BrownfieldInfraId string   `json:"brownfield_infra_id" bson:"brownfield_infra_id"`
+	InfraIds          []string `json:"infra_ids" bson:"infra_ids"`
 	// Name Used to link with application/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 5-30 character
 	// +mandatory
-	Name *string `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30)~Solution name must contain between 5 and 30 characters or solution name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$ ,required~Solution Name is missing in request"`
+	Name *string `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30)~Application name must contain between 5 and 30 characters or application name is invalid. Valid regex is ^[ A-Za-z0-9_-]*$ ,required~Application Name is missing in request"`
 	// ApplicationId used to link with application/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
 	// valid length is 6-30 character
 	// +mandatory
-	ApplicationId *string `json:"application_id" bson:"application_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~solution_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$~Solution Id is missing in request"`
+	ApplicationId *string `json:"application_id" bson:"application_id" binding:"required" valid:"alphanumspecial,length(6|30)~The name must contain between 6 and 30 characters,lowercase~application_id is invalid. Valid regex is ^[ A-Za-z0-9_-]*$~Application Id is missing in request"`
 	// version used to link multiple version of applications/project
 	// Cannot be updated.
 	// valid regex is ^[ A-Za-z0-9_-]*$
@@ -69,7 +72,8 @@ type ApplicationTemplate struct {
 	// Status will give you status of solution
 	// Valid Status list Deployed/ Deployment Failed/ New
 	// +optional
-	Status *string `json:"status" bson:"status" valid:"-" default:"new"`
+	Status      *string          `json:"status" bson:"status" valid:"-" default:"new"`
+	InfraStatus []ServicesStatus `json:"infra_status" bson:"infra_status"`
 	// Services in the solution
 	// services can be empty but atleast one services is required
 	// during deployment

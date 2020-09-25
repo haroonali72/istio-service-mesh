@@ -23,15 +23,18 @@ type ServiceMeshRequest struct {
 type HookConfiguration struct {
 	Weight        int64  `json:"weight"`
 	ServiceID     string `json:"service_id"`
-	ServiceStatus string
-	PreInstall    bool `json:"pre_install"`
-	PreUpdate     bool `json:"pre_update"`
-	PostUpdate    bool `json:"post_update"`
-	PostInstall   bool `json:"post_install"`
-	PreDelete     bool `json:"pre_delete"`
-	PostDelete    bool `json:"post_delete"`
-	PreRollBack   bool `json:"pre_rollback"`
-	PostRollBack  bool `json:"post_rollback"`
+	ServiceStatus []struct {
+		InfraId string
+		Status  string
+	}
+	PreInstall   bool `json:"pre_install"`
+	PreUpdate    bool `json:"pre_update"`
+	PostUpdate   bool `json:"post_update"`
+	PostInstall  bool `json:"post_install"`
+	PreDelete    bool `json:"pre_delete"`
+	PostDelete   bool `json:"post_delete"`
+	PreRollBack  bool `json:"pre_rollback"`
+	PostRollBack bool `json:"post_rollback"`
 }
 type ServiceBasicInfo struct {
 	// number of replicas of Deployment/StatefulSets
@@ -90,7 +93,7 @@ type ServiceBasicInfo struct {
 	Deleted bool `json:"deleted,omitempty" bson:"deleted" valid:"-"`
 	// Status of the service
 	// valid status are success/failed/new
-	Status string `json:"status,omitempty" bson:"status" valid:"-" default:"new"`
+	Status []ServicesStatus `json:"status,omitempty" bson:"status"`
 	//+deprecated
 	NumberOfInstances int `json:"number_of_instances,omitempty" bson:"number_of_instances" `
 	// CreationTime is timestamp of when the service is created
@@ -327,4 +330,9 @@ type ScaleTargetRef struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	Type    string `json:"type"`
+}
+
+type ServicesStatus struct {
+	InfraId string `json:"infra_id" bson:"infra_id"`
+	Status  string `json:"status" bson:"status" default:"new" valid:"-"`
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"bitbucket.org/cloudplex-devs/microservices-mesh-engine/constants"
+	"bitbucket.org/cloudplex-devs/microservices-mesh-engine/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -353,15 +354,15 @@ type ContainerAttribute struct {
 	IsDirectDeployment bool `json:"is_direct_deployment,omitempty" bson:"is_direct_deployment,omitempty"`
 }
 type DeploymentPipeline struct {
-	Name        string        `json:"name,omitempty" bson:"name,omitempty"`
-	Description string        `json:"description,omitempty" bson:"description,omitempty"`
-	Type        string        `json:"type,omitempty" bson:"type,omitempty"`
-	Bluegreen   *Bluegreen    `json:"bluegreen,omitempty" bson:"bluegreen,omitempty"`
-	Canary      *Canary       `json:"canary,omitempty" bson:"canary,omitempty"`
-	Duration    string        `json:"duration,omitempty" bson:"duration,omitempty"`
-	RunsHistory []RunsHistory `json:"runs_history,omitempty" bson:"runs_history,omitempty"`
-	TotalRuns   int           `json:"total_runs,omitempty" bson:"total_runs,omitempty"`
-	Status      string        `json:"status,omitempty" bson:"status,omitempty"`
+	Name        string                 `json:"name,omitempty" bson:"name,omitempty"`
+	Description string                 `json:"description,omitempty" bson:"description,omitempty"`
+	Type        string                 `json:"type,omitempty" bson:"type,omitempty"`
+	Bluegreen   *Bluegreen             `json:"bluegreen,omitempty" bson:"bluegreen,omitempty"`
+	Canary      *Canary                `json:"canary,omitempty" bson:"canary,omitempty"`
+	Duration    string                 `json:"duration,omitempty" bson:"duration,omitempty"`
+	RunsHistory []RunsHistory          `json:"runs_history,omitempty" bson:"runs_history,omitempty"`
+	TotalRuns   int                    `json:"total_runs,omitempty" bson:"total_runs,omitempty"`
+	Status      []types.ServicesStatus `json:"status,omitempty" bson:"status,omitempty"`
 }
 
 type RunsHistory struct {
@@ -371,10 +372,10 @@ type RunsHistory struct {
 }
 
 type Canary struct {
-	TotalStages  int      `json:"total_stages,omitempty" bson:"total_stages,omitempty"`
-	Stages       []*Stage `json:"stages,omitempty" bson:"stages,omitempty"`
-	CurrentStage int      `json:"current_stage,omitempty" bson:"current_stage,omitempty"`
-	Status       string   `json:"status,omitempty" bson:"status,omitempty"`
+	TotalStages  int                    `json:"total_stages,omitempty" bson:"total_stages,omitempty"`
+	Stages       []*Stage               `json:"stages,omitempty" bson:"stages,omitempty"`
+	CurrentStage int                    `json:"current_stage,omitempty" bson:"current_stage,omitempty"`
+	Status       []types.ServicesStatus `json:"status,omitempty" bson:"status,omitempty"`
 }
 
 type Stage struct {
@@ -390,10 +391,10 @@ type Stage struct {
 }
 
 type Bluegreen struct {
-	TrafficWeightBluegreen int32  `json:"traffic_weight_bluegreen,omitempty" bson:"traffic_weight_bluegreen,omitempty"`
-	TrafficWeightCurrent   int32  `json:"traffic_weight_current,omitempty" bson:"traffic_weight_current,omitempty"`
-	Status                 string `json:"status,omitempty" bson:"status,omitempty"`
-	RollBack               bool   `json:"roll_back,omitempty" bson:"roll_back,omitempty"`
+	TrafficWeightBluegreen int32                  `json:"traffic_weight_bluegreen,omitempty" bson:"traffic_weight_bluegreen,omitempty"`
+	TrafficWeightCurrent   int32                  `json:"traffic_weight_current,omitempty" bson:"traffic_weight_current,omitempty"`
+	Status                 []types.ServicesStatus `json:"status,omitempty" bson:"status,omitempty"`
+	RollBack               bool                   `json:"roll_back,omitempty" bson:"roll_back,omitempty"`
 }
 type VolumeMount struct {
 	Name             string                `json:"name" bson:"name" binding:"required" valid:"alphanumspecial,length(5|30),lowercase~lowercase alphanumeric characters are allowed,required"`

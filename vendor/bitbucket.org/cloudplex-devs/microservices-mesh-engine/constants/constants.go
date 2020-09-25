@@ -43,6 +43,9 @@ const (
 	Component         = "Application"
 	RabbitMQWorkQueue = "bb.app.work"
 	RabbitMqDoneQueue = "bb.app.done"
+
+	CICDWorkQueue   = "cd.app.work"
+	CICDMqDoneQueue = "cd.app.done"
 	//////////////////istio////////////////////////////////
 	IstioServicePostEndpoint     = "/istioservicedeployer"
 	IstioYamlToServiceEndpoint   = "/importservice"
@@ -72,6 +75,7 @@ const (
 	// Publisher Type Current supported Types are redis, rabbitmq
 	RedisPublisher    Publisher = "redis"
 	RabbitMqPublisher Publisher = "rabbitmq"
+	CICDPublisher     Publisher = "cicd_rabbitmq"
 	///////logger
 
 	BackendLogging  Logger = "backendLogging"
