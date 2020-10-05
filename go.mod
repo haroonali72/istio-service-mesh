@@ -10,7 +10,6 @@ require (
 	github.com/go-openapi/spec v0.19.8 // indirect
 	github.com/go-redis/redis v6.15.7+incompatible
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/jetstack/cert-manager v0.15.2
 	github.com/mailru/easyjson v0.7.1 // indirect
