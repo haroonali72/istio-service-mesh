@@ -264,12 +264,12 @@ func getClusterRole(input *pb.ClusterRole) (*v1.ClusterRole, error) {
 			policyrule.Verbs = append(policyrule.Verbs, verb)
 		}
 
-		//for _, resourcename := range rule.ResourceName {
-		//	policyrule.ResourceNames = append(policyrule.ResourceNames, resourcename)
-		//
-		//}
 		for _, resourcename := range rule.ResourceName {
-			policyrule.Resources = append(policyrule.Resources, resourcename)
+			policyrule.ResourceNames = append(policyrule.ResourceNames, resourcename)
+
+		}
+		for _, resource := range rule.Resources {
+			policyrule.Resources = append(policyrule.Resources, resource)
 		}
 		for _, nonResourceUrls := range rule.NonResourceUrls {
 			policyrule.NonResourceURLs = append(policyrule.NonResourceURLs, nonResourceUrls)
