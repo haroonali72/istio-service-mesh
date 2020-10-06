@@ -5,9 +5,9 @@ import (
 	"bitbucket.org/cloudplex-devs/istio-service-mesh/utils"
 	pb1 "bitbucket.org/cloudplex-devs/kubernetes-services-deployment/core/proto"
 	pb "bitbucket.org/cloudplex-devs/microservices-mesh-engine/core/services/proto"
+	"bitbucket.org/cloudplex-devs/microservices-mesh-engine/types/services"
 	"context"
 	"encoding/json"
-	"fmt"
 	"google.golang.org/grpc"
 	kb "k8s.io/api/core/v1"
 	"strings"
@@ -260,47 +260,54 @@ func getSecret(input *pb.SecretService) (*kb.Secret, error) {
 	labels["app"] = strings.ToLower(input.Name)
 	labels["version"] = strings.ToLower(input.Version)
 	kube.Labels = labels
-	switch input.SecretServiceAttributes.SecretType {
-	case "Opaque":
-		kube.Type = kb.SecretTypeOpaque
-	case "ServiceAccountToken":
-		kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
-	case "ServiceAccountNameKey":
-		kube.Type = kb.SecretType(kb.ServiceAccountNameKey)
-	case "ServiceAccountUIDKey":
-		kube.Type = kb.SecretType(kb.ServiceAccountUIDKey)
-	case "ServiceAccountTokenKey":
-		kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
-	case "ServiceAccountKubeconfigKey":
-		kube.Type = kb.SecretType(kb.ServiceAccountKubeconfigKey)
-	case "ServiceAccountRootCAKey":
-		kube.Type = kb.SecretType(kb.ServiceAccountRootCAKey)
-	case "SecretTypeDockercfg":
-		kube.Type = kb.SecretType(kb.SecretTypeDockercfg)
-	case "DockerConfigKey":
-		kube.Type = kb.SecretType(kb.DockerConfigKey)
-	case "Tls":
-		kube.Type = kb.SecretType(kb.SecretTypeTLS)
-	default:
-		kube.Type = kb.SecretType(input.SecretServiceAttributes.SecretType)
+	sa, err := getFromVault(input.ApplicationId, input.ServiceId, input.Token)
+	if err != nil {
+		utils.Error.Println(err)
+		return nil, err
 	}
+	if sa != nil {
 
-	if len(input.SecretServiceAttributes.Data) > 0 {
-		map2 := make(map[string][]byte)
-		for key, value := range input.SecretServiceAttributes.Data {
-			s := []byte(value)
-			fmt.Println(s)
-			map2[key] = s
+		switch sa.SecretType {
+		case "Opaque":
+			kube.Type = kb.SecretTypeOpaque
+		case "ServiceAccountToken":
+			kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
+		case "ServiceAccountNameKey":
+			kube.Type = kb.SecretType(kb.ServiceAccountNameKey)
+		case "ServiceAccountUIDKey":
+			kube.Type = kb.SecretType(kb.ServiceAccountUIDKey)
+		case "ServiceAccountTokenKey":
+			kube.Type = kb.SecretType(kb.ServiceAccountTokenKey)
+		case "ServiceAccountKubeconfigKey":
+			kube.Type = kb.SecretType(kb.ServiceAccountKubeconfigKey)
+		case "ServiceAccountRootCAKey":
+			kube.Type = kb.SecretType(kb.ServiceAccountRootCAKey)
+		case "SecretTypeDockercfg":
+			kube.Type = kb.SecretType(kb.SecretTypeDockercfg)
+		case "DockerConfigKey":
+			kube.Type = kb.SecretType(kb.DockerConfigKey)
+		case "Tls":
+			kube.Type = kb.SecretType(kb.SecretTypeTLS)
+		default:
+			kube.Type = kb.SecretType(sa.SecretType)
 		}
 
-		kube.Data = make(map[string][]byte)
-		kube.Data = map2
-	}
+		if len(sa.Data) > 0 {
+			map2 := make(map[string][]byte)
+			for key, value := range sa.Data {
+				s := []byte(value)
+				map2[key] = s
+			}
 
-	if len(input.SecretServiceAttributes.SecretData) > 0 {
-		kube.StringData = make(map[string]string)
-		for key, value := range input.SecretServiceAttributes.SecretData {
-			kube.StringData[key] = value
+			kube.Data = make(map[string][]byte)
+			kube.Data = map2
+		}
+
+		if len(sa.StringData) > 0 {
+			kube.StringData = make(map[string]string)
+			for key, value := range sa.StringData {
+				kube.StringData[key] = value
+			}
 		}
 	}
 
@@ -314,4 +321,22 @@ func getRequestSecretObject(req *pb.SecretService) (*kb.Secret, error) {
 		return nil, err
 	}
 	return scrReq, nil
+}
+func getFromVault(applicationId, serviceID, token string) (*services.SecretServiceAttribute, error) {
+	url := constants.VaultURL + constants.VAULT_GETSECRET
+	url = strings.Replace(url, "{applicationId}", applicationId, -1)
+	url = strings.Replace(url, "{serviceId}", serviceID, -1)
+	_, resp, err := utils.Get(url, nil, map[string]string{"X-Auth-Token": token})
+	if err == nil {
+		attrib := new(services.SecretServiceAttribute)
+		err = json.Unmarshal(resp, attrib)
+		if err != nil {
+			return nil, err
+		}
+		return attrib, nil
+	} else {
+		utils.Error.Println(err)
+	}
+
+	return nil, nil
 }
