@@ -278,20 +278,20 @@ func getPersistentVolumeClaim(input *pb.PersistentVolumeClaimService) (*core.Per
 	} else {
 		pvc.Namespace = input.Namespace
 	}
-	if input.ServiceAttributes.StorageClassName != "" {
-		pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
-	} else {
-		pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
-		if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
-			if ls != nil {
-				pvc.Spec.Selector = ls
-			}
+	// if input.ServiceAttributes.StorageClassName != "" {
+	// 	pvc.Spec.StorageClassName = &input.ServiceAttributes.StorageClassName
+	// } else {
+	// 	pvc.Spec.VolumeName = input.ServiceAttributes.VolumeName
+	// 	if ls, err := getLabelSelector(input.ServiceAttributes.LabelSelector); err == nil {
+	// 		if ls != nil {
+	// 			pvc.Spec.Selector = ls
+	// 		}
 
-		} else {
-			return nil, err
-		}
+	// 	} else {
+	// 		return nil, err
+	// 	}
 
-	}
+	// }
 	if len(input.ServiceAttributes.AccessMode) == 0 {
 		return nil, errors.New("pvc should atleast have an access mode ")
 	}
